@@ -1,5 +1,17 @@
 # NoBrainer Tech Flow release notes
 
+## v1.9.0 - 2026-09-10
+
+- `nobrainer-decide` now has one canonical depth contract: `just decide`/
+  `just-decide` for a fast choice, `decide`/`nb-decide`/`nobrainer-decide` for
+  standard analysis, and `deep decide`/`deep-decide` for deeper analysis.
+- Decision ranking now screens feasibility, deadline, budget and minimum
+  reliability before scoring, compares full cost and time to useful output,
+  handles growth and reversibility, and does not force panels, models or score
+  gaps when evidence does not support them.
+
+See the [v1.9.0 release record](docs/releases/v1.9.0.md) for scope and limits.
+
 ## v1.8.1 — 2026-09-06
 
 - Fresh-session transfers now keep a stable task title and append each session's

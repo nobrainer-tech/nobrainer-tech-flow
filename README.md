@@ -209,7 +209,7 @@ recurring boundary:
 | [`nobrainer-wiki`](skills/nobrainer-wiki/) | `nb-wiki` | Targeted retrieval and sourced durable knowledge without hidden memory or live task state |
 | [`nobrainer-browser`](skills/nobrainer-browser/) | `nb-browser` | Playwright-first rendered inspection, bounded CDP profile restart, approved session attach, browser tests and trace evidence |
 | [`nobrainer-autoimprove`](skills/nobrainer-autoimprove/) | `nb-autoimprove` | Measured baseline/variant/eval/holdout improvement with keep-or-revert |
-| [`nobrainer-decide`](skills/nobrainer-decide/) | `nb-decide` | Consequential decisions with different-shaped options, scoring, attack and one commitment |
+| [`nobrainer-decide`](skills/nobrainer-decide/) | `just decide` / `just-decide` / `decide` / `nb-decide` / `nobrainer-decide` / `deep decide` / `deep-decide` | Quick, standard or deep decisions; feasibility, reliability, total cost, delivery time and practical growth before commitment |
 | [`nobrainer-rca`](skills/nobrainer-rca/) | `nb-rca` | Read-only causal diagnosis with a continuous evidence chain and explicit uncertainty |
 | [`nobrainer-review`](skills/nobrainer-review/) | `nb-review` | Acceptance trace, adversarial bug hunt and release close gate without speculative findings |
 
@@ -277,9 +277,9 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-Current source version: **1.8.1**. Check the
+Current source version: **1.9.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [v1.8.1 release record](docs/releases/v1.8.1.md) for the
+for distribution and the [v1.9.0 release record](docs/releases/v1.9.0.md) for the
 current source scope and preserved installation identities. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier
