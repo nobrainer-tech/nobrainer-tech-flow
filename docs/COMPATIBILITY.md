@@ -21,8 +21,8 @@ Never promote one level from evidence belonging to another.
 Merge is a repository delivery state, not a client-compatibility level; release
 evidence records it separately.
 
-The current source version is **1.8.1**. Its scope and installation metadata are
-recorded in the [v1.8.1 release record](releases/v1.8.1.md). The naming migration
+The current source version is **1.9.0**. Its scope and installation metadata are
+recorded in the [v1.9.0 release record](releases/v1.9.0.md). The naming migration
 remains documented in the [migration guide](MIGRATION_TO_FLOW.md), and the
 unchanged command runner keeps its [v1.7.0 evidence](releases/v1.7.0.md). The
 published `v1.8.0` release remains the rollback anchor; this source update does

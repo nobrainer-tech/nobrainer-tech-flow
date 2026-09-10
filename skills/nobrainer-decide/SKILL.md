@@ -1,6 +1,6 @@
 ---
 name: nobrainer-decide
-description: "Use when the owner says nb-decide or deep-decide, asks what to choose, or needs a consequential technical, product, vendor, workflow, or investment-of-time decision with competing options, uncertainty, lock-in, or meaningful downside."
+description: "Use when choosing between options: just decide for a quick choice, decide or nb-decide for standard analysis, deep decide or deep-decide for deep analysis. Evaluate feasibility, reliability, total cost, delivery time, scale and reversibility."
 ---
 
 # NoBrainer Decide
@@ -13,23 +13,39 @@ Use `nobrainer-rca` first when the unresolved question is causal. Use
 `nobrainer-research` when current external facts or a broader option space must
 be established before scoring.
 
-## Calibrate rigor
+## Select the requested depth
 
 Do not run a panel for a factual lookup, an already-made choice, or an obvious
 reversible edit.
 
-- `LIGHT`: one explicit pass for reversible, low-cost choices with clear facts.
-- `STANDARD`: at least three independent perspectives for meaningful tradeoffs:
-  option generation, scoring, and blind attack/cold review.
-- `HIGH`: at least six bounded independent runs for architecture, material cost,
-  difficult rollback, public commitments, safety, or long lock-in. Separate two
-  option generators, scorer, blind attacker, cold reviewer, and synthesizer.
+Match the owner's invocation, case-insensitively, longest phrase first:
 
-Use fresh or deliberately bounded contexts. Independence means different
-evidence/roles and no inherited rationale, not merely several calls to the same
-prompt. When independent execution is unavailable, mark the analysis partial;
-do not claim a panel. Never hardcode a provider or model family into the
-protocol; select the strongest available capability appropriate to each role.
+| Invocation | Rigor | Work and output |
+|---|---|---|
+| `just decide`, `just-decide` | LIGHT | One pass; compare the credible alternatives and status quo; choice, decisive reason, main risk and next action in a short paragraph. No mandatory scorecard or panel. |
+| `decide`, `nb-decide`, `nobrainer-decide` | STANDARD | Compare at least three distinct mechanisms including status quo; feasibility screen, compact comparison, challenge the leader and recommend one next action. |
+| `deep decide`, `deep-decide` | HIGH | Standard analysis plus future scenarios, sensitivity, strongest counterargument, exit plan and bounded evidence gathering. |
+
+Treat phrases as instructions only when the owner invokes them, not when they
+occur in a quotation, filename or a request to edit this skill. An implicit
+decision request defaults to STANDARD. A later explicit depth choice overrides
+an earlier one. Depth never changes the selected model, permissions or budget.
+
+Use MAIN by default. Independent native subagents can strengthen HIGH analysis
+when authorized, available and worth their cost; do not require a fixed panel
+size. Preserve the owner's model and effort. Never create visible conversations
+as substitutes. If independent review is unavailable, complete the analysis in
+MAIN and disclose that limitation; self-review is not an independent review.
+The blind attack and fresh review below apply only to actual independent runs;
+otherwise perform their checks once in MAIN without claiming blindness.
+
+Set a finite analysis budget appropriate to stakes and the owner's deadline.
+Default to one comparison and one challenge/revision cycle; further research
+needs a named uncertainty that could change the choice. Stop when the choice is
+stable, the evidence budget is exhausted or a decisive fact remains unavailable.
+LIGHT still checks hard constraints and serious downside. For a high-stakes
+quick request, give a concise conditional recommendation or bounded next check;
+do not silently launch HIGH or manufacture certainty to finish quickly.
 
 ## 1. Frame the actual decision
 
@@ -50,7 +66,7 @@ single missing owner choice/evidence that truly blocks a decision.
 
 ## 2. Generate different shapes
 
-Produce at least three mechanisms, not parameter variants. Always include the
+For STANDARD and HIGH produce at least three mechanisms, not parameter variants. Always include the
 status quo. Include at least one shape from outside the user's initial frame:
 
 - measure first;
@@ -63,6 +79,26 @@ failure, reversibility and earliest useful evidence. Reject duplicate shapes.
 
 ## 3. Score transparently
 
+Before ranking, mark each option FEASIBLE, INFEASIBLE or UNVERIFIED against the
+owner's hard limits: delivery deadline, implementation effort, available skills,
+budget and minimum reliability. Reliability must mean an observable requirement
+appropriate to the decision (for example acceptable downtime, error rate,
+recovery time or loss). Never invent a threshold or treat an unknown as passing.
+An infeasible option cannot win through points elsewhere. If no option passes,
+recommend one bounded experiment or identify the constraint that needs changing;
+do not relax it silently.
+
+Prefer the simplest feasible solution that achieves the outcome. Estimate total
+cost over the same stated horizon: build, migration, operation, maintenance,
+attention, failure recovery and exit. Use ranges and sources; label estimates.
+Include time to first useful result and time to a reliable finished solution.
+Do not equate a cheap subscription with low total cost.
+
+For HIGH compare current demand, plausible growth and an adverse scenario.
+State capacity evidence, likely bottleneck and the measurable trigger for an
+upgrade. Preserve a practical migration path instead of paying now for imagined
+scale. A staged decision (X now, Y after threshold Z) is a valid single choice.
+
 Define criteria from the actual outcome before scoring. The default ledger is:
 
 | Criterion | Default weight |
@@ -73,18 +109,23 @@ Define criteria from the actual outcome before scoring. The default ledger is:
 | downside/antifragility | 3 |
 | production or operational readiness | 2 |
 | recurring cost and attention tax | 2 |
-| quality/best-in-class fit | 2 |
+| simplicity and maintainability | 2 |
 | reversibility | 1 |
 | one-time cost | 1 |
-| time to useful result | 1 |
+| time to useful result | 3 |
 
 Change weights only with an explicit reason. Score 1–5 and show weighted totals,
 source quality, sensitivity to uncertain assumptions, one-time and recurring
-cost. Numbers do not auto-select the winner; they expose the tradeoff.
+cost. Use a qualitative comparison when numeric scores would imply unsupported
+precision. Numbers do not auto-select the winner; they expose the tradeoff.
+Accept ties. Prefer the simpler, cheaper-to-reverse feasible option when evidence
+does not distinguish them; state that tie-break. Do not re-score to force a gap.
 
-Antifragility means bounded downside, useful feedback under stress, preserved
-options, redundancy where failure matters, and asymmetric upside. A fragile
-option hides tail risk, single points of failure, or an expensive exit.
+Distinguish robustness (survives stress), resilience (recovers) and antifragility
+(improves through bounded exposure and feedback). Redundancy alone proves none
+of the improvement claim. Name the feedback mechanism and measurable improvement
+before crediting antifragility. Never introduce harmful stress or uncontrolled
+downside to earn that label. Check correlated failures and costly exit paths.
 
 ## 4. Attack the leader
 
@@ -112,6 +153,13 @@ merging, deployment, credentials, production mutation, destructive action, and
 safety changes remain explicit owner gates.
 
 ## Decision record
+
+Use the short output above for LIGHT. For STANDARD keep only useful fields;
+HIGH uses the fuller record below. Include feasibility, delivery range, total
+cost horizon and reliability evidence in the comparison. Separate confirmed
+facts, assumptions and forecasts. Confidence reflects evidence and ranking
+stability, not the number of agents. An unresolved decisive fact permits a
+conditional choice or time-boxed experiment, not an unsupported commitment.
 
 ```text
 DECISION
