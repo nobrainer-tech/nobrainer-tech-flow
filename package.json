@@ -1,7 +1,7 @@
 {
   "name": "nobrainer-tech-skills",
-  "version": "1.9.0",
-  "description": "NoBrainer Tech Flow: portable agentic workflows from task to checked result.",
+  "version": "1.10.0",
+  "description": "NoBrainer.Tech Flow: portable agentic workflows from task to checked result.",
   "type": "module",
   "main": ".opencode/plugins/nobrainer-tech-skills.js",
   "keywords": [

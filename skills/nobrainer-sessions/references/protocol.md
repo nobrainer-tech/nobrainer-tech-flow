@@ -18,6 +18,14 @@ Keep four concepts distinct even if a small project stores them in fewer files:
 Do not put current IDs, hashes, leases, or blocker history into the stable
 protocol. Do not copy execution status into a wiki.
 
+Use native subagents for bounded delegated work inside the current task. A
+separate visible conversation is human-facing task state and requires an
+explicit owner request or an explicitly authorized MAIN restart. Delegation,
+review retries, context pressure and goal continuation do not authorize
+`create_thread`; if native subagents are unavailable, continue in MAIN and
+report the limitation. Workers never create successor conversations or
+delegate further without express assignment authority.
+
 ## Session registry row
 
 ```text
@@ -89,7 +97,8 @@ exists. If no legal `READY` row remains, wait for `RUNNING`, audit `REPORTED`,
 or finish accepted work. Only blocked unfinished work needs an unblock action;
 `OWNER_DECISION_REQUIRED` requires an actual owner decision.
 
-For an authorized fresh-session transfer, keep `TITLE_BASE` stable and give each
+At explicit Flow task startup and authorized fresh-session transfer, keep
+`TITLE_BASE` stable and give each
 session the suffix ` | started DD-MM` from its own verified start timestamp. Use
 the task/owner timezone, or recorded UTC when none is known. Remove an existing
 suffix before formatting. Read back supported create/rename operations, but never

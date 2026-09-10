@@ -25,10 +25,17 @@ RECEIVE_AUDIT.
 
 ## Choose the smallest topology
 
-Default to one visible session named `<repo> | MAIN`. Add a session only when a
-measurable benefit outweighs coordination cost: isolated write scope, durable
-handoff, resume after interruption, independent parallel work, or reuse of a
-warm specialist.
+Default to one visible session named `<repo> | MAIN`.
+Delegated work uses native subagents inside the current task. Creating a visible
+conversation (for example with `create_thread`) requires an explicit owner
+request for that conversation or an explicitly authorized MAIN restart.
+Delegation, independent review, retries, context pressure and a continuing goal
+do not grant that permission. If native subagents or the requested model are
+unavailable, continue in MAIN and report the limitation; never substitute a
+visible task. Workers cannot delegate further or create successors unless their
+assignment expressly authorizes it.
+Reuse an authorized worker for follow-up corrections; do not create a visible
+conversation per review round.
 
 Use stable role titles such as `<repo> | QA` or `<repo> | RESEARCH` when the
 responsibility persists. Use `<repo> | <TASK_ID>` for a bounded disposable work
@@ -72,6 +79,14 @@ reconciling identity and checkout; stale transcript or native-goal text cannot
 override it.
 `task_complete` is not `RUNTIME_RELEASE`; require owned-worker readback where
 the host supports it.
+
+## Startup care
+
+Ultra invokes [automatic start and observation](references/session-restart.md#automatic-start-and-observation)
+on explicit Flow task entry, even without a restart request or detailed ledger.
+Name the session immediately from verified creation metadata; assess current
+context and full necessary startup inputs. A health restart does not require an
+economic saving, but still requires authority, progress and safe takeover.
 
 ## Modes
 

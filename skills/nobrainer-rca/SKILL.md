@@ -1,6 +1,6 @@
 ---
 name: nobrainer-rca
-description: "Use when the owner says nb-rca or deep-rca, or asks what caused a specific observed incident, regression, test failure, outage, wrong value, or unexpected system behavior and wants an evidence-bound diagnosis before any fix."
+description: "Use when the owner says nb-rca or deep-rca, or requests an evidence-bound diagnosis of what caused a specific observed incident, regression, test failure, outage, wrong value, or unexpected system behavior before proposing a fix."
 ---
 
 # NoBrainer Root Cause Analysis

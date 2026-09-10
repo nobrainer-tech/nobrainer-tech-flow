@@ -313,6 +313,8 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("Next:", text)
         self.assertIn("ordinary single-session", text.lower())
         self.assertIn("detailed ledger", text.lower())
+        self.assertIn("native subagents", text.lower())
+        self.assertIn("visible conversations require explicit owner request", text.lower())
         normalized = " ".join(text.lower().split())
         self.assertIn("do not add a repetitive skill/mode preamble", normalized)
         self.assertIn("invent unseen", text.lower())
@@ -387,6 +389,7 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("MODEL_READBACK", protocol)
         self.assertIn("without a silent substitution", dispatcher)
         self.assertIn("never silently substitute another model", sessions)
+        self.assertIn("explicit owner request", sessions.lower() + protocol.lower())
 
     def test_ultra_binds_goal_dod_and_context_budget(self) -> None:
         text = (SKILLS / "nobrainer-ultra" / "SKILL.md").read_text(encoding="utf-8")
@@ -443,6 +446,9 @@ class SuiteTests(unittest.TestCase):
             "ROLLBACK",
         ):
             self.assertIn(term, setup)
+        setup_normalized = " ".join(setup.lower().split())
+        self.assertIn("explicit owner request", setup_normalized)
+        self.assertIn("use native subagents or main", setup_normalized)
         self.assertNotIn("fix the result and record one reusable prevention rule", setup)
 
     def test_build_contract_is_anti_slop_and_calibrated(self) -> None:
@@ -1994,6 +2000,10 @@ class SuiteTests(unittest.TestCase):
         ):
             self.assertIn(contract, normalized)
         self.assertIn("stale context or evidence", protocol.lower())
+        self.assertIn("native subagents", protocol.lower())
+        self.assertIn("visible conversation", protocol.lower())
+        self.assertIn("explicit owner request", protocol.lower())
+        self.assertIn("workers never create successor", protocol.lower())
         team_plan = (
             SKILLS / "nobrainer-team" / "references" / "team-plan.md"
         ).read_text(encoding="utf-8")
@@ -2233,6 +2243,8 @@ class SuiteTests(unittest.TestCase):
             "Expected files",
             "Done clean",
             "one primary agent",
+            "Visible conversations",
+            "Use subagents",
             "fetch remote refs",
             "Never commit directly to `main`",
         ):
@@ -3408,11 +3420,12 @@ class SuiteTests(unittest.TestCase):
 
     def test_readme_branding_and_links(self) -> None:
         text = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertIn("NoBrainer Tech Flow", text)
+        self.assertIn("NoBrainer.Tech Flow", text)
         self.assertIn("From task to done.", text)
         self.assertIn("https://github.com/nobrainer-tech/nobrainer-tech-flow", text)
         self.assertIn("https://nobrainer.tech/flow/", text)
         self.assertIn("docs/MIGRATION_TO_FLOW.md", text)
+        self.assertIn("docs/NAMING.md", text)
         self.assertIn("nobrainer-tech-skills", text)
         self.assertIn("assets/nobrainer-tech-logo.svg", text)
         self.assertIn("https://nobrainer.tech", text)
@@ -3422,6 +3435,53 @@ class SuiteTests(unittest.TestCase):
         self.assertNotIn("nobrainer-skills-coverage-v2.png", text)
         self.assertIn("docs/COMPATIBILITY.md", text)
         self.assertIn("docs/TESTING.md", text)
+
+    def test_public_naming_map_separates_brand_aliases_and_technical_ids(self) -> None:
+        naming = (ROOT / "docs" / "NAMING.md").read_text(encoding="utf-8")
+        self.assertIn("NoBrainer.Tech Flow", naming)
+        self.assertIn("nobrainer-tech-flow", naming)
+        self.assertIn("nobrainer-ultra", naming)
+        self.assertIn("Assistant conversation label", naming)
+        self.assertIn("Workflow skills", naming)
+        self.assertIn("`nobrainer-build`", naming)
+        self.assertIn("Do not open with a ritual entry announcement", naming)
+        self.assertIn("#NoBrainerTechFlow", naming)
+        self.assertIn("A hyphen ends an X hashtag", naming)
+        for alias in ("nb-ultra", "nb-flow", "nb-workflow"):
+            self.assertIn(alias, naming)
+        maintained_public = (
+            ROOT / "README.md",
+            ROOT / "AGENTS.md",
+            ROOT / "CLAUDE.md",
+            ROOT / "CONTRIBUTING.md",
+            ROOT / "docs" / "INSTALL.md",
+            ROOT / "docs" / "COMPATIBILITY.md",
+            ROOT / "docs" / "MIGRATION_TO_FLOW.md",
+            ROOT / "docs" / "TRY_IT.md",
+            ROOT / "adapters" / "bootstrap.md",
+        )
+        for path in maintained_public:
+            with self.subTest(path=path.relative_to(ROOT)):
+                content = path.read_text(encoding="utf-8")
+                self.assertNotIn("NoBrainer Tech Flow", content)
+                self.assertNotIn("NoBrainer Ultra", content)
+        codex = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
+        self.assertTrue(codex["interface"]["defaultPrompt"][0].startswith("Use `nobrainer-tech-flow`"))
+        self.assertIn("$nobrainer-ultra", codex["interface"]["defaultPrompt"][0])
+        self.assertIn("Do not announce workflow entry", codex["interface"]["defaultPrompt"][0])
+        manifest_paths = (
+            ROOT / "package.json",
+            ROOT / "plugin.json",
+            ROOT / "gemini-extension.json",
+            ROOT / ".claude-plugin" / "plugin.json",
+            ROOT / ".cursor-plugin" / "plugin.json",
+            ROOT / ".kimi-plugin" / "plugin.json",
+        )
+        for path in manifest_paths:
+            with self.subTest(manifest=path.relative_to(ROOT)):
+                manifest = json.loads(path.read_text(encoding="utf-8"))
+                self.assertIn("NoBrainer.Tech Flow", manifest["description"])
+                self.assertNotIn("NoBrainer Tech Flow", manifest["description"])
 
     def test_install_snippets_require_one_literal_reviewed_commit(self) -> None:
         documents = (
@@ -3628,7 +3688,9 @@ class SuiteTests(unittest.TestCase):
         interface = codex["interface"]
         self.assertIn("concise progress", interface["longDescription"])
         self.assertNotIn("execution map", interface["longDescription"].lower())
-        self.assertTrue(interface["defaultPrompt"][0].startswith("Use $nobrainer-ultra"))
+        self.assertTrue(interface["defaultPrompt"][0].startswith("Use `nobrainer-tech-flow`"))
+        self.assertIn("$nobrainer-ultra", interface["defaultPrompt"][0])
+        self.assertIn("Do not announce workflow entry", interface["defaultPrompt"][0])
         self.assertNotIn("Use nb-ultra", interface["defaultPrompt"])
         self.assertEqual("./assets/nobrainer-tech-logo.svg", interface["composerIcon"])
         self.assertEqual(

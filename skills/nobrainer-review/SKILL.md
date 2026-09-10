@@ -96,6 +96,13 @@ findings.
 
 ## Independent reviewer
 
+Use a native subagent for delegated review. A separate visible conversation
+requires an explicit owner request; `create_thread` is not a subagent fallback.
+If native delegation is unavailable, perform the review in MAIN and report
+the missing independence. A failed review does not authorize another sidebar
+conversation, and a reviewer cannot recursively delegate without express
+authority in its assignment.
+
 Use a second model or native review command when change size, unfamiliar code,
 security, money/data risk or independence justifies the latency. Keep it
 read-only and give it the same frozen scope and acceptance. Prefer the current

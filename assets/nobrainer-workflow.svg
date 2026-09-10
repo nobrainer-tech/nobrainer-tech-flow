@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
-  <title id="title">NoBrainer Ultra delivery workflow</title>
-  <desc id="desc">Clear coding and everyday tasks use the QUICK PATH. BUDDY asks only material questions. Larger work uses minimum scope, a short plan, authorized execution, verification and useful independent review. Model policy stays host-selected. A Markdown GOAL_FILE supports recovery without native goals. SESSION_HEALTH_GATE uses available limits; supported fresh sessions keep the task title and add started DD-MM. RUNTIME_RELEASE readback verifies owned workers. LEARN only persists authorized durable knowledge.</desc>
+  <title id="title">NoBrainer.Tech Flow delivery workflow</title>
+  <desc id="desc">Clear coding and everyday tasks use the QUICK PATH. BUDDY asks only material questions. Larger work uses minimum scope, a short plan, authorized execution, verification and useful independent review. Model policy stays host-selected. A Markdown GOAL_FILE supports recovery without native goals. SESSION_HEALTH_GATE uses available limits; Flow entry dates the current session and assesses context; supported fresh sessions preserve task continuity. RUNTIME_RELEASE readback verifies owned workers. LEARN only persists authorized durable knowledge.</desc>
   <defs>
     <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#071317"/>
@@ -42,7 +42,7 @@
   <circle cx="1390" cy="80" r="230" fill="#24e6dc" opacity=".035"/>
   <circle cx="220" cy="860" r="300" fill="#68a8ff" opacity=".025"/>
 
-  <text x="76" y="70" class="eyebrow">NOBRAINER ULTRA</text>
+  <text x="76" y="70" class="eyebrow">NOBRAINER.TECH FLOW</text>
   <text x="76" y="120" class="headline">One request. Clear progress. Verified delivery.</text>
   <text x="76" y="154" class="subtitle">Clear tasks go straight to work. Add structure only when it helps the outcome.</text>
 
@@ -147,5 +147,5 @@
     <path d="M178 336V356" class="flow-accent"/>
   </g>
 
-  <text x="76" y="870" class="subtitle">Default: one MAIN. Fresh sessions keep the task title + started DD-MM. Stop when acceptance passes.</text>
+  <text x="76" y="870" class="subtitle">One MAIN. Date at startup; assess context; verify fresh takeover. Stop when acceptance passes.</text>
 </svg>

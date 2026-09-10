@@ -1,4 +1,4 @@
-# NoBrainer Ultra routing
+# NoBrainer.Tech Flow routing
 
 Use this reference during `DRIFT_CHECK` and method selection. Prefer current
 project conventions and one source of truth. A method is loaded only when its
@@ -84,9 +84,10 @@ bounded prompt, disjoint scope, observable completion and artifact/test review.
 Do not turn a subtask into a new user-owned visible task unless requested.
 Use `nobrainer-team` to decide missing roles/capabilities, `nobrainer-dispatcher` to
 schedule an approved queue with multiple delegated units, and
-`nobrainer-sessions` to operate exact visible sessions. Prefer multi-session work
-for independent critical-path units, isolation, handoff, resume or a reused
-specialist. Keep a tightly coupled edit in MAIN. Titles aid humans; IDs and
+`nobrainer-sessions` to operate explicitly owner-authorized visible sessions.
+Independent work, isolation or reuse alone does not authorize creating one;
+use native subagents, or MAIN when unavailable. Keep a tightly coupled edit in
+MAIN. Titles aid humans; IDs and
 readback prove identity.
 
 For a scheduled queue the canonical transition is `Team -> Dispatcher SCHEDULE

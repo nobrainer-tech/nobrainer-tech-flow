@@ -88,6 +88,28 @@ class RestartGateTests(unittest.TestCase):
         self.assertEqual(self.action(target_id=None), 'BLOCKED')
         self.assertEqual(self.action(ack_matches=False), 'VERIFY_TAKEOVER')
 
+    def test_pressure_can_rotate_without_billing_forecast(self):
+        self.assertEqual(self.action(context_pressure=True,
+            restart_overhead_tokens=None), 'CREATE_FRESH')
+        self.assertEqual(self.action(context_capacity_tokens=100000,
+            restart_overhead_tokens=None), 'CREATE_FRESH')
+
+    def test_pressure_needs_smaller_start_and_progress(self):
+        self.assertEqual(self.action(context_pressure=True, fresh_input_tokens=79000,
+            restart_overhead_tokens=None), 'CHECKPOINT_ONLY')
+        self.assertEqual(self.action(context_pressure=True, current_input_tokens=None,
+            restart_overhead_tokens=None), 'CHECKPOINT_ONLY')
+        self.assertEqual(self.action(context_pressure=True, progress_since_restart=False),
+            'CONTINUE')
+        self.assertEqual(self.action(context_pressure=True, active_writers=1),
+            'WAIT_SAFE_BOUNDARY')
+
+    def test_committed_transfer_cannot_return_source_to_work(self):
+        for updates in ({'remaining_work': False}, {'mode': 'off'},
+                        {'policy_authorized': False}, {'required_budget_unmeasurable': True}):
+            self.assertEqual(self.action(ownership_committed=True, target_id='new',
+                **updates), 'VERIFY_TAKEOVER')
+
     def test_real_cli_rejects_malformed_and_oversized_observations(self):
         for payload in ('[]', '{', 'x'*65537):
             p = subprocess.run([sys.executable, str(PATH)], input=payload, text=True, capture_output=True)

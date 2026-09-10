@@ -1,10 +1,10 @@
-# Move to NoBrainer Tech Flow
+# Move to NoBrainer.Tech Flow
 
-Version **1.7.1** changes the product name to **NoBrainer Tech Flow**.
+Version **1.7.1** changes the product name to **NoBrainer.Tech Flow**.
 **From task to done.** Tell it what you need. Flow clarifies the goal, does the
 work, and checks the result.
 
-The canonical repository is
+The canonical public repository identity is
 [`nobrainer-tech/nobrainer-tech-flow`](https://github.com/nobrainer-tech/nobrainer-tech-flow)
 and the product website is [nobrainer.tech/flow](https://nobrainer.tech/flow/).
 The skill contracts and optional command runner are unchanged from 1.7.0.
@@ -19,14 +19,15 @@ as a second package:
 
 | Surface | Preserved identifier |
 |---|---|
-| Package and Claude Code, Codex, Cursor, Kimi, Gemini and portable plugin names | `nobrainer-tech-skills` |
+| Existing package and Claude Code, Codex, Cursor, Kimi, Gemini and portable plugin IDs | `nobrainer-tech-skills` |
+| New public repository/package channel | `nobrainer-tech-flow` |
 | Claude Code marketplace name | `nobrainer-tech` |
 | Local development marketplace name | `nobrainer-tech-skills-dev` |
 | OpenCode package entry prefix | `nobrainer-tech-skills@git+` |
 | OpenCode adapter module | `.opencode/plugins/nobrainer-tech-skills.js` |
 | Pi extension module | `.pi/extensions/nobrainer-tech-skills.js` |
 | Shared bootstrap marker | `NOBRAINER_BOOTSTRAP_V1` |
-| Ultra invocation | `nb-flow` or `nb-ultra`; explicit Codex invocation `$nobrainer-ultra` |
+| Technical entrypoint and compatibility aliases | `$nobrainer-ultra`; `nb-flow`, `nb-ultra` and `nb-workflow` are aliases only |
 
 All fifteen skill directory and frontmatter names remain unchanged:
 
@@ -49,9 +50,10 @@ nobrainer-review
 ```
 
 Their existing aliases, configuration paths and installer targets are unchanged.
-The technical name `nobrainer-tech-skills` may therefore still appear in package
+The legacy technical name `nobrainer-tech-skills` may therefore still appear in package
 managers and client settings. It identifies the same product; do not add a
-second package named `nobrainer-tech-flow` merely to match the display name.
+second compatibility package or rename installed directories without a separate
+migration. New public source links and checkout paths use `nobrainer-tech-flow`.
 
 ## Update the source in place
 

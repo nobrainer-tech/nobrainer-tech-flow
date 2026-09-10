@@ -143,6 +143,14 @@ only information likely to matter again. Do not infer a permanent trait from one
 interaction. The owner must be able to inspect, correct and remove personalized
 knowledge.
 
+An external memory or retrieval service must earn its place with a representative
+task set and a measured recall, context and latency target. Before adoption,
+define project/account scope, source provenance, freshness and expiry, conflict
+handling, correction/deletion/export, privacy, cost and a file-readable fallback.
+Treat an injected profile or recalled item as context to verify, never as current
+state or authority. Keep this policy in `nobrainer-wiki`; do not create another
+permanent skill merely for a provider integration.
+
 ## Automation and close gate
 
 Manual capture/promotion is the default. Schedule it only when measured volume

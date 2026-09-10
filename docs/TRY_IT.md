@@ -1,4 +1,4 @@
-# Try NoBrainer Tech Flow on one task
+# Try NoBrainer.Tech Flow on one task
 
 Install from the [reviewed source and dry-run](INSTALL.md), restart your client,
 and check that it can discover `nobrainer-ultra`. A successful file installation
@@ -8,7 +8,7 @@ is not a successful model run. Pick one small trial and inspect the artifact.
 
 In an ordinary empty folder, ask:
 
-> Use nb-flow. Create invitation.md for a free board-game evening on 18 September
+> Use NoBrainer.Tech Flow. Create invitation.md for a free board-game evening on 18 September
 > at 18:00, ending at 21:00, at the community room. Bring a game if you have one;
 > newcomers are welcome. Also make checklist.md with the organizer's preparation
 > tasks. Use only these supplied details. Do not initialize Git or add frameworks.
@@ -21,7 +21,7 @@ unrequested project scaffolding, and claims about checks that were not performed
 
 In a disposable copy of a project with a known failing test, ask:
 
-> Use nb-ultra. Reproduce the failing test, find the cause and make the smallest
+> Use NoBrainer.Tech Flow. Reproduce the failing test, find the cause and make the smallest
 > correction. Run the affected test and the project's required checks. Keep
 > unrelated files unchanged. Report the actual results and remaining uncertainty.
 

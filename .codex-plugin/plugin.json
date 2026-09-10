@@ -1,7 +1,7 @@
 {
   "name": "nobrainer-tech-skills",
-  "version": "1.9.0",
-  "description": "NoBrainer Tech Flow: portable agentic workflows from task to checked result.",
+  "description": "NoBrainer.Tech Flow: portable agentic workflows from task to checked result.",
+  "version": "1.10.0",
   "author": {
     "name": "NoBrainer Tech",
     "url": "https://nobrainer.tech"
@@ -18,7 +18,7 @@
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "NoBrainer Tech Flow",
+    "displayName": "NoBrainer.Tech Flow",
     "shortDescription": "Fast, visible, evidence-gated agentic workflows",
     "longDescription": "Turn one request into minimum scope, concise progress, bounded execution, conditional recovery state, secure implementation, independent review, and durable learning.",
     "developerName": "NoBrainer Tech",
@@ -29,8 +29,8 @@
       "Write"
     ],
     "defaultPrompt": [
-      "Use $nobrainer-ultra to deliver this task with the smallest safe workflow.",
-      "Use $nobrainer-team to build the minimum specialist team and deliver this project with evidence."
+      "Use `nobrainer-tech-flow` to deliver this task with the smallest safe workflow via $nobrainer-ultra. Do not announce workflow entry.",
+      "Use `nobrainer-tech-flow` team routing via $nobrainer-team to build the minimum specialist team and deliver this project with evidence. Do not announce workflow entry."
     ],
     "websiteURL": "https://nobrainer.tech/flow/",
     "privacyPolicyURL": "https://nobrainer.tech/privacy",

@@ -1,6 +1,6 @@
-# Compatibility evidence
+# NoBrainer.Tech Flow compatibility evidence
 
-NoBrainer Tech Flow keeps one portable `skills/` source, but portability is
+NoBrainer.Tech Flow keeps one portable `skills/` source, but portability is
 not the same as a proven client integration. Record these levels separately:
 
 1. `SOURCE_VALIDATED` — the portable `SKILL.md` folders pass repository
@@ -21,8 +21,8 @@ Never promote one level from evidence belonging to another.
 Merge is a repository delivery state, not a client-compatibility level; release
 evidence records it separately.
 
-The current source version is **1.9.0**. Its scope and installation metadata are
-recorded in the [v1.9.0 release record](releases/v1.9.0.md). The naming migration
+The current source version is **1.10.0**. Its scope and installation metadata are
+recorded in the [v1.10.0 release record](releases/v1.10.0.md). The naming migration
 remains documented in the [migration guide](MIGRATION_TO_FLOW.md), and the
 unchanged command runner keeps its [v1.7.0 evidence](releases/v1.7.0.md). The
 published `v1.8.0` release remains the rollback anchor; this source update does
@@ -75,13 +75,13 @@ not mean the external client's parser accepted or loaded the package.
 
 | Client / harness | Source | Repository contract | Client load | Runtime | Distribution |
 |---|---|---|---|---|---|
-| Claude Code | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: manifest, portable installer and Claude SessionStart output | `CLIENT_LOADED`: CLI `2.1.241`, isolated plugin, namespaced explicit invocation | `RUNTIME_VERIFIED_EXPLICIT`: final Ultra routed to and read canonical Autoimprove; automatic routing remains unverified | `NOT_PUBLISHED` |
+| Claude Code | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: manifest, portable installer and Claude SessionStart output | `CLIENT_LOADED`: CLI `2.1.241`, isolated plugin, namespaced explicit invocation | `RUNTIME_VERIFIED_EXPLICIT`: final NoBrainer.Tech Flow route reached and read canonical Autoimprove; automatic routing remains unverified | `NOT_PUBLISHED` |
 | Codex | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: accepted manifest schema and portable installer | `CLIENT_LOADED`: CLI `0.149.1`, repo-scoped copy, explicit canonical invocation | `RUNTIME_VERIFIED_EXPLICIT`: final Luna cases and isolated implementation passed; automatic and alias-only routing remain unverified | `NOT_PUBLISHED` |
 | Cursor | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: manifest path and Cursor SessionStart output | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | OpenCode | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: skills registration plus idempotent first-user transform | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | GitHub Copilot CLI | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: portable installer and repository instructions; no bootstrap | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Gemini CLI | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: extension manifest and owned context include | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
-| Kimi Code | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: canonical skills path, Ultra session-start field and native-tool boundary | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
+| Kimi Code | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: canonical skills path, `nobrainer-ultra` session-start field and native-tool boundary | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Devin CLI | `SOURCE_VALIDATED` | no dedicated adapter | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Pi | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: package resources, dedupe, lifecycle reset and post-compaction transform | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Hermes Agent | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: root Agent Plugins v1 manifest only; no bootstrap | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
@@ -149,7 +149,7 @@ target is `MODEL_ESCALATION_PROPOSED` or `OWNER_APPROVAL`, never a silent
 fallback.
 
 ```text
-Help me design and implement an ambiguous feature that crosses several modules
+Use NoBrainer.Tech Flow to design and implement an ambiguous feature that crosses several modules
 and may affect production.
 ```
 
@@ -172,24 +172,25 @@ items and evidence are invalidated, and the affected route is rebuilt without a
 second ordinary clarification round. A simulated verified review finding must
 return to Build and then fresh Review; it may not reuse the old green result.
 
-### Explicit canonical invocation
+### Explicit technical invocation
 
 ```text
 $nobrainer-ultra Deliver this task with the smallest safe workflow.
 ```
 
-Passing behavior: the client loads the canonical `nobrainer-ultra` body and any
+Passing behavior: the client loads the NoBrainer.Tech Flow technical
+`nobrainer-ultra` body and any
 required relative reference without the user pasting either one.
 
-### Implicit alias control
+### Compatibility alias control
 
 ```text
-Use nb-ultra to deliver this task with the smallest safe workflow.
-Use nb-flow to deliver this task with the smallest safe workflow.
+Use NoBrainer.Tech Flow to deliver this task with the smallest safe workflow.
+Compatibility alias probe: use nb-ultra or nb-flow to deliver this task with the smallest safe workflow.
 ```
 
-`nb-ultra` and `nb-flow` are trigger phrases in the description, not additional
-skill names.
+`nb-ultra`, `nb-flow` and `nb-workflow` are compatibility trigger phrases, not
+the product name or additional skill names.
 Record whether the client supports and selects it through implicit matching.
 Do not present this as an explicit invocation guarantee. In the v1.3.0 Codex
 probe, alias-only selection failed under a crowded skill catalog and a prompt
@@ -249,7 +250,9 @@ The `session-restart` mode shipped in v1.8.0 and refined in v1.8.1 is a
 client/model-neutral Sessions
 protocol. The optional Python 3.11+ helper evaluates observations and runs without
 a model or client SDK. It does not implement native creation or archival.
-Human-readable rollover titles use `<stable task title> | started DD-MM` where a
+Explicit NoBrainer.Tech Flow entry invokes startup naming and health assessment through `nobrainer-ultra`.
+This is agent-executed care; no native transport backend is bundled.
+Human-readable startup and rollover titles use `<stable task title> | started DD-MM` where a
 host supports create-time titles or rename. The registry retains the full start
 timestamp and timezone, and IDs remain authoritative. A client without title
 mutation reports that cosmetic capability as unsupported; this is not a failed

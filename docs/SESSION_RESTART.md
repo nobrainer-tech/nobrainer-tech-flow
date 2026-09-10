@@ -1,32 +1,40 @@
 # Adaptive session restart
 
-The v1.8.1 source includes this portable protocol and dated session titles. The
-existing v1.8.0 tagged archive remains unchanged and is the rollback anchor.
+Development source adds automatic Flow startup care to the v1.8.1 restart
+protocol. Published tags remain unchanged; v1.8.1 is the rollback baseline.
 
-Tell Flow: “Enable automatic session-restart for this task. Keep progress in
-files and archive the old conversation only after the successor takes over.”
-That grants standing consent within the task. The current model and effort stay
-as selected. Ask for a daily policy only if you want session age considered too.
+Invoke NoBrainer.Tech Flow with your task. Flow runs startup naming and health assessment
+without a separate restart command. It records adaptive policy within the task's
+authorization, preserves an existing `off` policy and obeys stricter host consent
+rules. Installation or incidental skill loading alone authorizes no mutation.
+Explicit automatic-restart consent remains valid for later rotations in scope;
+archival needs its own recorded authorization. Ordinary delegation uses native
+subagents; creating a separate visible conversation requires an explicit owner
+request or an explicitly authorized MAIN restart.
 
-Flow checks quietly after useful milestones. It estimates whether carrying less
-context through the next small unit repays checkpoint and startup overhead.
-Compaction count and elapsed time trigger assessment, not automatic rotation.
-It preserves decisions, acceptance, authorized scope, dirty work, evidence and
-the next action. A successful restart gets one brief notification; routine
-checks do not add chat noise.
+On entry, supported clients name the session `<task title> | started DD-MM` using
+its actual creation timestamp and owner/task timezone (recorded UTC fallback).
+Resume preserves that date; a successor receives its own creation date. Missing
+metadata is unavailable, never replaced with today's date. Supported mutations
+are read back. Session IDs, goal identity and checkpoint digest remain authoritative.
 
-There is no fixed restart interval. The default adaptive policy assesses at
-accepted milestones and context-pressure signals; two compactions trigger an
-assessment. The optional daily policy assesses once session age reaches 24 hours,
-but still restarts only when the bounded forecast, remaining work and transfer
-safety justify it.
+Flow assesses available context measurements and the complete next startup,
+including required skills, metadata, tools, checkpoint and necessary re-reads.
+It records measured versus estimated inputs and keeps missing values unknown.
+The agent performs the check at entry, after compaction and accepted milestones;
+there is no new daemon or timer-only model call.
 
-When the client supports titles, each conversation keeps the stable task name and
-adds its own start date: `<task title> | started DD-MM`. Flow removes an older
-start suffix before applying the new one, stores the full timestamp and timezone
-in the session registry, and reads the title back. Clients without title mutation
-continue with the same safe handoff and report that cosmetic capability as
-unsupported. Session IDs, goal identity and checkpoint digest remain authoritative.
+Health and economic benefit are independent reasons to rotate. A current pressure
+signal or at least 70% observed context occupancy, together with a complete fresh
+startup at most 80% of current input, qualifies the health path. Those are policy
+heuristics, not measured optima. Remaining work, progress since the last restart,
+verified checkpoint and safe native ownership transfer are still required.
+Two compactions and optional daily age of 24 hours trigger assessment only.
+A small post-compaction context or equally large startup can make continuing wiser.
+
+Routine care stays quiet. Report one successful continuation or an actionable
+capability failure. After takeover, compare observed startup and missing-context
+rework with the estimate in the same task state.
 
 The core is the [Sessions protocol](../skills/nobrainer-sessions/references/session-restart.md),
 usable as instructions in any capable client. An optional deterministic helper
@@ -34,7 +42,7 @@ can be invoked by hooks. There is no universal hook event or universal archive
 API: adapters must verify capabilities and map their actual lifecycle events.
 A client without safe native transport prepares a manual continuation packet.
 
-The helper calculates a conservative raw token proxy over at most three future
+For the independent economic path, the helper calculates a conservative raw token proxy over at most three future
 calls. Its defaults are heuristics, not an optimum or a billing forecast. Current
 input, fresh startup and restart overhead can be observations or explicitly
 labelled estimates. Missing metrics remain unknown. Large fixed instructions,
