@@ -1,4 +1,16 @@
-# NoBrainer Tech Flow release notes
+# NoBrainer.Tech Flow release notes
+
+## v1.10.0 - 2026-09-10
+
+- Explicit NoBrainer.Tech Flow entry now performs bounded session startup care:
+  verified title/date formatting, context observation and health assessment at
+  accepted milestones, while preserving native host consent and manual fallback.
+- Native subagents remain the delegated-work path; visible conversations require
+  an owner request or authorized MAIN restart.
+- Maintained public copy uses NoBrainer.Tech Flow while technical skill and
+  package identifiers remain compatible.
+
+See the [v1.10.0 release record](docs/releases/v1.10.0.md) for scope and limits.
 
 ## v1.9.0 - 2026-09-10
 
@@ -35,10 +47,11 @@ release, client loading, marketplace distribution or model-quality improvement.
 
 ## v1.7.1 — 2026-09-05
 
-- The product is now **NoBrainer Tech Flow**: **From task to done.**
+- The product is now **NoBrainer.Tech Flow**: **From task to done.**
 - Maintained repository links use `nobrainer-tech/nobrainer-tech-flow`; the product
   website is [nobrainer.tech/flow](https://nobrainer.tech/flow/).
-- Package/plugin IDs, marketplace IDs, all fifteen skill names and `nb-ultra`
+- Package/plugin IDs, marketplace IDs, all fifteen skill names and compatibility
+  aliases such as `nb-ultra`
   commands remain unchanged so existing installations retain their identity.
 - This is a naming and documentation release. Skill behavior, adapters and the
   bounded command runner are unchanged; historical evidence retains its provenance.

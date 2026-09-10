@@ -4,7 +4,7 @@
   </a>
 </p>
 
-<h1 align="center">NoBrainer Tech Flow</h1>
+<h1 align="center">NoBrainer.Tech Flow</h1>
 
 <p align="center">
   From task to done.
@@ -23,9 +23,9 @@
   <a href="https://nobrainertech.gumroad.com">Production-ready agentic workflows</a>
 </p>
 
-Tell it what you need. Flow clarifies the goal, does the work, and checks the result.
+Tell NoBrainer.Tech Flow what you need. It clarifies the goal, does the work, and checks the result.
 
-Say **“Use nb-flow”** or **“Use nb-ultra”** (or invoke `$nobrainer-ultra` in Codex) to fix code, prepare
+Say **“Use NoBrainer.Tech Flow”** (or invoke the technical entrypoint `$nobrainer-ultra`) to fix code, prepare
 an everyday document, or investigate a problem. Clear tasks go straight to execution;
 meaningful ambiguity gets one focused question round. Done means the agreed
 criteria are met and the result is checked. A real blocker is reported with the
@@ -35,8 +35,10 @@ A quick answer stays a quick answer. The model-neutral workflow uses one plan,
 bounded corrective attempts and a Markdown checkpoint for longer work. Native
 goals, telemetry, subagents and client-specific tools are optional.
 
-Existing installations keep the `nobrainer-tech-skills` package/plugin ID and all
-skill commands. See the [Flow migration guide](docs/MIGRATION_TO_FLOW.md).
+New public source links and checkout paths use `nobrainer-tech-flow`. Existing
+installations keep the legacy technical `nobrainer-tech-skills` package/plugin ID
+and all skill commands until a separate compatibility migration. See the
+[Flow migration guide](docs/MIGRATION_TO_FLOW.md) and [naming map](docs/NAMING.md).
 
 [Source-backed comparison decisions](docs/reviews/2026-09-05-flow-coverage.md)
 cover the current collected Trending snapshot and explain what we adopted or retained.
@@ -46,7 +48,7 @@ cover the current collected Trending snapshot and explain what we adopted or ret
 [Install safely](#install-safely), start a fresh session, then give the agent a
 small task with a checkable result:
 
-> Use nb-ultra. Fix one bug in this project. Reproduce it first, make the
+> Use NoBrainer.Tech Flow. Fix one bug in this project. Reproduce it first, make the
 > smallest correction and run the relevant check. Tell me what changed and
 > what remains unverified. Ask only if a missing decision changes the result.
 
@@ -84,7 +86,7 @@ and perform clean-session discovery before claiming runtime installation. Full
 client-specific steps and rollback are in [Installation](docs/INSTALL.md).
 
 
-![NoBrainer Ultra: direct work for clear small tasks; focused clarification, bounded execution and verification when needed](assets/nobrainer-workflow.svg)
+![NoBrainer.Tech Flow: direct work for clear small tasks; focused clarification, bounded execution and verification when needed](assets/nobrainer-workflow.svg)
 
 ### GitHub flow chart
 
@@ -108,6 +110,8 @@ flowchart TD
     M --> H
     L -. context pressure; transfer supported .-> N[Fresh session: same task + started DD-MM]
     N --> G
+    G -. Flow entry and milestones .-> O[Date at startup; assess context health]
+    O -. safe transfer qualifies .-> N
     L -. unavailable native goals or telemetry .-> G
 ```
 
@@ -143,13 +147,14 @@ See the [v1.6 review and research decisions](docs/reviews/v1.6.0-review.md).
 
 ## Start with one skill
 
-Use [`nobrainer-ultra`](skills/nobrainer-ultra/) for setup or any non-trivial
+Use NoBrainer.Tech Flow, implemented by the technical skill
+[`nobrainer-ultra`](skills/nobrainer-ultra/), for setup or any non-trivial
 outcome. A small reversible edit without a public contract, routing, workflow or
 portfolio change can use its quick path; other changes use the full path and its
 coherence gate.
-In Codex, explicit invocation is `$nobrainer-ultra`; `nb-flow` and `nb-ultra`
-are natural-language trigger phrases and therefore depend on a client's
-implicit description matching.
+In Codex, the technical explicit invocation is `$nobrainer-ultra`. `nb-flow`,
+`nb-ultra` and `nb-workflow` remain compatibility trigger phrases only and
+depend on a client's implicit description matching.
 
 ```text
 DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN
@@ -192,12 +197,13 @@ Dispatcher only when a real handoff or dependent queue needs them.
 
 ## Fifteen skills, distinct ownership
 
-Aliases are trigger phrases, not duplicate directories. Each skill owns one
+Aliases are compatibility trigger phrases, not product names or duplicate
+directories. Each skill owns one
 recurring boundary:
 
 | Skill | Alias | Responsibility |
 |---|---|---|
-| [`nobrainer-ultra`](skills/nobrainer-ultra/) | `nb-flow`, `nb-ultra` | End-to-end setup and delivery: one requirements gate, concise progress, bounded execution, recovery, audit and learning |
+| [`nobrainer-ultra`](skills/nobrainer-ultra/) | `nb-flow`, `nb-ultra` | Technical Flow entrypoint for end-to-end setup and delivery: one requirements gate, concise progress, bounded execution, recovery, audit and learning |
 | [`nobrainer-team`](skills/nobrainer-team/) | `nb-team` | Minimal capability roster, installed-skill inventory and safe temporary specialist discovery |
 | [`nobrainer-dispatcher`](skills/nobrainer-dispatcher/) | `nb-dispatcher` | Dependency-aware ready-set scheduling, bounded dispatch, backpressure and audited result routing |
 | [`nobrainer-research`](skills/nobrainer-research/) | `nb-research` | Bounded current research from primary sources with facts separated from inference |
@@ -218,7 +224,7 @@ what belongs in another skill instead of becoming a sixteenth trigger.
 
 ## Correct once, improve permanently
 
-Ultra contains portable semantic hooks for four events:
+NoBrainer.Tech Flow contains portable semantic hooks for four events:
 
 - `OWNER_DECISION_CHANGED` updates the canonical decision, marks the old value
   superseded and invalidates dependent TODO items and evidence;
@@ -253,7 +259,7 @@ The shared delivery contract operationalizes:
   coherence and target-workflow usefulness are frozen before execution.
 
 If a decision-relevant fact may be current, niche, uncertain, high-stakes or
-source-attributed, Ultra routes the smallest sufficient check through Research.
+source-attributed, NoBrainer.Tech Flow routes the smallest sufficient check through Research.
 A stable local syntax, import, test or configuration error starts from local
 evidence instead of an automatic wiki/web detour. If required primary evidence
 is unavailable, it says `RESEARCH_BLOCKED` instead of guessing.
@@ -277,9 +283,9 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-Current source version: **1.9.0**. Check the
+Current source version: **1.10.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [v1.9.0 release record](docs/releases/v1.9.0.md) for the
+for distribution and the [v1.10.0 release record](docs/releases/v1.10.0.md) for the
 current source scope and preserved installation identities. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier
@@ -329,7 +335,7 @@ commit `711be31d654835a04ef8c70674c3e493aeb2da8a`.
 
 ```text
 skills/               canonical portable behavior
-adapters/bootstrap.md small session-start route to Ultra
+adapters/bootstrap.md small session-start route to NoBrainer.Tech Flow
 hooks/                tested client lifecycle adapters
 scripts/              validation and conflict-safe installation
 tests/                deterministic and behavior-contract gates
@@ -361,24 +367,27 @@ pressure scenario, validators, diff review and secret scan. Do not report
 publication, distribution, live routing or user-visible success without
 readback from that layer.
 
-NoBrainer Tech builds practical agentic workflows for teams that want speed
+NoBrainer.Tech builds practical agentic workflows for teams that want speed
 without surrendering control. Learn more at [nobrainer.tech](https://nobrainer.tech)
 or browse ready-to-use workflow products on
 [Gumroad](https://nobrainertech.gumroad.com).
 
 ## Adaptive session restart
 
-For multi-day work, enable `session-restart` once. Flow keeps progress in the
-project's existing task file and quietly assesses whether a fresh conversation
-will repay its startup cost. It does not rotate simply because a day passed.
-Supported clients create a fresh continuation, verify its takeover and only then
-archive the old conversation. Other clients receive a compact manual handoff.
-When title mutation is supported, every source and successor keeps the stable task
-name and adds its own ` | started DD-MM` suffix. The full timestamp, timezone and
-session ID remain in the registry; the short title is never used as identity.
+On explicit NoBrainer.Tech Flow task invocation, Flow immediately names the conversation
+`<task title> | started DD-MM` using its verified creation date and preserves it
+on resume. It assesses context before work, after compaction and at accepted
+milestones. Adaptive care uses recorded task authority and respects `off` and
+stricter host rules; installing the package alone enables no session mutation.
+
+A pressured session with a materially smaller full startup can rotate even when
+token payback is unknown. Age and compaction count alone do not force rotation.
+Flow preserves progress in the task file, verifies successor takeover and archives
+the source only when authorized. The full timestamp, timezone and exact session
+ID stay authoritative. Unsupported clients receive an explicit manual handoff.
 
 This belongs to [Sessions](skills/nobrainer-sessions/references/session-restart.md),
 not a sixteenth skill. The optional stdlib [decision helper](skills/nobrainer-sessions/scripts/restart_gate.py)
-can serve a client hook without requiring one. The protocol is included in the
-v1.8.1 source; native transport and all-client savings are not implied. The
-v1.8.0 archive remains the rollback anchor. See [session restart](docs/SESSION_RESTART.md).
+can serve a client hook without requiring one. Automatic startup care is development source on top of
+v1.8.1; native transport and all-client savings are not implied. Published tags
+remain unchanged. See [session restart](docs/SESSION_RESTART.md).

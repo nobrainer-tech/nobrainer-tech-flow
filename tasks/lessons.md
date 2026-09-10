@@ -28,7 +28,7 @@
 - A metadata inventory is not complete competitor coverage. Reconcile cross-task
   workflow and harness peers (including developer discoveries and blank descriptions)
   with explicit source decisions and public pages before claiming coverage.
-- Product name is NoBrainer Tech Flow; skills are modules. Use “From task to done.”
+- Product name is NoBrainer.Tech Flow; skills are modules. Use “From task to done.”
   with checked acceptance and explicit blockers, not an unconditional success claim.
 
 - 2026-09-05: Session restart is a portable Sessions responsibility, not a
@@ -36,3 +36,17 @@
   benefit quietly from available observations; age and compaction count alone do
   not prove savings. Archive only after verified takeover; missing transport uses
   an honest fallback, and user-granted standing consent is not re-requested.
+
+- 2026-09-06: In user-facing replies use NoBrainer.Tech Flow; use the exact
+  lowercase `nobrainer-tech-flow` only for the repository/package channel. Keep
+  `nobrainer-ultra` for the technical skill or command and preserve skill IDs.
+
+- 2026-09-07: Do not turn workflow routing into a conversational ritual. When
+  naming the workflow helps a reply or status, write `nobrainer-tech-flow` as
+  inline code. Keep NoBrainer.Tech Flow for marketing/display copy. On X use
+  `#NoBrainerTechFlow`; a hyphen ends the hashtag.
+
+- 2026-09-09: A hosted or local memory engine is a complement, not automatically
+  a new workflow skill. Require task-shaped retrieval evidence plus scope,
+  provenance, freshness, conflict, deletion/export, privacy, cost and fallback
+  boundaries before adoption. Recalled context never proves current state.

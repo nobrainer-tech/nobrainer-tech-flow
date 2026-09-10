@@ -1,9 +1,15 @@
-# Working in NoBrainer Tech Flow
+# Working in `nobrainer-tech-flow`
 
-This is the canonical, client-neutral NoBrainer Tech Flow source; adapters share `skills/`.
-Do not fork skills per client or claim runtime support from manifests; see `docs/COMPATIBILITY.md`.
+This is the canonical source. Adapters share `skills/`; see
+`docs/COMPATIBILITY.md` for runtime support.
 
-Respect the host hierarchy; explicit user instructions override skill guidelines. Use Ultra's instruction-conflict and exact-source pause explanation.
+Respect host hierarchy; user instructions override skill guidelines. Use NoBrainer.Tech Flow's instruction-conflict and exact-source pause explanation.
+<!-- NOBRAINER-WORKFLOW:START -->
+## NoBrainer.Tech Flow
+
+- Use [NoBrainer.Tech Flow](https://github.com/nobrainer-tech/nobrainer-tech-flow); technical entrypoint: `nobrainer-ultra` / `$nobrainer-ultra`. `nb-ultra`, `nb-flow` and `nb-workflow` are compatibility aliases. Use the quick path for clear small/reversible work and the full path otherwise; report missing capability without claiming it ran. Default MAIN/worker policy: `gpt-5.6-luna`, max reasoning, normal speed where supported; no silent escalation/substitution. Read relevant sources and preserve acceptance, safety and failure gates.
+- Product: NoBrainer.Tech Flow; channel `nobrainer-tech-flow`; stages use skill names. No preamble. X: `#NoBrainerTechFlow` (hyphens end hashtags).
+<!-- NOBRAINER-WORKFLOW:END -->
 
 `CLAUDE.md` must remain a byte-identical copy of this file.
 
@@ -28,40 +34,35 @@ description: "Use when ..."
 ---
 ```
 
-The name is lowercase kebab-case, no longer than 64 characters, and equals its
-directory. Shared frontmatter contains only `name` and `description`.
-Descriptions explain when to trigger and may include short `nb-*` aliases.
-Aliases are phrases, never duplicate directories.
+The name is lowercase kebab-case, no longer than 64 characters, and equals its directory. Shared frontmatter contains only `name` and `description`. Descriptions explain when to trigger and may include short `nb-*` aliases. Aliases are phrases, never duplicate directories.
 
 Keep bodies operational and client-neutral. Use relative links. Put long detail
 in focused `references/` files and deterministic helpers in `scripts/`.
 Never depend on a user's filesystem, account, private host or current model name.
 Canonical public templates and examples use English; task-shaped `BRIEF` artifacts expose explicit `Description` and `Definition of Done (DoD)` fields, and `Acceptance` criteria use sequential IDs such as `AC01` and `AC02`; bug reports and comments use one composite `ENV:` block with `Name` (`QA`, `DEV`, `TEST`, `PROD`, `PREPROD`, `BETA` or `UNKNOWN`), `URL` and `User`, while bug reports keep `Description`, `Steps to reproduce`, `Current behavior` and `Expected behavior` as separate fields and omit speculative workaround/root-cause fields; surface proof is separate: API uses a copyable `curl` request (method, URL, headers and body) plus response, DB uses separate read-only `Query`/`Result` code blocks, and UI uses `Evidence` for a screenshot or MP4 plus an optional HAR when the page-load/request chain matters; missing required proof returns `INPUT_REQUIRED`.
-The active portfolio is exactly fifteen `nobrainer-*` skills. A permanent skill
-must own a recurring cross-project boundary that no current skill or maintained
-native capability owns. Do not add one because a topic is popular.
+The active portfolio is exactly fifteen `nobrainer-*` skills. A permanent skill must own a recurring cross-project boundary that no current skill or maintained native capability owns. Do not add one because a topic is popular.
 
 ## Delivery workflow
 
-A mechanical, reversible task with no public contract/routing/workflow/portfolio impact
-can use Ultra's quick path: inspect the actual checkout, instructions, dirty state and
-nearest proof, make the scoped edit, run the nearest check plus `git diff --check`, and
+A mechanical reversible task with no public contract/routing/workflow/portfolio impact
+can use NoBrainer.Tech Flow's quick path: inspect checkout, instructions, dirty state and nearest
+proof, make the scoped edit, run the nearest check plus `git diff --check`, and
 read back diff/status. Public contract, routing, workflow or portfolio changes use the
-full workflow and update each affected README, doc, template and diagram, or record
+full workflow and update affected README, doc, template and diagram, or record
 `NOT_NEEDED` with a reason. Use `nobrainer-ultra`'s full workflow for non-trivial outcomes,
 setup/upgrade work, ambiguous scope, several proof layers or meaningful recovery risk.
 
-For non-trivial work follow:
+For non-trivial work:
 
 `inspect -> clarify once if needed -> scope -> implement -> verify -> review -> report`
 
-Inspect the actual checkout, nearest instructions, dirty state, callers, tests, runtime
-and relevant durable decisions before planning. Prefer one primary agent; add workers
+Inspect checkout, nearest instructions, dirty state, callers, tests, runtime and relevant durable
+decisions before planning. Prefer one primary agent; add workers
 only for independent bounded work whose latency or isolation benefit exceeds coordination cost.
 
 ### Minimum sufficient change
 
-Before the first non-trivial write, resolve this compact contract:
+Before the first non-trivial write, resolve the compact contract:
 
 - `OUTCOME`: observable result and audience.
 - `NON_GOALS`: what this change deliberately does not solve.
@@ -70,21 +71,20 @@ Before the first non-trivial write, resolve this compact contract:
 - `UNTOUCHED`: protected files, contracts and unrelated dirty work.
 - `MINIMUM_SOLUTION`: the least complex capable method.
 - `TEST_DECISION`: `EXISTING`, `NEW_REQUIRED` or `NOT_NEEDED` with reason.
-- `Done clean`: actual files match the expected scope, checks pass, no
+- `Done clean`: files match expected scope, checks pass, no
   placeholder/future abstraction remains and `git status` has no surprise.
 
-Communication is evidence-budgeted. When the host permits, run tools without
-announcing them; otherwise emit its shortest useful scope or evidence sentence.
+Communication is evidence-budgeted. When permitted, run tools without announcing them; otherwise emit the shortest useful scope or evidence sentence.
 Speak mid-run only for material transition, blocker, safety gate or new evidence;
 never repeat the plan or unchanged state. Final: outcome, decisive proof,
 remaining risk and next action. Preserve exact errors, commands, numbers and
 negations; expand when brevity risks ambiguity. Persisted artifacts use normal prose.
 
 Do not add an abstraction, dependency, compatibility layer, agent, skill or test
-without an acceptance need or demonstrated risk. A shared abstraction needs at
-least two real current callers or an explicit contract requiring it.
+without acceptance need or demonstrated risk. Shared abstractions need two real
+current callers or an explicit contract.
 
-Show ordinary progress in plain language:
+Show ordinary progress plainly:
 
 ```text
 Progress
@@ -94,7 +94,7 @@ Progress
 Next: inspect the named caller and its existing test
 ```
 
-Update this at meaningful transitions, blockers and closeout, not before and
+Update at meaningful transitions, blockers and closeout, not before and
 after every command. The canonical plan or tracker owns TODO state; summaries,
 exit codes and worker reports cannot advance it.
 
@@ -123,8 +123,8 @@ Load a specialist only when its boundary is active:
 - Autoimprove owns frozen baseline/candidate/holdout experiments.
 - Writing owns material user-facing prose; tiny clear answers stay direct.
 
-A coherent edit remains in MAIN. Delegated `FINISHED` is untrusted until its diff, tests, identity and released writer state are audited.
-For fresh-session transfer, keep one task title, replace its ` | started DD-MM` suffix using that session's verified start in the recorded timezone, and verify by session ID; titles are never identity.
+Edits stay in MAIN. Audit delegates. Use subagents. Visible conversations require explicit request or authorized MAIN restart; workers cannot spawn successors.
+On Flow entry, date the title from verified creation time, preserve it on resume and assess context. Health benefit can qualify restart without economic payback; verify takeover by ID and never resume a retired writer. See Sessions for ` | started DD-MM` formatting and timezone.
 
 ## Problems and research
 

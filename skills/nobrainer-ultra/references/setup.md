@@ -128,8 +128,10 @@ reviewed. Persistent/global installation is an owner gate.
 - Add a durable spec only for contracts, dependencies, migration, risk or
   resumability.
 - Add a wiki only for reusable sourced knowledge beyond normal project docs.
-- Add visible sessions only for independent work, isolation, handoff, resume or
-  a warm specialist.
+- Create or reuse visible sessions only after an explicit owner request or an
+  authorized MAIN restart. Independent work, isolation, handoff, resume or a
+  warm specialist alone do not authorize a sidebar conversation; use native
+  subagents or MAIN.
 - Keep specification, detailed execution state, reports/evidence and wiki as
   separate owners; link rather than duplicate mutable facts.
 

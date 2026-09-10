@@ -130,8 +130,10 @@ CLEAR_MODE: HOST_CLEAR | END_TURN | MANUAL_REQUIRED | UNSUPPORTED
 Use `HOST_CLEAR` only when the host advertises the capability and readback
 proves the same goal file remains durable and no task-owned writer is active.
 Otherwise end the turn or require manual action. Never claim a clear from a
-command submission alone. Creating or rotating a session requires owner
-approval; do not infer it from a timeout, compaction or continued goal.
+command submission alone. Creating or rotating a session requires current or standing task authorization
+under the Sessions startup contract; do not infer it from a timeout, compaction
+or continued goal. Explicit Flow invocation activates assessment; stricter host
+consent requirements still apply.
 
 `task_complete` closes an outcome only; it does not prove `RUNTIME_RELEASE`.
 Record `RUNTIME_RELEASE` as `VERIFIED | NOT_RELEASED | UNKNOWN | UNSUPPORTED`.
@@ -151,7 +153,10 @@ Do not invent work to keep a goal active.
 Use one primary MAIN session. A native subagent with a returned ID, bounded task,
 disjoint write scope and observable completion needs no new visible task or
 persistent session registry. Audit its artifact and termination before integration.
-Use a durable session only when visibility, reuse, isolation or handoff needs it.
+Create a durable visible session only on an explicit owner request for that
+conversation or an explicitly authorized MAIN restart. Visibility, reuse,
+isolation, review retries and handoff needs alone do not authorize creation.
+Use native subagents for delegated units; if unavailable, continue in MAIN.
 For a persistent delegated queue:
 
 1. `nobrainer-team` proves the minimum roster and bounded work units.

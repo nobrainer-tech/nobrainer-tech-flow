@@ -3,12 +3,25 @@ name: nobrainer-ultra
 description: "Use when the owner says nb-ultra, nb-flow or nb-workflow; complete coding or non-coding tasks with brief clarification, concise progress, bounded execution and verification, or set up or repair that workflow."
 ---
 
-# NoBrainer Ultra
+# `nobrainer-tech-flow`
 
-Deliver the smallest verified outcome; surface scope, proof and blockers.
+Skill: `nobrainer-ultra`; aliases are not product names.
+NoBrainer.Tech Flow; `nobrainer-tech-flow`; stage: `nobrainer-build`; never announce.
 
-Small tasks need no companions. For non-trivial work read [references/routing.md](references/routing.md). Keep the host-selected model and default effort; read [references/model-routing.md](references/model-routing.md) only when choosing models, effort or budgets. Setup, upgrade, installation or repair require [references/setup.md](references/setup.md).
-Read [references/correction-hooks.md](references/correction-hooks.md) after owner decision changes, correction or review failure; read [references/long-run-state.md](references/long-run-state.md) only when its gate passes.
+Deliver outcomes.
+
+For non-trivial work read [routing](references/routing.md). Preserve host model/effort;
+consult [model routing](references/model-routing.md) when selecting them.
+Setup/upgrade/repair uses [setup](references/setup.md); corrections use
+[correction hooks](references/correction-hooks.md); gated resumability uses
+[long-run state](references/long-run-state.md).
+
+## Automatic session care
+
+On explicit Flow task entry, run Sessions [startup and health](../nobrainer-sessions/references/session-restart.md#automatic-start-and-observation):
+name from verified creation time; assess context at START, AFTER_COMPACTION and
+accepted milestones. No separate restart command.
+Respect recorded authority, `off` and host restrictions; installation grants no consent.
 
 ## Choose the smallest workflow
 
@@ -18,20 +31,19 @@ For a clear low-risk answer, rewrite, calculation or one coherent, reversible ed
 deliver and check the result directly. Chat-only work needs no repository or tools.
 For file edits inspect instructions, actual files and the nearest deterministic check;
 use checkout, dirty-state and `git diff --check` only in a Git repository.
-Skip requirements, ledger, team/dispatcher/sessions and independent review.
+Skip requirements, ledger, delegation and review; retain explicit Flow startup care.
 Escalate to the full Ultra lifecycle for ambiguity, architecture, public behavior,
 workflow/routing changes or consequential side effects; quick path never bypasses
-an owner gate. A wording-only correction does not itself change a public contract.
+ an owner gate.
 
-Default to one agent; add workers only when latency, isolation or judgment earns
-their cost.
+Delegate via native subagents; otherwise use MAIN. Visible conversations require explicit owner request. See [routing](references/routing.md).
 
-Lifecycle: `DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN`; these are internal controls.
+Lifecycle: `DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN`.
 
 For resumable or delegated work use `SESSION_HEALTH_GATE` and `RUNTIME_RELEASE`
-from the long-run reference. Optional telemetry is not an execution prerequisite.
-Finish when acceptance is met; wait or audit when workers are in flight. Use
-`OWNER_DECISION_REQUIRED` only when unfinished work needs an owner decision.
+from the long-run reference.
+Finish when accepted; audit active workers. Use `OWNER_DECISION_REQUIRED` only
+when unfinished work needs an owner decision.
 
 ## `DRIFT_CHECK`: establish current truth
 
@@ -85,8 +97,7 @@ compactions and sessions. A host-native goal is optional: use it only when avail
 and authorized under that tool's rules. Require goal readback only from stores actually
 used; the file alone is sufficient and supersedes stale transcript text.
 Default to at most 160 words: outcome, scope, Progress, proof and next action.
-Do not add a repetitive
-skill/mode preamble or planning claim; avoid mechanism lists and invent unseen
+Do not add a repetitive skill/mode preamble or planning claim; avoid mechanism lists and invent unseen
 schemas, endpoints, state machines, storage or polling; name required
 boundaries/proof and mark exact paths/methods pending inspection.
 
@@ -140,8 +151,7 @@ goals, telemetry or subagents does not block safe work; use ordinary files or MA
 
 Choose the least complex capable method; route non-trivial implementation through `nobrainer-build`.
 When another skill owns a stage, load its canonical body and required references before
-planning. Loading method context is not task execution; a routing-table line or remembered
-summary is insufficient. Load specialists only:
+planning. Loading method context is not task execution; a routing-table line or remembered summary is insufficient. Load specialists only:
 
 - `nobrainer-research` for decision-relevant external uncertainty;
 - `nobrainer-writing` for material user-facing prose;

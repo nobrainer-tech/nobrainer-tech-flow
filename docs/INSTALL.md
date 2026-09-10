@@ -1,10 +1,11 @@
-# NoBrainer Tech Flow installation
+# NoBrainer.Tech Flow installation
 
 All clients consume one canonical `skills/` tree. Prefer an immutable reviewed
 release, dry-run every local target and keep installation evidence separate from
 clean-session routing evidence.
 
-Upgrading an existing installation? Preserve its `nobrainer-tech-skills` identity;
+New public source links use `nobrainer-tech-flow`. Upgrading an existing
+installation? Preserve its legacy technical `nobrainer-tech-skills` identity;
 see the [Flow migration guide](MIGRATION_TO_FLOW.md).
 
 ## Safe default
@@ -116,7 +117,7 @@ After restart, verify:
 - `nobrainer-ultra` is discoverable without pasting its body;
 - the hook emits exactly one bootstrap context;
 - a simple task remains direct;
-- a non-trivial task starts with Ultra and a compact Progress checklist.
+- a non-trivial task starts with NoBrainer.Tech Flow and a compact Progress checklist.
 
 ### Codex
 
@@ -132,8 +133,10 @@ python3 scripts/install_skills.py --client codex --apply
 
 Restart Codex and test discovery in a fresh task. Repository instructions or the
 native skill trigger provide bootstrap; a file on disk is not routing proof.
-Use `$nobrainer-ultra` for an explicit invocation. Plain `nb-flow` and `nb-ultra`
-depend on implicit description matching and must be recorded separately. Existing
+Use NoBrainer.Tech Flow for user-facing requests, or `$nobrainer-ultra` for the
+technical explicit invocation. Plain `nb-flow`, `nb-ultra` and `nb-workflow` are
+compatibility aliases that depend on implicit description matching and must be
+recorded separately. Existing
 legacy entries under `~/.codex/skills` are not deleted or rewritten automatically.
 
 ### Cursor
@@ -174,7 +177,7 @@ discovery and first routing. Manifest parsing alone is `REPOSITORY_CHECKED`.
 
 ### Kimi Code
 
-`.kimi-plugin/plugin.json` exposes `./skills/` and selects Ultra at session
+`.kimi-plugin/plugin.json` exposes `./skills/` and selects `nobrainer-ultra` at session
 start. Its instructions explicitly refuse invented visible-session transport.
 Verify the exact installed version and clean-session behavior.
 
@@ -208,7 +211,7 @@ After every install or upgrade:
 3. start a clean task with no pasted skill body;
 4. issue one explicit canonical request and one semantic non-trivial request;
    for Codex the canonical form is `$nobrainer-ultra`;
-5. confirm Ultra asks no more than one ordinary requirements round, shows one
+5. confirm NoBrainer.Tech Flow asks no more than one ordinary requirements round, shows one
    compact Progress checklist and routes a specialist only when needed;
 6. issue a one-step task and confirm it remains direct;
 7. simulate a correction and confirm affected TODO/evidence is invalidated;
