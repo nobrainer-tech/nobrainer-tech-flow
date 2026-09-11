@@ -6,9 +6,7 @@ description: "Use when the owner says nb-ultra, nb-flow or nb-workflow; complete
 # `nobrainer-tech-flow`
 
 Skill: `nobrainer-ultra`; aliases are not product names.
-NoBrainer.Tech Flow; `nobrainer-tech-flow`; stage: `nobrainer-build`; never announce.
-
-Deliver outcomes.
+Stages use skill names; never announce entry.
 
 For non-trivial work read [routing](references/routing.md). Preserve host model/effort;
 consult [model routing](references/model-routing.md) when selecting them.
@@ -97,12 +95,11 @@ compactions and sessions. A host-native goal is optional: use it only when avail
 and authorized under that tool's rules. Require goal readback only from stores actually
 used; the file alone is sufficient and supersedes stale transcript text.
 Default to at most 160 words: outcome, scope, Progress, proof and next action.
-Do not add a repetitive skill/mode preamble or planning claim; avoid mechanism lists and invent unseen
-schemas, endpoints, state machines, storage or polling; name required
-boundaries/proof and mark exact paths/methods pending inspection.
+Do not add a repetitive skill/mode preamble or invent unseen schemas.
+Mark uninspected paths/methods as pending.
 
 New dependencies, abstractions, workers, skills and tests need an acceptance reason.
-A shared abstraction needs two real current callers or an explicit contract.
+Shared abstractions require two callers or explicit contract.
 
 Use a short plan ordered by outcomes. One canonical TODO owner may be the host
 plan, repository tracker or current response.
@@ -163,6 +160,8 @@ planning. Loading method context is not task execution; a routing-table line or 
   `nobrainer-dispatcher` for a real queue and `nobrainer-sessions` for durable visible sessions.
 
 ## `AUTOPILOT`: execute the bounded scope
+
+Read [delivery](references/delivery.md) for non-trivial work and before BLOCKED: derive outcome/DoD, resolve authorized steps and continue independent work. `yolo` is a persistence alias only.
 
 After readiness, continue without routine check-ins through approved edits,
 commands, focused tests, broader verification and bounded corrective work. Stop

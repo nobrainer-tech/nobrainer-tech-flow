@@ -182,3 +182,10 @@ RESULT: FINDINGS | CLEAN | PARTIAL | BLOCKED
 Return `CLEAN` only when the complete frozen scope was inspected, required
 evidence passed and no candidate survived verification. Otherwise say `PARTIAL`
 or `BLOCKED` and name the missing proof.
+
+## Review convergence
+
+Follow the [delivery contract](../nobrainer-ultra/references/delivery.md#keep-review-proportional-to-progress)
+for slice-sized review and correction. Repeated amendments do not reset the
+review budget. Keep concrete safety and acceptance blockers open; proceed with
+authorized independent work instead of restarting a whole-plan perfection loop.

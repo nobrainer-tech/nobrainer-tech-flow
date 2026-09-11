@@ -1,6 +1,6 @@
 # Contributing
 
-NoBrainer.Tech Flow skills shape agent behavior. Treat them like executable control code,
+nobrainer-tech-flow skills shape agent behavior. Treat them like executable control code,
 not ordinary prose.
 
 ## Before changing anything

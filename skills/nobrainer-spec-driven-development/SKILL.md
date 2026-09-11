@@ -83,7 +83,8 @@ and mechanics; it must not redefine the contract. Before each write, bind the
 work unit to the current spec version/hash and allowed scope.
 
 If implementation reveals a new requirement, side effect, contract change, or
-out-of-scope file, stop at `SPEC_CHANGE_PROPOSED`. Do not make code and spec
+truly out-of-scope file, stop at `SPEC_CHANGE_PROPOSED`. Routine file-list or
+mechanical plan updates within the authorized outcome do not require new approval. Do not make code and spec
 silently agree after the fact. Assess provisional changes and data effects,
 update the spec, rerun review, obtain required approval, then resume from a new
 frozen revision.
@@ -116,3 +117,10 @@ Report lifecycle state, canonical spec path and version/hash, decisions made,
 open owner gates, work units authorized, acceptance evidence, scope drift,
 rollback, and one next action. Do not claim implementation acceptance merely
 because the written spec looks complete.
+
+## Review convergence
+
+Follow the [delivery contract](../nobrainer-ultra/references/delivery.md#keep-review-proportional-to-progress)
+for slice-sized review and correction. Repeated amendments do not reset the
+review budget. Keep concrete safety and acceptance blockers open; proceed with
+authorized independent work instead of restarting a whole-plan perfection loop.

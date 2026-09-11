@@ -1,8 +1,8 @@
 {
   "name": "nobrainer-tech-skills",
-  "displayName": "NoBrainer.Tech Flow",
-  "description": "NoBrainer.Tech Flow: portable agentic workflows from task to checked result.",
-  "version": "1.11.0",
+  "displayName": "nobrainer-tech-flow",
+  "description": "nobrainer-tech-flow: portable agentic workflows from task to checked result.",
+  "version": "1.12.0",
   "author": {
     "name": "NoBrainer Tech"
   },

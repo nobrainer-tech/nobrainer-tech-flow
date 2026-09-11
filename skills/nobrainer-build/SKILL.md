@@ -86,7 +86,8 @@ artifact merely to make the change look substantial.
    is feasible and reliable. Otherwise record why and preserve the closest
    reproducible baseline.
 3. Make the smallest coherent patch. Keep one behavioral concern per change and
-   stop if the required write surface expands beyond the approved scope.
+   update the expected file set for routine changes within the approved outcome;
+   stop only when the actual approved scope or consequences change.
 4. Run the focused proof, then affected baseline tests and the repository's
    required verifier/build/runtime in increasing cost order.
    Once acceptance and required checks pass, broaden or repeat only for a new
@@ -118,10 +119,14 @@ untrusted input, dependency installers or another trust boundary, add a bounded
 
 ## Stop and owner gates
 
-Stop on changed frozen inputs, conflicting writer, failed required check,
+Pause the affected operation on changed frozen inputs, conflicting writer, failed required check,
 unknown destructive effect, missing credentials/toolchain or a scope-changing
 decision. Merge, deploy, publish, spend, delete, migrate data, change credentials,
 mutate production or weaken safety controls only with their explicit authority.
+
+A failed check routes to repair; a missing tool or credential routes through
+[delivery obstacle resolution](../nobrainer-ultra/references/delivery.md). Check
+permitted alternatives and continue independent work before reporting BLOCKED.
 
 Do not push through three failed fix-like attempts. Preserve the failing proof,
 return to `nobrainer-rca` or revise the design with the owner.

@@ -1,7 +1,7 @@
 {
   "name": "nobrainer-tech-skills-dev",
   "interface": {
-    "displayName": "NoBrainer.Tech Flow Dev"
+    "displayName": "nobrainer-tech-flow Dev"
   },
   "plugins": [
     {

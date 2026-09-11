@@ -1,4 +1,4 @@
-# NoBrainer.Tech Flow routing
+# nobrainer-tech-flow routing
 
 Use this reference during `DRIFT_CHECK` and method selection. Prefer current
 project conventions and one source of truth. A method is loaded only when its

@@ -1,0 +1,88 @@
+# Autopilot delivery review - 2026-09-11
+
+## Observed failures and evidence limits
+
+Read-only inspection of two owner-selected task histories showed a plan still
+blocking implementation at review 43, and a separate task spending additional
+worker turns reducing a passing test from 304 to 299 lines. Both histories also
+contained genuine usage-limit failures. These observations show process overhead;
+they do not prove that every reported blocker was avoidable or that any particular
+external UI action was authorized and available. No consumer production state was
+changed. Task identifiers and private source excerpts are excluded here.
+
+The source trace found a broad Build stop list, repeated whole-plan SDD review
+without a convergence rule, and goal persistence mostly conditional on a detailed
+ledger. Prior authorization was mentioned but lacked an operational obstacle
+check. These are plausible contributing causes, not controlled proof of why a
+specific model stopped. This task's earlier merge also switched the installed
+source checkout to stale local main; the canonical symlink source was restored
+to the verified published source without resetting local branch history.
+
+Current primary guidance also recommends explicit follow-through, honoring prior
+authorization and auditing conflicting skill instructions:
+[OpenAI model guidance](https://developers.openai.com/api/docs/guides/latest-model#initiative-and-follow-through).
+This supports the design; it is not a cross-model performance benchmark.
+
+## Changes
+
+- Ultra owns a portable delivery reference: automatic written outcome/DoD,
+  whole-SDD acceptance coverage, visible TODO after stages, one BUDDY permission
+  package, available authorized UI/API/CLI work, precise blockers and continuation
+  of independent work. Native goals obey each host's actual authority contract.
+- YOLO is an explicit persistence alias, not permission escalation.
+- Build and SDD distinguish routine same-outcome file changes from material scope
+  changes; Review/SDD stop whole-plan perfection loops while retaining real gates.
+- Team builds bounded specialists from inspected installed or external skills;
+  Dispatcher fills useful independent ready slots within native limits and a
+  global cap of 15 live subagents. Unknown or denied transport has a MAIN fallback.
+- Maintained product text uses `nobrainer-tech-flow`. Historical releases, evidence,
+  compatible installation IDs and real skill names retain their identity.
+
+## Acceptance and proof
+
+Source/structure checks and scenario review are recorded in the task tracker.
+The review scenarios cover authorized UI deployment, explicit denial, review-loop
+convergence with an auth blocker, native goal restrictions, physical MFA,
+worker-write reconciliation, same-scope file growth and team capacity accounting.
+These are instruction-level evaluations. They do not prove that every host will
+load the change, follow the skill, complete an unattended goal or deliver faster.
+No arbitrary lower model or fixed roster is required by the portable contract.
+
+## Recovery and distribution
+
+The patch is scoped against 40dc199. Reverting the patch restores the previous
+contracts. Version tags, consumer production, global configuration and published
+website are outside this review's mutation scope. Active consumer tasks require
+their own source-load readback before inheriting any behavior claim.
+
+## Independent scenario review
+
+A native Luna/max reviewer performed bounded read-only scenario evaluations.
+
+| Acceptance | Observed instruction-level result |
+|---|---|
+| AC01-AC03 | Whole SDD maps to one goal; Markdown records each accepted stage; existing unfinished native goal is reused and a lifecycle-only API gets no invented progress call |
+| AC04 | Existing deployment permission reused; missing paid-service ceiling and refusal retained; later destructive consequence requires its own scoped decision |
+| AC05-AC06 | Authorized available UI/CLI used; explicit denial cannot be evaded; physical MFA blocks only dependent work |
+| AC07 | Host capacity 4 limits 20 ready units to 4; 10 live descendants leave at most 5 slots; uncertain sends reserve scope/capacity |
+| AC08 | External candidates inspected; no trusted candidate routes to existing native capability/task-local instructions rather than blind installation |
+| AC09-AC10 | Whole-plan review loop stops; real auth blocker retained; independent slice proceeds; exact human unblock action remains visible |
+| AC11-AC13 | Maintained name updated; historical records preserved; full 168 tests and validators pass; evidence limited to source/scenario level |
+
+Review found and resolved a milestone diagram stop-edge ambiguity, routine
+same-outcome file expansion wording, and possibly successful spawn without ID.
+The latter never permits a second writer until reconciled. No universal runtime
+or speed improvement is claimed. Source export Gitleaks passed; a full directory
+scan first flagged only generated bytecode containing the synthetic security-test
+credential fixture, which is excluded from distribution. The SVG was rendered
+and inspected at 1600x900 with readable naming and GDD caption.
+
+
+Final package review confirmed matching 1.12.0 manifests and compatible IDs.
+Its objection to lowercase branding was rejected: the latest explicit owner
+instruction supersedes the earlier display-name policy. The historical v1.7.1
+migration sentence was restored; development-channel suffix remains intentional.
+The pre-existing validator's lockfile-coverage gap is not introduced by this
+change; current root and lockfile versions were separately read back as matching.
+Team audit corrections require proven pre-send fallback, MAIN claim before
+execution, global descendant capacity and explicit Codex model-policy precedence.

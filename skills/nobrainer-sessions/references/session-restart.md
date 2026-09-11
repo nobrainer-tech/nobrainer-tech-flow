@@ -17,7 +17,7 @@ An explicit request for automatic restarts grants standing consent within that
 scope; do not ask at every rollover. Installing Flow alone does not grant consent.
 Higher-priority host restrictions still apply. Workers never rotate MAIN.
 
-Explicit NoBrainer.Tech Flow task invocation requests automatic session care under
+Explicit nobrainer-tech-flow task invocation requests automatic session care under
 the technical Ultra entrypoint contract. Compatibility aliases `nb-flow`,
 `nb-ultra` and `nb-workflow` request the same behavior when recognized. Record
 that request as the policy source

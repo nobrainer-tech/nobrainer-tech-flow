@@ -50,3 +50,12 @@
   a new workflow skill. Require task-shaped retrieval evidence plus scope,
   provenance, freshness, conflict, deletion/export, privacy, cost and fallback
   boundaries before adoption. Recalled context never proves current state.
+
+- 2026-09-11: Owner correction: derive outcome/DoD for substantial work; check
+  authorized UI/CLI alternatives before manual handoff, and stop repeated
+  whole-plan review without acceptance progress. Current product spelling is
+  `nobrainer-tech-flow`, including display copy; earlier naming lessons above
+  are historical and superseded. Preserve technical IDs and historical evidence.
+- 2026-09-11: Merge from an isolated checkout; branch deletion can switch a
+  symlink-backed installation onto a stale local main. Verify the installed
+  source after Git operations; never reset unrelated branch history.

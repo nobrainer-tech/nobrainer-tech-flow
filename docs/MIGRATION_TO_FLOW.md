@@ -1,6 +1,8 @@
-# Move to NoBrainer.Tech Flow
+# Move to nobrainer-tech-flow
 
-Version **1.7.1** changes the product name to **NoBrainer.Tech Flow**.
+Version **1.7.1** changed the product name to **NoBrainer.Tech Flow**.
+Current display spelling is **nobrainer-tech-flow**; the historical version
+statement above retains its original name.
 **From task to done.** Tell it what you need. Flow clarifies the goal, does the
 work, and checks the result.
 
