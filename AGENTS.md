@@ -40,7 +40,7 @@ Keep bodies operational and client-neutral. Use relative links. Put long detail
 in focused `references/` files and deterministic helpers in `scripts/`.
 Never depend on a user's filesystem, account, private host or current model name.
 Canonical public templates and examples use English; task-shaped `BRIEF` artifacts expose explicit `Description` and `Definition of Done (DoD)` fields, and `Acceptance` criteria use sequential IDs such as `AC01` and `AC02`; bug reports and comments use one composite `ENV:` block with `Name` (`QA`, `DEV`, `TEST`, `PROD`, `PREPROD`, `BETA` or `UNKNOWN`), `URL` and `User`, while bug reports keep `Description`, `Steps to reproduce`, `Current behavior` and `Expected behavior` as separate fields and omit speculative workaround/root-cause fields; surface proof is separate: API uses a copyable `curl` request (method, URL, headers and body) plus response, DB uses separate read-only `Query`/`Result` code blocks, and UI uses `Evidence` for a screenshot or MP4 plus an optional HAR when the page-load/request chain matters; missing required proof returns `INPUT_REQUIRED`.
-The active portfolio is exactly fifteen `nobrainer-*` skills. A permanent skill must own a recurring cross-project boundary that no current skill or maintained native capability owns. Do not add one because a topic is popular.
+The active portfolio is exactly sixteen `nobrainer-*` skills. A permanent skill must own a recurring cross-project boundary that no current skill or maintained native capability owns. Do not add one because a topic is popular.
 
 ## Delivery workflow
 

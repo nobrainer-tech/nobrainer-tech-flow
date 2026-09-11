@@ -80,7 +80,7 @@ Set `NB_REVIEWED_COMMIT` to the exact full commit SHA you reviewed. Tags and
 branches are rejected because they can move; every failed gate stops before the
 next command.
 
-The installer defaults to all fifteen canonical skills, supports an exact
+The installer defaults to all sixteen canonical skills, supports an exact
 subset, refuses foreign targets and can use links or copies. Restart the client
 and perform clean-session discovery before claiming runtime installation. Full
 client-specific steps and rollback are in [Installation](docs/INSTALL.md).
@@ -195,7 +195,7 @@ Autopilot works in one MAIN session. Native subagents need a scoped assignment,
 observable completion and reviewed output. Use persistent sessions and a
 Dispatcher only when a real handoff or dependent queue needs them.
 
-## Fifteen skills, distinct ownership
+## Sixteen skills, distinct ownership
 
 Aliases are compatibility trigger phrases, not product names or duplicate
 directories. Each skill owns one
@@ -204,6 +204,7 @@ recurring boundary:
 | Skill | Alias | Responsibility |
 |---|---|---|
 | [`nobrainer-ultra`](skills/nobrainer-ultra/) | `nb-flow`, `nb-ultra` | Technical Flow entrypoint for end-to-end setup and delivery: one requirements gate, concise progress, bounded execution, recovery, audit and learning |
+| [`nobrainer-codex-context`](skills/nobrainer-codex-context/) | `nb-codex-context` | Project-local Codex context setup: instruction discovery, fallback and byte-budget audit, safe context block reconciliation and runtime readback |
 | [`nobrainer-team`](skills/nobrainer-team/) | `nb-team` | Minimal capability roster, installed-skill inventory and safe temporary specialist discovery |
 | [`nobrainer-dispatcher`](skills/nobrainer-dispatcher/) | `nb-dispatcher` | Dependency-aware ready-set scheduling, bounded dispatch, backpressure and audited result routing |
 | [`nobrainer-research`](skills/nobrainer-research/) | `nb-research` | Bounded current research from primary sources with facts separated from inference |
@@ -220,7 +221,7 @@ recurring boundary:
 | [`nobrainer-review`](skills/nobrainer-review/) | `nb-review` | Acceptance trace, adversarial bug hunt and release close gate without speculative findings |
 
 The [curation audit](docs/SKILL_CURATION.md) records why each skill exists and
-what belongs in another skill instead of becoming a sixteenth trigger.
+what belongs in another skill instead of becoming an unnecessary trigger.
 
 ## Correct once, improve permanently
 
@@ -283,9 +284,9 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-Current source version: **1.10.0**. Check the
+Current source version: **1.11.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [v1.10.0 release record](docs/releases/v1.10.0.md) for the
+for distribution and the [v1.11.0 release record](docs/releases/v1.11.0.md) for the
 current source scope and preserved installation identities. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier
@@ -387,7 +388,7 @@ the source only when authorized. The full timestamp, timezone and exact session
 ID stay authoritative. Unsupported clients receive an explicit manual handoff.
 
 This belongs to [Sessions](skills/nobrainer-sessions/references/session-restart.md),
-not a sixteenth skill. The optional stdlib [decision helper](skills/nobrainer-sessions/scripts/restart_gate.py)
+not a separate skill. The optional stdlib [decision helper](skills/nobrainer-sessions/scripts/restart_gate.py)
 can serve a client hook without requiring one. Automatic startup care is development source on top of
 v1.8.1; native transport and all-client savings are not implied. Published tags
 remain unchanged. See [session restart](docs/SESSION_RESTART.md).

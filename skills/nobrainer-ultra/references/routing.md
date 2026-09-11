@@ -9,6 +9,7 @@ trigger applies.
 | Need | Primary method |
 |---|---|
 | lifecycle, brief requirements, visible progress and guarded autonomy | `nobrainer-ultra` |
+| project-local Codex instruction discovery, byte-budget audit and context readback | `nobrainer-codex-context` |
 | minimal roles, capability discovery or open-skill evaluation | `nobrainer-team` |
 | ready-set calculation, dependency batches, bounded dispatch and backpressure | `nobrainer-dispatcher` |
 | current, niche, uncertain, high-stakes or attributed external facts | `nobrainer-research` |

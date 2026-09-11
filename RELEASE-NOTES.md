@@ -1,5 +1,18 @@
 # NoBrainer.Tech Flow release notes
 
+## v1.11.0 - 2026-09-11
+
+- Adds the original `nobrainer-codex-context` skill for project-local Codex
+  instruction discovery, fallback and byte-budget inspection, safe managed-block
+  setup and runtime readback.
+- Expands the curated source portfolio from fifteen to sixteen skills without
+  changing existing skill names, aliases or client adapter contracts.
+- Keeps global `~/.codex/config.toml`, credentials, plugin installation and live
+  client state outside the default setup scope.
+
+See the [v1.11.0 release record](docs/releases/v1.11.0.md) for scope, checks and
+runtime limits.
+
 ## v1.10.0 - 2026-09-10
 
 - Explicit NoBrainer.Tech Flow entry now performs bounded session startup care:

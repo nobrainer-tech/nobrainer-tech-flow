@@ -21,7 +21,7 @@ A permanent skill must pass every condition:
 
 Popularity, file size and prior existence are not admission criteria.
 
-## Active fifteen
+## Active sixteen
 
 | Skill | Distinct owner |
 |---|---|
@@ -40,12 +40,13 @@ Popularity, file size and prior existence are not admission criteria.
 | `nobrainer-decide` | One consequential decision after alternatives, scoring and adversarial attack. |
 | `nobrainer-rca` | Read-only causal diagnosis of an observed failure. |
 | `nobrainer-review` | Final acceptance/bug/release evidence gate and verified actionable findings. |
+| `nobrainer-codex-context` | Project-local Codex instruction discovery, byte-budget audit, safe context-block setup and runtime readback. |
 
 ## Boundaries that stay embedded
 
 Do not create separate permanent skills for:
 
-- planning, autopilot, setup or correction capture: Ultra owns the lifecycle;
+- planning, autopilot, general NoBrainer setup or correction capture: Ultra owns the lifecycle; Codex-specific project-context setup belongs to `nobrainer-codex-context`;
 - visible goal/TODO progress: Ultra owns one canonical plan and its compact view;
   do not add a separate goal, todo or progress skill;
 - KISS, DRY, SOLID, YAGNI, simplification or test safety: Build owns them;
