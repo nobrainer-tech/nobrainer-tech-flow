@@ -1,4 +1,16 @@
-# NoBrainer.Tech Flow release notes
+# nobrainer-tech-flow release notes
+
+## v1.12.0 - 2026-09-11
+
+- GDD keeps one full-scope goal, explicit milestone TODO and evidence-based continuation.
+- BUDDY records missing consequential permissions once; autopilot checks authorized
+  UI/API/CLI alternatives and continues independent work before escalating blockers.
+- Team builds specialists from inspected skills; Dispatcher fills useful ready slots
+  within native capacity and a global maximum of 15 active subagents.
+- Codex delegated execution defaults to Luna/max, preserving MAIN and owner overrides.
+- Maintained display copy uses `nobrainer-tech-flow`; technical IDs remain compatible.
+
+See [v1.12.0](docs/releases/v1.12.0.md) for verification boundaries.
 
 ## v1.11.0 - 2026-09-11
 

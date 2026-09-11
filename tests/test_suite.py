@@ -891,7 +891,7 @@ class SuiteTests(unittest.TestCase):
             "nobrainer-dispatcher",
             "nobrainer-sessions",
             "MAIN",
-            "one useful worker",
+            "global cap of 15 subagents",
             "untrusted",
         ):
             self.assertIn(term, text)
@@ -3439,7 +3439,7 @@ class SuiteTests(unittest.TestCase):
 
     def test_readme_branding_and_links(self) -> None:
         text = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertIn("NoBrainer.Tech Flow", text)
+        self.assertIn("nobrainer-tech-flow", text)
         self.assertIn("From task to done.", text)
         self.assertIn("https://github.com/nobrainer-tech/nobrainer-tech-flow", text)
         self.assertIn("https://nobrainer.tech/flow/", text)
@@ -3457,7 +3457,7 @@ class SuiteTests(unittest.TestCase):
 
     def test_public_naming_map_separates_brand_aliases_and_technical_ids(self) -> None:
         naming = (ROOT / "docs" / "NAMING.md").read_text(encoding="utf-8")
-        self.assertIn("NoBrainer.Tech Flow", naming)
+        self.assertIn("nobrainer-tech-flow", naming)
         self.assertIn("nobrainer-tech-flow", naming)
         self.assertIn("nobrainer-ultra", naming)
         self.assertIn("Assistant conversation label", naming)
@@ -3499,7 +3499,7 @@ class SuiteTests(unittest.TestCase):
         for path in manifest_paths:
             with self.subTest(manifest=path.relative_to(ROOT)):
                 manifest = json.loads(path.read_text(encoding="utf-8"))
-                self.assertIn("NoBrainer.Tech Flow", manifest["description"])
+                self.assertIn("nobrainer-tech-flow", manifest["description"])
                 self.assertNotIn("NoBrainer Tech Flow", manifest["description"])
 
     def test_install_snippets_require_one_literal_reviewed_commit(self) -> None:

@@ -1,4 +1,4 @@
-# Installing NoBrainer.Tech Flow for OpenCode
+# Installing nobrainer-tech-flow for OpenCode
 
 Add the git-backed package to the `plugin` array in the global or project
 `opencode.json`:

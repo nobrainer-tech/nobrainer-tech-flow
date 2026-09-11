@@ -1,4 +1,4 @@
-# NoBrainer.Tech Flow installation
+# nobrainer-tech-flow installation
 
 All clients consume one canonical `skills/` tree. Prefer an immutable reviewed
 release, dry-run every local target and keep installation evidence separate from
@@ -117,7 +117,7 @@ After restart, verify:
 - `nobrainer-ultra` is discoverable without pasting its body;
 - the hook emits exactly one bootstrap context;
 - a simple task remains direct;
-- a non-trivial task starts with NoBrainer.Tech Flow and a compact Progress checklist.
+- a non-trivial task starts with nobrainer-tech-flow and a compact Progress checklist.
 
 ### Codex
 
@@ -133,7 +133,7 @@ python3 scripts/install_skills.py --client codex --apply
 
 Restart Codex and test discovery in a fresh task. Repository instructions or the
 native skill trigger provide bootstrap; a file on disk is not routing proof.
-Use NoBrainer.Tech Flow for user-facing requests, or `$nobrainer-ultra` for the
+Use nobrainer-tech-flow for user-facing requests, or `$nobrainer-ultra` for the
 technical explicit invocation. Plain `nb-flow`, `nb-ultra` and `nb-workflow` are
 compatibility aliases that depend on implicit description matching and must be
 recorded separately. Existing
@@ -211,7 +211,7 @@ After every install or upgrade:
 3. start a clean task with no pasted skill body;
 4. issue one explicit canonical request and one semantic non-trivial request;
    for Codex the canonical form is `$nobrainer-ultra`;
-5. confirm NoBrainer.Tech Flow asks no more than one ordinary requirements round, shows one
+5. confirm nobrainer-tech-flow asks no more than one ordinary requirements round, shows one
    compact Progress checklist and routes a specialist only when needed;
 6. issue a one-step task and confirm it remains direct;
 7. simulate a correction and confirm affected TODO/evidence is invalidated;

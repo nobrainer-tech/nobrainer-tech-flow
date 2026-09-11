@@ -3,7 +3,7 @@
 Development source adds automatic Flow startup care to the v1.8.1 restart
 protocol. Published tags remain unchanged; v1.8.1 is the rollback baseline.
 
-Invoke NoBrainer.Tech Flow with your task. Flow runs startup naming and health assessment
+Invoke nobrainer-tech-flow with your task. Flow runs startup naming and health assessment
 without a separate restart command. It records adaptive policy within the task's
 authorization, preserves an existing `off` policy and obeys stricter host consent
 rules. Installation or incidental skill loading alone authorizes no mutation.

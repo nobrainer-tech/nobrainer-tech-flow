@@ -4,7 +4,7 @@
   </a>
 </p>
 
-<h1 align="center">NoBrainer.Tech Flow</h1>
+<h1 align="center">nobrainer-tech-flow</h1>
 
 <p align="center">
   From task to done.
@@ -23,9 +23,9 @@
   <a href="https://nobrainertech.gumroad.com">Production-ready agentic workflows</a>
 </p>
 
-Tell NoBrainer.Tech Flow what you need. It clarifies the goal, does the work, and checks the result.
+Tell nobrainer-tech-flow what you need. It clarifies the goal, does the work, and checks the result.
 
-Say **“Use NoBrainer.Tech Flow”** (or invoke the technical entrypoint `$nobrainer-ultra`) to fix code, prepare
+Say **“Use nobrainer-tech-flow”** (or invoke the technical entrypoint `$nobrainer-ultra`) to fix code, prepare
 an everyday document, or investigate a problem. Clear tasks go straight to execution;
 meaningful ambiguity gets one focused question round. Done means the agreed
 criteria are met and the result is checked. A real blocker is reported with the
@@ -48,7 +48,7 @@ cover the current collected Trending snapshot and explain what we adopted or ret
 [Install safely](#install-safely), start a fresh session, then give the agent a
 small task with a checkable result:
 
-> Use NoBrainer.Tech Flow. Fix one bug in this project. Reproduce it first, make the
+> Use nobrainer-tech-flow. Fix one bug in this project. Reproduce it first, make the
 > smallest correction and run the relevant check. Tell me what changed and
 > what remains unverified. Ask only if a missing decision changes the result.
 
@@ -86,7 +86,7 @@ and perform clean-session discovery before claiming runtime installation. Full
 client-specific steps and rollback are in [Installation](docs/INSTALL.md).
 
 
-![NoBrainer.Tech Flow: direct work for clear small tasks; focused clarification, bounded execution and verification when needed](assets/nobrainer-workflow.svg)
+![nobrainer-tech-flow: direct work for clear small tasks; focused clarification, bounded execution and verification when needed](assets/nobrainer-workflow.svg)
 
 ### GitHub flow chart
 
@@ -104,7 +104,10 @@ flowchart TD
     H -->|acceptance met| I[Audit delegated artifacts and stop owned workers]
     H -->|blocked| J[Checkpoint; report one unblock action]
     E --> K[Deliver evidence and stop]
-    I --> K
+    I -->|whole-goal DoD met| K
+    I -. accepted milestone; goal incomplete .-> P[Update TODO; select next ready milestone]
+    P --> G
+    J -. independent authorized work remains .-> P
     F -. optional .-> L[Markdown goal for resume]
     G -. independent work .-> M[Bounded native subagents]
     M --> H
@@ -147,7 +150,7 @@ See the [v1.6 review and research decisions](docs/reviews/v1.6.0-review.md).
 
 ## Start with one skill
 
-Use NoBrainer.Tech Flow, implemented by the technical skill
+Use nobrainer-tech-flow, implemented by the technical skill
 [`nobrainer-ultra`](skills/nobrainer-ultra/), for setup or any non-trivial
 outcome. A small reversible edit without a public contract, routing, workflow or
 portfolio change can use its quick path; other changes use the full path and its
@@ -223,9 +226,24 @@ recurring boundary:
 The [curation audit](docs/SKILL_CURATION.md) records why each skill exists and
 what belongs in another skill instead of becoming an unnecessary trigger.
 
+## SDD and GDD
+
+SDD specifies what must work. GDD (Goal-Driven Development) executes it through
+accepted milestones under one overarching goal. See the [product specification](docs/specs/goal-driven-delivery.spec.md).
+
+For substantial work, `nobrainer-tech-flow` derives the outcome and DoD and keeps
+one task owner without waiting for a separate planning request. Native goal
+creation still follows the host's explicit-request requirement. Autopilot checks
+available authorized UI/API/CLI steps before handing an obstacle to the owner,
+continues independent work, and bounds review to concrete executable slices.
+Explicit `yolo` requests select the same persistence contract, without changing
+permissions or bypassing a denial. See the [delivery contract](skills/nobrainer-ultra/references/delivery.md).
+These are agent instructions, not an enforcement daemon or a promise to run
+while the host is paused or out of quota.
+
 ## Correct once, improve permanently
 
-NoBrainer.Tech Flow contains portable semantic hooks for four events:
+nobrainer-tech-flow contains portable semantic hooks for four events:
 
 - `OWNER_DECISION_CHANGED` updates the canonical decision, marks the old value
   superseded and invalidates dependent TODO items and evidence;
@@ -260,7 +278,7 @@ The shared delivery contract operationalizes:
   coherence and target-workflow usefulness are frozen before execution.
 
 If a decision-relevant fact may be current, niche, uncertain, high-stakes or
-source-attributed, NoBrainer.Tech Flow routes the smallest sufficient check through Research.
+source-attributed, nobrainer-tech-flow routes the smallest sufficient check through Research.
 A stable local syntax, import, test or configuration error starts from local
 evidence instead of an automatic wiki/web detour. If required primary evidence
 is unavailable, it says `RESEARCH_BLOCKED` instead of guessing.
@@ -284,9 +302,9 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-Current source version: **1.11.0**. Check the
+Current source version: **1.12.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [v1.11.0 release record](docs/releases/v1.11.0.md) for the
+for distribution and the [v1.12.0 release record](docs/releases/v1.12.0.md) for the
 current source scope and preserved installation identities. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier
@@ -336,7 +354,7 @@ commit `711be31d654835a04ef8c70674c3e493aeb2da8a`.
 
 ```text
 skills/               canonical portable behavior
-adapters/bootstrap.md small session-start route to NoBrainer.Tech Flow
+adapters/bootstrap.md small session-start route to nobrainer-tech-flow
 hooks/                tested client lifecycle adapters
 scripts/              validation and conflict-safe installation
 tests/                deterministic and behavior-contract gates
@@ -375,7 +393,7 @@ or browse ready-to-use workflow products on
 
 ## Adaptive session restart
 
-On explicit NoBrainer.Tech Flow task invocation, Flow immediately names the conversation
+On explicit nobrainer-tech-flow task invocation, Flow immediately names the conversation
 `<task title> | started DD-MM` using its verified creation date and preserves it
 on resume. It assesses context before work, after compaction and at accepted
 milestones. Adaptive care uses recorded task authority and respects `off` and

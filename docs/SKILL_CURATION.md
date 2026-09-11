@@ -10,7 +10,7 @@ cannot live clearly inside another owner.
 A permanent skill must pass every condition:
 
 1. It has a distinct trigger and observable result.
-2. It is useful across projects and clients without private paths or accounts.
+2. It is useful across projects without private paths or accounts; any client-specific capability has an explicit compatibility boundary.
 3. Loading it only when triggered saves more context and risk than embedding its
    full protocol in Ultra.
 4. Its behavior is not already owned by another active skill or a maintained
@@ -57,8 +57,9 @@ Do not create separate permanent skills for:
 - human continuation snapshots: Sessions mode `handoff` owns them;
 - a local skill catalogue: Team builds a metadata-only capability index;
 - wiki add/get/tidy wrappers: Wiki exposes explicit modes;
-- a specific model, client, account, repository, hosting provider or toolchain:
-  keep it in project/private instructions or evaluate it temporarily.
+- personal model presets, accounts or repository-specific configuration: keep
+  them in project/private instructions. A named host integration must justify
+  its recurring boundary and state its compatibility limits.
 
 ## Dynamic specialist policy
 

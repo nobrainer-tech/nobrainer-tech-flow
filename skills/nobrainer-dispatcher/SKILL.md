@@ -20,7 +20,9 @@ Keep the boundaries explicit:
 - `nobrainer-review` owns the independent close gate when required.
 
 A single coherent work unit stays in MAIN and marks Dispatcher `NOT_NEEDED`.
-Parallelism is an optimization earned by independent work, not the default.
+Use parallel batches for independent ready work under the
+[team execution contract](../nobrainer-ultra/references/delivery.md#coordinated-team-execution):
+fill available useful slots, capped at 15 live subagents across the task tree.
 When the owner explicitly invokes Dispatcher only to inspect such a map,
 Dispatcher owns that scheduler inspection and returns `NOT_NEEDED`; MAIN remains
 the owner of the work unit and its product. Keep control ownership distinct from
@@ -156,9 +158,15 @@ transport state keeps the task `READY` and stops dispatch. Bind:
 
 Sessions sends at most one active work unit to one exact worker. Dispatcher
 records `SENT` only after that transport readback; it never invokes a second
-transport pass. If transport is unavailable, keep the task `READY` and either
-execute it sequentially in MAIN or report the degraded mode; never fabricate a
-session or delivered prompt.
+transport pass. If transport is unavailable before sending, MAIN may execute
+only after recording `READY -> CLAIMED -> RUNNING` with MAIN ownership in the
+canonical tracker. Remove the unit from the dispatchable set first. Multiple
+coordinators require the existing authoritative conditional claim; without it,
+stop dispatch rather than invent atomic ownership. Never fabricate a session
+or delivered prompt. MAIN fallback applies only to proven pre-send
+unavailability. If a send may have succeeded without a receipt, preserve the
+UNKNOWN delivery observation, reserve capacity and write scope, and reconcile
+before resending or taking over; READY does not authorize a second writer.
 
 After dispatch, Sessions waits or monitors at the declared cadence. Batch routine
 progress. Interrupt the owner only for safety, credentials, irreversible effects,

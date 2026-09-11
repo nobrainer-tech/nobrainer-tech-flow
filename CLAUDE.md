@@ -3,12 +3,12 @@
 This is the canonical source. Adapters share `skills/`; see
 `docs/COMPATIBILITY.md` for runtime support.
 
-Respect host hierarchy; user instructions override skill guidelines. Use NoBrainer.Tech Flow's instruction-conflict and exact-source pause explanation.
+Respect host hierarchy; user instructions override skill guidelines. Apply [delivery](skills/nobrainer-ultra/references/delivery.md). Use nobrainer-tech-flow's instruction-conflict and exact-source pause explanation.
 <!-- NOBRAINER-WORKFLOW:START -->
-## NoBrainer.Tech Flow
+## nobrainer-tech-flow
 
-- Use [NoBrainer.Tech Flow](https://github.com/nobrainer-tech/nobrainer-tech-flow); technical entrypoint: `nobrainer-ultra` / `$nobrainer-ultra`. `nb-ultra`, `nb-flow` and `nb-workflow` are compatibility aliases. Use the quick path for clear small/reversible work and the full path otherwise; report missing capability without claiming it ran. Default MAIN/worker policy: `gpt-5.6-luna`, max reasoning, normal speed where supported; no silent escalation/substitution. Read relevant sources and preserve acceptance, safety and failure gates.
-- Product: NoBrainer.Tech Flow; channel `nobrainer-tech-flow`; stages use skill names. No preamble. X: `#NoBrainerTechFlow` (hyphens end hashtags).
+- Use [nobrainer-tech-flow](https://github.com/nobrainer-tech/nobrainer-tech-flow); technical entrypoint: `nobrainer-ultra` / `$nobrainer-ultra`. `nb-ultra`, `nb-flow` and `nb-workflow` are compatibility aliases. Use the quick path for clear small/reversible work and the full path otherwise; report missing capability without claiming it ran. Codex workers: `gpt-5.6-luna` max when supported. MAIN/other clients: host-selected. Owner overrides win; no silent substitution. Read relevant sources and preserve acceptance, safety and failure gates.
+- Product: nobrainer-tech-flow; channel `nobrainer-tech-flow`; stages use skill names. No preamble. X: `#NoBrainerTechFlow` (hyphens end hashtags).
 <!-- NOBRAINER-WORKFLOW:END -->
 
 `CLAUDE.md` must remain a byte-identical copy of this file.
@@ -45,7 +45,7 @@ The active portfolio is exactly sixteen `nobrainer-*` skills. A permanent skill 
 ## Delivery workflow
 
 A mechanical reversible task with no public contract/routing/workflow/portfolio impact
-can use NoBrainer.Tech Flow's quick path: inspect checkout, instructions, dirty state and nearest
+can use nobrainer-tech-flow's quick path: inspect checkout, instructions, dirty state and nearest
 proof, make the scoped edit, run the nearest check plus `git diff --check`, and
 read back diff/status. Public contract, routing, workflow or portfolio changes use the
 full workflow and update affected README, doc, template and diagram, or record

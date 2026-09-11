@@ -1,4 +1,4 @@
-# NoBrainer.Tech Flow repository instructions for Copilot
+# nobrainer-tech-flow repository instructions for Copilot
 
 The sixteen canonical Agent Skills are under `skills/`. Read the relevant
 `skills/<name>/SKILL.md` before changing a skill; retired predecessors exist

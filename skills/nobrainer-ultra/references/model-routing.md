@@ -5,6 +5,10 @@ clients may execute it, expose a model choice, or report `UNSUPPORTED`;
 no provider is assumed. A model name, manifest or default setting is not
 runtime proof.
 
+For Codex delegated execution, apply the [Codex preset](codex-routing.md) unless
+the owner overrides it. MAIN remains host-selected; other clients keep the
+portable default below. Client detection and model availability require readback.
+
 ## Freeze one policy before work
 
 Record the policy in the canonical plan and copy it into each delegated work
@@ -19,7 +23,7 @@ ESCALATION: NONE | PROPOSE | OWNER_APPROVAL
 ROUTE_REASON: <risk, complexity, latency or evidence reason>
 ```
 
-- If no policy is supplied, use `STANDARD` with the owner- or
+- Outside the Codex delegated preset, if no policy is supplied, use `STANDARD` with the owner- or
   host-selected model; never infer `ROUTED`.
 - `STANDARD` uses the owner- or host-selected model and effort. It is
   the default for small, reversible work and unknown cost.
@@ -32,7 +36,8 @@ ROUTE_REASON: <risk, complexity, latency or evidence reason>
   the exact model, effort and budget
   before dispatch. If the target is unavailable, return
   `MODEL_ESCALATION_PROPOSED` or require `OWNER_APPROVAL`;
-  do not silently substitute another model.
+  do not silently substitute another model. The Codex preset explicitly permits
+  pre-send MAIN fallback; uncertain delivery must first be reconciled.
 
 ## Routing heuristics
 
