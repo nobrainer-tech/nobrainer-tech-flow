@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
 
 CANONICAL_ITEMS = (
+    ("nobrainer-codex-context", "nb-codex-context"),
     ("nobrainer-ultra", "nb-ultra"),
     ("nobrainer-team", "nb-team"),
     ("nobrainer-dispatcher", "nb-dispatcher"),
@@ -39,6 +40,24 @@ CANONICAL_ITEMS = (
 )
 CANONICAL = dict(CANONICAL_ITEMS)
 CANONICAL_ORDER = tuple(name for name, _ in CANONICAL_ITEMS)
+HISTORICAL_CANONICAL_ORDER = (
+    "nobrainer-ultra",
+    "nobrainer-team",
+    "nobrainer-dispatcher",
+    "nobrainer-research",
+    "nobrainer-writing",
+    "nobrainer-build",
+    "nobrainer-security",
+    "nobrainer-sessions",
+    "nobrainer-spec-driven-development",
+    "nobrainer-wiki",
+    "nobrainer-browser",
+    "nobrainer-autoimprove",
+    "nobrainer-decide",
+    "nobrainer-rca",
+    "nobrainer-review",
+)
+HISTORICAL_ACTIVE = set(HISTORICAL_CANONICAL_ORDER)
 
 LEGACY = {
     "add-gitleaks",
@@ -2538,7 +2557,7 @@ class SuiteTests(unittest.TestCase):
         release_sha = "711be31d654835a04ef8c70674c3e493aeb2da8a"
         expected_skills = [
             name
-            for name in CANONICAL_ORDER
+            for name in HISTORICAL_CANONICAL_ORDER
             if name not in {"nobrainer-dispatcher", "nobrainer-writing"}
         ]
         self.assertEqual(expected_skills, released_skills)
@@ -2619,7 +2638,7 @@ class SuiteTests(unittest.TestCase):
         released_skills = re.findall(
             r"^- `(nobrainer-[a-z0-9-]+)`$", section, re.MULTILINE
         )
-        self.assertEqual(list(CANONICAL_ORDER), released_skills)
+        self.assertEqual(list(HISTORICAL_CANONICAL_ORDER), released_skills)
         self.assertIn("published but not fully accepted", section)
         self.assertIn("docs/releases/v1.2.0.md", readme)
 
@@ -2761,8 +2780,8 @@ class SuiteTests(unittest.TestCase):
         released_skills = re.findall(
             r"^- `(nobrainer-[a-z0-9-]+)`$", section, re.MULTILINE
         )
-        self.assertEqual(list(CANONICAL_ORDER), released_skills)
-        self.assertEqual(ACTIVE, set(released_skills))
+        self.assertEqual(list(HISTORICAL_CANONICAL_ORDER), released_skills)
+        self.assertEqual(HISTORICAL_ACTIVE, set(released_skills))
         normalized_section = " ".join(re.findall(r"[a-z0-9]+", section.lower()))
         self.assertNotIn("release candidate", normalized_section)
         self.assertNotIn("not a publication claim", normalized_section)
@@ -2887,7 +2906,7 @@ class SuiteTests(unittest.TestCase):
         self.assertLess(current_end, accepted_start)
         section = release_notes[current_end:accepted_start]
         self.assertEqual(
-            list(CANONICAL_ORDER),
+            list(HISTORICAL_CANONICAL_ORDER),
             re.findall(
                 r"^- `(nobrainer-[a-z0-9-]+)`$", section, re.MULTILINE
             ),
@@ -3090,7 +3109,7 @@ class SuiteTests(unittest.TestCase):
         self.assertLess(current_end, prior_start)
         release_section = release_notes[current_end:prior_start]
         self.assertEqual(
-            list(CANONICAL_ORDER),
+            list(HISTORICAL_CANONICAL_ORDER),
             re.findall(
                 r"^- `(nobrainer-[a-z0-9-]+)`$",
                 release_section,

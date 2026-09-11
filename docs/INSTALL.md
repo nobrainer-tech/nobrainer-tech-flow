@@ -31,7 +31,7 @@ subshell rejects unset values, tags, branches and malformed hashes, and stops on
 every failed command. The first installer command is a dry-run; inspect every
 source, target and conflict before the guarded `--apply` command runs.
 
-The default installs exactly fifteen skills. Install an explicit subset by
+The default installs exactly sixteen skills. Install an explicit subset by
 repeating `--skill`:
 
 ```bash
@@ -195,7 +195,7 @@ actually exposes and passes that integration.
 
 ## Dynamic specialists
 
-The fifteen curated skills are the stable base. When a concrete work unit still
+The sixteen curated skills are the stable base. When a concrete work unit still
 has a capability gap, `nobrainer-team` first inventories installed/project
 capabilities, then may evaluate one external skill temporarily. Source/ref,
 scripts, permissions, credentials, network behavior, trigger overlap and

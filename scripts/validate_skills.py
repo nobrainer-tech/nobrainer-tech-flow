@@ -17,6 +17,7 @@ MAX_NAME_LENGTH = 64
 LINK_RE = re.compile(r"\[[^\]]+\]\((?!https?://|#|mailto:)([^)]+)\)")
 
 SUITE = {
+    "nobrainer-codex-context": "nb-codex-context",
     "nobrainer-ultra": "nb-ultra",
     "nobrainer-team": "nb-team",
     "nobrainer-dispatcher": "nb-dispatcher",
