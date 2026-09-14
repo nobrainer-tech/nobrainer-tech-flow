@@ -1,6 +1,6 @@
 ---
 name: nobrainer-codex-context
-description: "Use when setting up, auditing or repairing the project context Codex loads before a task; use nb-codex-context to inspect AGENTS files, configured fallbacks and byte limits, then make one evidence-backed project-local context change without changing global Codex configuration by default."
+description: "Use when setting up, auditing or repairing one project's Codex context; use nb-codex-context to inspect AGENTS files, configured fallbacks and byte limits, then make one evidence-backed project-local context change without changing global Codex configuration by default."
 ---
 
 # NoBrainer Codex Context
@@ -102,6 +102,8 @@ OWNER_ACTION_REQUIRED: <one exact action or NONE>
 ROLLBACK: <exact preimage or NOT_APPLICABLE>
 ```
 
+Route portfolio-wide semantic instruction or skill audits to
+`nobrainer-skill-doctor`; keep one-project Codex context setup and repair here.
 Route broader setup, installation or delivery work back to `nobrainer-ultra`.
 Use `nobrainer-sessions` for context transfer and `nobrainer-review` for a
 release or adversarial closeout; do not duplicate their contracts here.

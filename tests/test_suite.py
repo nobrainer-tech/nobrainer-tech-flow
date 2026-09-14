@@ -22,6 +22,7 @@ SKILLS = ROOT / "skills"
 
 CANONICAL_ITEMS = (
     ("nobrainer-codex-context", "nb-codex-context"),
+    ("nobrainer-skill-doctor", "nb-skill-doctor"),
     ("nobrainer-ultra", "nb-ultra"),
     ("nobrainer-team", "nb-team"),
     ("nobrainer-dispatcher", "nb-dispatcher"),
@@ -3044,19 +3045,35 @@ class SuiteTests(unittest.TestCase):
                     "for a strict release gate)"
                 )
 
-        candidate_hash = hashlib.sha256(
-            (SKILLS / "nobrainer-autoimprove" / "SKILL.md").read_bytes()
-        ).hexdigest()
-        helper_hash = hashlib.sha256(
-            (
-                SKILLS
-                / "nobrainer-autoimprove"
-                / "scripts"
-                / "count_words.py"
-            ).read_bytes()
-        ).hexdigest()
-        self.assertIn(f"CANDIDATE_SHA256: `{candidate_hash}`", evaluation)
-        self.assertIn(f"COUNTER_SHA256: `{helper_hash}`", evaluation)
+        evaluation_candidate = re.search(
+            r"^CANDIDATE_SHA256: `?([0-9a-f]{64})`?$",
+            evaluation,
+            re.MULTILINE,
+        )
+        receipt_candidate = re.search(
+            r"^CANDIDATE_SHA256: `?([0-9a-f]{64})`?$",
+            receipt,
+            re.MULTILINE,
+        )
+        evaluation_counter = re.search(
+            r"^COUNTER_SHA256: `?([0-9a-f]{64})`?$",
+            evaluation,
+            re.MULTILINE,
+        )
+        receipt_counter = re.search(
+            r"^COUNTER_SHA256: `?([0-9a-f]{64})`?$",
+            receipt,
+            re.MULTILINE,
+        )
+        for match in (
+            evaluation_candidate,
+            receipt_candidate,
+            evaluation_counter,
+            receipt_counter,
+        ):
+            self.assertIsNotNone(match)
+        self.assertEqual(evaluation_candidate.group(1), receipt_candidate.group(1))
+        self.assertEqual(evaluation_counter.group(1), receipt_counter.group(1))
         self.assertIn("PROMOTION: PROMOTED", evaluation)
         self.assertIn("HOLDOUT_RESULT: PASS", evaluation)
         self.assertIn("EVALUATOR_STATUS: CALIBRATED", evaluation)

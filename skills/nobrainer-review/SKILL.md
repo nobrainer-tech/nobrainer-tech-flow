@@ -10,6 +10,8 @@ filter out speculative AI noise. This skill owns the final NoBrainer evidence
 gate. Ordinary implementation and correction work belongs to
 `nobrainer-build` and the project's maintained engineering capabilities. This
 skill does not silently implement fixes or expand the product scope.
+Use `nobrainer-skill-doctor` for a portfolio-wide audit of instruction and skill
+systems; this skill remains the owner of the exact change's final evidence gate.
 
 ## Choose one mode
 

@@ -21,7 +21,7 @@ A permanent skill must pass every condition:
 
 Popularity, file size and prior existence are not admission criteria.
 
-## Active sixteen
+## Active seventeen
 
 | Skill | Distinct owner |
 |---|---|
@@ -41,6 +41,7 @@ Popularity, file size and prior existence are not admission criteria.
 | `nobrainer-rca` | Read-only causal diagnosis of an observed failure. |
 | `nobrainer-review` | Final acceptance/bug/release evidence gate and verified actionable findings. |
 | `nobrainer-codex-context` | Project-local Codex instruction discovery, byte-budget audit, safe context-block setup and runtime readback. |
+| `nobrainer-skill-doctor` | Cross-project audit of skills, project instructions and task prompts, with coverage, overlap and minimal portfolio repair planning. |
 
 ## Boundaries that stay embedded
 

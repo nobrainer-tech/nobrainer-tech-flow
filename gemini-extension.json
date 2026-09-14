@@ -1,6 +1,6 @@
 {
   "name": "nobrainer-tech-skills",
   "description": "nobrainer-tech-flow: portable agentic workflows from task to checked result.",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "contextFileName": "GEMINI.md"
 }

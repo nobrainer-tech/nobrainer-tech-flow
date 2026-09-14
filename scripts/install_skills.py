@@ -27,6 +27,7 @@ CLIENT_DESTINATIONS = {
 CURATED_SKILLS = frozenset(
     {
         "nobrainer-codex-context",
+        "nobrainer-skill-doctor",
         "nobrainer-autoimprove",
         "nobrainer-browser",
         "nobrainer-build",

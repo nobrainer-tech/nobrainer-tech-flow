@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BOOTSTRAP_MARKER = "NOBRAINER_BOOTSTRAP_V1"
 CANONICAL_SKILLS = {
     "nobrainer-codex-context",
+    "nobrainer-skill-doctor",
     "nobrainer-autoimprove",
     "nobrainer-browser",
     "nobrainer-build",

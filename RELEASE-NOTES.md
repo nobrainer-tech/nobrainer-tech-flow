@@ -1,5 +1,22 @@
 # nobrainer-tech-flow release notes
 
+## v1.13.0 - 2026-09-14
+
+- Adds `nobrainer-skill-doctor` as the 17th Flow skill for cross-project audits
+  of skills, project instructions and task prompts.
+- Includes the finalized read-only inventory helper with explicit symlink and
+  traversal-error coverage, plus its disposable fixture tests.
+- Applies accepted, bounded fixes to session creation reconciliation, SDD state
+  vocabulary, Security mode selection, Autoimprove strict caps, Writing scope
+  and Browser local-first capability discovery.
+- Keeps historical evaluation receipts bound to their original source instead of
+  comparing them with later mutable skill bytes.
+- Keeps source validation, client loading, runtime behavior and distribution as
+  separate evidence layers. This is a release candidate: no tag, publication or
+  real-client installation is claimed here.
+
+See [v1.13.0](docs/releases/v1.13.0.md) for scope, checks and limits.
+
 ## v1.12.0 - 2026-09-11
 
 - GDD keeps one full-scope goal, explicit milestone TODO and evidence-based continuation.

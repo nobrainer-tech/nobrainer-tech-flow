@@ -18,6 +18,7 @@ LINK_RE = re.compile(r"\[[^\]]+\]\((?!https?://|#|mailto:)([^)]+)\)")
 
 SUITE = {
     "nobrainer-codex-context": "nb-codex-context",
+    "nobrainer-skill-doctor": "nb-skill-doctor",
     "nobrainer-ultra": "nb-ultra",
     "nobrainer-team": "nb-team",
     "nobrainer-dispatcher": "nb-dispatcher",
