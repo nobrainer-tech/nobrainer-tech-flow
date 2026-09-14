@@ -1,6 +1,6 @@
 # nobrainer-tech-flow repository instructions for Copilot
 
-The sixteen canonical Agent Skills are under `skills/`. Read the relevant
+The seventeen canonical Agent Skills are under `skills/`. Read the relevant
 `skills/<name>/SKILL.md` before changing a skill; retired predecessors exist
 only in Git history.
 
@@ -27,5 +27,6 @@ private client data, hardcoded drifting model versions or unsafe shell
 placeholders. Run `python3 scripts/validate_skills.py --suite` and relevant tests
 before reporting success.
 
-Use `nobrainer-build` for implementation, `nobrainer-security` for material
+Use `nobrainer-skill-doctor` for portfolio-wide instruction, skill or task-prompt
+audits. Use `nobrainer-build` for implementation, `nobrainer-security` for material
 trust boundaries and `nobrainer-review` for a justified final evidence gate.

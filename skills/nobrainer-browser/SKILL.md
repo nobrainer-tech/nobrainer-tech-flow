@@ -25,16 +25,46 @@ current harness cannot run the CLI and the MCP has fresh capability readback.
 
 ## Capability and install gate
 
-First inspect the repository and machine:
+First inspect local capabilities independently and keep the interactive and
+repository-test CLIs distinct:
 
 ```bash
-command -v playwright-cli && playwright-cli --version
-test -f package.json && npm exec playwright -- --version
-npm view @playwright/cli dist-tags.latest --json
+global_cli_status=none
+local_test_cli_status=none
+
+if command -v playwright-cli >/dev/null 2>&1 &&
+   playwright-cli --version >/dev/null 2>&1; then
+  global_cli_status=usable
+fi
+
+if [ -f package.json ] &&
+   [ -x node_modules/.bin/playwright ] &&
+   node_modules/.bin/playwright --version >/dev/null 2>&1; then
+  local_test_cli_status=usable
+fi
+
+printf 'global_cli=%s\n' "$global_cli_status"
+printf 'local_test_cli=%s\n' "$local_test_cli_status"
+
+if [ "$global_cli_status" = usable ] ||
+   [ "$local_test_cli_status" = usable ]; then
+  printf 'some_playwright_capability=available\n'
+else
+  printf 'some_playwright_capability=none\n' >&2
+  exit 1
+fi
 ```
 
-For interactive agent work, use the current npm channel only to discover a
-version, then pin that exact version for execution and record the readback:
+Use `global_cli=usable` for interactive `playwright-cli` work. Use
+`local_test_cli=usable` only for the repository's standard Playwright test CLI;
+it does not prove that interactive `playwright-cli` commands such as `attach`,
+`snapshot`, `click` or `fill` are available. If the capability required by the
+request is not usable and setup is not in scope, stop with the exact missing
+capability and one remediation; do not query npm or install.
+
+When setup is explicitly in scope and the required local capability is not
+available, use the current npm channel only to discover a version, then pin
+that exact version for execution and record the readback:
 
 ```bash
 PLAYWRIGHT_CLI_VERSION="$(npm view @playwright/cli version)"

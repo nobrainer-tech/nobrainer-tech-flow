@@ -9,7 +9,7 @@ approval; unknown safety- or acceptance-critical values remain explicit gates.
 
 SPEC_ID: <stable ID>
 VERSION: 0.1.0
-STATUS: DRAFT | REVIEW | APPROVED | IMPLEMENTING | VERIFYING | ACCEPTED | BLOCKED | SUPERSEDED
+STATUS: DISCOVERY | DRAFT | REVIEW | APPROVED | IMPLEMENTING | SPEC_CHANGE_PROPOSED | VERIFYING | ACCEPTED | BLOCKED | SUPERSEDED
 OWNER: <person or role>
 APPROVED_BY: NONE
 APPROVED_AT: NONE
@@ -109,3 +109,6 @@ NON_GOALS:
 Before setting `IMPLEMENTATION_MAY_START: YES`, ensure all acceptance-critical
 unknowns are resolved or owner-gated, every requirement is covered, and the
 stored hash matches the reviewed content.
+
+`SPEC_CHANGE_PROPOSED` blocks implementation until the revised spec is reviewed
+and approved.

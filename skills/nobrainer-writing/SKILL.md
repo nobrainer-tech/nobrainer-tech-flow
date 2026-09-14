@@ -1,6 +1,6 @@
 ---
 name: nobrainer-writing
-description: "Use when the owner says nb-write, nb-brief, nobrainer-writing, nobrainer-style, or nobrainer-human-like, or asks to draft, rewrite, compress, humanize, edit, or review user-facing prose such as a message, comment, issue, user story, document, README, report, summary, email, post, or release note; maximize useful information per word without dropping facts, evidence, caveats, voice, or required action."
+description: "Use when the owner says nb-write, nb-brief, nobrainer-writing, nobrainer-style, or nobrainer-human-like, or asks for prose quality work on a user-facing artifact, such as drafting, rewriting, compressing, humanizing, editing, or reviewing it; maximize useful information per word without dropping facts, evidence, caveats, voice, or required action."
 ---
 
 # NoBrainer Writing
@@ -251,7 +251,7 @@ expanded acronyms and enough context to understand the text out of layout.
 
 Return only the finished prose by default. Do not surround a two-line answer
 with a process report. When the owner asks for an audit, comparison or measured
-compression, add a compact block after the result:
+compression of the prose itself, add a compact block after the result:
 
 ```text
 MODE:

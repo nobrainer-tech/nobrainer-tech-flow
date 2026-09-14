@@ -21,12 +21,12 @@ Never promote one level from evidence belonging to another.
 Merge is a repository delivery state, not a client-compatibility level; release
 evidence records it separately.
 
-The current source version is **1.12.0**. Its scope and installation metadata are
-recorded in the [v1.12.0 release record](releases/v1.12.0.md). The naming migration
-remains documented in the [migration guide](MIGRATION_TO_FLOW.md), and the
+The current source candidate version is **1.13.0**. Its scope and installation
+metadata are recorded in the [v1.13.0 candidate record](releases/v1.13.0.md).
+The naming migration remains documented in the [migration guide](MIGRATION_TO_FLOW.md), and the
 unchanged command runner keeps its [v1.7.0 evidence](releases/v1.7.0.md). The
-published `v1.8.0` release remains the rollback anchor; this source update does
-not claim a GitHub release, client loading or marketplace distribution.
+published `v1.12.0` release remains the rollback anchor; this candidate does not
+claim a GitHub release, client loading or marketplace distribution.
 
 The [1.6.1 instruction review](reviews/2026-09-05-astra-instructions.md)
 clarifies skill precedence and sufficient verification. Its evidence is a
@@ -96,7 +96,7 @@ discovery/bootstrap proof before promotion.
 
 ## Adapter contract
 
-All adapters point at the same sixteen directories. They may expose discovery and
+All adapters point at the same seventeen directories. They may expose discovery and
 one small `NOBRAINER_BOOTSTRAP_V1` routing context, but they must not copy or
 rewrite skill bodies.
 
@@ -240,7 +240,7 @@ valid explicit `$nobrainer-ultra` run proves explicit loading, not automatic rou
 
 The Sessions helper runs explicit argv commands using Python 3.11+ on POSIX.
 It is opt-in and ships with the skill; no daemon or new hook registration is
-required. Windows process-group enforcement is unsupported. The sixteen
+required. Windows process-group enforcement is unsupported. The seventeen
 plain-text skills remain portable; this helper does not narrow their format
 compatibility. See [runtime limits and examples](BOUNDED_RUNNER.md).
 

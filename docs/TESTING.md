@@ -30,7 +30,7 @@ Adapter tests execute every bootstrap mechanism that can run locally: the Claude
 and Cursor SessionStart JSON shapes, OpenCode injection/deduplication, and Pi
 discovery plus post-compaction re-injection. They also parse the portable Agent
 Plugin, Gemini and Kimi manifests, reject invented Devin/Hermes adapters and
-enforce the exact sixteen-skill inventory, correction hooks and workflow
+enforce the exact seventeen-skill inventory, correction hooks and workflow
 diagram contract.
 
 ```bash

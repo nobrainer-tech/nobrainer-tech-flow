@@ -22,6 +22,18 @@ control, changing credentials or implementing a fix.
 - `RELEASE_GATE`: verify required security controls, tests, migration safety and
   rollback evidence before a high-risk release.
 
+If the owner does not name a mode, infer from scope:
+
+- an exact diff, component, endpoint or data flow -> `SECURITY_REVIEW`;
+- a pre-freeze design -> `THREAT_MODEL`;
+- a dependency, installer, plugin or workflow -> `SUPPLY_CHAIN`;
+- pre-release acceptance -> `RELEASE_GATE`.
+
+When modes overlap, choose the primary mode from the requested outcome and state
+that choice; include relevant checks from adjacent modes without expanding scope.
+Ask one focused clarification only if unresolved ambiguity materially changes
+the outcome or authority. Continue independent read-only inspection meanwhile.
+
 Use `nobrainer-review` for a general closeout with no material security boundary.
 Use `nobrainer-rca` when the question is what caused an observed incident.
 

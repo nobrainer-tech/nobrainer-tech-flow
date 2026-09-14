@@ -105,7 +105,7 @@ Prefer the active client's native plugin or Agent Skills mechanism. For a local
 checkout, dry-run `scripts/install_skills.py`, inspect every target, then apply.
 Existing foreign targets are conflicts, never overwrite candidates.
 
-Install the complete curated sixteen-skill set unless the owner deliberately
+Install the complete curated seventeen-skill set unless the owner deliberately
 requests an exact subset. Restart the client, read back loaded skills and run the
 clean-session acceptance in `docs/COMPATIBILITY.md` when available. Files on
 disk and an installer exit code prove installation only, not routing.
@@ -117,7 +117,7 @@ skills directory.
 
 ## 4. Reconcile capabilities
 
-Use `nobrainer-team` to compare the sixteen curated skills, project-native tools
+Use `nobrainer-team` to compare the seventeen curated skills, project-native tools
 and active runtime. A missing specialist may be evaluated temporarily through
 the open skills ecosystem only after source/ref, instructions, scripts, license,
 permissions, network/credential behavior, trigger overlap and rollback are

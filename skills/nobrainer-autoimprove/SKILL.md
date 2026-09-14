@@ -88,8 +88,12 @@ fact, boundary or decision prevents a valid proposal. Never imply that
 calibration, trials or approval ran. Any owner-defined exact terminal values,
 including experiment-result terminals, suppress canonical status and execution.
 
-`STRICT_CAP` makes the owner's word limit a hard gate. At 250 words or fewer,
-budget the draft to `min(limit - 40, 140)` words in at most six nonblank lines.
+`STRICT_CAP` makes the owner's word limit a hard gate. Before applying either
+formula, if `limit <= 40` with a counter or `limit <= 50` without one, skip the
+reserved-offset formula and use the owner's actual cap for a minimal complete
+answer. Return `BLOCKED` within the cap only when required facts cannot fit;
+small limits alone are not a blocker. Otherwise apply the existing formula. At 250 words or
+fewer, budget the draft to `min(limit - 40, 140)` words in at most six nonblank lines.
 With a counter, compress until the owner limit passes; without one, target
 `min(limit - 50, 130)` and never claim an exact count. Print no heading, blank
 line, internal form, rollback explanation or duplicate terminal. Group only:

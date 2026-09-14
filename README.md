@@ -80,7 +80,7 @@ Set `NB_REVIEWED_COMMIT` to the exact full commit SHA you reviewed. Tags and
 branches are rejected because they can move; every failed gate stops before the
 next command.
 
-The installer defaults to all sixteen canonical skills, supports an exact
+The installer defaults to all seventeen canonical skills, supports an exact
 subset, refuses foreign targets and can use links or copies. Restart the client
 and perform clean-session discovery before claiming runtime installation. Full
 client-specific steps and rollback are in [Installation](docs/INSTALL.md).
@@ -198,7 +198,7 @@ Autopilot works in one MAIN session. Native subagents need a scoped assignment,
 observable completion and reviewed output. Use persistent sessions and a
 Dispatcher only when a real handoff or dependent queue needs them.
 
-## Sixteen skills, distinct ownership
+## Seventeen skills, distinct ownership
 
 Aliases are compatibility trigger phrases, not product names or duplicate
 directories. Each skill owns one
@@ -208,6 +208,7 @@ recurring boundary:
 |---|---|---|
 | [`nobrainer-ultra`](skills/nobrainer-ultra/) | `nb-flow`, `nb-ultra` | Technical Flow entrypoint for end-to-end setup and delivery: one requirements gate, concise progress, bounded execution, recovery, audit and learning |
 | [`nobrainer-codex-context`](skills/nobrainer-codex-context/) | `nb-codex-context` | Project-local Codex context setup: instruction discovery, fallback and byte-budget audit, safe context block reconciliation and runtime readback |
+| [`nobrainer-skill-doctor`](skills/nobrainer-skill-doctor/) | `nb-skill-doctor` | Cross-project audit of skills, project instructions and task prompts: trigger overlap, excessive process, coverage and minimal portfolio repair planning |
 | [`nobrainer-team`](skills/nobrainer-team/) | `nb-team` | Minimal capability roster, installed-skill inventory and safe temporary specialist discovery |
 | [`nobrainer-dispatcher`](skills/nobrainer-dispatcher/) | `nb-dispatcher` | Dependency-aware ready-set scheduling, bounded dispatch, backpressure and audited result routing |
 | [`nobrainer-research`](skills/nobrainer-research/) | `nb-research` | Bounded current research from primary sources with facts separated from inference |
@@ -302,10 +303,10 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-Current source version: **1.12.0**. Check the
+Current source candidate version: **1.13.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [v1.12.0 release record](docs/releases/v1.12.0.md) for the
-current source scope and preserved installation identities. The unchanged command runner keeps its
+for distribution and the [v1.13.0 candidate record](docs/releases/v1.13.0.md) for
+the candidate scope and preserved installation identities. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier
 [v1.6.1 publication readback](docs/releases/v1.6.1-publication-readback.md)
