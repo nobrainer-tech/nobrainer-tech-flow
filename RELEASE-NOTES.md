@@ -1,5 +1,14 @@
 # nobrainer-tech-flow release notes
 
+## v1.14.1 - 2026-09-22
+
+- Team makes multi-capability coverage and durable source provenance explicit.
+- Research distinguishes empty, incomplete, unavailable and unattempted sources.
+- Build records known simplification ceilings with observable revisit triggers.
+- Keeps one-model execution, existing owners and optional profile settings intact.
+
+See [scope and evidence limits](docs/releases/v1.14.1.md).
+
 ## v1.14.0 - 2026-09-22
 
 - Optional core/Jev/Laya preferences with one-time setup and explicit changes.

@@ -54,6 +54,14 @@ Before writing, stop at the first complete option that satisfies acceptance:
 
 Configuration owns values that vary by environment or run; code owns invariants.
 
+When an accepted simplification has a known operational ceiling, record the
+ceiling, observable trigger to revisit it, and responsible owner in the current
+task plan/report. For example, a single-writer design must be revisited before
+introducing concurrent writers. Do not turn ordinary minimal code into a debt
+backlog: omit this record when there is no known ceiling. This never permits
+cutting required validation, security, accessibility or acceptance. A later task
+that crosses the trigger must revisit the design before relying on the shortcut.
+
 A new shared abstraction requires two real current callers or an explicit
 acceptance contract that needs the boundary. A hypothetical future caller does
 not justify it. If inspection expands the expected file set, update scope before
@@ -149,6 +157,7 @@ RUNTIME_EVIDENCE:
 REVIEW:
 SIDE_EFFECTS:
 UNVERIFIED:
+DEFERRED_CEILINGS: <known ceiling, revisit trigger and owner | NONE>
 ROLLBACK:
 NEXT_ACTION:
 ```

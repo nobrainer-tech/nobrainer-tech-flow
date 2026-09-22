@@ -45,6 +45,12 @@ The [September 22 review](docs/reviews/2026-09-22-top10-and-optional-decisions.m
 maps ten popular skill repositories to existing Flow owners and optional
 specialists. It distinguishes documented features from measured behavior.
 
+The [portable adoption follow-up](docs/reviews/2026-09-22-portable-adoption.md)
+adds capability coverage to Team, per-source coverage to Research and explicit
+revisit triggers for accepted simplifications in Build. These are original
+Flow contracts; specialist graph, connector and scientific engines remain
+separate capabilities rather than implied features of the core workflow.
+
 New public source links and checkout paths use `nobrainer-tech-flow`. Existing
 installations keep the legacy technical `nobrainer-tech-skills` package/plugin ID
 and all skill commands until a separate compatibility migration. See the

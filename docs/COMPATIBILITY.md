@@ -21,8 +21,8 @@ Never promote one level from evidence belonging to another.
 Merge is a repository delivery state, not a client-compatibility level; release
 evidence records it separately.
 
-The current source candidate version is **1.14.0**. Its scope and installation
-metadata are recorded in the [v1.14.0 candidate record](releases/v1.14.0.md).
+The current source version is **1.14.1**. Its scope and installation
+metadata are recorded in the [v1.14.1 record](releases/v1.14.1.md).
 The naming migration remains documented in the [migration guide](MIGRATION_TO_FLOW.md), and the
 unchanged command runner keeps its [v1.7.0 evidence](releases/v1.7.0.md). The
 published `v1.13.0` release remains the rollback anchor; this candidate does not
