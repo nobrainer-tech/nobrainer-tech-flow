@@ -21,11 +21,11 @@ Never promote one level from evidence belonging to another.
 Merge is a repository delivery state, not a client-compatibility level; release
 evidence records it separately.
 
-The current source candidate version is **1.13.0**. Its scope and installation
-metadata are recorded in the [v1.13.0 candidate record](releases/v1.13.0.md).
+The current source candidate version is **1.14.0**. Its scope and installation
+metadata are recorded in the [v1.14.0 candidate record](releases/v1.14.0.md).
 The naming migration remains documented in the [migration guide](MIGRATION_TO_FLOW.md), and the
 unchanged command runner keeps its [v1.7.0 evidence](releases/v1.7.0.md). The
-published `v1.12.0` release remains the rollback anchor; this candidate does not
+published `v1.13.0` release remains the rollback anchor; this candidate does not
 claim a GitHub release, client loading or marketplace distribution.
 
 The [1.6.1 instruction review](reviews/2026-09-05-astra-instructions.md)
@@ -270,3 +270,20 @@ Existing client-load evidence does not establish restart support. Native
 end-to-end restart, all-model behavior and net cost savings are unverified until
 tested separately for the exact adapter/client version. No global hooks are
 installed by enabling portable instructions. See [the guide](SESSION_RESTART.md).
+# Optional typed-decision runtime
+
+The seventeen-skill Markdown lifecycle requires only the host's existing model.
+Jev/Laya are optional profiles, off by default; Python and model access are not
+core prerequisites. See [configuration](../skills/nobrainer-ultra/references/optional-decisions.md).
+
+| Profile | Required only when enabled | Current proof |
+|---|---|---|
+| Core | Host able to follow project instructions | Existing host-specific evidence below; no universal runtime assertion |
+| Jev shadow | Python 3, authorized TypeSafe key and HTTPS access | Live synthetic Noul/Choice/Score via direct Jev 1.13.0 on macOS |
+| Laya shadow | Apple Silicon, separately installed Laya-MLX, cached model and compatible Python | Live synthetic Noul/Choice/Score with multilingual MLX checkpoint, offline loading on macOS |
+
+Typed-answer validity is not semantic correctness: Laya assigned a middling
+urgency score to the no-deadline fixture. Do not advertise equivalence or
+promote suggestions into hard decisions based on this smoke test. Per-call
+timings include process/model startup and are not warm inference benchmarks.
+No clean-session proof for a new harness is implied by these helper tests.

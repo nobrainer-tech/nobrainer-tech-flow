@@ -32,6 +32,10 @@ is familiar; route non-trivial edits through `nobrainer-build`.
 
 ## Capability acquisition
 
+Optional Jev/Laya judgment uses [optional-decisions.md](optional-decisions.md)
+only after explicit configuration and data authorization. Missing access means
+core execution with the current model; never block the task on optional setup.
+
 Invoke `nobrainer-team` when the curated set and maintained project capabilities
 leave a real gap. It owns metadata-first inventory, bounded `npx skills find`,
 candidate inspection, one-off `npx skills use`, source/ref pinning and the

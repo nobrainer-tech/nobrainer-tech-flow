@@ -35,6 +35,16 @@ A quick answer stays a quick answer. The model-neutral workflow uses one plan,
 bounded corrective attempts and a Markdown checkpoint for longer work. Native
 goals, telemetry, subagents and client-specific tools are optional.
 
+**One model is enough.** Optional Jev (remote) and Laya (local) profiles add
+typed suggestions for bounded classification, ranking and evaluation. Setup
+remembers your choice; the default makes no provider calls. Missing access or
+failed requests return to the core workflow. See [setup and usage](skills/nobrainer-ultra/references/optional-decisions.md)
+for configuration, data approval and tested platform limits.
+
+The [September 22 review](docs/reviews/2026-09-22-top10-and-optional-decisions.md)
+maps ten popular skill repositories to existing Flow owners and optional
+specialists. It distinguishes documented features from measured behavior.
+
 New public source links and checkout paths use `nobrainer-tech-flow`. Existing
 installations keep the legacy technical `nobrainer-tech-skills` package/plugin ID
 and all skill commands until a separate compatibility migration. See the
@@ -110,6 +120,8 @@ flowchart TD
     J -. independent authorized work remains .-> P
     F -. optional .-> L[Markdown goal for resume]
     G -. independent work .-> M[Bounded native subagents]
+    G -. configured shadow only .-> Q[Jev remote or Laya local: advisory typed decisions]
+    Q -. unavailable or invalid: core fallback .-> G
     M --> H
     L -. context pressure; transfer supported .-> N[Fresh session: same task + started DD-MM]
     N --> G

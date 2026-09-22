@@ -44,7 +44,7 @@
 
   <text x="76" y="70" class="eyebrow">nobrainer-tech-flow</text>
   <text x="76" y="120" class="headline">One request. Clear progress. Verified delivery.</text>
-  <text x="76" y="154" class="subtitle">Clear tasks go straight to work. Add structure only when it helps the outcome.</text>
+  <text x="76" y="154" class="subtitle">One model is enough. Optional Jev / Laya suggestions stay advisory; failures return to core.</text>
 
   <g filter="url(#soft-shadow)">
     <rect x="76" y="220" width="205" height="116" rx="20" class="node"/>

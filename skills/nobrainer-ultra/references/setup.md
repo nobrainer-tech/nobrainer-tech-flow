@@ -117,6 +117,19 @@ skills directory.
 
 ## 4. Reconcile capabilities
 
+Resolve the optional decision preference once using
+[optional-decisions.md](optional-decisions.md). Core mode works with one model.
+Reuse a recorded choice; installation or upgrade must not enable provider calls
+or repeat a declined setup question.
+On explicit setup, invoke `python3 <ultra>/scripts/decision_config.py setup`
+from the project root when process tools are available. In unattended execution
+add `--non-interactive`. Existing config returns immediately without prompting.
+When the host cannot expose an interactive terminal, ask the one optional choice
+through its native question UI and persist it using `set`; absent an answer,
+record core/off and continue. Configuring a provider keeps mode off until the
+data and cost scope is authorized. Without process tools use the existing
+project instruction/tracker as the preference store.
+
 Use `nobrainer-team` to compare the seventeen curated skills, project-native tools
 and active runtime. A missing specialist may be evaluated temporarily through
 the open skills ecosystem only after source/ref, instructions, scripts, license,
