@@ -1,5 +1,16 @@
 # nobrainer-tech-flow release notes
 
+## v1.14.0 - 2026-09-22
+
+- Optional core/Jev/Laya preferences with one-time setup and explicit changes.
+- Default-off advisory typed decisions with data approval, bounded calls,
+  validated answers and core fallback; local Laya loads only cached weights.
+- Keeps the seventeen-skill workflow available with one host-selected model.
+- Reviews ten popular skill repositories without importing competing workflows.
+- Live synthetic Jev/Laya primitive checks and 201-test Linux/macOS CI evidence.
+
+See [scope and proof limits](docs/releases/v1.14.0.md).
+
 ## v1.13.0 - 2026-09-14
 
 - Adds `nobrainer-skill-doctor` as the 17th Flow skill for cross-project audits
