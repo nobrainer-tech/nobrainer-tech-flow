@@ -61,6 +61,16 @@ STOP_CONDITION:
 Stop when the decision-relevant uncertainty is resolved. Do not keep searching
 for volume, consensus theatre or a source that merely agrees.
 
+For requested multi-source coverage, keep one row per required source or source
+class: requested scope, whether attempted, status, date/window, result/evidence
+and limitation. Status is `RETURNED`, `NO_RESULTS`, `PARTIAL`, `UNAVAILABLE`,
+`NOT_REQUESTED` or `UNKNOWN`. Use `NO_RESULTS` only after a completed query with
+no matches; a timeout or authentication failure is `UNAVAILABLE` with that reason.
+An unattempted required source is `UNKNOWN`. Never collapse one empty source
+and one inaccessible source into a global "nothing found" claim. Limit the
+conclusion to completed coverage, deliver useful partial evidence and name the
+remaining gap. Do not require a connector or extra model merely to fill a row.
+
 ## Source and tool routing
 
 Prefer primary sources: official documentation, source repositories, standards,
@@ -111,6 +121,7 @@ RESEARCH_RESULT: ANSWERED | PARTIAL | RESEARCH_BLOCKED
 RIGOR:
 ANSWER:
 FACTS_AND_SOURCES:
+SOURCE_COVERAGE: <per requested source: attempted, status, date/window, evidence, limitation | NOT_APPLICABLE>
 INFERENCES:
 CONTRADICTIONS:
 UNKNOWN:

@@ -36,6 +36,14 @@ descriptions, source roots and collision status. Do not read every body or trust
 a title alone. This inventory replaces a permanent catalogue skill; refresh it
 only when sources change.
 
+For a plan spanning several capabilities, check coverage before selecting roles:
+architecture/runtime/framework, domain behavior, data, integrations, tests,
+security, UX/accessibility, operations and maintenance. Mark each applicable need with its selected
+capability and evidence; explicitly mark an uncovered need `CAPABILITY_GAP`.
+An unsearched dimension is `UNKNOWN`, not covered. Record irrelevant dimensions
+as `NOT_APPLICABLE` when a coverage audit is requested; ordinary small tasks do
+not need a full matrix. Reuse the existing task plan instead of a second catalog.
+
 ## Choose the minimum roster
 
 For a simple or serial task use `<repo> | MAIN`. For parallelizable delivery,
@@ -87,6 +95,16 @@ the exact source and immutable ref when available, `SKILL.md`, scripts, license,
 maintainer, requested permissions, network/credential behavior, write scope,
 trigger overlap, hidden persistence and rollback. Popularity helps discovery;
 it is not a security or quality gate.
+
+Retain selected and rejected exact IDs and the decision reason. In a durable
+team plan, bind each external selection to its immutable source/ref and SHA-256
+hashes of every reviewed skill, reference and script, including reviewed files
+not executed. Changed bytes require
+reinspection before reuse. A link to a mutable catalog is not that evidence.
+When source hashing is unavailable, report the weaker provenance explicitly.
+Configured Jev/Laya may rank already inspected candidates as suggestions; MAIN
+still owns selection, authority and the coverage decision. Missing catalogs or
+additional models must not block use of the current model and project tools.
 
 Prefer temporary, project-scoped evaluation. Persistent project installation,
 global installation, credentials, script execution and consequential writes are
