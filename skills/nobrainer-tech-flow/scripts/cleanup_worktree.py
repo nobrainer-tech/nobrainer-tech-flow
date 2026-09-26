@@ -223,7 +223,7 @@ def verify_and_cleanup(manifest_path: Path, *, apply: bool, gh_bin: str = "gh", 
         raise CleanupError("GitHub returned an invalid PR number") from None
     if returned_number != pr_number:
         raise CleanupError("GitHub returned a different PR number")
-    if pr.get("state") != "CLOSED" or not isinstance(pr.get("mergedAt"), str) or not pr.get("mergedAt"):
+    if pr.get("state") != "MERGED" or not isinstance(pr.get("mergedAt"), str) or not pr.get("mergedAt"):
         raise CleanupError("PR is not verified as merged")
     if pr.get("headRefName") != branch or str(pr.get("headRefOid", "")).lower() != expected_head:
         raise CleanupError("PR source branch or submitted head SHA does not match this task worktree")

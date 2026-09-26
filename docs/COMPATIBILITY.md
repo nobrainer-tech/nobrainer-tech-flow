@@ -21,12 +21,18 @@ Never promote one level from evidence belonging to another.
 Merge is a repository delivery state, not a client-compatibility level; release
 evidence records it separately.
 
-The current source version is **1.14.1**. Its scope and installation
-metadata are recorded in the [v1.14.1 record](releases/v1.14.1.md).
-The naming migration remains documented in the [migration guide](MIGRATION_TO_FLOW.md), and the
-unchanged command runner keeps its [v1.7.0 evidence](releases/v1.7.0.md). The
-published `v1.13.0` release remains the rollback anchor; this candidate does not
-claim a GitHub release, client loading or marketplace distribution.
+The current source version is **2.0.0**. Its release scope and reproducible
+checks are recorded in the [2.0.0 verification record](releases/v2.0.0.md).
+The previous [1.14.1 record](releases/v1.14.1.md) is historical evidence,
+not a statement about the current source. The package/entrypoint migration
+is documented in the [migration guide](MIGRATION_TO_FLOW.md).
+
+For 2.0.0, portable structure, installation, selected setup, personalization,
+update checks and guarded cleanup have repository-level tests. The historical
+client matrix below does not establish fresh 2.0 automatic discovery,
+parallel execution, live Jev/Laya access or marketplace acceptance.
+Source release availability must be verified separately against its public tag.
+The unchanged command runner retains its scoped [v1.7.0 evidence](releases/v1.7.0.md).
 
 The 1.6.1 instruction review
 clarifies skill precedence and sufficient verification. Its evidence is a

@@ -1,5 +1,20 @@
 # nobrainer-tech-flow release notes
 
+## v2.0.0 - 2026-09-27
+
+- Canonical product, package and entrypoint name: `nobrainer-tech-flow`.
+- Adds standard Auto Fine Tune onboarding to the 18-module workflow.
+- Read-only preflight, stable selection IDs, scoped setup, client-specific
+  personalization, readback and rollback through the existing installer.
+- Preserves MAIN while coordinating useful available workers and task-sized goals.
+- Adds daily active-use update checks, browser preferences and guarded worktree cleanup.
+- Removes internal working reviews and raw evaluation artifacts from the current tree.
+
+This major version changes package/entry identities. Read the
+[migration guide](docs/MIGRATION_TO_FLOW.md) and
+[verification record](docs/releases/v2.0.0.md) before upgrading.
+
+
 ## v1.14.1 - 2026-09-22
 
 - Team makes multi-capability coverage and durable source provenance explicit.

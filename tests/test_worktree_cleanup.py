@@ -91,7 +91,7 @@ class WorktreeCleanupTests(unittest.TestCase):
         self.repo_data = {"nameWithOwner": "acme/project", "defaultBranchRef": {"name": "main"}}
         self.pr_data = {
             "number": 7,
-            "state": "CLOSED",
+            "state": "MERGED",
             "mergedAt": "2026-09-26T10:00:00Z",
             "headRefName": "codex/task-1",
             "headRefOid": self.head_sha,
@@ -160,6 +160,13 @@ class WorktreeCleanupTests(unittest.TestCase):
 
     def test_unmerged_pr_is_preserved(self) -> None:
         self.pr_data["mergedAt"] = None
+        self.write_gh_data()
+        with self.assertRaisesRegex(cleanup.CleanupError, "not verified as merged"):
+            self.run_cleanup(apply=True)
+        self.assertTrue(self.worktree.exists())
+
+    def test_closed_state_is_not_accepted_as_gh_merged_state(self) -> None:
+        self.pr_data["state"] = "CLOSED"
         self.write_gh_data()
         with self.assertRaisesRegex(cleanup.CleanupError, "not verified as merged"):
             self.run_cleanup(apply=True)

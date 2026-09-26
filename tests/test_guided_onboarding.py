@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import base64
+import contextlib
 import importlib.util
+import io
 import json
 import subprocess
 import sys
@@ -367,6 +369,82 @@ class GuidedOnboardingTests(unittest.TestCase):
             self.assertIn("personalization changed since setup", rollback.stdout)
             self.assertTrue((destination / "nobrainer-tech-flow").is_symlink())
             self.assertIn("Owner edit.", instruction.read_text())
+
+    def test_state_save_failure_restores_first_and_repeated_setup_preimages(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            destination = root / "skills"
+            home = root / "home"
+            instruction = home / ".codex" / "AGENTS.md"
+            instruction.parent.mkdir(parents=True)
+            original_instructions = b"Owner rules outside Flow.\n"
+            instruction.write_bytes(original_instructions)
+            common = self.common(destination, home)
+            original_save_state = GUIDED.save_state
+
+            def save_then_fail(path: Path, state: dict[str, object]) -> None:
+                original_save_state(path, state)
+                raise OSError("injected state write failure after replace")
+
+            first_run = (
+                *common,
+                "--work-profile",
+                "research",
+                "--goal",
+                "compare current evidence",
+                "--tools",
+                "Codex",
+                "--existing-setup",
+                "none",
+                "--selection",
+                "01,03",
+                "--preferences",
+                "First approved preference",
+            )
+            with mock.patch.object(
+                GUIDED, "save_state", side_effect=save_then_fail
+            ), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                first_code = GUIDED.main([*first_run, "--apply"])
+
+            self.assertEqual(2, first_code)
+            self.assertEqual(original_instructions, instruction.read_bytes())
+            self.assertEqual([], list(destination.iterdir()))
+            self.assertFalse((home / ".nobrainer-flow-onboarding-codex.json").exists())
+
+            initial = self.run_setup(*common, "--work-profile", "research", "--goal",
+                "compare current evidence", "--tools", "Codex", "--existing-setup", "none",
+                "--selection", "01", "--preferences", "Existing approved preference", "--apply")
+            self.assertEqual(0, initial.returncode, initial.stderr)
+            state = home / ".nobrainer-flow-onboarding-codex.json"
+            previous_state = state.read_bytes()
+            previous_instructions = instruction.read_bytes()
+
+            repeated_run = (
+                *common,
+                "--work-profile",
+                "research",
+                "--goal",
+                "compare current evidence",
+                "--tools",
+                "Codex",
+                "--existing-setup",
+                "none",
+                "--selection",
+                "01,03",
+                "--preferences",
+                "Changed preference",
+            )
+            with mock.patch.object(
+                GUIDED, "save_state", side_effect=save_then_fail
+            ), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                repeated_code = GUIDED.main([*repeated_run, "--apply"])
+
+            self.assertEqual(2, repeated_code)
+            self.assertEqual(previous_state, state.read_bytes())
+            self.assertEqual(previous_instructions, instruction.read_bytes())
+            self.assertTrue((destination / "nobrainer-tech-flow").is_symlink())
+            self.assertTrue((destination / "nobrainer-auto-fine-tune").is_symlink())
+            self.assertFalse((destination / "nobrainer-build").exists())
 
     def test_codex_and_claude_keep_independent_setup_state_and_rollback(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

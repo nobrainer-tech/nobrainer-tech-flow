@@ -559,6 +559,63 @@ def save_state(path: Path, state: dict[str, object]) -> None:
         raise
 
 
+def read_file_preimage(path: Path) -> tuple[bytes, int] | None:
+    """Capture an exact regular-file preimage for a bounded rollback."""
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISREG(metadata.st_mode):
+        raise ValueError(f"rollback target is not a regular file: {path}")
+    return path.read_bytes(), stat.S_IMODE(metadata.st_mode)
+
+
+def restore_file_preimage(
+    path: Path,
+    expected_sha256: str,
+    preimage: tuple[bytes, int] | None,
+) -> bool:
+    """Restore only a file still matching this invocation's write."""
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        return preimage is None
+    if not stat.S_ISREG(metadata.st_mode):
+        return False
+    current = path.read_bytes()
+    if preimage is not None and current == preimage[0] and stat.S_IMODE(metadata.st_mode) == preimage[1]:
+        return True
+    if hashlib.sha256(current).hexdigest() != expected_sha256:
+        return False
+    if preimage is None:
+        latest = path.lstat()
+        if (latest.st_dev, latest.st_ino) != (metadata.st_dev, metadata.st_ino) or path.read_bytes() != current:
+            return False
+        path.unlink()
+        return not path.exists() and not path.is_symlink()
+
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.rollback.", dir=path.parent)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(preimage[0])
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary.chmod(preimage[1])
+        latest = path.lstat()
+        if (latest.st_dev, latest.st_ino) != (metadata.st_dev, metadata.st_ino) or path.read_bytes() != current:
+            return False
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+    restored = path.lstat()
+    return (
+        stat.S_ISREG(restored.st_mode)
+        and path.read_bytes() == preimage[0]
+        and stat.S_IMODE(restored.st_mode) == preimage[1]
+    )
+
+
 def rollback(args: argparse.Namespace, state_file: Path) -> int:
     try:
         metadata = state_file.lstat()
@@ -730,6 +787,7 @@ def main(argv: list[str] | None = None) -> int:
         repo_url = safe_repo_url(args.repo_url)
         state = state_path(args.home, args.state_file, args.client)
         legacy_state = legacy_state_path(args.home, args.state_file)
+        state_preimage: tuple[bytes, int] | None = None
         if args.rollback:
             if not state.exists() and not state.is_symlink() and legacy_state is not None and legacy_state.exists():
                 legacy = read_state_file(legacy_state)
@@ -749,6 +807,7 @@ def main(argv: list[str] | None = None) -> int:
             state_metadata = None
         if state_metadata is not None:
             previous = read_state_file(state)
+            state_preimage = read_file_preimage(state)
         elif legacy_state is not None and legacy_state.exists():
             legacy = read_state_file(legacy_state)
             legacy_owner = legacy_state_client(legacy, args.home)
@@ -879,6 +938,7 @@ def main(argv: list[str] | None = None) -> int:
             code, _ = run(command)
             if code:
                 return code
+        profile_preimage = read_file_preimage(profile_target)
         if args.apply:
             for name in install_names:
                 command = [sys.executable, str(ROOT / "scripts" / "install_skills.py"), "--client", args.client, "--dest", str(destination), "--skill", name, "--apply"]
@@ -904,7 +964,71 @@ def main(argv: list[str] | None = None) -> int:
                 "written_sha256": hashlib.sha256(profile_target.read_bytes()).hexdigest(),
             }
         created = sorted(set(previous.get("created_skills", [])) | {name for name in new_skills if (destination / name).is_symlink()})
-        save_state(state, {"destination": str(destination), "created_skills": created, "profile": profile})
+        next_state = {"destination": str(destination), "created_skills": created, "profile": profile}
+        try:
+            save_state(state, next_state)
+        except (OSError, TypeError, ValueError) as exc:
+            rollback_errors: list[str] = []
+            if profile.get("target") and "APPLIED: " in profile_output:
+                restore_preimage = profile_preimage
+                if backup_match:
+                    backup_path = Path(backup_match.group(1))
+                    try:
+                        backup_metadata = backup_path.lstat()
+                        if (
+                            backup_path.parent != profile_target.parent
+                            or not backup_path.name.startswith(profile_target.name + ".bak.")
+                            or stat.S_ISLNK(backup_metadata.st_mode)
+                            or not stat.S_ISREG(backup_metadata.st_mode)
+                        ):
+                            raise ValueError("personalization backup is not an exact regular sibling")
+                        restore_preimage = (
+                            backup_path.read_bytes(),
+                            stat.S_IMODE(backup_metadata.st_mode),
+                        )
+                    except (OSError, ValueError) as rollback_exc:
+                        rollback_errors.append(f"personalization preimage unavailable: {rollback_exc}")
+                if not rollback_errors:
+                    try:
+                        profile_restored = restore_file_preimage(
+                            profile_target,
+                            str(profile["written_sha256"]),
+                            restore_preimage,
+                        )
+                    except (OSError, ValueError) as rollback_exc:
+                        profile_restored = False
+                        rollback_errors.append(f"personalization rollback failed: {rollback_exc}")
+                    if not profile_restored:
+                        rollback_errors.append(f"personalization changed during rollback: {profile_target}")
+
+            try:
+                remove_exact_created_links(destination, new_skills)
+            except OSError as rollback_exc:
+                rollback_errors.append(f"skill rollback failed: {rollback_exc}")
+            remaining_links = [
+                name
+                for name in new_skills
+                if (destination / name).exists() or (destination / name).is_symlink()
+            ]
+            if remaining_links:
+                rollback_errors.append("new skill targets changed and were preserved: " + ",".join(remaining_links))
+
+            next_state_bytes = (json.dumps(next_state, indent=2) + "\n").encode("utf-8")
+            try:
+                state_restored = restore_file_preimage(
+                    state,
+                    hashlib.sha256(next_state_bytes).hexdigest(),
+                    state_preimage,
+                )
+            except (OSError, ValueError) as rollback_exc:
+                state_restored = False
+                rollback_errors.append(f"setup state rollback failed: {rollback_exc}")
+            if not state_restored:
+                rollback_errors.append(f"setup state changed during rollback: {state}")
+
+            detail = f"{exc}; rollback incomplete: {'; '.join(rollback_errors)}" if rollback_errors else f"{exc}; applied changes were rolled back and read back"
+            print(f"ERROR: setup state save failed: {detail}", file=sys.stderr)
+            return 3 if rollback_errors else 2
         after = installed_ids(destination)
         actual_added = sorted(after - before)
         expected_added = sorted(BY_SKILL[name].id for name in new_skills)
