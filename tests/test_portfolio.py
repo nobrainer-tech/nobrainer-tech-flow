@@ -29,8 +29,9 @@ ACTIVE_SKILLS = (
 )
 
 
-def sha256(relative: str) -> str:
-    return hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
+def sha256(relative: str) -> str | None:
+    path = ROOT / relative
+    return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
 
 
 def git_sha256(commit: str, relative: str) -> str:

@@ -17,9 +17,10 @@ MAX_NAME_LENGTH = 64
 LINK_RE = re.compile(r"\[[^\]]+\]\((?!https?://|#|mailto:)([^)]+)\)")
 
 SUITE = {
+    "nobrainer-auto-fine-tune": "nb-auto-fine-tune",
     "nobrainer-codex-context": "nb-codex-context",
     "nobrainer-skill-doctor": "nb-skill-doctor",
-    "nobrainer-ultra": "nb-ultra",
+    "nobrainer-tech-flow": "NBFlow",
     "nobrainer-team": "nb-team",
     "nobrainer-dispatcher": "nb-dispatcher",
     "nobrainer-research": "nb-research",
@@ -36,10 +37,11 @@ SUITE = {
     "nobrainer-review": "nb-review",
 }
 REQUIRED_ALIASES = {
-    "nobrainer-ultra": ("nb-ultra", "nb-flow"),
+    "nobrainer-tech-flow": ("NBFlow", "NBF", "nobrainer-tech-flow"),
 }
 
 LEGACY = {
+    "nobrainer-ultra",
     "add-gitleaks",
     "agent-browser",
     "agents-restraint",

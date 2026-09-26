@@ -1,10 +1,10 @@
 # nobrainer-tech-flow repository instructions for Copilot
 
-The seventeen canonical Agent Skills are under `skills/`. Read the relevant
+The eighteen canonical Agent Skills are under `skills/`. Read the relevant
 `skills/<name>/SKILL.md` before changing a skill; retired predecessors exist
 only in Git history.
 
-For non-trivial delivery load `nobrainer-ultra`. Inspect current state, clarify
+For non-trivial delivery load `nobrainer-tech-flow`. Inspect current state, clarify
 once only when the answer changes scope or safety, freeze the minimum change and
 show a compact Progress checklist. Keep one-step work direct. Use a detailed
 ledger only for multi-session, dependency-rich, consequential or explicitly

@@ -1,6 +1,6 @@
 ---
 name: nobrainer-team
-description: "Use when the owner says nb-team or nobrainer-skill-browser, or after nobrainer-ultra has produced an approved non-trivial plan that needs installed-capability inventory, minimum role selection, safe skills.sh lookup, or justified parallel workers; do not use to elicit requirements, invent the plan, schedule work, or create sessions."
+description: "Use when the owner says nb-team or nobrainer-skill-browser, or after nobrainer-tech-flow has produced an approved non-trivial plan that needs installed-capability inventory, minimum role selection, safe skills.sh lookup, or justified parallel workers; do not use to elicit requirements, invent the plan, schedule work, or create sessions."
 ---
 
 # NoBrainer Team
@@ -19,12 +19,12 @@ Read [references/team-plan.md](references/team-plan.md) only for a durable team 
 ## Start from work, not personas
 
 Require an outcome, acceptance evidence and bounded work units. If they do not
-exist, return to `nobrainer-ultra` or the approved specification. Do not invent a
+exist, return to `nobrainer-tech-flow` or the approved specification. Do not invent a
 team around vague titles such as architect, coder and tester.
 
 Even an explicit Team invocation is a discovery trigger, not permission to skip
-Ultra's intake and planning boundary. Team may report the missing prerequisite and
-return control to Ultra, but it must not design roles from a vague goal.
+Flow's intake and planning boundary. Team may report the missing prerequisite and
+return control to Flow, but it must not design roles from a vague goal.
 
 For every work unit identify the method and capability actually needed. Inspect
 only metadata/frontmatter from installed skills first; load a full skill only
@@ -47,8 +47,8 @@ not need a full matrix. Reuse the existing task plan instead of a second catalog
 ## Choose the minimum roster
 
 For a simple or serial task use `<repo> | MAIN`. For parallelizable delivery,
-follow Ultra [team execution](../nobrainer-ultra/references/delivery.md#coordinated-team-execution)
-and fill useful ready slots up to the host limit and global cap of 15 subagents. Add a role only when it provides at
+follow Flow [team execution](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution)
+and fill useful ready slots up to the verified host limit. Add a role only when it provides at
 least one measurable benefit:
 
 - an independent unit can shorten the critical path;
@@ -61,6 +61,12 @@ Dispatch the useful ready workers within the
 host and task budget, when MAIN can audit the combined result. Do not split one tightly coupled edit, dispatch work
 whose output cannot be reviewed, or build a standing swarm because capacity is
 available.
+
+At each accepted milestone, re-evaluate newly ready independent units and
+reuse or dispatch available worker slots promptly while MAIN advances
+integration. Calibrate uncertain model routes through
+[Auto Fine Tune](../nobrainer-auto-fine-tune/SKILL.md); a host advertisement
+is not a successful model invocation or a measured speed advantage.
 
 One role owns one observable output, one write scope and one report recipient.
 Shared sequential state has one writer. A worker never selects or starts its

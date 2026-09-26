@@ -58,6 +58,31 @@ GOAL_FILE: <canonical Markdown path/reference or NONE>
 LAST_READBACK: <UTC timestamp and evidence pointer>
 ```
 
+## Project worktree lifecycle
+
+Unless the owner specifies another checkout, project tasks run in a dedicated
+worktree created from the freshly fetched and verified default branch advertised
+by the intended remote. Keep the original checkout intact, including dirty
+work. Record the task worktree path, branch, remote/default branch, base SHA and
+Git readback alongside the existing task/session execution state; `CHECKOUT`
+must identify the actual task worktree. Do not silently fall back to a dirty or
+stale checkout when remote discovery, fetch, or worktree creation fails.
+
+Local completion and PR merge are separate states. Keep the worktree available
+for the owner review gate. Do not merge without explicit current authorization
+for that PR. Once the owner has merged it, cleanup may proceed automatically
+only after independent provider readback binds the exact repository/PR/source
+branch/submitted head SHA/target branch/merge-result SHA, the merge result is
+verified in the fetched target history, the task worktree branch and HEAD still
+match the submitted source, all writers are inactive, and its state/content is
+safe for removal. Use non-force `git worktree remove` on only the recorded task
+path, then verify with `git worktree list` that this exact worktree is absent.
+Never force removal, prune broadly, or delete branches or unrelated worktrees
+under this lifecycle. Any mismatch, dirty or untracked user content, active
+writer, uncertain ownership, or missing readback preserves the worktree and
+reports the precise condition. Full operational gates and recovery are in the
+[task worktree lifecycle reference](../../nobrainer-tech-flow/references/worktrees.md).
+
 ## Bounded-turn and release gate
 
 An outcome/goal may cross turns, but no turn/session is an unlimited lease. At

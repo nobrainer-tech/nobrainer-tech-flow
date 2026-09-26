@@ -4,7 +4,7 @@ import subprocess
 import sys
 import unittest
 
-ROOT = Path(__file__).resolve().parents[1] / "skills/nobrainer-ultra/scripts"
+ROOT = Path(__file__).resolve().parents[1] / "skills/nobrainer-tech-flow/scripts"
 sys.path.insert(0, str(ROOT))
 spec = importlib.util.spec_from_file_location("typed_decisions", ROOT / "typed_decisions.py")
 runtime = importlib.util.module_from_spec(spec)

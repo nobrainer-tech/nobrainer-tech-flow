@@ -11,7 +11,7 @@ implementation, session identity or final acceptance evidence.
 
 Keep the boundaries explicit:
 
-- `nobrainer-ultra` owns intent, the canonical plan and lifecycle;
+- `nobrainer-tech-flow` owns intent, the canonical plan and lifecycle;
 - `nobrainer-team` owns the minimum roles and capability sources;
 - Dispatcher owns which already-defined work unit may run now;
 - `nobrainer-sessions` owns exact session identity, transport, lease and
@@ -21,8 +21,9 @@ Keep the boundaries explicit:
 
 A single coherent work unit stays in MAIN and marks Dispatcher `NOT_NEEDED`.
 Use parallel batches for independent ready work under the
-[team execution contract](../nobrainer-ultra/references/delivery.md#coordinated-team-execution):
-fill available useful slots, capped at 15 live subagents across the task tree.
+[team execution contract](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution):
+fill available useful slots up to the verified effective host limit across
+the task tree.
 When the owner explicitly invokes Dispatcher only to inspect such a map,
 Dispatcher owns that scheduler inspection and returns `NOT_NEEDED`; MAIN remains
 the owner of the work unit and its product. Keep control ownership distinct from
@@ -41,7 +42,7 @@ ACCEPTANCE_AND_EVIDENCE | PARALLEL_GROUP | OWNER_GATE | STATUS
 Also require the frozen plan/spec ref, current checkout and state fingerprint,
 retry and attention budgets, stop conditions, integration owner and rollback.
 If requirements, task boundaries, dependencies, acceptance or authority remain
-undefined, return to `nobrainer-ultra`; Dispatcher must not repair a vague plan
+undefined, return to `nobrainer-tech-flow`; Dispatcher must not repair a vague plan
 by improvising worker prompts.
 
 Before assigning any worker, require a completed `nobrainer-team` capability
@@ -54,7 +55,7 @@ the batch before that call and records `READY -> SENT` only from Sessions'
 successful transport readback. A role name or conversation title is not a
 transport address.
 
-Ultra freezes `MODEL_POLICY`; Dispatcher carries it with the work unit
+Flow freezes `MODEL_POLICY`; Dispatcher carries it with the work unit
 and never chooses a provider model. Sessions binds the requested model, effort,
 budget and escalation gate when the host exposes them, or records
 `UNKNOWN`/`UNSUPPORTED` without a silent substitution.
@@ -144,7 +145,7 @@ task waits. A `PARALLEL_GROUP` label alone is not proof.
 ## Complete dispatch through Sessions
 
 For each selected work unit, Dispatcher emits the task contract below without
-sending it. Ultra or MAIN then invokes `nobrainer-sessions` mode `delegate`
+sending it. Flow or MAIN then invokes `nobrainer-sessions` mode `delegate`
 exactly once. Before Dispatcher records `READY -> SENT`, consume fresh session,
 checkout, lease, active-turn and transport readback from Sessions; unknown
 transport state keeps the task `READY` and stops dispatch. Bind:
@@ -189,12 +190,12 @@ side effects and released lease. Then choose exactly one transition:
   and stop blind retries;
 - changed plan/input: move affected not-started `READY` rows to `STOPPED`, keep
   dependants `PENDING` or `BLOCKED`, invalidate the old plan/evidence and return
-  to Ultra for a new fingerprint. If work is already sent or running, stop new
+  to Flow for a new fingerprint. If work is already sent or running, stop new
   routing and let Sessions request and verify a controlled stop;
 - write collision, active lease or missing evidence: preserve state and stop
   without releasing successors;
 - owner gate: request one exact decision;
-- no remaining non-accepted task: return control to Ultra for final review,
+- no remaining non-accepted task: return control to Flow for final review,
   delivery and learning.
 
 `NEXT_ACTION` from a worker is a recommendation, never scheduler authority. A
@@ -228,7 +229,7 @@ ATTENTION_AND_RETRY_BUDGET:
 BLOCKERS_OR_OWNER_GATES:
 INTEGRATION_OWNER: <exact owner or NOT_NEEDED>
 NEXT_PROOF: <one acceptance or transport evidence target>
-NEXT_ACTION: <one batch, correction, stop or return to Ultra>
+NEXT_ACTION: <one batch, correction, stop or return to Flow>
 ROLLBACK_OR_RECOVERY:
 RESULT: NOT_NEEDED | DISPATCHED | ADVANCED | DEGRADED_MAIN | STOPPED | CLOSED
 ```

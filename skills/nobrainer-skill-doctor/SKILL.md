@@ -103,7 +103,7 @@ their owner gate. A model/client behavior case that was not run is `UNTESTED`.
 - Use `nobrainer-build` for an accepted code, documentation or configuration fix.
 - Use `nobrainer-team` for capability discovery or evaluation of a temporary
   specialist.
-- Use `nobrainer-ultra` for the overall lifecycle and guarded delivery.
+- Use `nobrainer-tech-flow` for the overall lifecycle and guarded delivery.
 
 The doctor owns the cross-project audit of the instruction and skill system:
 trigger overlap, conflicting or excessive rules, coverage, portfolio admission

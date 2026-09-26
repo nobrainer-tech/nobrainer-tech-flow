@@ -29,7 +29,7 @@ SPEC_SHA256: 8599e685fe08981cc1047a6a009a52ab072f1ebd8e6ac8f3015331b2a6a6e4aa
 - [x] M5 source validators, 168 tests, source/staged Gitleaks, rendered SVG and independent scenario reviews.
 - [>] Release: commit, PR, CI, merge, tag/archive readback and installed-source update.
 
-Evidence: docs/reviews/2026-09-11-autopilot-delivery.md maps AC01-AC13.
+The internal AC01-AC13 review is retained outside the public source tree.
 AC14: Codex preset source reviewed independently by Team audit; no live provider
 model switch is claimed. Review corrections retained safety and full scope.
 Current source acceptance is instruction/scenario-level, not universal runtime.

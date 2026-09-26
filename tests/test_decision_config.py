@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "skills/nobrainer-ultra/scripts/decision_config.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "skills/nobrainer-tech-flow/scripts/decision_config.py"
 spec = importlib.util.spec_from_file_location("decision_config", SCRIPT)
 config = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(config)

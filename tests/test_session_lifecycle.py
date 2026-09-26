@@ -324,8 +324,8 @@ class SessionLifecycleTests(unittest.TestCase):
 
     def test_portable_contract_names_health_and_release_boundaries(self) -> None:
         paths = (
-            ROOT / "skills" / "nobrainer-ultra" / "SKILL.md",
-            ROOT / "skills" / "nobrainer-ultra" / "references" / "long-run-state.md",
+            ROOT / "skills" / "nobrainer-tech-flow" / "SKILL.md",
+            ROOT / "skills" / "nobrainer-tech-flow" / "references" / "long-run-state.md",
             ROOT / "skills" / "nobrainer-sessions" / "SKILL.md",
             ROOT / "skills" / "nobrainer-sessions" / "references" / "protocol.md",
             ROOT / "docs" / "TESTING.md",

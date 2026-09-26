@@ -38,8 +38,8 @@ release, with an explicit remembered preference and a complete core fallback.
 
 ## Implementation and proof scope
 
-Use existing Ultra setup/routing owners, a focused reference and helper under
-Ultra, and meaningful contract tests. Keep public Flow independent of private
+Use existing Flow setup/routing owners, a focused reference and helper under
+Flow, and meaningful contract tests. Keep public Flow independent of private
 skills and machine paths. Update compatibility/install docs and release site
 with exact supported and unverified layers. Retain core as rollback.
 

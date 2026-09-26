@@ -13,7 +13,7 @@ not the same as a proven client integration. Record these levels separately:
 4. `RUNTIME_VERIFIED_EXPLICIT` — a clean client session loads and follows the
    canonical body under explicit invocation; this does not prove discovery.
 5. `RUNTIME_VERIFIED` — a clean client session discovers and follows
-   `nobrainer-ultra` without manually pasting its body.
+   `nobrainer-tech-flow` without manually pasting its body.
 6. `DISTRIBUTED` — the exact release is available through the claimed public
    marketplace or install channel and was read back after installation.
 
@@ -28,7 +28,7 @@ unchanged command runner keeps its [v1.7.0 evidence](releases/v1.7.0.md). The
 published `v1.13.0` release remains the rollback anchor; this candidate does not
 claim a GitHub release, client loading or marketplace distribution.
 
-The [1.6.1 instruction review](reviews/2026-09-05-astra-instructions.md)
+The 1.6.1 instruction review
 clarifies skill precedence and sufficient verification. Its evidence is a
 source-contract review; the v1.6 runtime results apply only to the archived
 release bytes. It adds no model-wide or cross-client runtime claim.
@@ -81,7 +81,7 @@ not mean the external client's parser accepted or loaded the package.
 | OpenCode | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: skills registration plus idempotent first-user transform | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | GitHub Copilot CLI | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: portable installer and repository instructions; no bootstrap | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Gemini CLI | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: extension manifest and owned context include | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
-| Kimi Code | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: canonical skills path, `nobrainer-ultra` session-start field and native-tool boundary | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
+| Kimi Code | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: canonical skills path, `nobrainer-tech-flow` session-start field and native-tool boundary | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Devin CLI | `SOURCE_VALIDATED` | no dedicated adapter | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Pi | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: package resources, dedupe, lifecycle reset and post-compaction transform | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Hermes Agent | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: root Agent Plugins v1 manifest only; no bootstrap | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
@@ -96,7 +96,7 @@ discovery/bootstrap proof before promotion.
 
 ## Adapter contract
 
-All adapters point at the same seventeen directories. They may expose discovery and
+All adapters point at the same eighteen directories. They may expose discovery and
 one small `NOBRAINER_BOOTSTRAP_V1` routing context, but they must not copy or
 rewrite skill bodies.
 
@@ -155,7 +155,7 @@ and may affect production.
 
 Passing behavior:
 
-- `nobrainer-ultra` is selected without pasting its body;
+- `nobrainer-tech-flow` is selected without pasting its body;
 - the agent enters a short requirements/acceptance gate before writes;
 - it creates one canonical plan and shows a compact Progress checklist;
 - production effects remain owner-gated;
@@ -175,11 +175,11 @@ return to Build and then fresh Review; it may not reuse the old green result.
 ### Explicit technical invocation
 
 ```text
-$nobrainer-ultra Deliver this task with the smallest safe workflow.
+$nobrainer-tech-flow Deliver this task with the smallest safe workflow.
 ```
 
 Passing behavior: the client loads the nobrainer-tech-flow technical
-`nobrainer-ultra` body and any
+`nobrainer-tech-flow` body and any
 required relative reference without the user pasting either one.
 
 ### Compatibility alias control
@@ -194,7 +194,7 @@ the product name or additional skill names.
 Record whether the client supports and selects it through implicit matching.
 Do not present this as an explicit invocation guarantee. In the v1.3.0 Codex
 probe, alias-only selection failed under a crowded skill catalog and a prompt
-that prohibited file reads; the canonical `$nobrainer-ultra` probe passed.
+that prohibited file reads; the canonical `$nobrainer-tech-flow` probe passed.
 
 ### Non-trigger control
 
@@ -234,7 +234,7 @@ appearing on disk do not replace this acceptance test.
 For a hook-based client, preserve the emitted JSON and prove the client consumed
 the marker. For OpenCode or Pi, preserve both adapter logs/readback and the first
 model action. A prompt that pastes the skill body does not prove discovery. A
-valid explicit `$nobrainer-ultra` run proves explicit loading, not automatic routing.
+valid explicit `$nobrainer-tech-flow` run proves explicit loading, not automatic routing.
 
 ## Optional bounded command runtime (1.7.0)
 
@@ -250,7 +250,7 @@ The `session-restart` mode shipped in v1.8.0 and refined in v1.8.1 is a
 client/model-neutral Sessions
 protocol. The optional Python 3.11+ helper evaluates observations and runs without
 a model or client SDK. It does not implement native creation or archival.
-Explicit nobrainer-tech-flow entry invokes startup naming and health assessment through `nobrainer-ultra`.
+Explicit nobrainer-tech-flow entry invokes startup naming and health assessment through `nobrainer-tech-flow`.
 This is agent-executed care; no native transport backend is bundled.
 Human-readable startup and rollover titles use `<stable task title> | started DD-MM` where a
 host supports create-time titles or rename. The registry retains the full start
@@ -272,9 +272,9 @@ tested separately for the exact adapter/client version. No global hooks are
 installed by enabling portable instructions. See [the guide](SESSION_RESTART.md).
 # Optional typed-decision runtime
 
-The seventeen-skill Markdown lifecycle requires only the host's existing model.
+The eighteen-skill Markdown lifecycle requires only the host's existing model.
 Jev/Laya are optional profiles, off by default; Python and model access are not
-core prerequisites. See [configuration](../skills/nobrainer-ultra/references/optional-decisions.md).
+core prerequisites. See [configuration](../skills/nobrainer-tech-flow/references/optional-decisions.md).
 
 | Profile | Required only when enabled | Current proof |
 |---|---|---|

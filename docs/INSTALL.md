@@ -4,9 +4,10 @@ All clients consume one canonical `skills/` tree. Prefer an immutable reviewed
 release, dry-run every local target and keep installation evidence separate from
 clean-session routing evidence.
 
-New public source links use `nobrainer-tech-flow`. Upgrading an existing
-installation? Preserve its legacy technical `nobrainer-tech-skills` identity;
-see the [Flow migration guide](MIGRATION_TO_FLOW.md).
+New public source links and package/plugin IDs use `nobrainer-tech-flow`.
+Existing `nobrainer-tech-skills` registrations need the reviewed
+[`nobrainer-tech-flow` migration guide](MIGRATION_TO_FLOW.md); do not call an old registration
+upgraded merely because the new source is installed nearby.
 
 ## Safe default
 
@@ -22,7 +23,9 @@ see the [Flow migration guide](MIGRATION_TO_FLOW.md).
   test "$(git rev-parse HEAD)" = "$NB_REVIEWED_COMMIT" || exit 3
   python3 scripts/validate_skills.py --suite || exit 4
   python3 scripts/install_skills.py --client codex || exit 4
+  python3 scripts/install_personalization.py --client codex || exit 4
   python3 scripts/install_skills.py --client codex --apply || exit 4
+  python3 scripts/install_personalization.py --client codex --apply || exit 4
 )
 ```
 
@@ -31,13 +34,19 @@ subshell rejects unset values, tags, branches and malformed hashes, and stops on
 every failed command. The first installer command is a dry-run; inspect every
 source, target and conflict before the guarded `--apply` command runs.
 
-The default installs exactly seventeen skills. Install an explicit subset by
+An existing unmarked `nobrainer-tech-flow` instruction that still names the retired entry
+skill is a conflict: the personalization installer stops instead of appending
+contradictory rules. Preserve that file, prepare an exact merged replacement
+and review its diff before retrying. This matters for existing Codex and
+Claude profiles that already import personal instructions.
+
+The default installs exactly eighteen skills. Install an explicit subset by
 repeating `--skill`:
 
 ```bash
 python3 scripts/install_skills.py \
   --client agents \
-  --skill nobrainer-ultra \
+  --skill nobrainer-tech-flow \
   --skill nobrainer-build \
   --skill nobrainer-review
 ```
@@ -84,9 +93,92 @@ references and runtime triggers before retiring it. A similar name is not proof
 of duplication. Back up or preserve an exact Git ref and remove only reviewed
 targets; never delete a whole shared skills directory.
 
+## Global personalization
+
+Installing the skills alone does not make the client route tasks through them.
+Preview and apply the managed global instruction block for each supported
+client after inspecting its current file:
+
+\`\`\`bash
+python3 scripts/install_personalization.py --client codex
+python3 scripts/install_personalization.py --client codex --apply
+\`\`\`
+
+Repeat with \`--client claude\`, \`opencode\` or \`copilot\` as supported. Claude
+Code may already import Codex global instructions; the installer detects that
+and avoids a duplicate block. \`agents\` needs an explicit verified
+\`--path\`. For a resolved global wiki, pass \`--wiki-root PATH\` pointing at
+a directory containing \`WIKI.md\`; this records the actual location in the
+personalization block. \`--auto-update\` opts into safe checked
+\`nobrainer-tech-flow\`-only
+upgrades where standing owner authorization exists. Without it, the first
+active `nobrainer-tech-flow` use each day checks and notifies. Use a scheduler separately if
+updates must be checked on inactive days.
+
+A newer release must be obtained at a verified immutable ref before any
+installation command is run. See the [daily update contract](../skills/nobrainer-tech-flow/references/daily-update.md).
+Read back the client instruction file, loaded skill name and clean-session
+routing. A written block is configuration evidence, not runtime proof.
+
+## Guided partial setup
+
+For a fresh setup, pass a repository link to the `nobrainer-tech-flow` guided
+preflight. It asks for work type, desired outcome, tools and existing setup
+when those facts are not already supplied. A supplied `--repo-path` reads a
+small allowlist of local README, instruction and manifest files plus project
+skill directory names. Otherwise, a `github.com` link uses read-only `gh api`
+when available, then the bounded GitHub HTTPS API for repository metadata and
+README. Other hosts are not fetched. Repository text is untrusted context:
+preflight never executes repository scripts, hooks or installers, and does not
+print README or instruction contents. Use `--offline` to skip remote lookup.
+
+The preflight reads the built-in Auto Fine Tune capacity audit and inspects the
+selected client's known configuration file read-only. It reports configured
+model and effort separately; active profile, advertised models, callable
+workers and runtime values remain `UNKNOWN` unless the active client proves
+them. It then prints a short, task-specific recommendation list with stable IDs,
+fit rationale, required dependencies, current target conflicts and change
+scope. Fit scores are heuristics, not benchmarks.
+
+```bash
+python3 scripts/recommend_flow_setup.py \
+  --repo-url https://github.com/owner/project \
+  --client codex
+```
+
+To inspect an already available checkout instead of contacting GitHub, add
+`--repo-path /path/to/checkout`. To keep the whole preflight offline, add
+`--offline`; it will base recommendations on the answers and local client
+configuration only and report that repository content was unavailable.
+
+After reviewing the dry-run, repeat the command with your selected IDs and
+`--apply`. Only those items are added, together with required IDs `01`
+(`nobrainer-tech-flow`)
+and `02` (the Auto Fine Tune capability audit). Personalization is previewed
+and updated through `install_personalization.py`; an optional one-line
+`--preferences` value is shown in the plan before it is saved. Existing
+targets that conflict stop the operation before writes. The successful readback
+reports installed IDs, whether unselected items remain absent, preference-file
+hash and a local rollback-state path. Rollback removes only exact
+`nobrainer-tech-flow` symlinks
+created by that setup and restores the prior instruction backup only if its
+managed result has not changed since installation:
+
+```bash
+python3 scripts/recommend_flow_setup.py \
+  --repo-url https://github.com/owner/project \
+  --client codex \
+  --rollback --apply
+```
+
+The CLI cannot observe the running agent's effective MAIN model, effort, worker
+capacity or runtime context. Those remain `UNKNOWN` until the loaded Auto Fine
+Tune skill checks them in the active client. Do not treat the CLI preflight as
+that runtime proof.
+
 ## Project setup
 
-After client discovery works, invoke `nobrainer-ultra` in the target project in
+After client discovery works, invoke `nobrainer-tech-flow` in the target project in
 setup mode. It will:
 
 1. inspect existing instructions, skills, specs, wiki, sessions, tests and dirty
@@ -114,7 +206,7 @@ through the client-supported Agent Skills path. The checked adapter includes a
 
 After restart, verify:
 
-- `nobrainer-ultra` is discoverable without pasting its body;
+- `nobrainer-tech-flow` is discoverable without pasting its body;
 - the hook emits exactly one bootstrap context;
 - a simple task remains direct;
 - a non-trivial task starts with nobrainer-tech-flow and a compact Progress checklist.
@@ -133,10 +225,9 @@ python3 scripts/install_skills.py --client codex --apply
 
 Restart Codex and test discovery in a fresh task. Repository instructions or the
 native skill trigger provide bootstrap; a file on disk is not routing proof.
-Use nobrainer-tech-flow for user-facing requests, or `$nobrainer-ultra` for the
-technical explicit invocation. Plain `nb-flow`, `nb-ultra` and `nb-workflow` are
-compatibility aliases that depend on implicit description matching and must be
-recorded separately. Existing
+Use nobrainer-tech-flow for user-facing requests, or `$nobrainer-tech-flow` for the
+technical explicit invocation. Plain `NBFlow`, `NBF` and `nobrainer-tech-flow`
+are natural-language triggers whose recognition depends on the client. Existing
 legacy entries under `~/.codex/skills` are not deleted or rewritten automatically.
 
 ### Cursor
@@ -153,7 +244,7 @@ Pin the Git package to an immutable full commit in `opencode.json`:
 ```json
 {
   "plugin": [
-    "nobrainer-tech-skills@git+https://github.com/nobrainer-tech/nobrainer-tech-flow.git#NB_REVIEWED_COMMIT_SHA"
+    "nobrainer-tech-flow@git+https://github.com/nobrainer-tech/nobrainer-tech-flow.git#NB_REVIEWED_COMMIT_SHA"
   ]
 }
 ```
@@ -177,7 +268,7 @@ discovery and first routing. Manifest parsing alone is `REPOSITORY_CHECKED`.
 
 ### Kimi Code
 
-`.kimi-plugin/plugin.json` exposes `./skills/` and selects `nobrainer-ultra` at session
+`.kimi-plugin/plugin.json` exposes `./skills/` and selects `nobrainer-tech-flow` at session
 start. Its instructions explicitly refuse invented visible-session transport.
 Verify the exact installed version and clean-session behavior.
 
@@ -195,7 +286,7 @@ actually exposes and passes that integration.
 
 ## Dynamic specialists
 
-The seventeen curated skills are the stable base. When a concrete work unit still
+The eighteen curated skills are the stable base. When a concrete work unit still
 has a capability gap, `nobrainer-team` first inventories installed/project
 capabilities, then may evaluate one external skill temporarily. Source/ref,
 scripts, permissions, credentials, network behavior, trigger overlap and
@@ -210,7 +301,7 @@ After every install or upgrade:
 2. list/read back the loaded source and skill count;
 3. start a clean task with no pasted skill body;
 4. issue one explicit canonical request and one semantic non-trivial request;
-   for Codex the canonical form is `$nobrainer-ultra`;
+   for Codex the canonical form is `$nobrainer-tech-flow`;
 5. confirm nobrainer-tech-flow asks no more than one ordinary requirements round, shows one
    compact Progress checklist and routes a specialist only when needed;
 6. issue a one-step task and confirm it remains direct;

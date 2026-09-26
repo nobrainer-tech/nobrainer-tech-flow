@@ -86,18 +86,18 @@ and a separate fresh judge. The judge passed three cases but rejected the
 parallel case because the selected batch did not record why its checkouts,
 write scopes and mutable state were disjoint. The result is preserved in:
 
-- [`development prompt`](artifacts/v1.2.0-dispatcher-development-probe-prompt.md)
-- [`development output`](artifacts/v1.2.0-dispatcher-development-probe-output.md)
-- [`development judge`](artifacts/v1.2.0-dispatcher-development-probe-judge.md)
+- `development prompt`
+- `development output`
+- `development judge`
 
 The output contract then gained `PARALLEL_SAFETY` and `RESULT: NOT_NEEDED`. A
 different frozen pre-review holdout was run once by a fresh runner and judged by
 a separate fresh judge with the hard-failure rubric fixed in advance. It passed
 all five cases with no hard failure or material finding:
 
-- [`final prompt`](artifacts/v1.2.0-dispatcher-final-holdout-prompt.md)
-- [`final output`](artifacts/v1.2.0-dispatcher-final-holdout-output.md)
-- [`final judge`](artifacts/v1.2.0-dispatcher-final-holdout-judge.md)
+- `final prompt`
+- `final output`
+- `final judge`
 
 Independent full-diff review then found that `SCHEDULE` could incorrectly block
 a new queue before Sessions existed, the ledger omitted `PENDING` and `SENT`,
@@ -108,9 +108,9 @@ used undefined lease value `UNCLAIMED` instead of protocol value `FREE`. The
 historical files remain unchanged as evidence of that error; their 4/4 result is
 invalidated and is not release evidence:
 
-- [`post-review prompt`](artifacts/v1.2.0-dispatcher-post-review-holdout-prompt.md)
-- [`post-review output`](artifacts/v1.2.0-dispatcher-post-review-holdout-output.md)
-- [`post-review judge`](artifacts/v1.2.0-dispatcher-post-review-holdout-judge.md)
+- `post-review prompt`
+- `post-review output`
+- `post-review judge`
 
 Historical release-holdout artifact hashes:
 
@@ -134,11 +134,11 @@ integration holdout then covered those fixes plus the fail-closed problem gate
 and stale-evidence invalidation. It passed 5/5 at that point, but subsequent
 contract edits made it historical rather than current release evidence:
 
-- [`release prompt`](artifacts/v1.2.0-routing-release-holdout-prompt.md)
-- [`release output`](artifacts/v1.2.0-routing-release-holdout-output.md)
-- [`release judge prompt`](artifacts/v1.2.0-routing-release-holdout-judge-prompt.md)
-- [`release judge`](artifacts/v1.2.0-routing-release-holdout-judge.md)
-- [`complete run record`](artifacts/v1.2.0-routing-release-holdout-run.md)
+- `release prompt`
+- `release output`
+- `release judge prompt`
+- `release judge`
+- `complete run record`
 
 Three later isolated packets exercised the ordered correction chain and
 superseded-decision behavior. Each found one omission, and the contract was
@@ -150,11 +150,11 @@ judge reported no hard failure and also miscounted its four `PASS` lines as
 `1/5`. The run is therefore preserved as failed development evidence, not
 silently relabelled as a pass and not used as release proof:
 
-- [`final verified prompt`](artifacts/v1.2.0-routing-final-verified-holdout-prompt.md)
-- [`final verified output`](artifacts/v1.2.0-routing-final-verified-holdout-output.md)
-- [`final verified judge rubric`](artifacts/v1.2.0-routing-final-verified-holdout-judge-rubric.md)
-- [`final verified judge`](artifacts/v1.2.0-routing-final-verified-holdout-judge.md)
-- [`final verified run record`](artifacts/v1.2.0-routing-final-verified-holdout-run.md)
+- `final verified prompt`
+- `final verified output`
+- `final verified judge rubric`
+- `final verified judge`
+- `final verified run record`
 
 After that run, the shared bootstrap was reduced from 213 to the enforced
 190-word budget while retaining its exact problem, owner-decision, review and
@@ -168,9 +168,9 @@ transport-retry case: its candidate excerpt omitted the source contract's
 explicit no-blind-retry rule while the frozen rubric retained that requirement.
 It is preserved as a harness-coverage finding and failed development evidence:
 
-- [`current-source probe`](artifacts/v1.2.0-routing-current-release-holdout-prompt.md)
-- [`current-source probe judge`](artifacts/v1.2.0-routing-current-release-holdout-judge.md)
-- [`current-source probe run`](artifacts/v1.2.0-routing-current-release-holdout-run.md)
+- `current-source probe`
+- `current-source probe judge`
+- `current-source probe run`
 
 A new scenario set was frozen without changing the product contracts. Its
 candidate prompt included the complete relevant contract, including retries
@@ -179,21 +179,21 @@ hooks, Dispatcher, Sessions and 190-word bootstrap hashes. A fresh isolated
 candidate and separate fresh judge passed all five cases with no hard failure
 or material finding:
 
-- [`exact release prompt`](artifacts/v1.2.0-routing-exact-release-holdout-prompt.md)
-- [`exact release output`](artifacts/v1.2.0-routing-exact-release-holdout-output.md)
-- [`exact release judge rubric`](artifacts/v1.2.0-routing-exact-release-holdout-judge-rubric.md)
-- [`exact release judge`](artifacts/v1.2.0-routing-exact-release-holdout-judge.md)
-- [`exact release run record`](artifacts/v1.2.0-routing-exact-release-holdout-run.md)
+- `exact release prompt`
+- `exact release output`
+- `exact release judge rubric`
+- `exact release judge`
+- `exact release run record`
 
 PR review then narrowed Dispatcher's discovery description. A fresh trigger
 probe found that explicit one-unit inspection ownership was ambiguous and Team
 could appear to own role design before Ultra had bounded a vague goal. The
 failed result remains development evidence:
 
-- [`trigger-scope prompt`](artifacts/v1.2.0-dispatcher-trigger-scope-prompt.md)
-- [`trigger-scope output`](artifacts/v1.2.0-dispatcher-trigger-scope-output.md)
-- [`trigger-scope judge`](artifacts/v1.2.0-dispatcher-trigger-scope-judge.md)
-- [`trigger-scope run`](artifacts/v1.2.0-dispatcher-trigger-scope-run.md)
+- `trigger-scope prompt`
+- `trigger-scope output`
+- `trigger-scope judge`
+- `trigger-scope run`
 
 Dispatcher now distinguishes scheduler-inspection ownership from MAIN's work
 ownership, and Team requires Ultra's approved map before role design. A fresh
@@ -201,11 +201,11 @@ scenario set and separate fresh judge then passed all five trigger and boundary
 cases with no hard failure or material finding. This packet binds the exact
 current Ultra, Team, Dispatcher and Sessions bytes:
 
-- [`trigger final prompt`](artifacts/v1.2.0-dispatcher-trigger-final-holdout-prompt.md)
-- [`trigger final output`](artifacts/v1.2.0-dispatcher-trigger-final-holdout-output.md)
-- [`trigger final judge rubric`](artifacts/v1.2.0-dispatcher-trigger-final-holdout-judge-rubric.md)
-- [`trigger final judge`](artifacts/v1.2.0-dispatcher-trigger-final-holdout-judge.md)
-- [`trigger final run`](artifacts/v1.2.0-dispatcher-trigger-final-holdout-run.md)
+- `trigger final prompt`
+- `trigger final output`
+- `trigger final judge rubric`
+- `trigger final judge`
+- `trigger final run`
 
 The independent final diff review is clean across the complete split surface.
 The later Ultra/Review/Autoimprove contract changes intentionally invalidate

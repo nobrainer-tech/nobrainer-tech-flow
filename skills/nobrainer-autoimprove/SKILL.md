@@ -175,7 +175,7 @@ protected regression, target-workflow review when subjective, retained baseline
 and tested rollback. A holdout loss is `REVERTED`; never tune on that holdout.
 Any next attempt needs a new holdout, new baseline and new experiment record.
 
-When nested under `nobrainer-ultra`, update its one canonical TODO after each
+When nested under `nobrainer-tech-flow`, update its one canonical TODO after each
 auditable round and final holdout; do not create a second status owner.
 
 ## Stop the experiment, not the outcome

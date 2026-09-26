@@ -25,7 +25,10 @@
 
 Tell nobrainer-tech-flow what you need. It clarifies the goal, does the work, and checks the result.
 
-Say **“Use nobrainer-tech-flow”** (or invoke the technical entrypoint `$nobrainer-ultra`) to fix code, prepare
+New AI skills, workflows and add-ons keep arriving. nobrainer-tech-flow curates
+the useful parts into one maintained path from task to a checked finish.
+
+Say **“Use nobrainer-tech-flow”** (or invoke the technical entrypoint `$nobrainer-tech-flow`) to fix code, prepare
 an everyday document, or investigate a problem. Clear tasks go straight to execution;
 meaningful ambiguity gets one focused question round. Done means the agreed
 criteria are met and the result is checked. A real blocker is reported with the
@@ -38,26 +41,19 @@ goals, telemetry, subagents and client-specific tools are optional.
 **One model is enough.** Optional Jev (remote) and Laya (local) profiles add
 typed suggestions for bounded classification, ranking and evaluation. Setup
 remembers your choice; the default makes no provider calls. Missing access or
-failed requests return to the core workflow. See [setup and usage](skills/nobrainer-ultra/references/optional-decisions.md)
+failed requests return to the core workflow. See [setup and usage](skills/nobrainer-tech-flow/references/optional-decisions.md)
 for configuration, data approval and tested platform limits.
 
-The [September 22 review](docs/reviews/2026-09-22-top10-and-optional-decisions.md)
-maps ten popular skill repositories to existing Flow owners and optional
-specialists. It distinguishes documented features from measured behavior.
+Team checks whether a task has the capabilities it needs. Research records
+which sources were actually checked; Build names any known limit in an
+accepted simplification. The current task stays central while specialist
+tools remain optional.
 
-The [portable adoption follow-up](docs/reviews/2026-09-22-portable-adoption.md)
-adds capability coverage to Team, per-source coverage to Research and explicit
-revisit triggers for accepted simplifications in Build. These are original
-Flow contracts; specialist graph, connector and scientific engines remain
-separate capabilities rather than implied features of the core workflow.
-
-New public source links and checkout paths use `nobrainer-tech-flow`. Existing
-installations keep the legacy technical `nobrainer-tech-skills` package/plugin ID
-and all skill commands until a separate compatibility migration. See the
+New source links, public package/plugin IDs and checkout paths use
+`nobrainer-tech-flow`. Existing installations with the previous
+`nobrainer-tech-skills` ID need the reviewed migration path; an installed
+legacy package does not automatically become the new package. See the
 [Flow migration guide](docs/MIGRATION_TO_FLOW.md) and [naming map](docs/NAMING.md).
-
-[Source-backed comparison decisions](docs/reviews/2026-09-05-flow-coverage.md)
-cover the current collected Trending snapshot and explain what we adopted or retained.
 
 ## Try one real task
 
@@ -88,7 +84,9 @@ Clone a reviewed ref, validate it, preview exact targets, then apply:
   test "$(git rev-parse HEAD)" = "$NB_REVIEWED_COMMIT" || exit 3
   python3 scripts/validate_skills.py --suite || exit 4
   python3 scripts/install_skills.py --client codex || exit 4
+  python3 scripts/install_personalization.py --client codex || exit 4
   python3 scripts/install_skills.py --client codex --apply || exit 4
+  python3 scripts/install_personalization.py --client codex --apply || exit 4
 )
 ```
 
@@ -96,7 +94,7 @@ Set `NB_REVIEWED_COMMIT` to the exact full commit SHA you reviewed. Tags and
 branches are rejected because they can move; every failed gate stops before the
 next command.
 
-The installer defaults to all seventeen canonical skills, supports an exact
+The installer defaults to all eighteen canonical skills, supports an exact
 subset, refuses foreign targets and can use links or copies. Restart the client
 and perform clean-session discovery before claiming runtime installation. Full
 client-specific steps and rollback are in [Installation](docs/INSTALL.md).
@@ -108,13 +106,14 @@ client-specific steps and rollback are in [Installation](docs/INSTALL.md).
 
 ```mermaid
 flowchart TD
-    A[One outcome] --> B{Material ambiguity?}
+    A[One outcome; check Flow release once today] --> B{Material ambiguity?}
     B -->|yes| C[BUDDY: one focused question round]
     B -->|no| D{Small and clear?}
     C --> D
     D -->|yes| E[Direct answer or edit; check the result]
     D -->|no| F[SCOPE + PLAN: outcome, authority, proof; concise TODO]
-    F --> G[AUTOPILOT: execute the authorized scope]
+    F --> S[Short-term goal from long-term direction]
+    S --> G[AUTOPILOT: execute the authorized scope]
     G --> H[Verify; independent REVIEW when useful]
     H -->|verified defect; attempt budget remains| G
     H -->|acceptance met| I[Audit delegated artifacts and stop owned workers]
@@ -125,12 +124,16 @@ flowchart TD
     P --> G
     J -. independent authorized work remains .-> P
     F -. optional .-> L[Markdown goal for resume]
-    G -. independent work .-> M[Bounded native subagents]
+    G -. useful independent work .-> M[Bounded native subagents; adaptive model and effort]
     G -. configured shadow only .-> Q[Jev remote or Laya local: advisory typed decisions]
     Q -. unavailable or invalid: core fallback .-> G
     M --> H
+    F -. first project use .-> R[Inspect layers and relevant wiki]
+    R --> G
+    M -. recurring workload .-> T[Auto Fine Tune: measured worker route]
+    T --> M
     L -. context pressure; transfer supported .-> N[Fresh session: same task + started DD-MM]
-    N --> G
+    N -->|takeover verified; archive old if authorized| G
     G -. Flow entry and milestones .-> O[Date at startup; assess context health]
     O -. safe transfer qualifies .-> N
     L -. unavailable native goals or telemetry .-> G
@@ -149,32 +152,30 @@ behavior, client loading and source distribution. Local smoke evidence covers
 only its recorded source and scenarios. It is not a universal compatibility,
 quality or token-savings benchmark.
 
-The [1.6.1 instruction review](docs/reviews/2026-09-05-astra-instructions.md)
-clarifies user authority, skill-caused pauses and when verification is sufficient.
-The same rules apply across models; historical runtime proof stays tied to the
-tested release bytes.
+User authority, transparent pauses and sufficient verification apply across
+models. Historical runtime proof stays tied to the tested release bytes.
 
 ```text
 Small task       -> direct result + relevant check
 Larger task      -> clarify if needed + short TODO + execute + verify
 Resumable task   -> same workflow + one Markdown goal/checkpoint
-Independent work -> optional bounded subagents, audited before integration
+Independent work -> capable native workers by default when useful; MAIN audits
 ```
 
 Load specialists only when needed. Reuse the project's instructions, tests,
 specs and wiki. Choose SDD for durable contracts and TDD when a failing test
 would expose the behavior; neither requires installing a framework.
-See the [v1.6 review and research decisions](docs/reviews/v1.6.0-review.md).
 
 ## Start with one skill
 
-Use nobrainer-tech-flow, implemented by the technical skill
-[`nobrainer-ultra`](skills/nobrainer-ultra/), for setup or any non-trivial
+Use nobrainer-tech-flow through the canonical skill
+[`nobrainer-tech-flow`](skills/nobrainer-tech-flow/), for setup or any non-trivial
 outcome. A small reversible edit without a public contract, routing, workflow or
 portfolio change can use its quick path; other changes use the full path and its
 coherence gate.
-In Codex, the technical explicit invocation is `$nobrainer-ultra`. `nb-flow`,
-`nb-ultra` and `nb-workflow` remain compatibility trigger phrases only and
+In Codex, the technical explicit invocation is `$nobrainer-tech-flow`. Say
+`Use NBFlow`, `Use NBF` or `Use nobrainer-tech-flow` in natural language;
+older trigger phrases are migration context only and
 depend on a client's implicit description matching.
 
 ```text
@@ -216,7 +217,7 @@ Autopilot works in one MAIN session. Native subagents need a scoped assignment,
 observable completion and reviewed output. Use persistent sessions and a
 Dispatcher only when a real handoff or dependent queue needs them.
 
-## Seventeen skills, distinct ownership
+## Eighteen skills, distinct ownership
 
 Aliases are compatibility trigger phrases, not product names or duplicate
 directories. Each skill owns one
@@ -224,7 +225,7 @@ recurring boundary:
 
 | Skill | Alias | Responsibility |
 |---|---|---|
-| [`nobrainer-ultra`](skills/nobrainer-ultra/) | `nb-flow`, `nb-ultra` | Technical Flow entrypoint for end-to-end setup and delivery: one requirements gate, concise progress, bounded execution, recovery, audit and learning |
+| [`nobrainer-tech-flow`](skills/nobrainer-tech-flow/) | `NBFlow`, `NBF` | Technical entrypoint for end-to-end setup and delivery: one requirements gate, concise progress, bounded execution, recovery, audit and learning |
 | [`nobrainer-codex-context`](skills/nobrainer-codex-context/) | `nb-codex-context` | Project-local Codex context setup: instruction discovery, fallback and byte-budget audit, safe context block reconciliation and runtime readback |
 | [`nobrainer-skill-doctor`](skills/nobrainer-skill-doctor/) | `nb-skill-doctor` | Cross-project audit of skills, project instructions and task prompts: trigger overlap, excessive process, coverage and minimal portfolio repair planning |
 | [`nobrainer-team`](skills/nobrainer-team/) | `nb-team` | Minimal capability roster, installed-skill inventory and safe temporary specialist discovery |
@@ -256,7 +257,7 @@ creation still follows the host's explicit-request requirement. Autopilot checks
 available authorized UI/API/CLI steps before handing an obstacle to the owner,
 continues independent work, and bounds review to concrete executable slices.
 Explicit `yolo` requests select the same persistence contract, without changing
-permissions or bypassing a denial. See the [delivery contract](skills/nobrainer-ultra/references/delivery.md).
+permissions or bypassing a denial. See the [delivery contract](skills/nobrainer-tech-flow/references/delivery.md).
 These are agent instructions, not an enforcement daemon or a promise to run
 while the host is paused or out of quota.
 

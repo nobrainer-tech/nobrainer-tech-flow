@@ -18,8 +18,8 @@ scope; do not ask at every rollover. Installing Flow alone does not grant consen
 Higher-priority host restrictions still apply. Workers never rotate MAIN.
 
 Explicit nobrainer-tech-flow task invocation requests automatic session care under
-the technical Ultra entrypoint contract. Compatibility aliases `nb-flow`,
-`nb-ultra` and `nb-workflow` request the same behavior when recognized. Record
+the technical Flow entrypoint contract. `NBFlow` and `NBF` request the
+same behavior when recognized. Record
 that request as the policy source
 when host rules permit task-scoped continuation; retain a prior `off` setting.
 A stricter host that requires a separate explicit new-session request still wins.

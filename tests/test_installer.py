@@ -36,10 +36,10 @@ class InstallerTests(unittest.TestCase):
                 "--dest",
                 str(destination),
                 "--skill",
-                "nobrainer-ultra",
+                "nobrainer-tech-flow",
             )
             self.assertEqual(0, result.returncode, result.stderr)
-            self.assertIn("SYMLINK: nobrainer-ultra", result.stdout)
+            self.assertIn("SYMLINK: nobrainer-tech-flow", result.stdout)
             self.assertNotIn("LEGACY", result.stdout)
             self.assertIn("DRY_RUN", result.stdout)
             self.assertFalse(destination.exists())
@@ -53,12 +53,12 @@ class InstallerTests(unittest.TestCase):
                 "--dest",
                 str(destination),
                 "--skill",
-                "nobrainer-ultra",
+                "nobrainer-tech-flow",
                 "--apply",
             )
             first = self.run_installer(*args)
             second = self.run_installer(*args)
-            target = destination / "nobrainer-ultra"
+            target = destination / "nobrainer-tech-flow"
             self.assertEqual(0, first.returncode, first.stderr)
             self.assertEqual(0, second.returncode, second.stderr)
             self.assertTrue(target.is_symlink())
@@ -67,7 +67,7 @@ class InstallerTests(unittest.TestCase):
 
     def test_conflict_is_not_overwritten(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
-            target = Path(temp) / "skills" / "nobrainer-ultra"
+            target = Path(temp) / "skills" / "nobrainer-tech-flow"
             target.mkdir(parents=True)
             marker = target / "keep.txt"
             marker.write_text("owned by user\n", encoding="utf-8")
@@ -77,7 +77,7 @@ class InstallerTests(unittest.TestCase):
                 "--dest",
                 str(target.parent),
                 "--skill",
-                "nobrainer-ultra",
+                "nobrainer-tech-flow",
                 "--apply",
             )
             self.assertEqual(3, result.returncode)
@@ -749,7 +749,7 @@ class InstallerTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp:
             destination = Path(temp) / "skills"
-            target = destination / "nobrainer-ultra"
+            target = destination / "nobrainer-tech-flow"
 
             def interrupted_copy(
                 source: Path,
@@ -770,7 +770,7 @@ class InstallerTests(unittest.TestCase):
                 "--dest",
                 str(destination),
                 "--skill",
-                "nobrainer-ultra",
+                "nobrainer-tech-flow",
                 "--mode",
                 "copy",
                 "--apply",
@@ -806,7 +806,7 @@ class InstallerTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp:
             destination = Path(temp) / "skills"
-            target = destination / "nobrainer-ultra"
+            target = destination / "nobrainer-tech-flow"
             foreign = Path(temp) / "foreign-skill"
             foreign.mkdir()
             (foreign / "foreign.txt").write_text(
@@ -827,7 +827,7 @@ class InstallerTests(unittest.TestCase):
                 "--dest",
                 str(destination),
                 "--skill",
-                "nobrainer-ultra",
+                "nobrainer-tech-flow",
                 "--mode",
                 "copy",
                 "--apply",
@@ -863,7 +863,7 @@ class InstallerTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp:
             destination = Path(temp) / "skills"
-            target = destination / "nobrainer-ultra"
+            target = destination / "nobrainer-tech-flow"
             foreign = Path(temp) / "foreign-skill"
             foreign.mkdir()
             (foreign / "foreign.txt").write_text(
@@ -884,7 +884,7 @@ class InstallerTests(unittest.TestCase):
                 "--dest",
                 str(destination),
                 "--skill",
-                "nobrainer-ultra",
+                "nobrainer-tech-flow",
                 "--apply",
             ]
             stderr = io.StringIO()
@@ -921,7 +921,7 @@ class InstallerTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp:
             destination = Path(temp) / "skills"
-            target = destination / "nobrainer-ultra"
+            target = destination / "nobrainer-tech-flow"
             marker = target / "foreign.txt"
             real_publish = module.atomic_rename_no_replace
 
@@ -939,7 +939,7 @@ class InstallerTests(unittest.TestCase):
                 "--dest",
                 str(destination),
                 "--skill",
-                "nobrainer-ultra",
+                "nobrainer-tech-flow",
                 "--mode",
                 "copy",
                 "--apply",
@@ -976,7 +976,7 @@ class InstallerTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp:
             destination = Path(temp) / "skills"
-            target = destination / "nobrainer-ultra"
+            target = destination / "nobrainer-tech-flow"
             target.mkdir(parents=True)
             expected = module.entry_fingerprint(target)
             self.assertIsNotNone(expected)
@@ -1021,7 +1021,7 @@ class InstallerTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp:
             destination = Path(temp) / "skills"
-            target = destination / "nobrainer-ultra"
+            target = destination / "nobrainer-tech-flow"
             target.mkdir(parents=True)
             (target / "SKILL.md").write_text("original\n", encoding="utf-8")
             expected = module.entry_fingerprint(target)
@@ -1068,14 +1068,14 @@ class InstallerTests(unittest.TestCase):
                 "--dest",
                 str(destination),
                 "--skill",
-                "nobrainer-ultra",
+                "nobrainer-tech-flow",
                 "--apply",
             )
 
             self.assertEqual(3, result.returncode)
             self.assertIn("UNMAPPED_CONFLICT: nobrainer-fast-audit", result.stdout)
             self.assertEqual("private contract\n", marker.read_text(encoding="utf-8"))
-            self.assertFalse((destination / "nobrainer-ultra").exists())
+            self.assertFalse((destination / "nobrainer-tech-flow").exists())
 
     def test_copy_ownership_race_preserves_foreign_target(self) -> None:
         spec = importlib.util.spec_from_file_location("skill_installer_race_test", INSTALLER)
@@ -1086,7 +1086,7 @@ class InstallerTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp:
             destination = Path(temp) / "skills"
-            target = destination / "nobrainer-ultra"
+            target = destination / "nobrainer-tech-flow"
             target.mkdir(parents=True)
             marker = target / "foreign.txt"
             marker.write_text("owned by another process\n", encoding="utf-8")
@@ -1098,7 +1098,7 @@ class InstallerTests(unittest.TestCase):
                 "--dest",
                 str(destination),
                 "--skill",
-                "nobrainer-ultra",
+                "nobrainer-tech-flow",
                 "--mode",
                 "copy",
                 "--apply",
@@ -1143,6 +1143,7 @@ class InstallerTests(unittest.TestCase):
                     "nobrainer-codex-context",
                     "nobrainer-skill-doctor",
                     "nobrainer-autoimprove",
+                    "nobrainer-auto-fine-tune",
                     "nobrainer-browser",
                     "nobrainer-build",
                     "nobrainer-decide",
@@ -1155,12 +1156,12 @@ class InstallerTests(unittest.TestCase):
                     "nobrainer-sessions",
                     "nobrainer-spec-driven-development",
                     "nobrainer-team",
-                    "nobrainer-ultra",
+                    "nobrainer-tech-flow",
                     "nobrainer-wiki",
                 },
                 installed,
             )
-            self.assertEqual(17, len(installed))
+            self.assertEqual(18, len(installed))
 
     def test_inventory_drift_blocks_default_and_explicit_install(self) -> None:
         spec = importlib.util.spec_from_file_location(
@@ -1183,7 +1184,7 @@ class InstallerTests(unittest.TestCase):
 
             for suffix in (
                 [],
-                ["--skill", "nobrainer-ultra"],
+                ["--skill", "nobrainer-tech-flow"],
                 ["--skill", "unreviewed"],
             ):
                 with self.subTest(suffix=suffix):

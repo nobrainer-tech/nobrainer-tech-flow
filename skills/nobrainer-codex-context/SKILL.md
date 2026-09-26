@@ -104,6 +104,6 @@ ROLLBACK: <exact preimage or NOT_APPLICABLE>
 
 Route portfolio-wide semantic instruction or skill audits to
 `nobrainer-skill-doctor`; keep one-project Codex context setup and repair here.
-Route broader setup, installation or delivery work back to `nobrainer-ultra`.
+Route broader setup, installation or delivery work back to `nobrainer-tech-flow`.
 Use `nobrainer-sessions` for context transfer and `nobrainer-review` for a
 release or adversarial closeout; do not duplicate their contracts here.

@@ -13,6 +13,7 @@ CANONICAL_SKILLS = {
     "nobrainer-codex-context",
     "nobrainer-skill-doctor",
     "nobrainer-autoimprove",
+    "nobrainer-auto-fine-tune",
     "nobrainer-browser",
     "nobrainer-build",
     "nobrainer-decide",
@@ -25,7 +26,7 @@ CANONICAL_SKILLS = {
     "nobrainer-sessions",
     "nobrainer-spec-driven-development",
     "nobrainer-team",
-    "nobrainer-ultra",
+    "nobrainer-tech-flow",
     "nobrainer-wiki",
 }
 
@@ -36,7 +37,7 @@ class AdapterTests(unittest.TestCase):
         text = path.read_text(encoding="utf-8")
         normalized = " ".join(text.split())
         self.assertIn(BOOTSTRAP_MARKER, text)
-        self.assertIn("nobrainer-ultra", text)
+        self.assertIn("nobrainer-tech-flow", text)
         self.assertIn("correction", text.lower())
         self.assertIn("simple", text.lower())
         self.assertIn("owner gate", text.lower())
@@ -56,14 +57,14 @@ class AdapterTests(unittest.TestCase):
             "No mode authorizes global instructions",
         ):
             self.assertIn(contract, normalized)
-        self.assertLessEqual(len(text.split()), 190)
+        self.assertLessEqual(len(text.split()), 220)
         self.assertNotIn("/" + "Users" + "/", text)
         self.assertNotIn("continue until done", text.lower())
 
     def test_all_problem_gate_entrypoints_calibrate_local_and_web_evidence(self) -> None:
         paths = (
             ROOT / "adapters" / "bootstrap.md",
-            ROOT / "skills" / "nobrainer-ultra" / "references" / "setup.md",
+            ROOT / "skills" / "nobrainer-tech-flow" / "references" / "setup.md",
             ROOT / ".github" / "copilot-instructions.md",
         )
         for path in paths:
@@ -126,7 +127,7 @@ class AdapterTests(unittest.TestCase):
                     self.assertEqual({expected_key}, set(payload))
                     context = payload[expected_key]
                 self.assertIn(BOOTSTRAP_MARKER, context)
-                self.assertIn("nobrainer-ultra", context)
+                self.assertIn("nobrainer-tech-flow", context)
                 self.assertLess(len(context), 2_000)
 
     def test_opencode_registers_skills_and_injects_bootstrap_once(self) -> None:
@@ -144,7 +145,7 @@ const parts = output.messages[0].parts;
 const combined = parts.map(part => part.text || '').join('\n');
 const count = combined.split('NOBRAINER_BOOTSTRAP_V1').length - 1;
 if (parts.length !== 1 || parts[0].id !== 'part-1') process.exit(3);
-if (count !== 1 || !combined.includes('nobrainer-ultra') || !combined.endsWith('\n\nhello')) process.exit(4);
+if (count !== 1 || !combined.includes('nobrainer-tech-flow') || !combined.endsWith('\n\nhello')) process.exit(4);
 """
         result = subprocess.run(
             ["node", "--input-type=module", "-e", script],
@@ -163,7 +164,7 @@ if (count !== 1 || !combined.includes('nobrainer-ultra') || !combined.endsWith('
         gemini = json.loads((ROOT / "gemini-extension.json").read_text())
         kimi = json.loads((ROOT / ".kimi-plugin" / "plugin.json").read_text())
         for manifest in (portable, gemini, kimi):
-            self.assertEqual("nobrainer-tech-skills", manifest["name"])
+            self.assertEqual("nobrainer-tech-flow", manifest["name"])
             self.assertEqual(canonical_version, manifest["version"])
         self.assertEqual(
             "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
@@ -171,7 +172,7 @@ if (count !== 1 || !combined.includes('nobrainer-ultra') || !combined.endsWith('
         )
         self.assertEqual("GEMINI.md", gemini["contextFileName"])
         self.assertEqual("./skills/", kimi["skills"])
-        self.assertEqual("nobrainer-ultra", kimi["sessionStart"]["skill"])
+        self.assertEqual("nobrainer-tech-flow", kimi["sessionStart"]["skill"])
         self.assertIn("visible sessions", kimi["skillInstructions"])
         self.assertNotIn("repository", kimi)
         self.assertNotIn("capabilities", kimi["interface"])

@@ -1,1 +1,0 @@
-Completed `invite.md` (43 words) and `checklist.md` (exactly three checkbox items). Checked both against every brief fact and marked the existing `todo.md` complete. Nothing sent or published.

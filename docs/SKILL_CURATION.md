@@ -12,7 +12,7 @@ A permanent skill must pass every condition:
 1. It has a distinct trigger and observable result.
 2. It is useful across projects without private paths or accounts; any client-specific capability has an explicit compatibility boundary.
 3. Loading it only when triggered saves more context and risk than embedding its
-   full protocol in Ultra.
+   full protocol in Flow.
 4. Its behavior is not already owned by another active skill or a maintained
    project/native capability.
 5. Its failure, stop, owner-gate and rollback behavior can be tested.
@@ -21,11 +21,11 @@ A permanent skill must pass every condition:
 
 Popularity, file size and prior existence are not admission criteria.
 
-## Active seventeen
+## Active eighteen
 
 | Skill | Distinct owner |
 |---|---|
-| `nobrainer-ultra` | One request through brief requirements, concise progress, guarded execution, audit, recovery and learning. |
+| `nobrainer-tech-flow` | One request through brief requirements, concise progress, guarded execution, audit, recovery and learning. |
 | `nobrainer-team` | Minimal roles, installed capability inventory and safe temporary specialist discovery. |
 | `nobrainer-dispatcher` | Ready-set calculation, dependency-aware bounded batches, backpressure and audited result routing. |
 | `nobrainer-research` | Bounded current external research and source-quality/freshness control. |
@@ -37,6 +37,7 @@ Popularity, file size and prior existence are not admission criteria.
 | `nobrainer-wiki` | Setup, targeted retrieval, sourced capture and deterministic maintenance of durable knowledge. |
 | `nobrainer-browser` | Rendered UI, bounded CDP profile restart, approved browser-session attach, browser tests and trace evidence. |
 | `nobrainer-autoimprove` | Measured artifact improvement with baseline, holdout, budget and keep-or-revert. |
+| `nobrainer-auto-fine-tune` | Calibrates native worker routes against verified host capability, quality, latency and cost evidence while MAIN retains the owner's model. |
 | `nobrainer-decide` | One consequential decision after alternatives, scoring and adversarial attack. |
 | `nobrainer-rca` | Read-only causal diagnosis of an observed failure. |
 | `nobrainer-review` | Final acceptance/bug/release evidence gate and verified actionable findings. |
@@ -47,8 +48,8 @@ Popularity, file size and prior existence are not admission criteria.
 
 Do not create separate permanent skills for:
 
-- planning, autopilot, general NoBrainer setup or correction capture: Ultra owns the lifecycle; Codex-specific project-context setup belongs to `nobrainer-codex-context`;
-- visible goal/TODO progress: Ultra owns one canonical plan and its compact view;
+- planning, autopilot, general NoBrainer setup or correction capture: the Flow entry skill owns the lifecycle; Codex-specific project-context setup belongs to `nobrainer-codex-context`;
+- visible goal/TODO progress: Flow owns one canonical plan and its compact view;
   do not add a separate goal, todo or progress skill;
 - KISS, DRY, SOLID, YAGNI, simplification or test safety: Build owns them;
 - brand-specific voice facts belong in a project guide or wiki; Writing owns the
@@ -106,7 +107,7 @@ Any addition, merge or retirement updates together:
 
 - `skills/`, aliases and installer migrations;
 - validator and behavioral tests;
-- Ultra routing and setup instructions;
+- Flow routing and setup instructions;
 - README, compatibility and release notes;
 - clean-session trigger/readback evidence.
 
