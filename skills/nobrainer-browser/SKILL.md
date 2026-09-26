@@ -5,23 +5,65 @@ description: "Use when the owner says nb-browser or nobrainer-browser, asks to i
 
 # NoBrainer Browser
 
-Use one Playwright-first browser path. The agent-focused `@playwright/cli`
-drives and inspects pages; the repository's Playwright test CLI records and
-opens traces. Do not add a second browser framework merely because one exists.
+Choose the browser path from the active client and the operation the task needs.
+In Codex desktop, prefer its built-in browser for ordinary rendered-site work;
+use Playwright CLI for repository browser tests, repeatable automation and trace
+analysis. Do not add a second browser framework merely because one exists.
 
 ## Route the task
 
 | Need | Default |
 |---|---|
-| Inspect a rendered page, follow navigation, read dynamic content | `playwright-cli` |
-| Reuse an approved logged-in Chrome/Edge session | `playwright-cli attach` over CDP |
+| In Codex desktop, inspect or operate a rendered website or local app | Codex built-in browser (`@Browser`) when the active host exposes it |
+| In Codex desktop, use an already approved regular Chrome session | `@Chrome` through the approved browser extension when available; otherwise use the explicit CDP attach path below only when requested and approved |
+| In other clients, inspect or operate a rendered page | That client's documented native browser capability; do not assume Codex or Playwright features exist |
 | Run or debug repository tests | the repository's `npx playwright test` |
 | Record or inspect failure evidence | Playwright trace + `show-trace` |
 | Plain static content already available without a browser | use the cheaper read path |
 
+### Codex browser preference and capability
+
+On the first browser task in a Codex desktop task/session, check for an explicit
+browser preference in the current instructions or earlier owner choice. If none
+is recorded, tell the owner briefly: "I'll use Codex's built-in browser by
+default; tell me if you'd prefer an already approved Chrome session." Continue
+with the built-in browser without waiting for a reply when it exposes the
+operation needed. Do not ask again in the same task/session after a preference
+is known. A preference stated for one task applies to that task; change the
+default only when the owner says it is a lasting preference. Record and reuse a
+lasting choice through the client's supported personalization mechanism only
+when authorized; report when the client provides no such mechanism instead of
+claiming it was saved.
+
+The Codex desktop built-in browser can open pages and interact with rendered
+state, including clicks, typing, screenshots and result verification. Invoke
+or reference it as `@Browser` when the active Codex host supports browser use.
+It uses a separate browser profile and does not automatically inherit regular
+Chrome tabs, logins or session state. Ask for a preference when an existing
+authenticated session might matter, but keep the question non-blocking when the
+built-in browser can safely do the task. Use the approved Chrome extension path
+(`@Chrome`) when the owner chooses their regular browser session and that
+capability is available. Use CDP attach only under the existing-session rules
+below. Never copy cookies or profile data between browsers.
+
+Confirm the required operation is actually exposed before selecting a route.
+An `open_in_codex` browser-panel/display capability can show a URL or browser
+tab in the Codex UI; by itself it does not provide browser automation, page
+inspection, user approval or proof of a side effect. Do not treat it as an
+`@Browser` interaction capability. If the native browser is unavailable or
+cannot perform the needed operation, state the exact missing capability and
+use an available, authorized alternative (such as the Playwright CLI) only when
+it satisfies the task's login and safety needs. If no safe capable route is
+available, stop and report the limitation.
+
+For clients other than Codex, inspect that client's live/documented native
+browser support first. This preference rule does not make `@Browser`, `@Chrome`
+or Codex panel tools portable to other clients.
+
 Do not install MCP when the CLI covers the task. Do not install a browser
 plugin as the default path. Reuse an already configured MCP only when the
-current harness cannot run the CLI and the MCP has fresh capability readback.
+current harness cannot perform the required operation and the MCP has fresh
+capability readback.
 
 ## Capability and install gate
 
@@ -182,7 +224,9 @@ CLI flag is sufficient.
 - Report the exact CLI version, browser/session mode, pages or tests inspected,
   trace/report paths, observed result, side effects, uncertainty and cleanup.
 
-Sources: [Playwright attach](https://playwright.dev/agent-cli/commands/attach),
+Sources: [Codex and built-in browser](https://learn.chatgpt.com/docs/browser),
+[ChatGPT browser extension](https://learn.chatgpt.com/docs/chrome-extension),
+[Playwright attach](https://playwright.dev/agent-cli/commands/attach),
 [Playwright `connectOverCDP`](https://playwright.dev/docs/api/class-browsertype),
 [Playwright test CLI](https://playwright.dev/docs/test-cli),
 [Trace Viewer](https://playwright.dev/docs/trace-viewer),

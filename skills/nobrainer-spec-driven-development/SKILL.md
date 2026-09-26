@@ -120,7 +120,7 @@ because the written spec looks complete.
 
 ## Review convergence
 
-Follow the [delivery contract](../nobrainer-ultra/references/delivery.md#keep-review-proportional-to-progress)
+Follow the [delivery contract](../nobrainer-tech-flow/references/delivery.md#keep-review-proportional-to-progress)
 for slice-sized review and correction. Repeated amendments do not reset the
 review budget. Keep concrete safety and acceptance blockers open; proceed with
 authorized independent work instead of restarting a whole-plan perfection loop.

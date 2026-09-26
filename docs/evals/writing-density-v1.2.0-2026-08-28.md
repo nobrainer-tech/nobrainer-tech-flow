@@ -45,7 +45,7 @@ After independent full-diff review identified missing release registration and
 hash wiring, a third untouched release holdout was frozen. Fresh, isolated
 candidate and judge sessions passed all five different cases. Full runtime,
 baseline, command, warning and integrity evidence is in the
-[`release run record`](artifacts/v1.2.0-writing-release-holdout-run.md).
+`release run record`.
 No skill change was made from any release-holdout result.
 
 Historical artifact hashes:

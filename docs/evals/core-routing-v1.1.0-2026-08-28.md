@@ -92,7 +92,7 @@ No holdout result was used for further skill tuning.
 
 The exact prompt, output, judge prompt, judge output, hashes, model/runtime,
 commands and limitations are preserved in
-[`artifacts/v1.1.0-holdout-run.md`](artifacts/v1.1.0-holdout-run.md).
+`artifacts/v1.1.0-holdout-run.md`.
 
 After review-driven policy fixes were frozen, a separate untouched holdout
 tested owner-decision reversal under `LEARNING_WRITE_POLICY: OFF`, failed-review
@@ -101,7 +101,7 @@ made no durable learning write, invalidated the stale field contract and proof,
 and routed one bounded correction back to Build. An independent judge returned
 10/10 with no hard failure. No result from this final holdout was used to tune
 the skill. Its complete record is in
-[`artifacts/v1.1.0-final-holdout-run.md`](artifacts/v1.1.0-final-holdout-run.md).
+`artifacts/v1.1.0-final-holdout-run.md`.
 
 The final review then exposed an unconditional persistence phrase in the agent
 error hook and missing `AUTO_SCOPED` behavioral evidence. The hook was made
@@ -110,7 +110,7 @@ matrix verified one governed project-local write under `AUTO_SCOPED`, one
 unapplied single-store diff under `ASK`, and task-local correction with no diff
 under `OFF`. The independent judge returned 10/10 with no hard failure; no result
 from the matrix was used to tune the skill. The complete record is in
-[`artifacts/v1.1.0-learning-policy-matrix-holdout-run.md`](artifacts/v1.1.0-learning-policy-matrix-holdout-run.md).
+`artifacts/v1.1.0-learning-policy-matrix-holdout-run.md`.
 
 A subsequent full-diff review found the same unconditional persistence wording
 inside Autoimprove and the public README. Both now use the three-mode contract,
@@ -119,7 +119,7 @@ included `nobrainer-autoimprove` as a frozen input and verified that no learning
 policy silently authorizes an experiment target or skill/prompt edit. Its
 independent judge returned 10/10 with no hard failure; no result was used to tune
 the candidate. The complete record is in
-[`artifacts/v1.1.0-learning-policy-integration-holdout-run.md`](artifacts/v1.1.0-learning-policy-integration-holdout-run.md).
+`artifacts/v1.1.0-learning-policy-integration-holdout-run.md`.
 
 ## Reproducible candidate checks
 

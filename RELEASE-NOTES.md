@@ -1,5 +1,20 @@
 # nobrainer-tech-flow release notes
 
+## v2.0.0 - 2026-09-27
+
+- Canonical product, package and entrypoint name: `nobrainer-tech-flow`.
+- Adds standard Auto Fine Tune onboarding to the 18-module workflow.
+- Read-only preflight, stable selection IDs, scoped setup, client-specific
+  personalization, readback and rollback through the existing installer.
+- Preserves MAIN while coordinating useful available workers and task-sized goals.
+- Adds daily active-use update checks, browser preferences and guarded worktree cleanup.
+- Removes internal working reviews and raw evaluation artifacts from the current tree.
+
+This major version changes package/entry identities. Read the
+[migration guide](docs/MIGRATION_TO_FLOW.md) and
+[verification record](docs/releases/v2.0.0.md) before upgrading.
+
+
 ## v1.14.1 - 2026-09-22
 
 - Team makes multi-capability coverage and durable source provenance explicit.
@@ -132,8 +147,7 @@ easier to try. A 435-discovery Trending screen and pinned source review inform
 the release; no cross-product model-quality benchmark is claimed.
 
 See [verification and limits](docs/releases/v1.7.0.md),
-[runner usage](docs/BOUNDED_RUNNER.md) and
-[research decisions](docs/reviews/2026-09-05-trending-release.md).
+[runner usage](docs/BOUNDED_RUNNER.md).
 
 ## v1.6.1 — 2026-09-05
 
@@ -144,9 +158,7 @@ See [verification and limits](docs/releases/v1.7.0.md),
 - Historical runtime evidence now checks its frozen source archive, so later edits cannot inherit old proof.
 - The fifteen-skill portfolio and existing prompt-size caps remain unchanged.
 
-See [verification and limits](docs/releases/v1.6.1.md),
-[instruction review](docs/reviews/2026-09-05-astra-instructions.md) and
-[public prompt research](docs/reviews/2026-09-05-v1.6.1-research.md).
+See [verification and limits](docs/releases/v1.6.1.md).
 
 ## v1.6.0 — 2026-09-04
 
@@ -162,8 +174,7 @@ See [verification and limits](docs/releases/v1.6.1.md),
 - Current Astra positioning, dated ecosystem research and scoped model evidence
   replace stale availability statements. No universal cost or quality guarantee.
 
-See [verification and runtime limits](docs/releases/v1.6.0.md) and
-[review/research decisions](docs/reviews/v1.6.0-review.md).
+See [verification and runtime limits](docs/releases/v1.6.0.md).
 
 ## v1.5.0 — 2026-09-02
 

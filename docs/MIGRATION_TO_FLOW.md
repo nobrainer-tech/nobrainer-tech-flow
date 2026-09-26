@@ -1,37 +1,40 @@
 # Move to nobrainer-tech-flow
 
-Version **1.7.1** changed the product name to **NoBrainer.Tech Flow**.
-Current display spelling is **nobrainer-tech-flow**; the historical version
-statement above retains its original name.
+Version **1.7.1** introduced an earlier display spelling.
+The current display name is **nobrainer-tech-flow**; the repository,
+public package/plugin identity and entry skill are `nobrainer-tech-flow`.
 **From task to done.** Tell it what you need. Flow clarifies the goal, does the
 work, and checks the result.
 
 The canonical public repository identity is
 [`nobrainer-tech/nobrainer-tech-flow`](https://github.com/nobrainer-tech/nobrainer-tech-flow)
 and the product website is [nobrainer.tech/flow](https://nobrainer.tech/flow/).
-The skill contracts and optional command runner are unchanged from 1.7.0.
+The earlier 1.7.1 rename changed display/source routing. The proposed 2.0.0
+upgrade also changes the entry skill and public package/plugin identities.
 Done still means the agreed criteria are met and the result is checked; missing
 access or an unresolved decision can require an explicit unblock action.
 
 ## Existing installation identities
 
-Display names and source URLs change. These exact technical identifiers remain
-stable so a client can update an existing installation instead of treating Flow
-as a second package:
+The table below records the previous package identity for migration. Existing
+registrations must be updated deliberately; a second package next to the old
+one can cause duplicate routing.
 
-| Surface | Preserved identifier |
+| Surface | Previous identifier and migration |
 |---|---|
-| Existing package and Claude Code, Codex, Cursor, Kimi, Gemini and portable plugin IDs | `nobrainer-tech-skills` |
+| Existing package and Claude Code, Codex, Cursor, Kimi, Gemini and portable plugin IDs | `nobrainer-tech-skills` -> `nobrainer-tech-flow` after exact client readback |
 | New public repository/package channel | `nobrainer-tech-flow` |
 | Claude Code marketplace name | `nobrainer-tech` |
 | Local development marketplace name | `nobrainer-tech-skills-dev` |
-| OpenCode package entry prefix | `nobrainer-tech-skills@git+` |
+| OpenCode package entry prefix | `nobrainer-tech-skills@git+` -> `nobrainer-tech-flow@git+` at a reviewed immutable ref |
 | OpenCode adapter module | `.opencode/plugins/nobrainer-tech-skills.js` |
 | Pi extension module | `.pi/extensions/nobrainer-tech-skills.js` |
 | Shared bootstrap marker | `NOBRAINER_BOOTSTRAP_V1` |
-| Technical entrypoint and compatibility aliases | `$nobrainer-ultra`; `nb-flow`, `nb-ultra` and `nb-workflow` are aliases only |
+| Technical entrypoint and compatibility aliases | `$nobrainer-ultra` -> `$nobrainer-tech-flow`; old triggers are recognized only for migration |
 
-All fifteen skill directory and frontmatter names remain unchanged:
+The previous skill directory list is historical. The reviewed migration renames
+the entry skill and adds the calibration skill; do not overwrite a foreign
+installed target to force the migration.
 
 ```text
 nobrainer-ultra
@@ -51,17 +54,17 @@ nobrainer-rca
 nobrainer-review
 ```
 
-Their existing aliases, configuration paths and installer targets are unchanged.
-The legacy technical name `nobrainer-tech-skills` may therefore still appear in package
-managers and client settings. It identifies the same product; do not add a
-second compatibility package or rename installed directories without a separate
-migration. New public source links and checkout paths use `nobrainer-tech-flow`.
+These are frozen predecessor identities. Do not rewrite their old release
+records. Current public installation has eighteen skills, including
+`nobrainer-tech-flow` and `nobrainer-auto-fine-tune`.
 
 ## Update the source in place
 
-Use the existing client's normal update mechanism and preserve its package ID.
-For a Git-backed OpenCode entry, change only the repository URL and the reviewed
-commit pin, keeping the prefix shown above; see [Installation](INSTALL.md).
+Use the client's supported upgrade mechanism. In OpenCode, change the old
+package prefix to `nobrainer-tech-flow@git+` and use an immutable reviewed
+commit pin. In plugin hosts, inspect the installed old ID and the new
+registration before retiring anything; a new ID can coexist with the old
+one and cause duplicate routing. Do not delete an unverified foreign target.
 
 Existing local checkouts can keep their directory names. Installed symlinks may
 point into that directory, so moving it is unnecessary. After confirming that
@@ -71,13 +74,14 @@ point into that directory, so moving it is unnecessary. After confirming that
 git remote set-url origin https://github.com/nobrainer-tech/nobrainer-tech-flow.git
 ```
 
-The [current installation examples](INSTALL.md) use `nobrainer-tech-flow` for a
-new checkout and still require an exact reviewed commit, validation and an
-installer dry-run. This guide does not run an update, move a checkout, rename
-installed directories or install anything globally.
+The [current installation examples](INSTALL.md) require an exact reviewed
+commit, validation and installer dry-run. `install_skills.py --migrate-legacy`
+handles only a verified old symlink owned by the same checkout; a copied or
+foreign old installation needs separate exact readback and a scoped migration.
+The old path is never deleted merely because the new skill was installed.
 
 After an update, read back the source commit and package identity, restart the
-client and confirm that `nobrainer-ultra` loads once. A version change or an
+client and confirm that `nobrainer-tech-flow` loads once. A version change or an
 installed file alone does not establish runtime compatibility.
 
 ## Old links and evidence

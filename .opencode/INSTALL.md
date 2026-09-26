@@ -11,7 +11,7 @@ explicit skills path instead.
 ```json
 {
   "plugin": [
-    "nobrainer-tech-skills@git+https://github.com/nobrainer-tech/nobrainer-tech-flow.git#NB_REVIEWED_COMMIT_SHA"
+    "nobrainer-tech-flow@git+https://github.com/nobrainer-tech/nobrainer-tech-flow.git#NB_REVIEWED_COMMIT_SHA"
   ]
 }
 ```
@@ -20,7 +20,7 @@ explicit skills path instead.
 it with the full SHA of the exact reviewed release. Record that SHA in the
 release notes; do not silently follow `main` or copy an older package pin.
 
-Restart OpenCode, list native skills, and confirm `nobrainer-ultra` is present.
+Restart OpenCode, list native skills, and confirm `nobrainer-tech-flow` is present.
 The adapter registers the canonical `skills/` directory and prepends the small
 shared `adapters/bootstrap.md` context to the first user message once. It does
 not copy skill bodies into the prompt, add alternate skill trees, or inject on
@@ -30,5 +30,7 @@ For a local checkout, either use `scripts/install_skills.py --client opencode`
 or configure the checkout's `skills/` directory as an OpenCode skills path.
 See [the full installation guide](../docs/INSTALL.md).
 
-The package ID remains `nobrainer-tech-skills` to update existing installations.
-See the [Flow migration guide](../docs/MIGRATION_TO_FLOW.md) before changing a configured source.
+The package ID is `nobrainer-tech-flow`. Existing
+`nobrainer-tech-skills` registrations require the
+[migration guide](../docs/MIGRATION_TO_FLOW.md) so old and new adapters do not
+load together unnoticed.

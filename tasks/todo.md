@@ -99,7 +99,7 @@ Closeout: both validators and all 125 tests pass, including the source package
 without Git metadata. Corrupt, missing and duplicate archive entries are rejected.
 Scoped secret scan, diff check and instruction equality pass; independent review
 found no remaining defect. Limits remain 1600 Ultra words, 190 bootstrap words
-and 200 AGENTS/CLAUDE lines. [Review and sources](../docs/reviews/2026-09-05-astra-instructions.md).
+and 200 AGENTS/CLAUDE lines. The source review is retained internally.
 The global instruction file was inspected read-only; obsolete local references
 and conflicting defaults are recorded privately for a separate configuration fix.
 
@@ -144,7 +144,7 @@ Model policy for this review: MAIN host-selected; independent scouts/evaluator
 requested advertised Sol low with fresh task context, at most two active workers,
 no nested delegation. Research and evaluator assignments completed.
 
-Evidence and decisions: [dated review](../docs/reviews/2026-09-05-bounded-orchestration.md).
+Evidence and decisions: internal dated review.
 Rollback of the rejected experiment is complete. Remaining edits are review
 artifacts only; no commit, push, release, installation or social action occurred.
 
@@ -332,6 +332,6 @@ Done clean: coherent instructions, 15 modules, documented fallback and proof.
 - [x] Test stale ACK, uncertain create, live writers, no transport, archive failure.
 - [x] Review and reconcile documentation and delivery state.
 
-Source and decision-level proof: docs/reviews/2026-09-05-session-restart.md.
+Source and decision-level proof: internal session-restart review.
 152 tests pass; native cross-client automation and savings remain unverified.
 The v1.7.1 release archive is preserved; this change is development source.

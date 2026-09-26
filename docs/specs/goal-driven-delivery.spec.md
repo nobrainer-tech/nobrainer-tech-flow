@@ -29,16 +29,16 @@ UI tools, scheduling and telemetry are optional capability adapters.
 | ID | Type | Source | Ruling |
 |---|---|---|---|
 | SRC-1 | OBSERVED | Owner requests, 2026-09-11 | Universal contract, whole-SDD goals, TODO, BUDDY consent, max 15 useful subagents, skills.sh specialists |
-| SRC-2 | OBSERVED | [Incident review](../reviews/2026-09-11-autopilot-delivery.md) | Avoid repeated plan review without accepted progress; do not generalize all blockers as false |
+| SRC-2 | OBSERVED | Incident review | Avoid repeated plan review without accepted progress; do not generalize all blockers as false |
 | SRC-3 | ATTRIBUTED | [OpenAI guidance](https://developers.openai.com/api/docs/guides/latest-model) | Conflicting instructions can cause early pauses; retain source hierarchy and prior authorization |
 | SRC-4 | OBSERVED | [GoalKit](https://github.com/Nom-nom-hub/goal-kit), [goal-oriented requirements](https://www.cs.toronto.edu/pub/eric/REFSQ98.html) | GDD terminology and goal-oriented methods predate this design; no originality claim for the term |
-| SRC-5 | DECISION | Current implementation | GDD belongs to Ultra delivery plus Team/Dispatcher/Review; no seventeenth skill or duplicate state store |
+| SRC-5 | DECISION | Current implementation | GDD belongs to Flow delivery plus Team/Dispatcher/Review; no seventeenth skill or duplicate state store |
 
 ## Scope and ownership
 
 | Component | Responsibility | Dependency |
 |---|---|---|
-| Ultra / delivery | Overarching goal, BUDDY, TODO, milestone acceptance and continuation | Owner outcome |
+| Flow / delivery | Overarching goal, BUDDY, TODO, milestone acceptance and continuation | Owner outcome |
 | SDD | Requirements, acceptance IDs, scope changes | Inspected requirements |
 | Team | Installed inventory, inspected external skills, bounded specialist assignment | Ready work and capability gaps |
 | Dispatcher | Ready set, parallel batches, capacity and write conflict checks | Accepted dependencies and Team plan |
@@ -68,7 +68,8 @@ name is `nobrainer-tech-flow`; `nb-flow` and `nb-ultra` remain input aliases.
 3. Bind one whole-SDD goal; partition all acceptance IDs into milestones. Show TODO.
 4. Compute ready work. Team resolves skill gaps from installed/project capabilities
    or skills.sh. Inspect source/ref, scripts and permission scope before use.
-5. Dispatch up to min(host/model capacity, 15 live descendants, useful ready units).
+5. Dispatch up to min(verified effective host/model capacity, useful ready
+   units), including all live descendants and review workers in the accounting.
    MAIN continues integration or dependency work. Unknown spawn results count as
    unresolved capacity until reconciled. No nested dispatch without a reserved slot.
 6. Verify milestone artifacts and integration; update TODO and continue ready work.
@@ -79,7 +80,7 @@ name is `nobrainer-tech-flow`; `nb-flow` and `nb-ultra` remain input aliases.
    delivery. Host-only START, MFA and actual quota failures remain explicit limits.
 
 GDD milestone states and transition requirements are defined in the
-[delivery reference](../../skills/nobrainer-ultra/references/delivery.md#gdd-goal-driven-delivery-through-milestones).
+[delivery reference](../../skills/nobrainer-tech-flow/references/delivery.md#gdd-goal-driven-delivery-through-milestones).
 Repetition does not improve evidence by itself. One bounded review and focused
 repair is the default per stable slice; new material defects justify more work.
 Real security/acceptance blockers cannot be waived by a review-count limit.

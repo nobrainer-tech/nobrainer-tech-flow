@@ -1,7 +1,7 @@
 {
-  "name": "nobrainer-tech-skills",
+  "name": "nobrainer-tech-flow",
   "description": "nobrainer-tech-flow: portable agentic workflows from task to checked result.",
-  "version": "1.14.1",
+  "version": "2.0.0",
   "author": {
     "name": "NoBrainer Tech"
   },
@@ -16,7 +16,7 @@
   ],
   "skills": "./skills/",
   "sessionStart": {
-    "skill": "nobrainer-ultra"
+    "skill": "nobrainer-tech-flow"
   },
   "skillInstructions": "Use Kimi Code's native Skill tool to load routed NoBrainer skills, AskUserQuestion for a real owner decision, and TodoList for bounded execution steps. Kimi Agent subagents are workers, not proof of visible sessions or exact cross-session transport. Use Agent only for independent work with a complete scope and acceptance contract. If the runtime cannot expose the exact session identity and report transport required by nobrainer-sessions, stay in the current MAIN session and report the limitation. Never invent a handoff, lease, delivery, or readback.",
   "interface": {

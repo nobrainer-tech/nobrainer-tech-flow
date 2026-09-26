@@ -3,12 +3,13 @@
 This is the canonical source. Adapters share `skills/`; see
 `docs/COMPATIBILITY.md` for runtime support.
 
-Respect host hierarchy; user instructions override skill guidelines. Apply [delivery](skills/nobrainer-ultra/references/delivery.md). Use nobrainer-tech-flow's instruction-conflict and exact-source pause explanation.
+Respect host hierarchy; user instructions override skill guidelines. Apply [delivery](skills/nobrainer-tech-flow/references/delivery.md). Use nobrainer-tech-flow's instruction-conflict and exact-source pause explanation.
 <!-- NOBRAINER-WORKFLOW:START -->
 ## nobrainer-tech-flow
 
-- Use [nobrainer-tech-flow](https://github.com/nobrainer-tech/nobrainer-tech-flow); technical entrypoint: `nobrainer-ultra` / `$nobrainer-ultra`. `nb-ultra`, `nb-flow` and `nb-workflow` are compatibility aliases. Use the quick path for clear small/reversible work and the full path otherwise; report missing capability without claiming it ran. Codex workers: `gpt-5.6-luna` max when supported. MAIN/other clients: host-selected. Owner overrides win; no silent substitution. Read relevant sources and preserve acceptance, safety and failure gates.
-- Product: nobrainer-tech-flow; channel `nobrainer-tech-flow`; stages use skill names. No preamble. X: `#NoBrainerTechFlow` (hyphens end hashtags).
+- Use [nobrainer-tech-flow](https://github.com/nobrainer-tech/nobrainer-tech-flow) through \`$nobrainer-tech-flow\`. Preserve the selected MAIN model and effort. Inspect native worker models and capacity, then delegate useful independent units with exact scope and proof; MAIN integrates. Use \`nobrainer-auto-fine-tune\` when measured route calibration would help.
+- Start substantial work from an observable short-term goal grounded in the owner's direction; inspect project layers and the relevant wiki. Check once per active day for a newer stable release. Keep session checkpoints and verify takeover before authorized archival. Load only relevant specialist skills and verify the delivery layer.
+- Product name: nobrainer-tech-flow; repository and skill ID: \`nobrainer-tech-flow\`. No ritual preamble. X: \`#NoBrainerTechFlow\`.
 <!-- NOBRAINER-WORKFLOW:END -->
 
 `CLAUDE.md` must remain a byte-identical copy of this file.
@@ -40,7 +41,7 @@ Keep bodies operational and client-neutral. Use relative links. Put long detail
 in focused `references/` files and deterministic helpers in `scripts/`.
 Never depend on a user's filesystem, account, private host or current model name.
 Canonical public templates and examples use English; task-shaped `BRIEF` artifacts expose explicit `Description` and `Definition of Done (DoD)` fields, and `Acceptance` criteria use sequential IDs such as `AC01` and `AC02`; bug reports and comments use one composite `ENV:` block with `Name` (`QA`, `DEV`, `TEST`, `PROD`, `PREPROD`, `BETA` or `UNKNOWN`), `URL` and `User`, while bug reports keep `Description`, `Steps to reproduce`, `Current behavior` and `Expected behavior` as separate fields and omit speculative workaround/root-cause fields; surface proof is separate: API uses a copyable `curl` request (method, URL, headers and body) plus response, DB uses separate read-only `Query`/`Result` code blocks, and UI uses `Evidence` for a screenshot or MP4 plus an optional HAR when the page-load/request chain matters; missing required proof returns `INPUT_REQUIRED`.
-The active portfolio is exactly seventeen `nobrainer-*` skills. A permanent skill must own a recurring cross-project boundary that no current skill or maintained native capability owns. Do not add one because a topic is popular.
+The active portfolio is exactly eighteen `nobrainer-*` skills. A permanent skill must own a recurring cross-project boundary that no current skill or maintained native capability owns. Do not add one because a topic is popular.
 
 ## Delivery workflow
 
@@ -49,7 +50,7 @@ can use nobrainer-tech-flow's quick path: inspect checkout, instructions, dirty 
 proof, make the scoped edit, run the nearest check plus `git diff --check`, and
 read back diff/status. Public contract, routing, workflow or portfolio changes use the
 full workflow and update affected README, doc, template and diagram, or record
-`NOT_NEEDED` with a reason. Use `nobrainer-ultra`'s full workflow for non-trivial outcomes,
+`NOT_NEEDED` with a reason. Use `nobrainer-tech-flow`'s full workflow for non-trivial outcomes,
 setup/upgrade work, ambiguous scope, several proof layers or meaningful recovery risk.
 
 For non-trivial work:

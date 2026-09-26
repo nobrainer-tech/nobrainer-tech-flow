@@ -23,6 +23,14 @@ task is required. Use this full protocol for durable or explicitly visible sessi
 Read [references/protocol.md](references/protocol.md) before setup, dispatch, or
 RECEIVE_AUDIT.
 
+For project work, use the default isolated-worktree lifecycle in
+[references/worktrees.md](../nobrainer-tech-flow/references/worktrees.md):
+discover and fetch the remote default branch before creating a task worktree,
+preserve the original checkout, and retain the worktree for owner review until
+the exact PR merge is verified. After that gate, remove only the clean,
+task-owned worktree without force and verify its removal. Follow an explicit
+owner instruction to use another checkout or lifecycle.
+
 ## Choose the smallest topology
 
 Default to one visible session named `<repo> | MAIN`.
@@ -82,7 +90,7 @@ the host supports it.
 
 ## Startup care
 
-Ultra invokes [automatic start and observation](references/session-restart.md#automatic-start-and-observation)
+Flow invokes [automatic start and observation](references/session-restart.md#automatic-start-and-observation)
 on explicit Flow task entry, even without a restart request or detailed ledger.
 Name the session immediately from verified creation metadata; assess current
 context and full necessary startup inputs. A health restart does not require an
@@ -168,13 +176,13 @@ effects. The lease gate passes only when readback proves `RELEASED`, or proves
 states; `NOT_RELEASED`, unknown ownership or a conflict blocks advancement.
 
 Return exactly one audited result to `nobrainer-dispatcher`, or to
-`nobrainer-ultra` when no dispatcher is justified:
+`nobrainer-tech-flow` when no dispatcher is justified:
 
 - all gates pass: report the verified transition as eligible; do not select or
   dispatch the next task;
 - isolated correctable defect: return `CORRECTION_REQUIRED` with the exact defect
   and evidence; do not choose, dispatch or execute the correction. Dispatcher,
-  or Ultra when Dispatcher is not justified, selects the task's assigned repair
+  or Flow when Dispatcher is not justified, selects the task's assigned repair
   method (`nobrainer-build` for implementation). After the repair and any
   required repeated review, run a fresh `RECEIVE_AUDIT` that binds the repaired
   diff, tests and current review result;

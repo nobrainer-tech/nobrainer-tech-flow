@@ -5,7 +5,7 @@
   worker packets; adding budget prose can dilute an existing requirement. Retain
   the champion after a failed comparison; keep transcript bytes, tokens and RAM
   separate. Execpolicy flags do not disable global skill discovery.
-  Source: [bounded orchestration review](../docs/reviews/2026-09-05-bounded-orchestration.md).
+  Source: internal bounded orchestration review.
 
 - 2026-09-05: Classify an external source before presenting it: comparable
   instruction/workflow packages belong in comparisons; execution hosts belong
@@ -37,9 +37,10 @@
   not prove savings. Archive only after verified takeover; missing transport uses
   an honest fallback, and user-granted standing consent is not re-requested.
 
-- 2026-09-06: In user-facing replies use NoBrainer.Tech Flow; use the exact
-  lowercase `nobrainer-tech-flow` only for the repository/package channel. Keep
-  `nobrainer-ultra` for the technical skill or command and preserve skill IDs.
+- 2026-09-06 (superseded 2026-09-26): The previous product display and
+  technical-entry naming rule is historical. New user-facing copy uses
+  NoBrainer Tech Flow and the entry skill ID is `nobrainer-tech-flow`;
+  `nobrainer-ultra` belongs only in migration evidence.
 
 - 2026-09-07: Do not turn workflow routing into a conversational ritual. When
   naming the workflow helps a reply or status, write `nobrainer-tech-flow` as

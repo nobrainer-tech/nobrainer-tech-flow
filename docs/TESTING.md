@@ -22,7 +22,7 @@ python3 scripts/validate_skills.py --suite
 ## 2. Deterministic behavior contracts
 
 Unit tests pressure the routing, model-policy and safety invariants that can be
-checked without an LLM: Ultra states, bounded-turn `SESSION_HEALTH_GATE`,
+checked without an LLM: Flow states, bounded-turn `SESSION_HEALTH_GATE`,
 checkpoint/end-turn decisions, separate `RUNTIME_RELEASE`, session identity and
 lease gates, SDD boundaries, trigger ownership, browser routing, adapter
 registration and installer races.
@@ -30,7 +30,7 @@ Adapter tests execute every bootstrap mechanism that can run locally: the Claude
 and Cursor SessionStart JSON shapes, OpenCode injection/deduplication, and Pi
 discovery plus post-compaction re-injection. They also parse the portable Agent
 Plugin, Gemini and Kimi manifests, reject invented Devin/Hermes adapters and
-enforce the exact seventeen-skill inventory, correction hooks and workflow
+enforce the exact eighteen-skill inventory, correction hooks and workflow
 diagram contract.
 
 ```bash
@@ -116,7 +116,7 @@ writer remains, record `CLEAR_MODE`, then prove clear completion. Start a fresh
 turn by reading the same goal file and reconciling repository, checkout, state
 and next safe action; transcript text alone is not recovery evidence.
 
-For Codex, test explicit canonical invocation with `$nobrainer-ultra` and test
+For Codex, test explicit canonical invocation with `$nobrainer-tech-flow` and test
 plain aliases separately as implicit-routing controls. Bind the transcript to
 the exact installed skill hash and disable same-name user copies in an isolated
 probe; two skills with the same name are not merged. An alias failure must not be

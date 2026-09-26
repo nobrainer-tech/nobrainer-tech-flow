@@ -7,7 +7,7 @@ description: "Use when the owner says nb-build, engineering-standards, or nobrai
 
 Implement one bounded work unit without expanding the product or hiding weak
 evidence behind polished output. This skill owns the edit loop. Route ambiguous
-requirements to `nobrainer-ultra`, causal diagnosis to `nobrainer-rca`, and the
+requirements to `nobrainer-tech-flow`, causal diagnosis to `nobrainer-rca`, and the
 independent close gate to `nobrainer-review`.
 
 ## Start gate
@@ -133,7 +133,7 @@ decision. Merge, deploy, publish, spend, delete, migrate data, change credential
 mutate production or weaken safety controls only with their explicit authority.
 
 A failed check routes to repair; a missing tool or credential routes through
-[delivery obstacle resolution](../nobrainer-ultra/references/delivery.md). Check
+[delivery obstacle resolution](../nobrainer-tech-flow/references/delivery.md). Check
 permitted alternatives and continue independent work before reporting BLOCKED.
 
 Do not push through three failed fix-like attempts. Preserve the failing proof,
@@ -141,7 +141,7 @@ return to `nobrainer-rca` or revise the design with the owner.
 
 ## Build report
 
-This schema is an audit input for Ultra or another machine handoff. In ordinary
+This schema is an audit input for Flow or another machine handoff. In ordinary
 conversation, translate it into a short natural-language outcome, evidence,
 uncertainty, rollback and next action instead of dumping the form.
 

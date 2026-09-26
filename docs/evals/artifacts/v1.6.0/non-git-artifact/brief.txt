@@ -1,6 +1,0 @@
-Workshop: Saved Filters Lab
-Audience: existing product users
-Time: Friday, 14:00 UTC
-Place: local preview room
-Bring: one saved search
-Distribution: drafts only; do not send.

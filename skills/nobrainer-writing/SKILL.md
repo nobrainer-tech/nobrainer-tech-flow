@@ -63,7 +63,7 @@ LENGTH_OR_FORMAT_CONSTRAINT:
 
 Infer obvious fields from the request and current project. Ask one focused
 question only when the answer changes factual meaning, audience fit, material
-tone or safety. In a larger Ultra run, use the approved BUDDY brief and do not
+tone or safety. In a larger Flow run, use the approved BUDDY brief and do not
 re-open settled requirements.
 
 For `BRIEF`, additionally freeze the observed problem or desired outcome, the
