@@ -7,7 +7,9 @@
 <h1 align="center">nobrainer-tech-flow</h1>
 
 <p align="center">
-  From task to done.
+  <strong>From task to done.</strong><br>
+  One AI workflow for your coding agent, whichever you use,<br>
+  instead of 50+ separate tools.
 </p>
 
 <p align="center">
@@ -16,14 +18,47 @@
 </p>
 
 <p align="center">
-  <a href="https://nobrainer.tech">NoBrainer.tech</a>
+  <a href="https://nobrainer.tech/flow/">Launch page</a>
   ·
-  <a href="https://nobrainer.tech/flow/">Flow overview</a>
+  <a href="https://nobrainer.tech/flow/#setup">Copy the setup prompt</a>
   ·
-  <a href="https://nobrainertech.gumroad.com">Production-ready agentic workflows</a>
+  <a href="https://nobrainer.tech/flow/compare/">Compare 50+ tools</a>
+  ·
+  <a href="https://nobrainer.tech/flow/deep-dive/">Deep dive</a>
+  ·
+  <a href="https://www.producthunt.com/products/nobrainer-tech-flow">Product Hunt</a>
+</p>
+
+<table>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="https://nobrainer.tech/flow/assets/flow-reel-universal-16x9.mp4"><img src="https://nobrainer.tech/flow/assets/flow-reel-universal-preview.webp" alt="50+ tools you could piece together turn into one workflow: nobrainer-tech-flow, from task to done."></a><br>
+      <strong>Why?</strong> 50+ tools you could piece together, or one workflow.<br>
+      <a href="https://nobrainer.tech/flow/assets/flow-reel-universal-16x9.mp4">Watch with sound (20 s)</a>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="https://nobrainer.tech/flow/assets/flow-done-v2-16x9.mp4"><img src="https://nobrainer.tech/flow/assets/flow-done-v2-preview.webp" alt="Your agent says Done. nobrainer-tech-flow shows what was delivered, the proof, what was not checked and the decision left to you."></a><br>
+      <strong>Done?</strong> What was delivered, the proof, what was not checked.<br>
+      <a href="https://nobrainer.tech/flow/assets/flow-done-v2-16x9.mp4">Watch with sound (30 s)</a>
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  Works with any compatible coding agent, including
+  <a href="https://github.com/openai/codex">Codex</a>,
+  <a href="https://code.claude.com/docs">Claude Code</a>,
+  <a href="https://cursor.com/">Cursor</a>,
+  <a href="https://github.com/features/copilot/cli">GitHub Copilot CLI</a>,
+  <a href="https://opencode.ai/">OpenCode</a>,
+  <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a>,
+  <a href="https://www.kimi.com/code">Kimi Code</a> and
+  <a href="https://pi.dev/">Pi</a>.
 </p>
 
 Tell nobrainer-tech-flow what you need. It clarifies the goal, does the work, and checks the result.
+Setup is one message: copy the prompt from the [launch page](https://nobrainer.tech/flow/#setup), paste it into your agent,
+and it verifies the release, shows the planned changes with a rollback path, then installs.
 
 New AI skills, workflows and add-ons keep arriving. nobrainer-tech-flow curates
 the useful parts into one maintained path from task to a checked finish.
