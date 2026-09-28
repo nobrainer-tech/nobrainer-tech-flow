@@ -3,66 +3,65 @@
   <desc id="desc">Check the Flow release on first active use each day. Clear tasks use the QUICK PATH. Larger work derives a short-term goal from the owner's direction, inspects project layers and wiki, executes the authorized scope and verifies the result. Model policy preserves the selected MAIN model and effort. Native workers handle useful independent tasks up to verified capacity; Auto Fine Tune calibrates model routes from measured evidence. A Markdown GOAL_FILE supports recovery. A fresh session takes over before authorized archival of the old one. RUNTIME_RELEASE readback verifies owned workers. The full goal remains open until acceptance and delivery proof pass.</desc>
   <defs>
     <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#071317"/>
-      <stop offset="1" stop-color="#0b1c21"/>
+      <stop offset="0" stop-color="#0F1319"/>
+      <stop offset="1" stop-color="#141922"/>
     </linearGradient>
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#24e6dc"/>
-      <stop offset="1" stop-color="#68a8ff"/>
+      <stop offset="0" stop-color="#D94724"/>
+      <stop offset="1" stop-color="#2948B8"/>
     </linearGradient>
     <filter id="soft-shadow" x="-30%" y="-30%" width="160%" height="160%">
       <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity=".28"/>
     </filter>
     <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-      <path d="M1 1l9 5-9 5z" fill="#6c8991"/>
+      <path d="M1 1l9 5-9 5z" fill="#5E6A80"/>
     </marker>
     <marker id="arrow-accent" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-      <path d="M1 1l9 5-9 5z" fill="#24e6dc"/>
+      <path d="M1 1l9 5-9 5z" fill="#D94724"/>
     </marker>
     <style>
       text{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-      .eyebrow{font-size:16px;font-weight:700;letter-spacing:3px;fill:#65d9d3}
-      .headline{font-size:40px;font-weight:720;letter-spacing:-1px;fill:#f2fbfc}
-      .subtitle{font-size:18px;fill:#91a9af}
-      .node{fill:#10252b;stroke:#24464e;stroke-width:2}
-      .node-accent{fill:#10292e;stroke:#24e6dc;stroke-width:2.4}
-      .node-title{font-size:18px;font-weight:750;letter-spacing:1px;fill:#f0fbfc}
-      .node-copy{font-size:15px;fill:#9ab2b8}
-      .tiny{font-size:13px;font-weight:650;letter-spacing:.6px;fill:#75cfc9}
-      .flow{fill:none;stroke:#6c8991;stroke-width:3;marker-end:url(#arrow)}
-      .flow-accent{fill:none;stroke:#24e6dc;stroke-width:3.2;marker-end:url(#arrow-accent)}
-      .flow-dashed{fill:none;stroke:#d69c57;stroke-width:2.5;stroke-dasharray:8 8;marker-end:url(#arrow)}
-      .chip{fill:#0c1c21;stroke:#31525a;stroke-width:1.5}
-      .chip-text{font-size:14px;font-weight:700;fill:#bed0d4}
-      .chip-text-small{font-size:11.5px;font-weight:750;letter-spacing:.15px;fill:#bed0d4}
+      .eyebrow{font-size:16px;font-weight:700;letter-spacing:3px;fill:#FF9875}
+      .headline{font-size:44px;font-weight:800;letter-spacing:-1.6px;fill:#F3EEE6}
+      .headline .accent{fill:#7F9BFF}
+      .subtitle{font-size:18px;fill:#AEB8C6}
+      .node{fill:#161B23;stroke:#2B3340;stroke-width:2}
+      .node-accent{fill:#161B23;stroke:#7F9BFF;stroke-width:2.4}
+      .node-title{font-size:18px;font-weight:800;letter-spacing:.6px;fill:#F3EEE6}
+      .node-copy{font-size:15px;fill:#AEB8C6}
+      .tiny{font-size:13px;font-weight:700;letter-spacing:1.2px;fill:#FF9875;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+      .flow{fill:none;stroke:#5E6A80;stroke-width:3;marker-end:url(#arrow)}
+      .flow-accent{fill:none;stroke:#D94724;stroke-width:3.2;marker-end:url(#arrow-accent)}
+      .flow-dashed{fill:none;stroke:#7F9BFF;stroke-width:2.5;stroke-dasharray:8 8;marker-end:url(#arrow)}
+      .chip{fill:#0F1319;stroke:#2B3340;stroke-width:1.5}
+      .chip-text{font-size:14px;font-weight:700;fill:#D3DAE4}
+      .chip-text-small{font-size:11.5px;font-weight:750;letter-spacing:.15px;fill:#D3DAE4}
     </style>
   </defs>
 
-  <rect width="1600" height="900" rx="32" fill="url(#background)"/>
-  <circle cx="1390" cy="80" r="230" fill="#24e6dc" opacity=".035"/>
-  <circle cx="220" cy="860" r="300" fill="#68a8ff" opacity=".025"/>
+  <rect width="1600" height="900" rx="0" fill="url(#background)"/>
 
-  <text x="76" y="70" class="eyebrow">nobrainer-tech-flow</text>
-  <text x="76" y="120" class="headline">One request. Clear progress. Verified delivery.</text>
+  <rect x="76" y="56" width="14" height="14" fill="#D94724"/><text x="100" y="70" class="eyebrow">nobrainer-tech-flow</text>
+  <text x="76" y="122" class="headline">From task <tspan class="accent">to done.</tspan> One request, clear progress, verified delivery.</text>
   <text x="76" y="154" class="subtitle">One model is enough. Optional Jev / Laya suggestions stay advisory; failures return to core.</text>
 
   <g filter="url(#soft-shadow)">
-    <rect x="76" y="220" width="205" height="116" rx="20" class="node"/>
+    <rect x="76" y="220" width="205" height="116" rx="0" class="node"/>
     <text x="100" y="258" class="tiny">01 · INTENT</text>
     <text x="100" y="289" class="node-title">OWNER REQUEST</text>
     <text x="100" y="316" class="node-copy">Outcome + constraints</text>
 
-    <rect x="335" y="220" width="205" height="116" rx="20" class="node"/>
+    <rect x="335" y="220" width="205" height="116" rx="0" class="node"/>
     <text x="359" y="258" class="tiny">ONLY IF UNCLEAR</text>
     <text x="359" y="289" class="node-title">BUDDY</text>
     <text x="359" y="316" class="node-copy">Material questions only</text>
 
-    <rect x="594" y="220" width="236" height="116" rx="20" class="node-accent"/>
+    <rect x="594" y="220" width="236" height="116" rx="0" class="node-accent"/>
     <text x="618" y="258" class="tiny">03 · SCOPE THE MINIMUM</text>
     <text x="618" y="289" class="node-title">SCOPE + PLAN</text>
     <text x="618" y="316" class="node-copy">Outcome · proof · short TODO</text>
 
-    <rect x="884" y="220" width="205" height="116" rx="20" class="node"/>
+    <rect x="884" y="220" width="205" height="116" rx="0" class="node"/>
     <text x="908" y="258" class="tiny">04 · AUTHORIZED?</text>
     <text x="908" y="289" class="node-title">READY</text>
     <text x="908" y="316" class="node-copy">Scope · proof · inputs</text>
@@ -76,35 +75,35 @@
   <path d="M1089 278H1148V382" class="flow-accent"/>
 
   <g>
-    <rect x="1160" y="204" width="354" height="148" rx="22" fill="#0c1c21" stroke="#24464e" stroke-width="2"/>
+    <rect x="1160" y="204" width="354" height="148" rx="0" fill="#161B23" stroke="#2B3340" stroke-width="2"/>
     <text x="1186" y="238" class="tiny">SPECIALISTS · WHEN USEFUL</text>
-    <rect x="1186" y="260" width="137" height="34" rx="17" class="chip"/>
+    <rect x="1186" y="260" width="137" height="34" rx="0" class="chip"/>
     <text x="1207" y="282" class="chip-text">RESEARCH</text>
-    <rect x="1335" y="260" width="151" height="34" rx="17" class="chip"/>
+    <rect x="1335" y="260" width="151" height="34" rx="0" class="chip"/>
     <text x="1371" y="282" class="chip-text">DECIDE</text>
-    <rect x="1186" y="304" width="90" height="34" rx="17" class="chip"/>
+    <rect x="1186" y="304" width="90" height="34" rx="0" class="chip"/>
     <text x="1211" y="326" class="chip-text">SDD</text>
-    <rect x="1288" y="304" width="198" height="34" rx="17" class="chip"/>
+    <rect x="1288" y="304" width="198" height="34" rx="0" class="chip"/>
     <text x="1300" y="326" class="chip-text-small">BOUNDED SUBAGENTS</text>
   </g>
 
   <g filter="url(#soft-shadow)">
-    <rect x="340" y="430" width="245" height="124" rx="22" class="node-accent"/>
+    <rect x="340" y="430" width="245" height="124" rx="0" class="node-accent"/>
     <text x="366" y="468" class="tiny">05 · IMPLEMENT</text>
     <text x="366" y="501" class="node-title">BUILD</text>
     <text x="366" y="529" class="node-copy">KISS · DRY · SOLID · YAGNI</text>
 
-    <rect x="690" y="430" width="245" height="124" rx="22" class="node"/>
+    <rect x="690" y="430" width="245" height="124" rx="0" class="node"/>
     <text x="716" y="468" class="tiny">06 · WHEN USEFUL</text>
     <text x="716" y="501" class="node-title">REVIEW</text>
     <text x="716" y="529" class="node-copy">Acceptance + evidence</text>
 
-    <rect x="1040" y="430" width="245" height="124" rx="22" class="node"/>
+    <rect x="1040" y="430" width="245" height="124" rx="0" class="node"/>
     <text x="1066" y="468" class="tiny">07 · PROVE</text>
     <text x="1066" y="501" class="node-title">VERIFY</text>
     <text x="1066" y="529" class="node-copy">Target workflow evidence</text>
 
-    <rect x="1338" y="430" width="186" height="124" rx="22" class="node-accent"/>
+    <rect x="1338" y="430" width="186" height="124" rx="0" class="node-accent"/>
     <text x="1364" y="468" class="tiny">08 · RESULT</text>
     <text x="1364" y="501" class="node-title">DELIVER</text>
     <text x="1364" y="525" class="tiny">RUNTIME_RELEASE</text>
@@ -119,17 +118,17 @@
 
   <g id="review-fix-loop">
     <path d="M812 554V620H462V564" class="flow-dashed"/>
-    <text x="598" y="649" class="tiny" fill="#d69c57">VERIFIED FINDING → BOUNDED FIX → FRESH REVIEW</text>
+    <text x="598" y="649" class="tiny" style="fill:#7F9BFF">VERIFIED FINDING → BOUNDED FIX → FRESH REVIEW</text>
   </g>
 
   <g filter="url(#soft-shadow)">
-    <rect x="985" y="710" width="300" height="112" rx="22" class="node"/>
+    <rect x="985" y="710" width="300" height="112" rx="0" class="node"/>
     <text x="1011" y="748" class="tiny">OPTIONAL · DURABLE FACTS</text>
     <text x="1011" y="781" class="node-title">LEARN</text>
     <text x="1011" y="808" class="node-copy">Reuse existing docs and knowledge</text>
 
-    <rect x="76" y="710" width="610" height="112" rx="22" fill="#151e21" stroke="#8a653d" stroke-width="2"/>
-    <text x="102" y="748" class="tiny" fill="#e3ae6c">CORRECTION HOOKS</text>
+    <rect x="76" y="710" width="610" height="112" rx="0" fill="#161B23" stroke="#D94724" stroke-width="2"/>
+    <text x="102" y="748" class="tiny" style="fill:#FF9875">CORRECTION HOOKS</text>
     <text x="102" y="780" class="node-copy">Decision changed · agent corrected · review failed · defect repeated</text>
     <text x="102" y="806" class="node-copy">Update one source of truth, invalidate affected work, resume at the safe stage.</text>
   </g>
@@ -139,11 +138,11 @@
   <path d="M380 710V676H712V346" class="flow-dashed"/>
 
   <g>
-    <rect x="76" y="366" width="230" height="110" rx="16" fill="#151e21" stroke="#24e6dc" stroke-width="1.8"/>
+    <rect x="76" y="366" width="230" height="110" rx="0" fill="#161B23" stroke="#7F9BFF" stroke-width="1.8"/>
     <text x="98" y="394" class="tiny">QUICK PATH</text>
     <text x="98" y="421" class="node-copy">Small + reversible</text>
     <text x="98" y="445" class="node-copy">Answer · check · deliver</text>
-    <text x="98" y="468" class="tiny" fill="#e3ae6c">RISK → OWNER GATE</text>
+    <text x="98" y="468" class="tiny" style="fill:#FF9875">RISK → OWNER GATE</text>
     <path d="M178 336V356" class="flow-accent"/>
   </g>
 

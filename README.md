@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://nobrainer.tech">
-    <img src="assets/nobrainer-tech-logo.svg" width="120" alt="NoBrainer.tech logo">
+    <img src="assets/nobrainer-tech-logo.svg" width="96" alt="nobrainer-tech-flow monogram">
   </a>
 </p>
 
@@ -32,14 +32,14 @@
 <table>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="https://nobrainer.tech/flow/assets/flow-reel-universal-16x9.mp4"><img src="https://nobrainer.tech/flow/assets/flow-reel-universal-preview.webp" alt="50+ tools you could piece together turn into one workflow: nobrainer-tech-flow, from task to done."></a><br>
+      <a href="https://nobrainer.tech/flow/assets/flow-reel-universal-1x1.mp4"><picture><source media="(prefers-reduced-motion: reduce)" srcset="https://nobrainer.tech/flow/assets/flow-reel-universal-poster-1x1.png"><img src="https://nobrainer.tech/flow/assets/flow-reel-universal-preview-1x1.webp" alt="50+ tools you could piece together turn into one workflow: nobrainer-tech-flow, from task to done."></picture></a><br>
       <strong>Why?</strong> 50+ tools you could piece together, or one workflow.<br>
-      <a href="https://nobrainer.tech/flow/assets/flow-reel-universal-16x9.mp4">Watch with sound (20 s)</a>
+      <a href="https://nobrainer.tech/flow/assets/flow-reel-universal-1x1.mp4">Watch with sound (20 s)</a>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="https://nobrainer.tech/flow/assets/flow-done-v2-16x9.mp4"><img src="https://nobrainer.tech/flow/assets/flow-done-v2-preview.webp" alt="Your agent says Done. nobrainer-tech-flow shows what was delivered, the proof, what was not checked and the decision left to you."></a><br>
+      <a href="https://nobrainer.tech/flow/assets/flow-done-v2-1x1.mp4"><picture><source media="(prefers-reduced-motion: reduce)" srcset="https://nobrainer.tech/flow/assets/flow-done-v2-poster-1x1.png"><img src="https://nobrainer.tech/flow/assets/flow-done-v2-preview-1x1.webp" alt="Your agent says Done. nobrainer-tech-flow shows what was delivered, the proof, what was not checked and the decision left to you."></picture></a><br>
       <strong>Done?</strong> What was delivered, the proof, what was not checked.<br>
-      <a href="https://nobrainer.tech/flow/assets/flow-done-v2-16x9.mp4">Watch with sound (30 s)</a>
+      <a href="https://nobrainer.tech/flow/assets/flow-done-v2-1x1.mp4">Watch with sound (30 s)</a>
     </td>
   </tr>
 </table>
@@ -57,8 +57,15 @@
 </p>
 
 Tell nobrainer-tech-flow what you need. It clarifies the goal, does the work, and checks the result.
-Setup is one message: copy the prompt from the [launch page](https://nobrainer.tech/flow/#setup), paste it into your agent,
-and it verifies the release, shows the planned changes with a rollback path, then installs.
+
+## How it works
+
+![nobrainer-tech-flow: direct work for clear small tasks; focused clarification, bounded execution and verification when needed](assets/nobrainer-workflow.svg)
+
+Small, clear tasks take the quick path. Larger work is scoped, carried through and verified, and the handoff says what was delivered, what was checked and what is left for you to decide.
+
+<details>
+<summary><strong>The workflow in detail</strong></summary>
 
 New AI skills, workflows and add-ons keep arriving. nobrainer-tech-flow curates
 the useful parts into one maintained path from task to a checked finish.
@@ -90,56 +97,10 @@ New source links, public package/plugin IDs and checkout paths use
 legacy package does not automatically become the new package. See the
 [Flow migration guide](docs/MIGRATION_TO_FLOW.md) and [naming map](docs/NAMING.md).
 
-## Try one real task
-
-[Install safely](#install-safely), start a fresh session, then give the agent a
-small task with a checkable result:
-
-> Use nobrainer-tech-flow. Fix one bug in this project. Reproduce it first, make the
-> smallest correction and run the relevant check. Tell me what changed and
-> what remains unverified. Ask only if a missing decision changes the result.
-
-Prefer a non-coding trial? [Try an invitation, a small code fix or a bounded
-command](docs/TRY_IT.md). The guide gives explicit acceptance criteria so you
-can judge your own result. These are trials, not promised benchmark scores.
-
-## Install safely
-
-Clone a reviewed ref, validate it, preview exact targets, then apply:
-
-```bash
-(
-  set -u
-  : "${NB_REVIEWED_COMMIT:?set a reviewed full 40-character commit SHA}"
-  test "${#NB_REVIEWED_COMMIT}" -eq 40 || exit 2
-  case "$NB_REVIEWED_COMMIT" in *[!0-9a-f]*) exit 2 ;; esac
-  git clone --no-checkout https://github.com/nobrainer-tech/nobrainer-tech-flow.git || exit 3
-  cd nobrainer-tech-flow || exit 3
-  git checkout --detach "$NB_REVIEWED_COMMIT" || exit 3
-  test "$(git rev-parse HEAD)" = "$NB_REVIEWED_COMMIT" || exit 3
-  python3 scripts/validate_skills.py --suite || exit 4
-  python3 scripts/install_skills.py --client codex || exit 4
-  python3 scripts/install_personalization.py --client codex || exit 4
-  python3 scripts/install_skills.py --client codex --apply || exit 4
-  python3 scripts/install_personalization.py --client codex --apply || exit 4
-)
-```
-
-Set `NB_REVIEWED_COMMIT` to the exact full commit SHA you reviewed. Tags and
-branches are rejected because they can move; every failed gate stops before the
-next command.
-
-The installer defaults to all eighteen canonical skills, supports an exact
-subset, refuses foreign targets and can use links or copies. Restart the client
-and perform clean-session discovery before claiming runtime installation. Full
-client-specific steps and rollback are in [Installation](docs/INSTALL.md).
-
-
-![nobrainer-tech-flow: direct work for clear small tasks; focused clarification, bounded execution and verification when needed](assets/nobrainer-workflow.svg)
-
 ### GitHub flow chart
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#161B23', 'primaryTextColor': '#F3EEE6', 'primaryBorderColor': '#7F9BFF', 'lineColor': '#D94724', 'secondaryColor': '#0F1319', 'tertiaryColor': '#0F1319', 'fontFamily': 'Inter, system-ui, sans-serif'}}}%%
 flowchart TD
     A[One outcome; check Flow release once today] --> B{Material ambiguity?}
     B -->|yes| C[BUDDY: one focused question round]
@@ -174,7 +135,58 @@ flowchart TD
     L -. unavailable native goals or telemetry .-> G
 ```
 
-## Astra Ready Flow, portable by design
+</details>
+
+## Install safely
+
+1. Copy the setup prompt from the [launch page](https://nobrainer.tech/flow/#setup) and paste it into your agent. It verifies the release, shows the planned changes with a rollback path, then installs.
+2. In a fresh session, give it one small task with a checkable result:
+
+> Use nobrainer-tech-flow. Fix one bug in this project. Reproduce it first, make the
+> smallest correction and run the relevant check. Tell me what changed and
+> what remains unverified.
+
+More first tasks, with acceptance criteria: [docs/TRY_IT.md](docs/TRY_IT.md). These are trials, not promised benchmark scores.
+
+<details>
+<summary><strong>Install manually from a reviewed commit</strong></summary>
+
+Clone a reviewed ref, validate it, preview exact targets, then apply:
+
+```bash
+(
+  set -u
+  : "${NB_REVIEWED_COMMIT:?set a reviewed full 40-character commit SHA}"
+  test "${#NB_REVIEWED_COMMIT}" -eq 40 || exit 2
+  case "$NB_REVIEWED_COMMIT" in *[!0-9a-f]*) exit 2 ;; esac
+  git clone --no-checkout https://github.com/nobrainer-tech/nobrainer-tech-flow.git || exit 3
+  cd nobrainer-tech-flow || exit 3
+  git checkout --detach "$NB_REVIEWED_COMMIT" || exit 3
+  test "$(git rev-parse HEAD)" = "$NB_REVIEWED_COMMIT" || exit 3
+  python3 scripts/validate_skills.py --suite || exit 4
+  python3 scripts/install_skills.py --client codex || exit 4
+  python3 scripts/install_personalization.py --client codex || exit 4
+  python3 scripts/install_skills.py --client codex --apply || exit 4
+  python3 scripts/install_personalization.py --client codex --apply || exit 4
+)
+```
+
+Set `NB_REVIEWED_COMMIT` to the exact full commit SHA you reviewed. Tags and
+branches are rejected because they can move; every failed gate stops before the
+next command.
+
+The installer defaults to all eighteen canonical skills, supports an exact
+subset, refuses foreign targets and can use links or copies. Restart the client
+and perform clean-session discovery before claiming runtime installation. Full
+client-specific steps and rollback are in [Installation](docs/INSTALL.md).
+
+</details>
+
+<details>
+<summary><strong>Full documentation in this README</strong>: skills, compatibility, attribution, contributing</summary>
+
+<details>
+<summary><strong>Astra Ready Flow, portable by design</strong></summary>
 
 Version **1.6** removes client-specific prerequisites from ordinary work.
 OpenAI [introduced GPT-6 Astra](https://openai.com/index/gpt-6-astra/) on
@@ -201,7 +213,10 @@ Load specialists only when needed. Reuse the project's instructions, tests,
 specs and wiki. Choose SDD for durable contracts and TDD when a failing test
 would expose the behavior; neither requires installing a framework.
 
-## Start with one skill
+</details>
+
+<details>
+<summary><strong>Start with one skill</strong></summary>
 
 Use nobrainer-tech-flow through the canonical skill
 [`nobrainer-tech-flow`](skills/nobrainer-tech-flow/), for setup or any non-trivial
@@ -252,7 +267,10 @@ Autopilot works in one MAIN session. Native subagents need a scoped assignment,
 observable completion and reviewed output. Use persistent sessions and a
 Dispatcher only when a real handoff or dependent queue needs them.
 
-## Eighteen skills, distinct ownership
+</details>
+
+<details>
+<summary><strong>Eighteen skills, distinct ownership</strong></summary>
 
 Aliases are compatibility trigger phrases, not product names or duplicate
 directories. Each skill owns one
@@ -281,7 +299,10 @@ recurring boundary:
 The [curation audit](docs/SKILL_CURATION.md) records why each skill exists and
 what belongs in another skill instead of becoming an unnecessary trigger.
 
-## SDD and GDD
+</details>
+
+<details>
+<summary><strong>SDD and GDD</strong></summary>
 
 SDD specifies what must work. GDD (Goal-Driven Development) executes it through
 accepted milestones under one overarching goal. See the [product specification](docs/specs/goal-driven-delivery.spec.md).
@@ -296,7 +317,10 @@ permissions or bypassing a denial. See the [delivery contract](skills/nobrainer-
 These are agent instructions, not an enforcement daemon or a promise to run
 while the host is paused or out of quota.
 
-## Correct once, improve permanently
+</details>
+
+<details>
+<summary><strong>Correct once, improve permanently</strong></summary>
 
 nobrainer-tech-flow contains portable semantic hooks for four events:
 
@@ -318,7 +342,10 @@ Project setup records `LEARNING_WRITE_POLICY: AUTO_SCOPED | ASK | OFF`, so an
 owner can enable automatic project-local learning without granting global or
 publishing authority.
 
-## Quality without AI slop
+</details>
+
+<details>
+<summary><strong>Quality without AI slop</strong></summary>
 
 The shared delivery contract operationalizes:
 
@@ -338,7 +365,10 @@ A stable local syntax, import, test or configuration error starts from local
 evidence instead of an automatic wiki/web detour. If required primary evidence
 is unavailable, it says `RESEARCH_BLOCKED` instead of guessing.
 
-## Compatibility is a proof ladder
+</details>
+
+<details>
+<summary><strong>Compatibility is a proof ladder</strong></summary>
 
 All clients consume the same `skills/` tree. Thin adapters cover Claude Code,
 Codex, Cursor, OpenCode, Gemini CLI, Kimi Code and Pi; the portable Agent Plugin
@@ -405,7 +435,10 @@ identity.
 [`v1.1.0`](docs/releases/v1.1.0.md) remains the accepted rollback anchor at full
 commit `711be31d654835a04ef8c70674c3e493aeb2da8a`.
 
-## One source, thin adapters
+</details>
+
+<details>
+<summary><strong>One source, thin adapters</strong></summary>
 
 ```text
 skills/               canonical portable behavior
@@ -423,7 +456,10 @@ permissions, network/credential behavior, trigger overlap and rollback. Prefer
 temporary project-scoped use; persistent or global installation is an owner
 gate.
 
-## Attribution
+</details>
+
+<details>
+<summary><strong>Attribution</strong></summary>
 
 - `nobrainer-autoimprove` is an independent adaptation of Andrej Karpathy's
   [autoresearch](https://github.com/karpathy/autoresearch) measure-change-keep
@@ -433,7 +469,10 @@ gate.
 - Other external design sources remain cited inside the exact skill where they
   influenced a behavior contract.
 
-## Contributing and security
+</details>
+
+<details>
+<summary><strong>Contributing and security</strong></summary>
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md) and
 [RELEASE-NOTES.md](RELEASE-NOTES.md). Every change goes through a focused PR,
@@ -446,7 +485,10 @@ without surrendering control. Learn more at [nobrainer.tech](https://nobrainer.t
 or browse ready-to-use workflow products on
 [Gumroad](https://nobrainertech.gumroad.com).
 
-## Adaptive session restart
+</details>
+
+<details>
+<summary><strong>Adaptive session restart</strong></summary>
 
 On explicit nobrainer-tech-flow task invocation, Flow immediately names the conversation
 `<task title> | started DD-MM` using its verified creation date and preserves it
@@ -465,3 +507,7 @@ not a separate skill. The optional stdlib [decision helper](skills/nobrainer-ses
 can serve a client hook without requiring one. Automatic startup care is development source on top of
 v1.8.1; native transport and all-client savings are not implied. Published tags
 remain unchanged. See [session restart](docs/SESSION_RESTART.md).
+
+</details>
+
+</details>
