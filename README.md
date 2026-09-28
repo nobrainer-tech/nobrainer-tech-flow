@@ -25,6 +25,12 @@
 
 Tell nobrainer-tech-flow what you need. It clarifies the goal, does the work, and checks the result.
 
+## See nobrainer-tech-flow in action
+
+- [Reel v3: one workflow instead of 59 tools](https://nobrainer.tech/flow/assets/nobrainer-tech-flow-reel-v3-16x9.mp4)
+- [Done?: what a checked finish reports](https://nobrainer.tech/flow/assets/nobrainer-tech-flow-done-16x9.mp4)
+- [Explore the nobrainer-tech-flow overview](https://nobrainer.tech/flow/)
+
 New AI skills, workflows and add-ons keep arriving. nobrainer-tech-flow curates
 the useful parts into one maintained path from task to a checked finish.
 
