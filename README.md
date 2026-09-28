@@ -32,12 +32,12 @@
 <table>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="https://nobrainer.tech/flow/assets/flow-reel-universal-1x1.mp4"><img src="https://nobrainer.tech/flow/assets/flow-reel-universal-preview-1x1.webp" alt="50+ tools you could piece together turn into one workflow: nobrainer-tech-flow, from task to done."></a><br>
+      <a href="https://nobrainer.tech/flow/assets/flow-reel-universal-1x1.mp4"><picture><source media="(prefers-reduced-motion: reduce)" srcset="https://nobrainer.tech/flow/assets/flow-reel-universal-poster-1x1.png"><img src="https://nobrainer.tech/flow/assets/flow-reel-universal-preview-1x1.webp" alt="50+ tools you could piece together turn into one workflow: nobrainer-tech-flow, from task to done."></picture></a><br>
       <strong>Why?</strong> 50+ tools you could piece together, or one workflow.<br>
       <a href="https://nobrainer.tech/flow/assets/flow-reel-universal-1x1.mp4">Watch with sound (20 s)</a>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="https://nobrainer.tech/flow/assets/flow-done-v2-1x1.mp4"><img src="https://nobrainer.tech/flow/assets/flow-done-v2-preview-1x1.webp" alt="Your agent says Done. nobrainer-tech-flow shows what was delivered, the proof, what was not checked and the decision left to you."></a><br>
+      <a href="https://nobrainer.tech/flow/assets/flow-done-v2-1x1.mp4"><picture><source media="(prefers-reduced-motion: reduce)" srcset="https://nobrainer.tech/flow/assets/flow-done-v2-poster-1x1.png"><img src="https://nobrainer.tech/flow/assets/flow-done-v2-preview-1x1.webp" alt="Your agent says Done. nobrainer-tech-flow shows what was delivered, the proof, what was not checked and the decision left to you."></picture></a><br>
       <strong>Done?</strong> What was delivered, the proof, what was not checked.<br>
       <a href="https://nobrainer.tech/flow/assets/flow-done-v2-1x1.mp4">Watch with sound (30 s)</a>
     </td>
