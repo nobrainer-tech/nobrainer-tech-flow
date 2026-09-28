@@ -1,17 +1,1 @@
-<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#2DE2FF;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#8247E5;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-
-  <!-- Left angle bracket < -->
-  <polyline points="24 16 12 32 24 48" stroke="url(#gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- Right angle bracket > -->
-  <polyline points="40 16 52 32 40 48" stroke="url(#gradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- AI text -->
-  <text x="32" y="40" font-family="'SF Pro Display', 'Inter', sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="url(#gradient)">AI</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="NBTF"><rect x="2" y="2" width="92" height="92" rx="22" fill="#2948B8"/><text x="18" y="43" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="31" letter-spacing="-2">NB</text><text x="18" y="76" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="31" letter-spacing="-2">TF</text><rect x="70" y="63" width="8" height="8" rx="1" fill="#FF9875"/></svg>
