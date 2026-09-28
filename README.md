@@ -146,7 +146,7 @@ flowchart TD
 > smallest correction and run the relevant check. Tell me what changed and
 > what remains unverified.
 
-More first tasks, with acceptance criteria: [docs/TRY_IT.md](docs/TRY_IT.md).
+More first tasks, with acceptance criteria: [docs/TRY_IT.md](docs/TRY_IT.md). These are trials, not promised benchmark scores.
 
 <details>
 <summary><strong>Install manually from a reviewed commit</strong></summary>
