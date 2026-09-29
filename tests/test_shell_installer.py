@@ -7,11 +7,14 @@ and the instruction block byte for byte what the Python helper writes.
 
 from __future__ import annotations
 
+import copy
+import hashlib
 import importlib.util
 import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -231,9 +234,12 @@ class ShellInstallerTests(unittest.TestCase):
                 backups = [path for path in instructions.parent.iterdir() if ".bak." in path.name]
                 self.assertEqual(1, len(backups))
                 self.assertEqual(original, backups[0].read_bytes())
-                record = json.loads((home / ".nobrainer-flow-onboarding-claude.json").read_text(encoding="utf-8"))
+                record_path = home / ".nobrainer-flow-onboarding-claude.json"
+                record = json.loads(record_path.read_text(encoding="utf-8"))
                 self.assertEqual(SKILLS, record["created_skills"])
                 self.assertEqual(Path(record["profile"]["target"]), instructions)
+                if os.name != "nt":
+                    self.assertEqual(0o600, stat.S_IMODE(record_path.stat().st_mode))
 
                 again = run_sh(*flags, "--apply", home=home, shell=shell)
                 self.assertEqual(0, again.returncode, again.stdout + again.stderr)
@@ -311,6 +317,256 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertFalse(record.exists())
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_unusual_files_come_back_byte_for_byte_from_either_undo(self) -> None:
+        originals = {
+            "old Mac line breaks": b"a\rb\r",
+            "a NUL byte": b"# Mine\x00x\n",
+            "a byte order mark": b"\xef\xbb\xbf# Mine\r\n",
+            "no final line break": b"# Mine",
+        }
+        for label, original in originals.items():
+            for undoer in ("sh", "py"):
+                with self.subTest(case=label, undone_by=undoer), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    instructions = home / ".claude" / "CLAUDE.md"
+                    instructions.parent.mkdir(parents=True)
+                    instructions.write_bytes(original)
+                    flags = ("--client", "claude", "--home", str(home))
+                    applied = run_sh(*flags, "--apply", home=home)
+                    self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+
+                    if undoer == "sh":
+                        undone = run_sh(*flags, "--undo", "--apply", home=home)
+                    else:
+                        undone = run_py(str(INSTALL_PY), *flags, "--undo", "--apply", home=home)
+
+                    self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                    self.assertEqual(original, instructions.read_bytes())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_both_undos_give_the_same_bytes_after_edits_around_the_block(self) -> None:
+        cases = {
+            "text added after the block": (b"abc\n", b"\nlater\n", b"abc\nlater\n"),
+            "a line break added at the end": (b"abc", b"\n", b"abc"),
+            "text added to a file the setup created": (None, b"\nmine", b"mine"),
+            "a blank file": (b"\n\n", b"", b"\n\n"),
+        }
+        for label, (original, added, expected) in cases.items():
+            for undoer in ("sh", "py"):
+                with self.subTest(case=label, undone_by=undoer), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    instructions = home / ".claude" / "CLAUDE.md"
+                    instructions.parent.mkdir(parents=True)
+                    if original is not None:
+                        instructions.write_bytes(original)
+                    flags = ("--client", "claude", "--home", str(home))
+                    self.assertEqual(0, run_sh(*flags, "--apply", home=home).returncode)
+                    with instructions.open("ab") as handle:
+                        handle.write(added)
+                    # A repeat run records the edited file, so the undo accepts it.
+                    self.assertEqual(0, run_sh(*flags, "--apply", home=home).returncode)
+
+                    if undoer == "sh":
+                        undone = run_sh(*flags, "--undo", "--apply", home=home)
+                    else:
+                        undone = run_py(str(INSTALL_PY), *flags, "--undo", "--apply", home=home)
+
+                    self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                    self.assertEqual(expected, instructions.read_bytes())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_text_added_after_a_block_that_ended_the_file_keeps_its_own_line(self) -> None:
+        for undoer in ("sh", "py"):
+            with self.subTest(undone_by=undoer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                earlier = run_py(
+                    str(PERSONALIZATION), "--client", "claude", "--home", str(home), "--auto-update", "--apply", home=home,
+                )
+                self.assertEqual(0, earlier.returncode, earlier.stderr)
+                instructions = home / ".claude" / "CLAUDE.md"
+                original = instructions.read_bytes()
+                self.assertTrue(original.endswith(b"-->"))
+                flags = ("--client", "claude", "--home", str(home))
+                self.assertEqual(0, run_py(str(INSTALL_PY), *flags, "--apply", home=home).returncode)
+                with instructions.open("ab") as handle:
+                    handle.write(b"\nlater\n")
+                self.assertEqual(0, run_py(str(INSTALL_PY), *flags, "--apply", home=home).returncode)
+
+                if undoer == "sh":
+                    undone = run_sh(*flags, "--undo", "--apply", home=home)
+                else:
+                    undone = run_py(str(INSTALL_PY), *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertEqual(original + b"\nlater\n", instructions.read_bytes())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_tampered_record_is_refused_and_nothing_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            instructions = home / ".claude" / "CLAUDE.md"
+            instructions.parent.mkdir(parents=True)
+            instructions.write_bytes(b"# Mine\n")
+            flags = ("--client", "claude", "--home", str(home))
+            self.assertEqual(0, run_sh(*flags, "--apply", home=home).returncode)
+            record_path = home / ".nobrainer-flow-onboarding-claude.json"
+            genuine = json.loads(record_path.read_text(encoding="utf-8"))
+            written = instructions.read_bytes()
+            elsewhere = home / "elsewhere.md"
+            elsewhere.write_bytes(written)
+            stray = instructions.parent / "stray.md"
+            stray.write_bytes(b"# Mine\n")
+            linked = instructions.parent / f"{instructions.name}.bak.link"
+            linked.symlink_to(Path(genuine["profile"]["backup"]))
+            off_lines = written.replace(b"\n" + START.encode(), b" " + START.encode())
+            end_marker = b"<!-- NOBRAINER-TECH-FLOW:END -->"
+            swapped = written.replace(START.encode(), b"\0").replace(end_marker, START.encode()).replace(b"\0", end_marker)
+
+            def profile(**changes: str):
+                return lambda record: record["profile"].update(changes)
+
+            cases = {
+                "a target outside the documented places": (profile(target=str(elsewhere)), written, "refusing unexpected personalization target"),
+                "a backup not named after the target": (profile(backup=str(stray)), written, "refusing unexpected personalization backup"),
+                "a backup that is a link": (profile(backup=str(linked)), written, "personalization backup must be a regular file"),
+                "a hash of the wrong length": (profile(written_sha256=genuine["profile"]["written_sha256"][1:]), written, "invalid personalization readback hash"),
+                "a skill that is not one of the eighteen": (lambda record: record["created_skills"].append("not-a-skill"), written, "cannot read the setup record"),
+                "a block that does not stand on lines of its own": (
+                    profile(written_sha256=hashlib.sha256(off_lines).hexdigest()), off_lines, "does not stand on lines of its own",
+                ),
+                "markers in the wrong order": (
+                    profile(written_sha256=hashlib.sha256(swapped).hexdigest()), swapped, "does not stand on lines of its own",
+                ),
+            }
+            for label, (tamper, content, message) in cases.items():
+                with self.subTest(case=label):
+                    record = copy.deepcopy(genuine)
+                    tamper(record)
+                    record_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+                    instructions.write_bytes(content)
+                    before = (instructions.read_bytes(), record_path.read_bytes(), entries(home))
+
+                    refused = run_sh(*flags, "--undo", "--apply", home=home)
+
+                    self.assertEqual(3, refused.returncode, refused.stdout + refused.stderr)
+                    self.assertIn(message, refused.stdout + refused.stderr)
+                    self.assertEqual(before, (instructions.read_bytes(), record_path.read_bytes(), entries(home)))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_setup_recorded_elsewhere_stops_the_next_run_and_its_hint_undoes_it(self) -> None:
+        for client, name, message in (
+            ("claude", "CLAUDE_CONFIG_DIR", "different skills destination"),
+            ("codex", "CODEX_HOME", "different personalization target"),
+        ):
+            with self.subTest(client=client), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp).resolve()
+                home, first, second = root / "home", root / "first", root / "second"
+                for folder in (home, first, second):
+                    folder.mkdir()
+                applied = run_sh("--client", client, "--apply", home=home, variables={name: str(first)})
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+
+                refused = run_sh("--client", client, home=home, variables={name: str(second)})
+
+                self.assertEqual(3, refused.returncode, refused.stdout + refused.stderr)
+                self.assertIn(message, refused.stderr)
+                self.assertEqual([], list(second.iterdir()))
+                hint = re.search(r"^HINT: undo that setup with (.*), then run this again$", refused.stderr, re.MULTILINE)
+                self.assertIsNotNone(hint, refused.stderr)
+                self.assertIn(f"{name}=", hint.group(1))
+                # The hint works as printed, while the variable still names the other place.
+                path = f"{Path(SHELL).parent}{os.pathsep}{os.environ.get('PATH', '')}"
+                undone = subprocess.run(
+                    [SHELL, "-c", hint.group(1)],
+                    cwd=root, env=environment(home, {name: str(second), "PATH": path}),
+                    text=True, encoding="utf-8", errors="replace", capture_output=True, check=False, stdin=subprocess.DEVNULL,
+                )
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertFalse((home / f".nobrainer-flow-onboarding-{client}.json").exists())
+
+    def test_paths_the_python_scripts_would_refuse_are_refused_before_anything_is_written(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            cases = {"a tab": "h\tme", "U+2028": "h me", "U+0085": "h\u0085me"}
+            if os.name != "nt" and shutil.which("iconv"):
+                # Passed as the bytes h, 0xE9, m, e.
+                cases["bytes that are not UTF-8"] = "h\udce9me"
+            for label, name in cases.items():
+                with self.subTest(case=label):
+                    result = run_sh("--client", "claude", "--home", str(root / name), home=root)
+                    self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+                    self.assertIn("ERROR: --home ", result.stderr)
+                    self.assertEqual([], entries(root))
+            fine = run_sh("--client", "claude", "--home", str(root / "zażółć"), home=root)
+            self.assertEqual(0, fine.returncode, fine.stdout + fine.stderr)
+
+            if shutil.which("iconv"):
+                home = root / "home"
+                instructions = home / ".claude" / "CLAUDE.md"
+                instructions.parent.mkdir(parents=True)
+                instructions.write_bytes(b"# Latin-1: \xe9\n")
+                refused = run_sh("--client", "claude", "--home", str(home), "--apply", home=home)
+                self.assertEqual(3, refused.returncode, refused.stdout + refused.stderr)
+                self.assertIn("target is not UTF-8 text", refused.stderr)
+                self.assertEqual(b"# Latin-1: \xe9\n", instructions.read_bytes())
+                self.assertFalse((home / ".claude" / "skills").exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_claude_file_that_becomes_only_the_codex_import_can_still_be_undone(self) -> None:
+        for undoer in ("sh", "py"):
+            with self.subTest(undone_by=undoer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                codex = run_py(str(PERSONALIZATION), "--client", "codex", "--home", str(home), "--apply", home=home)
+                self.assertEqual(0, codex.returncode, codex.stderr)
+                instructions = home / ".claude" / "CLAUDE.md"
+                instructions.parent.mkdir(parents=True)
+                instructions.write_bytes(b"# Mine\n")
+                flags = ("--client", "claude", "--home", str(home))
+                self.assertEqual(0, run_sh(*flags, "--apply", home=home).returncode)
+                instructions.write_bytes(b"@~/.codex/AGENTS.md\n")
+                again = run_sh(*flags, "--apply", home=home)
+                self.assertIn("inherited from the Codex global instructions", again.stdout)
+
+                if undoer == "sh":
+                    undone = run_sh(*flags, "--undo", "--apply", home=home)
+                else:
+                    undone = run_py(str(INSTALL_PY), *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertFalse((home / ".claude" / "skills").exists())
+                self.assertEqual(b"@~/.codex/AGENTS.md\n", instructions.read_bytes())
+
+    def test_it_runs_by_relative_path_from_the_checkout_with_cdpath_set(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            home.mkdir()
+
+            result = subprocess.run(
+                [SHELL, "scripts/install.sh", "--client", "claude", "--home", str(home)],
+                cwd=ROOT, env=environment(home, {"CDPATH": "."}),
+                text=True, encoding="utf-8", errors="replace", capture_output=True, check=False, stdin=subprocess.DEVNULL,
+            )
+
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertIn("SKILLS:", result.stdout)
+
+    def test_a_tilde_the_shell_left_alone_in_home_is_the_home_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            here = Path(temp) / "here"
+            home.mkdir()
+            here.mkdir()
+
+            result = run_sh("--client", "claude", "--home=~/profile", home=home, cwd=here)
+
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertRegex(result.stdout, r"SKILLS: \d+ to link into \S*/home/profile/\.claude/skills ")
+            self.assertEqual([], entries(here))
+            other = run_sh("--client", "claude", "--home=~someone/profile", home=home, cwd=here)
+            self.assertEqual(2, other.returncode, other.stdout + other.stderr)
+            self.assertIn("write the full path", other.stderr)
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_edits_outside_the_block_survive_the_undo(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
@@ -379,7 +635,7 @@ class ShellInstallerTests(unittest.TestCase):
             profile = root / "claude-profile"
             home.mkdir()
             profile.mkdir()
-            variables = {"CLAUDE_CONFIG_DIR": str(profile), "XDG_CONFIG_HOME": "~/.config", "CODEX_HOME": "relative"}
+            variables = {"CLAUDE_CONFIG_DIR": str(profile), "XDG_CONFIG_HOME": "~/.config", "CODEX_HOME": "/with\ta tab"}
 
             applied = run_sh("--client", "claude", "--apply", home=home, variables=variables)
 
@@ -655,6 +911,7 @@ class ShellInstallerTests(unittest.TestCase):
             self.assertEqual(3, result.returncode)
             self.assertIn("cannot read the setup record", result.stderr)
             self.assertIn("scripts/install.py --client claude --undo --apply", result.stderr)
+            self.assertIn(f"--undo --apply --home '{home}'", result.stderr)
 
 
 if __name__ == "__main__":

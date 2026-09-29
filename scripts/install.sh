@@ -11,6 +11,8 @@
 # POSIX sh: dash, bash, busybox and zsh emulating sh. On Windows run it in Git Bash.
 
 set -u
+# With CDPATH set, cd can pick another folder and print its name.
+unset CDPATH
 
 # The eighteen skills, and the names earlier layouts used. Tests keep both lists
 # equal to the ones in scripts/install_skills.py.
@@ -34,6 +36,9 @@ START='<!-- NOBRAINER-TECH-FLOW:START -->'
 END='<!-- NOBRAINER-TECH-FLOW:END -->'
 LEGACY_TEXT='(^|[^[:alnum:]_])nobrainer-ultra([^[:alnum:]_]|$)|^[[:space:]]*#{1,6}[[:space:]]+nobrainer([ .]?tech)?[[:space:]]+flow([^[:alnum:]_]|$)'
 CONTROL=$(printf '*[\001-\037\177]*')
+# U+0080 to U+009F, and U+2028 and U+2029, in UTF-8.
+C1=$(printf '\302[\200-\237]')
+SEPARATORS=$(printf '\342\200[\250\251]')
 TAB=$(printf '\t')
 CR=$(printf '\r')
 
@@ -91,8 +96,24 @@ usage_error() {
 	exit 2
 }
 
+# path_problem PATH: say why the Python scripts would refuse PATH, or fail when they
+# would take it. The setup record must stay readable to them, and a line break or a
+# control character in a path breaks the one-line output both print.
+path_problem() {
+	case $1 in $CONTROL) printf 'contains a control character'; return 0 ;; esac
+	if printf '%s\n' "$1" | LC_ALL=C grep -q -e "$C1" -e "$SEPARATORS"; then
+		printf 'contains a control character or a line separator'
+		return 0
+	fi
+	if command -v iconv >/dev/null 2>&1 && ! printf '%s' "$1" | iconv -f UTF-8 -t UTF-8 >/dev/null 2>&1; then
+		printf 'is not valid UTF-8'
+		return 0
+	fi
+	return 1
+}
+
 reject_control() {
-	case $1 in $CONTROL) die 2 "$2 contains a control character" ;; esac
+	if _q_problem=$(path_problem "$1"); then die 2 "$2 $_q_problem"; fi
 }
 
 # Windows spellings (C:\... under Git Bash or Cygwin) to the POSIX form the shell uses.
@@ -157,6 +178,14 @@ command_for() {
 	printf '\n'
 }
 
+# The Python undo, for a record or a file this script does not handle.
+python_undo() {
+	if [ "$windows" = 1 ]; then printf 'py -3'; else printf 'python3'; fi
+	printf ' %s --client %s --undo --apply' "$(quote "$here/install.py")" "$client"
+	if [ "$home_given" = 1 ]; then printf ' --home %s' "$(quote "$home")"; fi
+	printf '\n'
+}
+
 # config_dir VARIABLE STRICT: set config_value to the directory VARIABLE names, or to
 # nothing when it is unset. An empty CODEX_HOME or XDG_CONFIG_HOME counts as unset,
 # as it does for Codex and in the XDG specification. Any other value is used exactly
@@ -168,7 +197,12 @@ config_dir() {
 	config_value=
 	if [ -z "$_d_set" ]; then return 0; fi
 	if [ -z "$_d_value" ] && [ "$1" != CLAUDE_CONFIG_DIR ]; then return 0; fi
-	reject_control "$_d_value" "$1"
+	if [ "$2" = yes ]; then
+		reject_control "$_d_value" "$1"
+	elif path_problem "$_d_value" >/dev/null; then
+		# Another client's variable: unusable counts as unset.
+		return 0
+	fi
 	_d_path=$(to_posix "$_d_value")
 	case $_d_path in
 		/*) config_value=$(clean keep "$_d_path") ;;
@@ -218,7 +252,9 @@ inherits_codex() {
 	locate codex "$_h_mode"
 	codex_file=$(clean keep "$target")
 	skills_dir=$_h_skills target=$_h_target label=$_h_label
-	_h_lines=$(tr '\r' '\n' <"$target" | grep -v "^[ $TAB]*\$")
+	# A NUL byte becomes a control character: never an import, and never lost by the
+	# command substitution.
+	_h_lines=$(tr '\r\000' '\n\001' <"$target" | grep -a -v "^[ $TAB]*\$")
 	case $_h_lines in *"
 "*) return 1 ;; esac
 	_h_line=$(printf '%s\n' "$_h_lines" | sed "s/[ $TAB]*\$//")
@@ -239,7 +275,9 @@ is_our_link() {
 
 make_link() {
 	# Git Bash and Cygwin copy the tree for "ln -s" unless told to make a real link.
-	MSYS=winsymlinks:nativestrict CYGWIN=winsymlinks:nativestrict ln -s "$1" "$2"
+	# -n: when another run linked the name first, fail instead of following that link
+	# and writing into this checkout.
+	MSYS=winsymlinks:nativestrict CYGWIN=winsymlinks:nativestrict ln -s -n "$1" "$2"
 }
 
 remove_link() {
@@ -395,21 +433,63 @@ check_destination() {
 	done
 }
 
+# The command that undoes the recorded setup, with the client's variable as it was
+# for that setup: the variable, not the record, decides where an undo may write.
+# Fails, after printing the plain command, when no variable could have chosen it.
+record_undo() {
+	_v_name=
+	case $client:$st_dest in
+		claude:*/skills)
+			_v_name=CLAUDE_CONFIG_DIR _v_base=${st_dest%/skills} _v_default=$home/.claude
+			_v_target=$_v_base/CLAUDE.md ;;
+		opencode:*/opencode/skills)
+			_v_name=XDG_CONFIG_HOME _v_base=${st_dest%/opencode/skills} _v_default=$home/.config
+			_v_target=$_v_base/opencode/AGENTS.md ;;
+	esac
+	case $client:$st_target in
+		codex:*/AGENTS.md)
+			_v_name=CODEX_HOME _v_base=${st_target%/AGENTS.md} _v_default=$home/.codex
+			_v_target=$st_target ;;
+	esac
+	# A record whose two places no single setting explains names no setting.
+	if [ -n "$_v_name" ] && [ -n "$st_target" ] && [ "$(clean keep "$st_target")" != "$(clean keep "$_v_target")" ]; then
+		_v_name=
+	fi
+	if [ -z "$_v_name" ]; then
+		command_for --undo --apply
+		return 1
+	fi
+	# The variables count only without --home, so the undo runs without it.
+	_v_prefix=
+	if [ "$home_given" = 1 ]; then
+		if [ "$windows" = 1 ]; then _v_prefix="USERPROFILE=$(quote "$(to_native "$home")") "; else _v_prefix="HOME=$(quote "$home") "; fi
+	fi
+	if [ "$(clean keep "$_v_base")" = "$(clean keep "$_v_default")" ]; then
+		_v_prefix="env -u $_v_name $_v_prefix"
+	else
+		_v_prefix="$_v_prefix$_v_name=$(quote "$(to_native "$_v_base")") "
+	fi
+	_v_given=$home_given
+	home_given=0
+	printf '%s%s\n' "$_v_prefix" "$(command_for --undo --apply)"
+	home_given=$_v_given
+}
+
 # The setup already recorded for this client must be for the same places.
 check_record() {
 	record=0 st_dest= st_created= st_target= st_backup= st_hash=
 	if [ ! -e "$state" ] && [ ! -L "$state" ]; then return 0; fi
 	if [ -L "$state" ] || [ ! -f "$state" ]; then die 3 "setup state path is not a regular file: $state"; fi
 	read_state "$state" || die 3 "cannot read the setup record $state" \
-		"it holds characters or a layout this script does not read; undo it with python3 scripts/install.py --client $client --undo --apply"
+		"it holds characters or a layout this script does not read; undo it with $(python_undo)"
 	record=1
 	if [ "$(physical "$st_dest")" != "$(physical "$skills_dir")" ]; then
 		die 3 "existing setup state belongs to a different skills destination: $st_dest" \
-			"undo that setup with $(command_for --undo --apply), then run this again"
+			"undo that setup with $(record_undo), then run this again"
 	fi
 	if [ -n "$st_target" ] && [ "$(clean keep "$st_target")" != "$(clean keep "$target")" ]; then
 		die 3 "existing setup state belongs to a different personalization target: $st_target" \
-			"undo that setup with $(command_for --undo --apply), then run this again"
+			"undo that setup with $(record_undo), then run this again"
 	fi
 }
 
@@ -471,8 +551,8 @@ plan_instructions() {
 		return 0
 	fi
 	[ -f "$target" ] || die 3 "target must be a regular non-symlink file: $target"
-	_i_starts=$(grep -c -F -e "$START" "$target" 2>/dev/null)
-	_i_ends=$(grep -c -F -e "$END" "$target" 2>/dev/null)
+	_i_starts=$(grep -a -c -F -e "$START" "$target" 2>/dev/null)
+	_i_ends=$(grep -a -c -F -e "$END" "$target" 2>/dev/null)
 	if [ "${_i_starts:-0}" = 0 ] && [ "${_i_ends:-0}" = 0 ]; then
 		if grep -E -i -q -e "$LEGACY_TEXT" "$target" 2>/dev/null; then
 			die 3 "unmarked existing nobrainer-tech-flow instructions detected in $target; explicit migration is required before installing a managed block" \
@@ -482,8 +562,9 @@ plan_instructions() {
 		file_status=append
 		return 0
 	fi
-	_i_first=$(grep -n -F -e "$START" "$target" | cut -d : -f 1)
-	_i_last=$(grep -n -F -e "$END" "$target" | cut -d : -f 1)
+	# -a: a file with a NUL byte is still text here, not a "binary file".
+	_i_first=$(grep -a -n -F -e "$START" "$target" | cut -d : -f 1)
+	_i_last=$(grep -a -n -F -e "$END" "$target" | cut -d : -f 1)
 	if [ "$_i_starts" != 1 ] || [ "$_i_ends" != 1 ] || [ "$_i_first" -gt "$_i_last" ]; then
 		die 3 "malformed or duplicated nobrainer-tech-flow managed markers in $target"
 	fi
@@ -492,7 +573,7 @@ plan_instructions() {
 
 # line_of MARKER FILE: the numbers of the lines that hold MARKER and nothing else.
 line_of() {
-	grep -n -x -F -e "$1" -e "$1$CR" "$2" | cut -d : -f 1
+	grep -a -n -x -F -e "$1" -e "$1$CR" "$2" | cut -d : -f 1
 }
 
 # block_lines FILE: sets block_from and block_to to the lines of the one managed
@@ -545,7 +626,9 @@ preview() {
 }
 
 # Append the block the way scripts/install_personalization.py does: after a line
-# break when the file does not end with one, and without a trailing one.
+# break when the file does not end with one, and without a trailing one. A lone CR
+# (old Mac line breaks) gets a line break too, so that the block starts on a line
+# of its own, which the undo needs.
 write_instructions() {
 	_w_dir=${target%/*}
 	mkdir -p "$_w_dir" || return 1
@@ -563,7 +646,7 @@ write_instructions() {
 			return 1
 		fi
 		case $(tail -c 1 "$_w_tmp" | od -An -to1 | tr -d ' \n') in
-			'' | 012 | 015) ;;
+			'' | 012) ;;
 			*) printf '\n' >>"$_w_tmp" ;;
 		esac
 	fi
@@ -615,7 +698,11 @@ install() {
 	# Undo puts the block back as it was before the first setup, so a record that
 	# already names this file keeps its first backup (or its absence).
 	new_target= new_backup= new_hash=
-	if [ "$record" = 1 ] && [ -n "$st_target" ] && [ -e "$target" ]; then
+	if [ "$inherit" = 1 ]; then
+		# The Codex file carries the block for Claude now, so, like the guided setup,
+		# the record drops this file: the undo leaves it as it is.
+		:
+	elif [ "$record" = 1 ] && [ -n "$st_target" ] && [ -e "$target" ]; then
 		new_target=$target new_backup=$st_backup new_hash=$(sha256 "$target")
 	elif [ "$wrote" = 1 ]; then
 		new_target=$target new_backup=$made_backup new_hash=$(sha256 "$target")
@@ -664,9 +751,17 @@ restore_into() {
 		block_lines "$2" || return 1
 		_x_from=$block_from _x_to=$block_to
 	fi
+	# A block that ended BACKUP without a line break keeps the text now after it on
+	# a line of its own.
+	_x_glue=
+	if [ -n "$_x_from" ] && [ "$_x_to" -gt "$(($(wc -l <"$2")))" ] &&
+		[ -n "$(tail -n "+$((_x_end + 1))" "$1" | od -An -N1 -to1)" ]; then
+		_x_glue=1
+	fi
 	{
 		{ [ "$_x_start" -eq 1 ] || head -n "$((_x_start - 1))" "$1"; } &&
 			{ [ -z "$_x_from" ] || head -n "$_x_to" "$2" | tail -n "+$_x_from"; } &&
+			{ [ -z "$_x_glue" ] || printf '\n'; } &&
 			tail -n "+$((_x_end + 1))" "$1"
 	} >"$3" || return 1
 	if [ -n "$2" ] && { cat "$2"; printf '\n'; } | cmp -s - "$3"; then
@@ -679,14 +774,14 @@ undo() {
 	if [ ! -e "$state" ] && [ ! -L "$state" ]; then
 		if [ -e "$home/.nobrainer-flow-onboarding.json" ]; then
 			die 3 "only an older setup record exists: $home/.nobrainer-flow-onboarding.json" \
-				"undo it with python3 scripts/install.py --client $client --undo --apply, which can tell which client it belongs to."
+				"undo it with $(python_undo), which can tell which client it belongs to."
 		fi
 		die 3 "rollback state not found: $state" \
 			"undo reverses a setup that this script, scripts/install.py or the guided setup recorded; none is recorded for $label."
 	fi
 	if [ -L "$state" ] || [ ! -f "$state" ]; then die 3 "rollback state must be a regular file: $state"; fi
 	read_state "$state" || die 3 "cannot read the setup record $state" \
-		"it holds characters or a layout this script does not read; undo it with python3 scripts/install.py --client $client --undo --apply"
+		"it holds characters or a layout this script does not read; undo it with $(python_undo)"
 
 	if [ -n "$st_target" ]; then
 		# The record may only name a documented instruction file of this home.
@@ -700,7 +795,13 @@ undo() {
 			done
 		done
 		skills_dir=$_u_saved_skills target=$_u_saved_target label=$_u_saved_label
-		[ "$_u_allowed" = 1 ] || die 3 "refusing unexpected personalization target: $st_target"
+		if [ "$_u_allowed" != 1 ]; then
+			if _u_hint=$(record_undo); then
+				die 3 "refusing unexpected personalization target: $st_target" \
+					"if the setup went there, undo it with the variable it was made with: $_u_hint"
+			fi
+			die 3 "refusing unexpected personalization target: $st_target"
+		fi
 		case $st_hash in
 			*[!0-9a-f]* | '') die 3 "invalid personalization readback hash in rollback state" ;;
 		esac
@@ -728,7 +829,7 @@ undo() {
 			# The line-based undo below needs each block on lines of its own.
 			if ! block_lines "$st_target" || { [ -n "$st_backup" ] && grep -q -F -e "$START" "$st_backup" && ! block_lines "$st_backup"; }; then
 				die 3 "the managed block in $st_target does not stand on lines of its own" \
-					"undo it with python3 scripts/install.py --client $client --undo --apply"
+					"undo it with $(python_undo)"
 			fi
 		fi
 	fi
@@ -834,15 +935,23 @@ if [ ! -f "$root/skills/nobrainer-tech-flow/SKILL.md" ] || [ ! -f "$root/scripts
 		"git clone https://github.com/nobrainer-tech/nobrainer-tech-flow ~/.nobrainer-tech-flow, then sh ~/.nobrainer-tech-flow/scripts/install.sh --client $client"
 fi
 
+if [ "$windows" = 1 ] && [ -n "${USERPROFILE:-}" ]; then user_home=$(to_posix "$USERPROFILE"); else user_home=${HOME:-}; fi
 if [ "$home_given" = 1 ]; then
 	[ -n "$opt_home" ] || usage_error "argument --home: expected a directory"
+	# A ~ the shell did not expand (--home=~/x, or quoted) is the home, as in install.py.
+	case $opt_home in
+		'~' | '~/'*)
+			case $user_home in /*) ;; *) die 2 "cannot expand ~ in --home: the home directory is not an absolute path" ;; esac
+			opt_home=$user_home${opt_home#'~'} ;;
+		'~'*) usage_error "argument --home: write the full path instead of $opt_home" ;;
+	esac
 	reject_control "$opt_home" "--home"
 	_home=$(to_posix "$opt_home")
 	case $_home in /*) ;; *) _home=$(pwd -P)/$_home ;; esac
 	home=$(clean abs "$_home")
 	locate "$client" plain
 else
-	if [ "$windows" = 1 ] && [ -n "${USERPROFILE:-}" ]; then _home=$(to_posix "$USERPROFILE"); else _home=${HOME:-}; fi
+	_home=$user_home
 	reject_control "$_home" "the home directory"
 	case $_home in
 		/*) home=$(clean keep "$_home") ;;

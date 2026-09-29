@@ -470,6 +470,14 @@ class OneCommandInstallerTests(unittest.TestCase):
             self.assertIn("--undo --apply", preview.stderr)
             self.assertNotIn("--rollback", preview.stderr)
             self.assertEqual([], list((root / "B").iterdir()))
+            # The remedy names the setting the first setup was made with, and it works.
+            self.assertIn(f"undo it with CLAUDE_CONFIG_DIR={root / 'A'} and --undo --apply", preview.stderr)
+            refused = self.run_install("--client", "claude", "--undo", "--apply", home=home, variables={"CLAUDE_CONFIG_DIR": str(root / "B")})
+            self.assertEqual(3, refused.returncode, refused.stdout + refused.stderr)
+            self.assertIn(f"it was made with CLAUDE_CONFIG_DIR={root / 'A'}", refused.stderr)
+            undone = self.run_install("--client", "claude", "--undo", "--apply", home=home, variables={"CLAUDE_CONFIG_DIR": str(root / "A")})
+            self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+            self.assertFalse((root / "A" / "skills").exists())
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_an_undo_counts_the_links_it_removed(self) -> None:

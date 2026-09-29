@@ -77,7 +77,8 @@ standing authorization, a second apply changes nothing, undo puts the instructio
 file back byte for byte (and keeps edits made outside the block since), a foreign
 target is refused before any write, and the variables and `--home` select the same
 place the helpers do. The shell installer's tests also run it in every POSIX shell
-found (dash, bash in POSIX mode, busybox), with no Python on its `PATH`, and check
+found (dash, bash in POSIX mode, busybox sh, zsh emulating sh), with no Python on
+its `PATH`, and check
 that its block is byte for byte the Python helper's and that either installer
 undoes what the other did. Each check was verified against a mutated script that
 must fail it (8 mutants of `install.py` and 18 of `install.sh`, all caught).

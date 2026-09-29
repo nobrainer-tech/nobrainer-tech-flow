@@ -70,6 +70,43 @@ def instruction_file(client: str, home: Path, environ) -> Path:
     return _sibling(PERSONALIZATION).known_client_path(client, home, environ).path
 
 
+CLIENT_VARIABLES = {"claude": "CLAUDE_CONFIG_DIR", "codex": "CODEX_HOME", "opencode": "XDG_CONFIG_HOME"}
+
+
+def recorded_setting(client: str, home: Path, destination: object, target: object) -> str | None:
+    """The variable setting under which a setup lands where its record says it went,
+    as "NAME=value" or "NAME unset", or None when no one setting explains the record.
+
+    The variable, not the record, decides where an undo may write, so this is what a
+    person must set to undo a setup made with another value.
+    """
+
+    name = CLIENT_VARIABLES.get(client)
+    if name is None:
+        return None
+    if client == "codex":
+        if not isinstance(target, str) or not target:
+            return None
+        base = Path(target).parent
+    else:
+        if not isinstance(destination, str) or not destination:
+            return None
+        base = Path(destination).parent if client == "claude" else Path(destination).parent.parent
+    for environ, setting in (({}, f"{name} unset"), ({name: str(base)}, f"{name}={base}")):
+        try:
+            if client != "codex" and (
+                skills_destination(client, home, environ).expanduser().resolve()
+                != Path(str(destination)).expanduser().resolve()
+            ):
+                continue
+            if isinstance(target, str) and target and instruction_file(client, home, environ) != Path(target):
+                continue
+        except (OSError, ValueError):
+            continue
+        return setting
+    return None
+
+
 def links_to(target: Path, source: Path) -> bool:
     """True when target is a symlink resolving to source; loops and dangling links are not."""
 
@@ -658,24 +695,56 @@ def block_span(data: bytes) -> tuple[int, int] | None:
     return start, end + len(BLOCK_END)
 
 
+def _fills_line(data: bytes, start: int, end: int) -> bool:
+    """Whether data[start:end] is a whole line, a CR before its line break allowed."""
+
+    if start and data[start - 1 : start] != b"\n":
+        return False
+    after = data[end : end + 2]
+    return after in (b"", b"\r", b"\r\n") or after.startswith(b"\n")
+
+
+def block_lines(data: bytes) -> tuple[int, int] | None:
+    """The managed block as whole lines, the END line's line break included, when
+    each marker stands on a line of its own, as scripts/install.sh requires."""
+
+    span = block_span(data)
+    if span is None:
+        return None
+    start, end = span
+    if not (
+        _fills_line(data, start, start + len(BLOCK_START))
+        and _fills_line(data, end - len(BLOCK_END), end)
+    ):
+        return None
+    line_break = data.find(b"\n", end)
+    return start, len(data) if line_break < 0 else line_break + 1
+
+
 def restored_content(current: bytes, original: bytes | None) -> bytes:
     """The instruction file with its managed block put back as it was before the setup.
 
     Everything outside the block stays as it is now, so edits made since the setup
     survive. When nothing outside the block changed, the result is the original file
     byte for byte: the setup added one line break before the block when the file did
-    not end with one, and that goes too.
+    not end with one, and that goes too. A block on lines of its own is replaced as
+    whole lines, as scripts/install.sh does, so both undo to the same bytes.
     """
 
-    span = block_span(current)
+    whole = block_lines(current)
+    span = whole or block_span(current)
     if span is None:
         raise ValueError("managed block not found")
     before = b""
     if original is not None:
-        original_span = block_span(original)
+        original_span = (block_lines(original) if whole else None) or block_span(original)
         if original_span is not None:
             before = original[original_span[0] : original_span[1]]
-    restored = current[: span[0]] + before + current[span[1] :]
+    after = current[span[1] :]
+    if whole and before and not before.endswith(b"\n") and after:
+        # The block ended the original file; the text now after it keeps its own line.
+        before += b"\n"
+    restored = current[: span[0]] + before + after
     if original is not None and restored == original + b"\n":
         return original
     return restored
@@ -781,6 +850,9 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
                     pass
         if target_path not in allowed_paths:
             print(f"ERROR: refusing unexpected personalization target: {target_path}", file=sys.stderr)
+            setting = recorded_setting(args.client, args.home, state.get("destination"), str(target_path))
+            if setting:
+                print(f"HINT: if the setup went there, it was made with {setting}; undo it with that setting", file=sys.stderr)
             return 3
         if backup:
             backup_file = Path(str(backup))
@@ -982,12 +1054,19 @@ def main(argv: list[str] | None = None) -> int:
         ).expanduser().resolve()
         require_utf8(args.home, destination)
         if previous and Path(str(previous["destination"])).expanduser().resolve() != destination:
+            setting = recorded_setting(
+                args.client, args.home, previous["destination"], (previous.get("profile") or {}).get("target")
+            )
+            if setting is None:
+                remedy = "undo it with --rollback --apply and the --home or --dest it was made with"
+            elif setting.endswith(" unset"):
+                # After an upgrade: 2.0.0 used the default place even when the variable was set.
+                remedy = f"undo it with {setting} and --rollback --apply, or pass --home to keep that location"
+            else:
+                remedy = f"undo it with {setting} and --rollback --apply"
             raise ValueError(
                 "existing setup state belongs to a different skills destination: "
-                f"{previous['destination']} (after an upgrade this can mean the earlier "
-                "setup used the default location instead of CLAUDE_CONFIG_DIR or "
-                "XDG_CONFIG_HOME: undo it with --rollback --apply, or pass --home to "
-                "keep that location)"
+                f"{previous['destination']} ({remedy}, then run this command again)"
             )
         before = installed_ids(destination)
         ranked = recommendations(
@@ -1089,10 +1168,12 @@ def main(argv: list[str] | None = None) -> int:
         require_utf8(profile_target)
         old_profile = previous.get("profile", {})
         if old_profile.get("target") and Path(str(old_profile["target"])) != profile_target:
+            setting = recorded_setting(args.client, args.home, previous.get("destination"), old_profile["target"])
+            with_setting = f" with {setting} and" if setting else " with"
             raise ValueError(
                 "existing setup state belongs to a different personalization target: "
                 f"{old_profile['target']} (an earlier run wrote its instructions there; undo that "
-                "setup with --rollback --apply, then run this command again)"
+                f"setup{with_setting} --rollback --apply, then run this command again)"
             )
         if not args.apply:
             return 0
