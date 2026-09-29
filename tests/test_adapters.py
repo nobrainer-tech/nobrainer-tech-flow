@@ -109,10 +109,18 @@ class AdapterTests(unittest.TestCase):
         )
         for extra_env, expected_key in cases:
             with self.subTest(expected_key=expected_key):
+                # Keep the system variables (Git Bash needs SYSTEMROOT on Windows) and
+                # drop only the host variables, so the case names exactly one host.
+                environment = {
+                    key: value
+                    for key, value in os.environ.items()
+                    if key not in ("CLAUDE_PLUGIN_ROOT", "CURSOR_PLUGIN_ROOT")
+                }
+                environment.update(extra_env)
                 result = subprocess.run(
                     ["bash", str(hook)],
                     cwd=ROOT,
-                    env={"PATH": os.environ.get("PATH", ""), **extra_env},
+                    env=environment,
                     text=True,
                     capture_output=True,
                     check=False,
