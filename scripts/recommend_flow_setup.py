@@ -396,7 +396,7 @@ def ask_if_missing(args: argparse.Namespace) -> None:
         ("existing_setup", "What relevant skills, instructions or workflows are already installed?", None),
     )
     missing = [attribute for attribute, _, _ in questions if not getattr(args, attribute)]
-    if missing and not sys.stdin.isatty():
+    if missing and not stdin_is_terminal():
         flags = ", ".join("--" + attribute.replace("_", "-") for attribute in missing)
         raise InputRequired(f"answers are missing and no terminal is attached; pass {flags}")
     for attribute, prompt, choices in questions:
@@ -515,10 +515,31 @@ def selected_ids(raw: str | None) -> list[str]:
     return sorted(chosen)
 
 
+def stdin_is_terminal() -> bool:
+    """False when there is nobody to ask: no stdin at all, a closed one, or a pipe."""
+
+    try:
+        return sys.stdin is not None and sys.stdin.isatty()
+    except ValueError:
+        return False
+
+
+def profile_failure_hint(output: str) -> None:
+    if "takes precedence over" in output:
+        print(
+            "HINT: the guided setup cannot write to AGENTS.override.md; remove or empty "
+            "that file, or run scripts/install_personalization.py --client codex "
+            "--path <file> yourself."
+        )
+
+
 def run(command: list[str], hide: tuple[str, ...] = ()) -> tuple[int, str]:
     """Run a helper and echo its output, minus lines that start with a hidden prefix."""
 
-    result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False)
+    # The helpers write UTF-8 whatever the console code page is.
+    result = subprocess.run(
+        command, cwd=ROOT, encoding="utf-8", errors="replace", capture_output=True, check=False
+    )
     output = result.stdout + result.stderr
     shown = "".join(
         line for line in output.splitlines(keepends=True) if not line.startswith(hide)
@@ -831,13 +852,23 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            # Piped output on Windows uses the ANSI code page, which cannot print every
+            # character of a path or of the helpers' output.
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     args = parse_args(argv)
     try:
         # An explicit --home selects the documented defaults under it and ignores
         # the environment, which keeps isolated runs from touching a real profile.
+        # The helpers run from the checkout, so a relative path would land inside it.
         args.home_explicit = args.home is not None
         args.environ = {} if args.home_explicit else os.environ
-        args.home = args.home.expanduser() if args.home_explicit else Path.home()
+        args.home = (
+            Path(os.path.abspath(args.home.expanduser())) if args.home_explicit else Path.home()
+        )
         repo_url = safe_repo_url(args.repo_url)
         state = state_path(args.home, args.state_file, args.client)
         legacy_state = legacy_state_path(args.home, args.state_file)
@@ -951,7 +982,7 @@ def main(argv: list[str] | None = None) -> int:
                 f"Change scope=install {item.skill} and update selected client nobrainer-tech-flow instructions"
             )
         selection_text = args.selection
-        if not selection_text and sys.stdin.isatty():
+        if not selection_text and stdin_is_terminal():
             selection_text = input("Choose any recommendation IDs to install (comma-separated, blank to stop): ").strip()
         chosen = selected_ids(selection_text)
         if not chosen:
@@ -980,6 +1011,7 @@ def main(argv: list[str] | None = None) -> int:
             profile_args.extend(("--preferences", args.preferences))
         code, profile_output = run(profile_args)
         if code:
+            profile_failure_hint(profile_output)
             return code
         inherited = "INHERITS_CODEX:" in profile_output
         if inherited and args.preferences:
@@ -987,6 +1019,7 @@ def main(argv: list[str] | None = None) -> int:
             profile_args = [sys.executable, str(PERSONALIZATION), "--client", personalization_client, *home_args, "--keep-options", "--preferences", args.preferences]
             code, profile_output = run(profile_args)
             if code:
+                profile_failure_hint(profile_output)
                 return code
         profile_target = instruction_file(personalization_client, args.home, args.environ)
         old_profile = previous.get("profile", {})

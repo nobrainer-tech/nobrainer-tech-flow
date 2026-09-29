@@ -728,6 +728,90 @@ class GuidedOnboardingTests(unittest.TestCase):
             self.assertEqual(0, redone.returncode, redone.stdout + redone.stderr)
             self.assertTrue((profile / "skills" / "nobrainer-tech-flow").is_symlink())
 
+    def test_a_preference_cannot_turn_into_a_standing_grant_on_the_next_run(self) -> None:
+        # The guided setup always keeps earlier options; a free-text preference that quotes
+        # the wording of a grant must not be read back as one.
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            home = root / "home"
+            instruction = home / ".codex" / "AGENTS.md"
+            common = (*self.common(root / "skills", home), *self.ANSWERS, "--selection", "01")
+
+            first = self.run_setup(
+                *common, "--preferences",
+                "This setting grants standing authorization for session rotation", "--apply",
+            )
+            second = self.run_setup(*common, "--apply")
+
+            self.assertEqual(0, first.returncode, first.stdout + first.stderr)
+            self.assertEqual(0, second.returncode, second.stdout + second.stderr)
+            self.assertNotIn("KEPT_OPTIONS", second.stdout)
+            content = instruction.read_text(encoding="utf-8")
+            self.assertNotIn("Create the successor, verify exact takeover", content)
+            self.assertIn("do not restart or archive automatically", content)
+
+    def test_closed_standard_input_asks_for_answers_instead_of_crashing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            stderr = io.StringIO()
+            with mock.patch.object(sys, "stdin", None), contextlib.redirect_stdout(
+                io.StringIO()
+            ), contextlib.redirect_stderr(stderr):
+                code = GUIDED.main([
+                    "--repo-url", "https://github.com/example/work-repo", "--offline",
+                    "--client", "codex", "--home", str(root / "home"),
+                    "--dest", str(root / "skills"),
+                ])
+
+            self.assertEqual(2, code)
+            self.assertIn("INPUT_REQUIRED", stderr.getvalue())
+
+    def test_a_relative_home_is_resolved_before_the_helpers_run_from_the_checkout(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            result = subprocess.run(
+                [
+                    sys.executable, str(ONBOARDING),
+                    "--repo-url", "https://github.com/example/work-repo", "--offline",
+                    "--client", "codex", *self.ANSWERS, "--selection", "01",
+                    "--home", "relative-home", "--dest", str(root / "skills"), "--apply",
+                ],
+                cwd=root, text=True, capture_output=True, check=False, stdin=subprocess.DEVNULL,
+            )
+
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertTrue((root / "relative-home" / ".codex" / "AGENTS.md").is_file())
+            self.assertFalse((ROOT / "relative-home").exists())
+
+    def test_a_relative_config_dir_variable_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            result = self.run_setup_in(
+                root / "home", {"CLAUDE_CONFIG_DIR": "relative-profile"},
+                "--repo-url", "https://github.com/example/work-repo", "--offline",
+                "--client", "claude", *self.ANSWERS, "--selection", "01", "--apply",
+            )
+
+            self.assertEqual(2, result.returncode)
+            self.assertIn("CLAUDE_CONFIG_DIR must be an absolute path", result.stderr)
+            self.assertFalse((ROOT / "relative-profile").exists())
+
+    def test_the_codex_override_error_points_at_a_way_forward_the_guided_flow_has(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            home = root / "home"
+            (home / ".codex").mkdir(parents=True)
+            (home / ".codex" / "AGENTS.override.md").write_text("rules\n", encoding="utf-8")
+
+            result = self.run_setup(
+                *self.common(root / "skills", home), *self.ANSWERS, "--selection", "01", "--apply"
+            )
+
+            self.assertEqual(3, result.returncode)
+            self.assertIn("takes precedence", result.stdout + result.stderr)
+            self.assertIn("HINT: the guided setup cannot write to AGENTS.override.md", result.stdout)
+            self.assertFalse((root / "skills").exists())
+
     def test_links_out_of_the_install_set_are_named_once_for_the_whole_set(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -749,6 +833,11 @@ class GuidedOnboardingTests(unittest.TestCase):
             )
             self.assertEqual(0, complete.returncode, complete.stdout + complete.stderr)
             self.assertNotIn("NOTE:", complete.stdout)
+
+            applied = self.run_setup(*common, "--selection", "03", "--apply")
+            self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+            self.assertEqual(notes, [line for line in applied.stdout.splitlines() if line.startswith("NOTE:")])
+            self.assertNotIn("not selected or installed", applied.stdout)
 
     @unittest.skipIf(os.name == "nt", "creating symlinks needs elevated rights on Windows")
     def test_a_symlink_loop_in_the_destination_is_a_conflict_not_a_crash(self) -> None:

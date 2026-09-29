@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -117,6 +118,21 @@ class RepositorySecurityTests(unittest.TestCase):
             "staged backup path=runtime/backups/state.json",
             result.stderr,
         )
+
+    def test_public_commit_guard_reports_a_missing_git_instead_of_crashing(self) -> None:
+        with tempfile.TemporaryDirectory() as empty_path:
+            result = subprocess.run(
+                [sys.executable, str(GUARD)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+                env={**os.environ, "PATH": empty_path},
+            )
+
+        self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+        self.assertIn("PUBLIC_COMMIT_GUARD: ERROR: git is unavailable", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
 
     def test_public_backup_ignore_patterns_and_hook_are_present(self) -> None:
         ignore = (ROOT / ".gitignore").read_text(encoding="utf-8")

@@ -757,8 +757,10 @@ class InstallerTests(unittest.TestCase):
                 partial: Path,
                 *,
                 symlinks: bool = False,
+                ignore: object = None,
             ) -> None:
                 self.assertTrue(symlinks)
+                self.assertIsNotNone(ignore, "bytecode and litter are left out of a copy")
                 self.assertFalse(partial.exists())
                 partial.mkdir()
                 (partial / "partial.txt").write_text("incomplete\n", encoding="utf-8")
@@ -1286,20 +1288,28 @@ class InstallerRobustnessTests(unittest.TestCase):
 
     def test_client_destinations_follow_the_variables_the_clients_read(self) -> None:
         module = self.load_module()
-        home = Path("home")
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            profile = Path(temp) / "claude-profile"
+            xdg = Path(temp) / "xdg"
 
-        default = module.client_destinations({}, home)
-        custom = module.client_destinations(
-            {"CLAUDE_CONFIG_DIR": "claude-profile", "XDG_CONFIG_HOME": "xdg"}, home
-        )
-        empty = module.client_destinations({"CLAUDE_CONFIG_DIR": "", "XDG_CONFIG_HOME": ""}, home)
+            default = module.client_destinations({}, home)
+            custom = module.client_destinations(
+                {"CLAUDE_CONFIG_DIR": str(profile), "XDG_CONFIG_HOME": str(xdg)}, home
+            )
+            blank = module.client_destinations(
+                {"CLAUDE_CONFIG_DIR": "", "XDG_CONFIG_HOME": "  "}, home
+            )
 
-        self.assertEqual(home / ".claude" / "skills", default["claude"])
-        self.assertEqual(Path("claude-profile") / "skills", custom["claude"])
-        self.assertEqual(Path("xdg") / "opencode" / "skills", custom["opencode"])
-        self.assertEqual(default, empty)
-        self.assertEqual(home / ".agents" / "skills", custom["codex"])
-        self.assertEqual(custom["codex"], custom["agents"])
+            self.assertEqual(home / ".claude" / "skills", default["claude"])
+            self.assertEqual(profile / "skills", custom["claude"])
+            self.assertEqual(xdg / "opencode" / "skills", custom["opencode"])
+            self.assertEqual(default, blank)
+            self.assertEqual(home / ".agents" / "skills", custom["codex"])
+            self.assertEqual(custom["codex"], custom["agents"])
+            # A relative value would resolve against wherever the script runs from.
+            with self.assertRaises(ValueError):
+                module.client_destinations({"CLAUDE_CONFIG_DIR": "claude-profile"}, home)
 
     def test_windows_publish_never_touches_ctypes(self) -> None:
         module = self.load_module()
@@ -1326,6 +1336,101 @@ class InstallerRobustnessTests(unittest.TestCase):
             )
             self.assertEqual(0, complete.returncode, complete.stderr)
             self.assertNotIn("NOTE:", complete.stdout)
+
+    def test_client_environment_variable_selects_the_destination_without_dest(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            profile = Path(temp) / "claude-profile"
+            result = self.run_installer(
+                "--client", "claude", "--skill", "nobrainer-build",
+                env={"CLAUDE_CONFIG_DIR": str(profile)},
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertIn(str(profile / "skills" / "nobrainer-build"), result.stdout)
+
+    def test_a_relative_environment_variable_is_an_error_not_a_traceback(self) -> None:
+        result = self.run_installer(
+            "--client", "claude", "--skill", "nobrainer-build",
+            env={"CLAUDE_CONFIG_DIR": "relative"},
+        )
+
+        self.assertEqual(2, result.returncode)
+        self.assertIn("CLAUDE_CONFIG_DIR must be an absolute path", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    @unittest.skipIf(os.name == "nt", "creating symlinks needs elevated rights on Windows")
+    def test_a_destination_that_is_a_symlink_loop_is_an_error_not_a_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            loop = Path(temp) / "loop"
+            loop.symlink_to("loop")
+            result = self.run_installer(
+                "--client", "agents", "--dest", str(loop), "--skill", "nobrainer-build"
+            )
+
+            self.assertEqual(2, result.returncode)
+            self.assertNotIn("Traceback", result.stderr)
+
+    def test_bytecode_and_file_manager_litter_do_not_break_a_copy_reinstall(self) -> None:
+        # Running an installed helper writes __pycache__ into the copy; that must not turn
+        # the next identical install into a conflict.
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "skills"
+            args = (
+                "--client", "agents", "--dest", str(destination), "--mode", "copy",
+                "--skill", "nobrainer-sessions",
+            )
+            first = self.run_installer(*args, "--apply")
+            self.assertEqual(0, first.returncode, first.stderr)
+            installed = destination / "nobrainer-sessions"
+            (installed / "scripts" / "__pycache__").mkdir()
+            (installed / "scripts" / "__pycache__" / "session_title.cpython-311.pyc").write_bytes(b"\0")
+            (installed / ".DS_Store").write_bytes(b"\0")
+
+            second = self.run_installer(*args, "--apply")
+
+            self.assertEqual(0, second.returncode, second.stdout + second.stderr)
+            self.assertIn("KEEP: nobrainer-sessions", second.stdout)
+
+    def test_copy_publish_leaves_bytecode_in_the_source_behind(self) -> None:
+        module = self.load_module()
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "source"
+            (source / "__pycache__").mkdir(parents=True)
+            (source / "__pycache__" / "helper.cpython-311.pyc").write_bytes(b"x")
+            (source / "SKILL.md").write_text("skill\n", encoding="utf-8")
+            parent = Path(temp) / "out"
+            parent.mkdir()
+
+            module.stage_and_publish_copy(source, parent / "skill")
+
+            self.assertTrue((parent / "skill" / "SKILL.md").is_file())
+            self.assertFalse((parent / "skill" / "__pycache__").exists())
+
+    def test_a_foreign_directory_is_rejected_without_reading_its_files(self) -> None:
+        # Reading a conflicting directory used to be impossible; comparing it must not
+        # cost memory or time proportional to what the owner keeps there.
+        module = self.load_module()
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp) / "nobrainer-sessions"
+            target.mkdir()
+            (target / "big.bin").write_bytes(b"\0" * 4096)
+            with mock.patch.object(
+                module, "file_digest", side_effect=AssertionError("must not hash a foreign file")
+            ):
+                state = module.existing_state(target, module.SKILLS / "nobrainer-sessions", "copy")
+
+            self.assertEqual("conflict", state)
+
+    def test_digest_is_computed_in_bounded_chunks(self) -> None:
+        module = self.load_module()
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "data.bin"
+            payload = b"abc" * 1_000_000
+            path.write_bytes(payload)
+
+            import hashlib
+
+            self.assertEqual(hashlib.sha256(payload).hexdigest(), module.file_digest(path))
 
 
 class CrossSkillLinkTests(unittest.TestCase):
