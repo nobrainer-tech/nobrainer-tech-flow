@@ -5,3 +5,7 @@ docs/evals/artifacts/*-output.md -text -whitespace
 docs/evals/artifacts/*-judge.md -text -whitespace
 docs/evals/artifacts/*-judge-rubric.md -text -whitespace
 docs/evals/artifacts/*.raw.b64 -text -whitespace
+
+# Hook scripts run under bash (Git Bash on Windows); CRLF endings break them.
+hooks/session-start text eol=lf
+hooks/run-hook.cmd text eol=lf

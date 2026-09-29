@@ -47,15 +47,25 @@ repeating `--skill`:
 python3 scripts/install_skills.py \
   --client agents \
   --skill nobrainer-tech-flow \
+  --skill nobrainer-auto-fine-tune \
+  --skill nobrainer-sessions \
   --skill nobrainer-build \
   --skill nobrainer-review
 ```
 
+The core skill links to `nobrainer-auto-fine-tune` and `nobrainer-sessions`, so a
+subset should keep both (the guided setup below always adds the audit skill).
+The installer prints a `NOTE:` for every selected skill that links to a skill
+which is neither selected nor already installed; the guided setup prints the same
+note once for its whole install set, with the selection ID to add.
+
 Supported local destinations are `claude`, `codex`, `opencode`, `copilot` and
 the shared `agents` path. `codex` and `agents` both target the current shared
 `~/.agents/skills` location documented by
-[Codex Agent Skills](https://developers.openai.com/codex/skills). Override a
-destination only when you have inspected it:
+[Codex Agent Skills](https://developers.openai.com/codex/skills). Claude Code
+follows `CLAUDE_CONFIG_DIR` and OpenCode follows `XDG_CONFIG_HOME`; the installer
+honours both, and an empty value counts as unset. Override a destination only
+when you have inspected it:
 
 ```bash
 python3 scripts/install_skills.py \
@@ -65,7 +75,15 @@ python3 scripts/install_skills.py \
 ```
 
 `symlink` is the default and keeps one source of truth. `copy` is useful for an
-isolated release/archive test but must be refreshed explicitly.
+isolated release/archive test, or where the operating system does not allow
+symlinks (for example Windows without developer mode). Repeating a `copy`
+install over an identical copy reports it as current; a copy that differs is a
+conflict and must be replaced by hand after review.
+
+Use one channel per client. Gemini CLI, Pi, OpenCode and Kimi Code also read
+`~/.agents/skills`, so installing there (`--client agents` or `codex`) on top of
+their own adapter can list every skill twice. Pick either the adapter or the
+shared folder.
 
 ## Conflict and migration behavior
 
@@ -99,21 +117,34 @@ Installing the skills alone does not make the client route tasks through them.
 Preview and apply the managed global instruction block for each supported
 client after inspecting its current file:
 
-\`\`\`bash
+```bash
 python3 scripts/install_personalization.py --client codex
 python3 scripts/install_personalization.py --client codex --apply
-\`\`\`
+```
 
-Repeat with \`--client claude\`, \`opencode\` or \`copilot\` as supported. Claude
-Code may already import Codex global instructions; the installer detects that
-and avoids a duplicate block. \`agents\` needs an explicit verified
-\`--path\`. For a resolved global wiki, pass \`--wiki-root PATH\` pointing at
-a directory containing \`WIKI.md\`; this records the actual location in the
-personalization block. \`--auto-update\` opts into safe checked
-\`nobrainer-tech-flow\`-only
-upgrades where standing owner authorization exists. Without it, the first
-active `nobrainer-tech-flow` use each day checks and notifies. Use a scheduler separately if
-updates must be checked on inactive days.
+Repeat with `--client claude`, `opencode` or `copilot` as supported. Without
+`--home` the installer follows the variables the clients read:
+`CLAUDE_CONFIG_DIR` for Claude Code, `CODEX_HOME` for Codex and
+`XDG_CONFIG_HOME` for OpenCode; an explicit `--home` selects the documented
+default locations under it and ignores them. Codex reads
+`AGENTS.override.md` instead of `AGENTS.md` whenever the override is not
+empty, so the installer refuses to write `AGENTS.md` next to one; remove or
+empty the override, or pass `--path` to target it on purpose.
+
+Claude Code may already import the Codex global file with `@~/.codex/AGENTS.md`.
+The installer skips the duplicate block only when that import is real (in
+prose, not inside a code span or fence) and the imported file already carries
+the managed block; otherwise it writes the block to the Claude file and says
+why. `agents` needs an explicit verified `--path`. For a resolved global wiki,
+pass `--wiki-root PATH` pointing at a directory containing `WIKI.md`; this
+records the actual location in the personalization block. `--auto-update`
+opts into safe checked `nobrainer-tech-flow`-only upgrades where standing owner
+authorization exists, and `--auto-session-restart` opts into evidence-gated
+session rotation. A later run without those flags writes the default block
+again; add `--keep-options` to keep the update, session-restart and wiki-root
+settings already in the block (the guided setup always does). Without the
+update opt-in, the first active `nobrainer-tech-flow` use each day checks and
+notifies. Use a scheduler separately if updates must be checked on inactive days.
 
 A newer release must be obtained at a verified immutable ref before any
 installation command is run. See the [daily update contract](../skills/nobrainer-tech-flow/references/daily-update.md).
@@ -146,13 +177,28 @@ python3 scripts/recommend_flow_setup.py \
   --client codex
 ```
 
+Answer the questions in a terminal, or pass them so nothing is asked
+(`--work-profile`, `--goal`, `--tools` and `--existing-setup`). Without a
+terminal and with an answer missing, the command stops with `INPUT_REQUIRED`
+and the flags it needs instead of waiting for input:
+
+```bash
+python3 scripts/recommend_flow_setup.py \
+  --repo-url https://github.com/owner/project \
+  --client codex \
+  --work-profile software-development \
+  --goal "ship and test a web application" \
+  --tools "Codex, Python, GitHub" \
+  --existing-setup "pytest and git"
+```
+
 To inspect an already available checkout instead of contacting GitHub, add
 `--repo-path /path/to/checkout`. To keep the whole preflight offline, add
 `--offline`; it will base recommendations on the answers and local client
 configuration only and report that repository content was unavailable.
 
-After reviewing the dry-run, repeat the command with your selected IDs and
-`--apply`. Only those items are added, together with required IDs `01`
+After reviewing the dry-run, repeat the command with your selected IDs
+(`--selection 01,03,04`) and `--apply`. Only those items are added, together with required IDs `01`
 (`nobrainer-tech-flow`)
 and `02` (the Auto Fine Tune capability audit). Personalization is previewed
 and updated through `install_personalization.py`; an optional one-line
@@ -200,9 +246,28 @@ such as `AGENTS.md` and `CLAUDE.md`.
 
 ### Claude Code
 
-Use the repository as a local plugin or install the canonical skill directories
+Use the repository as a plugin or install the canonical skill directories
 through the client-supported Agent Skills path. The checked adapter includes a
 `SessionStart` hook that injects only `adapters/bootstrap.md`.
+
+```bash
+claude plugin marketplace add nobrainer-tech/nobrainer-tech-flow
+claude plugin install nobrainer-tech-flow@nobrainer-tech
+```
+
+The same commands work inside a session as `/plugin marketplace add ...` and
+`/plugin install ...`. A plugin namespaces its skills, so the entry point is
+`/nobrainer-tech-flow:nobrainer-tech-flow`; skills installed with
+`--client claude` keep the plain `/nobrainer-tech-flow`. Either way the model
+can also load the skill by name. The `$nobrainer-tech-flow` form is Codex syntax.
+
+Claude Code lists every skill name but drops the descriptions of the least-used
+skills once the listing passes its budget (1% of the context window by default).
+In a session that already carries many skills the Flow descriptions may reach
+the model as names only; the entry point still works because the bootstrap
+and the personalization block call it by name. The companion
+[`nobrainer-claude`](https://github.com/nobrainer-tech/nobrainer-claude)
+installer can raise the budget on request (`--raise-skill-budget`).
 
 After restart, verify:
 
@@ -213,10 +278,17 @@ After restart, verify:
 
 ### Codex
 
-The `.codex-plugin/plugin.json` manifest exposes `./skills/` and intentionally
-declares no unsupported plugin hook. Install through the current native plugin
-channel when available, or use the installer. Its `codex` destination is the
-shared `~/.agents/skills` path:
+The `.codex-plugin/plugin.json` manifest exposes `./skills/` and declares no
+plugin hook; bootstrap comes from the personalization block or the skill's own
+trigger. Install through the native plugin channel or use the installer. The
+plugin channel needs a reviewed checkout:
+
+```bash
+codex plugin marketplace add /path/to/reviewed/nobrainer-tech-flow
+codex plugin add nobrainer-tech-flow@nobrainer-tech-skills-dev
+```
+
+The installer's `codex` destination is the shared `~/.agents/skills` path:
 
 ```bash
 python3 scripts/install_skills.py --client codex
@@ -226,16 +298,18 @@ python3 scripts/install_skills.py --client codex --apply
 Restart Codex and test discovery in a fresh task. Repository instructions or the
 native skill trigger provide bootstrap; a file on disk is not routing proof.
 Use nobrainer-tech-flow for user-facing requests, or `$nobrainer-tech-flow` for the
-technical explicit invocation. Plain `NBFlow`, `NBF` and `nobrainer-tech-flow`
+technical explicit invocation; when the skills come from the plugin, use the
+name the client's skill list shows. Plain `NBFlow`, `NBF` and `nobrainer-tech-flow`
 are natural-language triggers whose recognition depends on the client. Existing
 legacy entries under `~/.codex/skills` are not deleted or rewritten automatically.
 
 ### Cursor
 
-Use `.cursor-plugin/plugin.json`. Its tested session hook runs the shared
-bootstrap through `hooks/run-hook.cmd`, supporting Git Bash or another available
-Bash runtime on Windows. Confirm one injection and native skill discovery after
-restart.
+Use `.cursor-plugin/plugin.json`. Its session hook runs the shared bootstrap
+through `hooks/run-hook.cmd`, supporting Git Bash or another available Bash
+runtime on Windows. Repository tests cover the manifest and the hook script;
+Cursor itself has not been read back, so confirm one injection and native skill
+discovery after restart.
 
 ### OpenCode
 
@@ -249,9 +323,10 @@ Pin the Git package to an immutable full commit in `opencode.json`:
 }
 ```
 
-Replace the placeholder before use. The adapter registers `skills/` and injects
-the bootstrap once before the first user message. Local checkout installation is
-also available with `--client opencode`.
+Replace the placeholder before use. The adapter registers `skills/` and puts
+the bootstrap in front of the first user message of each request, once; when
+that message has no text part (after a compaction) it adds a synthetic text part
+instead. Local checkout installation is also available with `--client opencode`.
 
 ### GitHub Copilot CLI and shared Agent Skills
 
@@ -274,9 +349,19 @@ Verify the exact installed version and clean-session behavior.
 
 ### Pi
 
-The package extension registers `skills/` during resource discovery and
-reinjects the bootstrap after compaction without duplicating it. Repository tests
-cover the extension contract; a real client readback is still required.
+The package extension registers `skills/` during resource discovery and adds the
+bootstrap to every model request that does not carry it yet. The host rebuilds
+the message list for each request, so the bootstrap also survives compaction, and
+a marker keeps one request from receiving it twice. Repository tests cover the
+extension contract; a real client readback is still required.
+
+### Windows
+
+Run the Python scripts with `py -3` or `python`. The hook adapters need Git Bash
+or another Bash on `PATH`; the repository pins the hook scripts to LF endings so
+a Git checkout with `core.autocrlf=true` still runs them. Creating symlinks
+needs developer mode or an elevated shell; without either, install with
+`--mode copy`.
 
 ### Other Agent Skills clients
 

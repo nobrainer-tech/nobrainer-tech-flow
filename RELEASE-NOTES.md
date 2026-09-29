@@ -1,5 +1,23 @@
 # nobrainer-tech-flow release notes
 
+## v2.0.1 - 2026-09-29
+
+- Corrective release: no new skill and no routing change.
+- Codex: the marketplace entry now installs and the default prompts fit the
+  client's limit, so they are no longer dropped.
+- Windows: copy-mode installs work, hook scripts stay LF, and CI has a Windows job.
+- Installers and guided setup follow `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and
+  `XDG_CONFIG_HOME`, keep earlier auto-update, session-restart and wiki-root
+  settings, and report symlink loops, a file destination and missing input
+  instead of crashing or hanging.
+- A Claude profile that imports a Codex file without the Flow block now gets the
+  block instead of silently getting nothing.
+- OpenCode and Pi keep the bootstrap after compaction and survive a missing file.
+- README, INSTALL and COMPATIBILITY corrected; the version gate now covers the
+  skill `VERSION` file and the lockfile.
+
+See the [verification record](docs/releases/v2.0.1.md).
+
 ## v2.0.0 - 2026-09-27
 
 - Canonical product, package and entrypoint name: `nobrainer-tech-flow`.

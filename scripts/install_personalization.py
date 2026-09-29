@@ -15,6 +15,7 @@ import shutil
 import stat
 import sys
 import tempfile
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,6 +26,14 @@ END = "<!-- NOBRAINER-TECH-FLOW:END -->"
 LEGACY_FLOW_INSTRUCTIONS = re.compile(
     r"\bnobrainer-ultra\b|^\s*#{1,6}\s+NoBrainer(?:[ .]?Tech)?\s+Flow\b",
     re.IGNORECASE | re.MULTILINE,
+)
+# Phrases only the authorized variants of the block contain; --keep-options reads
+# them back so a re-run cannot silently drop a setting the owner already granted.
+AUTO_UPDATE_GRANT = "grants standing authorization to apply a `nobrainer-tech-flow`-only update"
+AUTO_SESSION_GRANT = "grants standing authorization for session rotation"
+SAVED_WIKI = re.compile(r"^- Relevant project wiki: read `([^`\r\n]+)`", re.MULTILINE)
+SAVED_PREFERENCE = re.compile(
+    r"^- Owner-approved setup preference: ([^\r\n]+)$", re.MULTILINE
 )
 
 def build_block(
@@ -49,7 +58,7 @@ def build_block(
         else "- Assess context and checkpoint at appropriate milestones. Recommend session rotation when it would help; do not restart or archive automatically. When rotation is authorized, use the supported lifecycle, verify exact successor takeover by ID/readback, and archive the old session only after that readback. Do not create recursive visible workers or claim a restart when unsupported."
     )
     preference_rule = (
-        f"- Owner-approved setup preference: {preferences.strip()}"
+        f"- Owner-approved setup preference: {preferences.strip()}\n"
         if preferences and preferences.strip()
         else ""
     )
@@ -64,8 +73,7 @@ def build_block(
 {wiki_rule}
 {session_rule}
 {update_rule}
-{preference_rule}
-- Use `nobrainer-ak` (`nbak`) for relevant marketing and sales content creation when available. For general writing use `nobrainer-writing` when available; make technical documentation concrete, source-backed, and technically verified. Preserve facts, use the user's language, and verify at the actual delivery layer.
+{preference_rule}- Use `nobrainer-ak` (`nbak`) for relevant marketing and sales content creation when available. For general writing use `nobrainer-writing` when available; make technical documentation concrete, source-backed, and technically verified. Preserve facts, use the user's language, and verify at the actual delivery layer.
 <!-- NOBRAINER-TECH-FLOW:END -->"""
 
 
@@ -75,18 +83,48 @@ class Client:
     display: str
 
 
-def known_client_path(client: str, home: Path) -> Client | None:
-    """Return a global instruction path only where the client defines one."""
+def known_client_path(
+    client: str, home: Path | None = None, environ: Mapping[str, str] | None = None
+) -> Client | None:
+    """Return a global instruction path only where the client defines one.
 
-    paths = {
-        "codex": home / ".codex" / "AGENTS.md",
-        "claude": home / ".claude" / "CLAUDE.md",
-        "opencode": home / ".config" / "opencode" / "AGENTS.md",
-        "copilot": home / ".copilot" / "copilot-instructions.md",
-    }
+    An explicit ``home`` selects the documented default locations under it. Without
+    one, the variables the clients read themselves apply: CLAUDE_CONFIG_DIR for
+    Claude Code, CODEX_HOME for Codex and XDG_CONFIG_HOME for OpenCode. An empty
+    value counts as unset.
+    """
+
     if client == "agents":
         return None
+    if environ is None:
+        environ = os.environ if home is None else {}
+    home = Path.home() if home is None else home
+    claude = environ.get("CLAUDE_CONFIG_DIR") or ""
+    codex = environ.get("CODEX_HOME") or ""
+    xdg = environ.get("XDG_CONFIG_HOME") or ""
+    paths = {
+        "codex": (Path(codex) if codex else home / ".codex") / "AGENTS.md",
+        "claude": (Path(claude) if claude else home / ".claude") / "CLAUDE.md",
+        "opencode": (Path(xdg) if xdg else home / ".config") / "opencode" / "AGENTS.md",
+        "copilot": home / ".copilot" / "copilot-instructions.md",
+    }
     return Client(paths[client], client)
+
+
+def codex_override_problem(path: Path) -> str | None:
+    """Explain why Codex would never read a block written to its global AGENTS.md."""
+
+    override = path.with_name("AGENTS.override.md")
+    try:
+        if override.is_file() and override.read_bytes().strip():
+            return (
+                f"{override} takes precedence over {path.name} in Codex, so a block "
+                f"written to {path.name} would not load; move or empty the override, "
+                "or pass --path to target it deliberately"
+            )
+    except OSError:
+        return None
+    return None
 
 
 def managed_block_status(content: str, block: str) -> tuple[str, str | None]:
@@ -113,23 +151,52 @@ def managed_block_status(content: str, block: str) -> tuple[str, str | None]:
     return "UPDATE", content[:block_start] + block + content[block_end:]
 
 
-def imports_codex_global(content: str, codex_path: Path) -> bool:
-    """Detect Claude instructions that already import the Codex global file."""
+def imports_codex_global(content: str, codex_path: Path, home: Path) -> bool:
+    """Detect a Claude ``@`` import of the Codex global file.
 
-    codex_spellings = {
-        str(codex_path),
-        str(codex_path).replace(str(Path.home()), "~", 1),
-        "~/.codex/AGENTS.md",
-        "${HOME}/.codex/AGENTS.md",
-    }
-    for line in content.splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") and not stripped.startswith("# "):
-            continue
-        if any(spelling in stripped for spelling in codex_spellings):
-            if re.search(r"(?:^\s*@|\b(?:import|include|read|source)\b|\]\()", stripped, re.I):
-                return True
-    return False
+    Claude Code follows ``@path`` anywhere in prose and ignores it inside code
+    fences and inline code, so those are not counted. A prose mention such as
+    "read ~/.codex/AGENTS.md" is a request to the model, not an import.
+    """
+
+    spellings = {str(codex_path), codex_path.as_posix()}
+    try:
+        spellings.add("~/" + codex_path.relative_to(home).as_posix())
+    except ValueError:
+        pass
+    prose = re.sub(r"(```|~~~).*?\1", "", content, flags=re.DOTALL)
+    prose = re.sub(r"`[^`\n]*`", "", prose)
+    return any(
+        re.search(r"(?<![\w`])@" + re.escape(spelling) + r"(?![\w/-]|\.\w)", prose)
+        for spelling in spellings
+    )
+
+
+def has_managed_block(path: Path) -> bool:
+    """True when the file, read through any symlink, carries a complete block."""
+
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return False
+    return START in text and END in text
+
+
+def existing_managed_block(path: Path) -> str | None:
+    """Return the managed block already in a regular target file, without markers."""
+
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISREG(metadata.st_mode):
+        return None
+    managed = re.search(
+        re.escape(START) + r"(.*?)" + re.escape(END),
+        path.read_text(encoding="utf-8"),
+        re.DOTALL,
+    )
+    return managed.group(1) if managed else None
 
 
 def inspect_target(path: Path, block: str) -> tuple[str, str, int | None]:
@@ -206,8 +273,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--home",
         type=Path,
-        default=Path.home(),
-        help="profile home used to resolve the documented global instruction path",
+        help=(
+            "profile home used to resolve the documented default global instruction path; "
+            "when omitted, CLAUDE_CONFIG_DIR, CODEX_HOME and XDG_CONFIG_HOME are honoured"
+        ),
     )
     parser.add_argument(
         "--path",
@@ -234,6 +303,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="short owner-approved setup preferences to include in the managed block",
     )
     parser.add_argument(
+        "--keep-options",
+        action="store_true",
+        help=(
+            "keep the auto-update, session-restart and wiki-root settings already in the "
+            "managed block; flags given on this run are added to them, never removed"
+        ),
+    )
+    parser.add_argument(
         "--apply", action="store_true", help="write changes; without this flag, only preview"
     )
     return parser.parse_args(argv)
@@ -241,7 +318,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    home = args.home.expanduser()
+    home = args.home.expanduser() if args.home is not None else None
     resolved = known_client_path(args.client, home)
     if resolved is None and args.path is None:
         print(
@@ -252,6 +329,10 @@ def main(argv: list[str] | None = None) -> int:
 
     path = (args.path or resolved.path).expanduser()
     try:
+        if args.client == "codex" and args.path is None:
+            problem = codex_override_problem(path)
+            if problem:
+                raise ValueError(problem)
         wiki_root: Path | None = None
         if args.wiki_root is not None:
             # Persist the caller's canonical alias path, while normalizing relative
@@ -266,41 +347,52 @@ def main(argv: list[str] | None = None) -> int:
             or any(char in args.preferences for char in ("\n", "\r", "`", "<", ">"))
         ):
             raise ValueError("preferences must be a single line of at most 240 safe characters")
+        existing = existing_managed_block(path)
         preferences = args.preferences
-        if preferences is None:
-            try:
-                metadata = path.lstat()
-            except FileNotFoundError:
-                metadata = None
-            if metadata is not None and stat.S_ISREG(metadata.st_mode):
-                existing_content = path.read_text(encoding="utf-8")
-                managed = re.search(
-                    re.escape(START) + r"(.*?)" + re.escape(END),
-                    existing_content,
-                    re.DOTALL,
-                )
-                if managed:
-                    saved = re.search(
-                        r"^- Owner-approved setup preference: ([^\r\n]+)$",
-                        managed.group(1),
-                        re.MULTILINE,
-                    )
-                    if saved:
-                        preferences = saved.group(1)
-        block = build_block(
-            wiki_root, args.auto_update, args.auto_session_restart, preferences
-        )
+        if preferences is None and existing:
+            saved = SAVED_PREFERENCE.search(existing)
+            if saved:
+                preferences = saved.group(1)
+        auto_update = args.auto_update
+        auto_session_restart = args.auto_session_restart
+        if args.keep_options and existing:
+            kept: list[str] = []
+            if not auto_update and AUTO_UPDATE_GRANT in existing:
+                auto_update = True
+                kept.append("auto-update")
+            if not auto_session_restart and AUTO_SESSION_GRANT in existing:
+                auto_session_restart = True
+                kept.append("session-restart")
+            saved_wiki = SAVED_WIKI.search(existing)
+            if wiki_root is None and saved_wiki:
+                candidate = Path(saved_wiki.group(1)).parent
+                if (candidate / "WIKI.md").is_file():
+                    wiki_root = candidate
+                    kept.append("wiki-root")
+                else:
+                    print(f"NOTE: saved wiki root no longer contains WIKI.md and was not kept: {candidate}")
+            if kept:
+                print(f"KEPT_OPTIONS: {', '.join(kept)}")
+        block = build_block(wiki_root, auto_update, auto_session_restart, preferences)
         if args.client == "claude":
-            codex_global = home / ".codex" / "AGENTS.md"
+            codex_global = known_client_path("codex", home).path
             try:
                 metadata = path.lstat()
             except FileNotFoundError:
                 metadata = None
             if metadata is not None and stat.S_ISREG(metadata.st_mode):
                 with path.open("r", encoding="utf-8", newline="") as handle:
-                    if imports_codex_global(handle.read(), codex_global):
-                        print(f"INHERITS_CODEX: {path} imports {codex_global}; no duplicate block added")
-                        return 0
+                    imported = imports_codex_global(
+                        handle.read(), codex_global, home or Path.home()
+                    )
+                if imported and has_managed_block(codex_global):
+                    print(f"INHERITS_CODEX: {path} imports {codex_global}; no duplicate block added")
+                    return 0
+                if imported:
+                    print(
+                        f"NOTE: {path} imports {codex_global}, which has no nobrainer-tech-flow "
+                        "block; the block is written here so the instructions are not lost"
+                    )
         status, updated, mode = inspect_target(path, block)
         print(f"TARGET: {path}")
         if status == "UNCHANGED":
@@ -309,8 +401,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{status}: nobrainer-tech-flow personalization block")
         if wiki_root is not None:
             print(f"WIKI_ROOT: {wiki_root}")
-        print(f"AUTO_UPDATE: {'AUTHORIZED_SAFE_VERIFIED_ONLY' if args.auto_update else 'CHECK_AND_NOTIFY'}")
-        print(f"AUTO_SESSION_RESTART: {'AUTHORIZED_EVIDENCE_GATED' if args.auto_session_restart else 'ASSESS_CHECKPOINT_RECOMMEND'}")
+        print(f"AUTO_UPDATE: {'AUTHORIZED_SAFE_VERIFIED_ONLY' if auto_update else 'CHECK_AND_NOTIFY'}")
+        print(f"AUTO_SESSION_RESTART: {'AUTHORIZED_EVIDENCE_GATED' if auto_session_restart else 'ASSESS_CHECKPOINT_RECOMMEND'}")
         if status == "UPDATE":
             print("PRESERVED: content outside the managed block")
         try:

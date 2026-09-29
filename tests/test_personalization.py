@@ -14,6 +14,9 @@ START = "<!-- NOBRAINER-TECH-FLOW:START -->"
 END = "<!-- NOBRAINER-TECH-FLOW:END -->"
 
 
+CONFIG_VARIABLES = ("CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_CONFIG_HOME")
+
+
 class PersonalizationInstallerTests(unittest.TestCase):
     def run_installer(self, *args: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
@@ -22,6 +25,24 @@ class PersonalizationInstallerTests(unittest.TestCase):
             text=True,
             capture_output=True,
             check=False,
+        )
+
+    def run_installer_in(
+        self, home: Path, variables: dict[str, str], *args: str
+    ) -> subprocess.CompletedProcess[str]:
+        """Run with a private home and only the config variables the test names."""
+
+        environment = {
+            key: value for key, value in os.environ.items() if key not in CONFIG_VARIABLES
+        }
+        environment.update({"HOME": str(home), "USERPROFILE": str(home), **variables})
+        return subprocess.run(
+            [sys.executable, str(SCRIPT), *args],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            env=environment,
         )
 
     def test_known_client_paths_are_global_and_client_specific(self) -> None:
@@ -261,6 +282,8 @@ class PersonalizationInstallerTests(unittest.TestCase):
     def test_claude_inheriting_codex_does_not_get_duplicate_block(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             home = Path(raw)
+            codex = self.run_installer("--client", "codex", "--home", raw, "--apply")
+            self.assertEqual(0, codex.returncode, codex.stderr)
             claude_file = home / ".claude" / "CLAUDE.md"
             claude_file.parent.mkdir()
             original = "@~/.codex/AGENTS.md\nClaude-only preferences\n"
@@ -272,6 +295,175 @@ class PersonalizationInstallerTests(unittest.TestCase):
             self.assertIn("INHERITS_CODEX", result.stdout)
             self.assertEqual(original, claude_file.read_text(encoding="utf-8"))
             self.assertEqual([], list(claude_file.parent.glob("CLAUDE.md.bak.*")))
+
+    def test_claude_import_of_a_codex_file_without_the_block_still_gets_the_block(self) -> None:
+        # Claiming "inherited" while the imported file carries no block would leave
+        # the Claude profile without any Flow instructions.
+        for codex_file in (None, "Only owner rules here.\n"):
+            with self.subTest(codex_file=codex_file), tempfile.TemporaryDirectory() as raw:
+                home = Path(raw)
+                if codex_file is not None:
+                    (home / ".codex").mkdir()
+                    (home / ".codex" / "AGENTS.md").write_text(codex_file, encoding="utf-8")
+                claude_file = home / ".claude" / "CLAUDE.md"
+                claude_file.parent.mkdir()
+                original = "@~/.codex/AGENTS.md\nClaude-only preferences\n"
+                claude_file.write_text(original, encoding="utf-8")
+                result = self.run_installer("--client", "claude", "--home", raw, "--apply")
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertNotIn("INHERITS_CODEX", result.stdout)
+                self.assertIn("has no nobrainer-tech-flow block", result.stdout)
+                content = claude_file.read_text(encoding="utf-8")
+                self.assertTrue(content.startswith(original))
+                self.assertEqual(1, content.count(START))
+
+    def test_only_a_real_claude_import_counts_as_inheriting_codex(self) -> None:
+        cases = (
+            ("Shared rules live in @~/.codex/AGENTS.md today.\n", True),
+            ("@{codex}\n", True),
+            ("Do not write `@~/.codex/AGENTS.md` here.\n", False),
+            ("```\n@~/.codex/AGENTS.md\n```\n", False),
+            ("Read ~/.codex/AGENTS.md first.\n", False),
+            ("mail me at someone@~/.codex/AGENTS.md.example\n", False),
+        )
+        for text, inherits in cases:
+            with self.subTest(text=text), tempfile.TemporaryDirectory() as raw:
+                home = Path(raw)
+                codex = self.run_installer("--client", "codex", "--home", raw, "--apply")
+                self.assertEqual(0, codex.returncode, codex.stderr)
+                claude_file = home / ".claude" / "CLAUDE.md"
+                claude_file.parent.mkdir()
+                claude_file.write_text(
+                    text.format(codex=home / ".codex" / "AGENTS.md"), encoding="utf-8"
+                )
+                result = self.run_installer("--client", "claude", "--home", raw)
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual(inherits, "INHERITS_CODEX" in result.stdout)
+
+    def test_config_dir_variables_apply_only_when_home_is_not_given(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            home = root / "home"
+            variables = {
+                "CLAUDE_CONFIG_DIR": str(root / "claude-profile"),
+                "CODEX_HOME": str(root / "codex-profile"),
+                "XDG_CONFIG_HOME": str(root / "xdg"),
+            }
+            expectations = {
+                "claude": root / "claude-profile" / "CLAUDE.md",
+                "codex": root / "codex-profile" / "AGENTS.md",
+                "opencode": root / "xdg" / "opencode" / "AGENTS.md",
+                "copilot": home / ".copilot" / "copilot-instructions.md",
+            }
+            for client, target in expectations.items():
+                with self.subTest(client=client):
+                    result = self.run_installer_in(home, variables, "--client", client)
+                    self.assertEqual(0, result.returncode, result.stderr)
+                    self.assertIn(f"TARGET: {target}", result.stdout)
+                    self.assertFalse(target.exists())
+
+            # An explicit --home is a request for the documented default locations.
+            explicit = self.run_installer_in(
+                home, variables, "--client", "claude", "--home", str(root / "other")
+            )
+            self.assertIn(f"TARGET: {root / 'other' / '.claude' / 'CLAUDE.md'}", explicit.stdout)
+
+            # Empty values count as unset, as the clients treat them.
+            empty = self.run_installer_in(
+                home, {name: "" for name in CONFIG_VARIABLES}, "--client", "claude"
+            )
+            self.assertIn(f"TARGET: {home / '.claude' / 'CLAUDE.md'}", empty.stdout)
+
+    def test_codex_override_file_blocks_the_default_target_only(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            home = Path(raw)
+            codex_dir = home / ".codex"
+            codex_dir.mkdir()
+            override = codex_dir / "AGENTS.override.md"
+            override.write_text("temporary rules\n", encoding="utf-8")
+
+            blocked = self.run_installer("--client", "codex", "--home", raw, "--apply")
+            self.assertEqual(3, blocked.returncode)
+            self.assertIn("takes precedence", blocked.stderr)
+            self.assertFalse((codex_dir / "AGENTS.md").exists())
+
+            explicit = self.run_installer(
+                "--client", "codex", "--path", str(codex_dir / "AGENTS.md")
+            )
+            self.assertEqual(0, explicit.returncode, explicit.stderr)
+
+            override.write_text(" \n", encoding="utf-8")
+            empty = self.run_installer("--client", "codex", "--home", raw)
+            self.assertEqual(0, empty.returncode, empty.stderr)
+
+    def test_keep_options_preserves_earlier_grants_and_only_adds_to_them(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            target = root / "profile.md"
+            wiki = root / "wiki"
+            wiki.mkdir()
+            (wiki / "WIKI.md").write_text("wiki instructions\n", encoding="utf-8")
+            first = self.run_installer(
+                "--client", "agents", "--path", str(target), "--auto-update",
+                "--auto-session-restart", "--wiki-root", str(wiki),
+                "--preferences", "Answer in Polish.", "--apply",
+            )
+            self.assertEqual(0, first.returncode, first.stderr)
+            granted = target.read_text(encoding="utf-8")
+
+            kept = self.run_installer(
+                "--client", "agents", "--path", str(target), "--keep-options", "--apply"
+            )
+            self.assertEqual(0, kept.returncode, kept.stderr)
+            self.assertIn("KEPT_OPTIONS: auto-update, session-restart, wiki-root", kept.stdout)
+            self.assertIn("UNCHANGED", kept.stdout)
+            self.assertEqual(granted, target.read_text(encoding="utf-8"))
+
+            # Without the flag a re-run still resets the grants, as documented.
+            reset = self.run_installer(
+                "--client", "agents", "--path", str(target), "--apply"
+            )
+            self.assertIn("AUTO_UPDATE: CHECK_AND_NOTIFY", reset.stdout)
+            self.assertNotIn("standing authorization", target.read_text(encoding="utf-8"))
+
+    def test_keep_options_drops_a_wiki_that_no_longer_exists_and_accepts_new_grants(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            target = root / "profile.md"
+            wiki = root / "wiki"
+            wiki.mkdir()
+            (wiki / "WIKI.md").write_text("wiki instructions\n", encoding="utf-8")
+            first = self.run_installer(
+                "--client", "agents", "--path", str(target), "--auto-update",
+                "--wiki-root", str(wiki), "--apply",
+            )
+            self.assertEqual(0, first.returncode, first.stderr)
+            (wiki / "WIKI.md").unlink()
+
+            second = self.run_installer(
+                "--client", "agents", "--path", str(target), "--keep-options",
+                "--auto-session-restart", "--apply",
+            )
+            self.assertEqual(0, second.returncode, second.stderr)
+            self.assertIn("no longer contains WIKI.md", second.stdout)
+            self.assertIn("KEPT_OPTIONS: auto-update", second.stdout)
+            content = target.read_text(encoding="utf-8")
+            self.assertIn("grants standing authorization for session rotation", content)
+            self.assertIn("standing authorization to apply", content)
+            self.assertIn("discover whether a relevant wiki exists", content)
+
+    def test_block_has_no_stray_blank_line_with_or_without_a_preference(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            target = Path(raw) / "profile.md"
+            for extra in ((), ("--preferences", "Answer in Polish.")):
+                with self.subTest(extra=extra):
+                    result = self.run_installer(
+                        "--client", "agents", "--path", str(target), *extra, "--apply"
+                    )
+                    self.assertEqual(0, result.returncode, result.stderr)
+                    block = target.read_text(encoding="utf-8").split(START)[1].split(END)[0]
+                    # Only the blank line under the heading separates paragraphs.
+                    self.assertEqual(1, block.count("\n\n"))
 
     def test_symlink_is_rejected_without_following_or_overwriting(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

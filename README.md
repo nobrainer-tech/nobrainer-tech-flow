@@ -188,7 +188,7 @@ client-specific steps and rollback are in [Installation](docs/INSTALL.md).
 <details>
 <summary><strong>Astra Ready Flow, portable by design</strong></summary>
 
-Version **1.6** removes client-specific prerequisites from ordinary work.
+Since version **1.6**, ordinary work has no client-specific prerequisites.
 OpenAI [introduced GPT-6 Astra](https://openai.com/index/gpt-6-astra/) on
 September 3, 2026. The suite keeps the host-selected model and uses the same
 plain-text instructions with other models; it does not pin a provider or choose
@@ -279,6 +279,7 @@ recurring boundary:
 | Skill | Alias | Responsibility |
 |---|---|---|
 | [`nobrainer-tech-flow`](skills/nobrainer-tech-flow/) | `NBFlow`, `NBF` | Technical entrypoint for end-to-end setup and delivery: one requirements gate, concise progress, bounded execution, recovery, audit and learning |
+| [`nobrainer-auto-fine-tune`](skills/nobrainer-auto-fine-tune/) | `nb-auto-fine-tune` | Read-only capability audit and route calibration: verified host models, effort, context and useful parallelism while MAIN keeps the owner's model |
 | [`nobrainer-codex-context`](skills/nobrainer-codex-context/) | `nb-codex-context` | Project-local Codex context setup: instruction discovery, fallback and byte-budget audit, safe context block reconciliation and runtime readback |
 | [`nobrainer-skill-doctor`](skills/nobrainer-skill-doctor/) | `nb-skill-doctor` | Cross-project audit of skills, project instructions and task prompts: trigger overlap, excessive process, coverage and minimal portfolio repair planning |
 | [`nobrainer-team`](skills/nobrainer-team/) | `nb-team` | Minimal capability roster, installed-skill inventory and safe temporary specialist discovery |
@@ -375,11 +376,11 @@ Codex, Cursor, OpenCode, Gemini CLI, Kimi Code and Pi; the portable Agent Plugin
 manifest and project instructions are the fallback for other Agent Skills
 consumers.
 
-Compatibility claims use five distinct levels:
+Compatibility claims use six distinct levels:
 
 ```text
 SOURCE_VALIDATED -> REPOSITORY_CHECKED -> CLIENT_LOADED
-                 -> RUNTIME_VERIFIED -> DISTRIBUTED
+                 -> RUNTIME_VERIFIED_EXPLICIT -> RUNTIME_VERIFIED -> DISTRIBUTED
 ```
 
 A valid manifest does not prove clean-session routing. A local test does not
@@ -387,9 +388,9 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-Current source version: **2.0.0**. Check the
+Current source version: **2.0.1**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.0.0 verification record](docs/releases/v2.0.0.md) for
+for distribution and the [2.0.1 verification record](docs/releases/v2.0.1.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier

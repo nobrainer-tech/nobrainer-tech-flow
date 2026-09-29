@@ -11,30 +11,33 @@ const bootstrapPath = resolve(packageRoot, "adapters", "bootstrap.md");
 let cachedBootstrap;
 
 export default function NoBrainerTechSkillsPiExtension(pi) {
-  let injectBootstrap = true;
-
   pi.on("resources_discover", async () => ({ skillPaths: [skillsDirectory] }));
-  pi.on("session_start", async () => { injectBootstrap = true; });
-  pi.on("session_compact", async () => { injectBootstrap = true; });
 
   pi.on("context", async (event) => {
-    // Context changes are ephemeral, so keep the gate enabled for each prompt.
-    // The marker prevents duplicate injection within one prompt or compaction.
-    if (!injectBootstrap || event.messages.some(messageContainsBootstrap)) return;
-    const bootstrap = getBootstrap();
-    const message = {
-      role: "user",
-      content: [{ type: "text", text: bootstrap }],
-      timestamp: Date.now(),
-    };
-    const index = firstNonCompactionSummaryIndex(event.messages);
-    return {
-      messages: [
-        ...event.messages.slice(0, index),
-        message,
-        ...event.messages.slice(index),
-      ],
-    };
+    // Context changes are ephemeral: the host rebuilds the message list for every
+    // request, so the bootstrap is added to each request that does not carry it yet.
+    // The marker check keeps one request from receiving it twice, including right
+    // after a compaction.
+    try {
+      if (event.messages.some(messageContainsBootstrap)) return;
+      const message = {
+        role: "user",
+        content: [{ type: "text", text: getBootstrap() }],
+        timestamp: Date.now(),
+      };
+      const index = firstNonCompactionSummaryIndex(event.messages);
+      return {
+        messages: [
+          ...event.messages.slice(0, index),
+          message,
+          ...event.messages.slice(index),
+        ],
+      };
+    } catch {
+      // The bootstrap is advisory context: a missing or unreadable file must never
+      // fail the host's request.
+      return;
+    }
   });
 }
 

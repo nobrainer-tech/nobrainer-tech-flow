@@ -204,3 +204,5 @@ quiet milestone assessment, compact checkpoint, verified fresh target, condition
 ownership transfer and source archive after takeover. A stale summary or timer
 does not authorize a successor. Keep model policy, pending operations and native
 goal/scheduler ownership in the handoff; do not create another status owner.
+Without `nobrainer-sessions` there is no restart protocol: keep the work in MAIN
+and checkpoint only.

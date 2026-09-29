@@ -117,10 +117,11 @@ evidence input, not proof that the host actually queried its registry.
 
 Run without `--apply` first to verify and preview. The helper is read-only with
 respect to the worktree in this mode, though it fetches the target branch into
-a unique temporary Git ref (then removes that exact ref) and calls `gh`:
+a unique temporary Git ref (then removes that exact ref) and calls `gh`. Run it
+from the project, replacing `<flow-skill-dir>` with this skill's directory:
 
 ```bash
-python3 skills/nobrainer-tech-flow/scripts/cleanup_worktree.py --manifest <task-manifest.json>
+python3 <flow-skill-dir>/scripts/cleanup_worktree.py --manifest <task-manifest.json>
 ```
 
 Only the post-merge host callback or Flow lifecycle owner may pass `--apply`,
@@ -128,7 +129,7 @@ and only after a fresh writer readback. The helper then rechecks volatile gates,
 uses non-force `git worktree remove`, and verifies the exact worktree disappeared:
 
 ```bash
-python3 skills/nobrainer-tech-flow/scripts/cleanup_worktree.py --manifest <task-manifest.json> --apply
+python3 <flow-skill-dir>/scripts/cleanup_worktree.py --manifest <task-manifest.json> --apply
 ```
 
 No callback/monitor is installed by this helper. A host must invoke it after

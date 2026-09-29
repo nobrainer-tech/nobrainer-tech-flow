@@ -252,7 +252,7 @@ Done clean: scoped diff, no invented capabilities or superiority, verification a
 - [x] Verify both repositories and record remaining proof boundaries.
 
 Team: MAIN owns integration, research screen, docs, website and delivery;
-/root/ecc_source_audit (Sol medium) owns the bounded source audit and two runner
+the ecc_source_audit worker (Sol medium) owns the bounded source audit and two runner
 files. Reviewed reports and tested artifacts before acceptance; no worker remains
 a writer. Added runtime scope after owner correction; changed target to v1.7.0.
 Model policy: ROUTED for the bounded worker, host-selected MAIN; no worker

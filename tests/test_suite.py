@@ -2596,6 +2596,8 @@ class SuiteTests(unittest.TestCase):
             "--config .gitleaks.toml --redact --no-banner --ignore-gitleaks-allow",
             "timeout-minutes:",
             "persist-credentials: false",
+            "windows-latest",
+            "tests.test_windows_smoke",
         ):
             self.assertIn(term, workflow)
         uses_lines = [
@@ -2665,6 +2667,9 @@ class SuiteTests(unittest.TestCase):
         versions[".claude-plugin/marketplace.json"] = marketplace["plugins"][0][
             "version"
         ]
+        other_versions, other_errors = validate_skills.release_version_sources(ROOT)
+        self.assertEqual([], other_errors)
+        versions.update(other_versions)
         unique = set(versions.values())
         self.assertEqual(1, len(unique), versions)
         self.assertRegex(
@@ -2696,6 +2701,34 @@ class SuiteTests(unittest.TestCase):
         self.assertEqual(
             "https://nobrainer.tech/terms", interface["termsOfServiceURL"]
         )
+
+    def test_version_gate_covers_the_version_file_and_the_lockfile(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            versions, errors = validate_skills.release_version_sources(root)
+            self.assertEqual({}, versions)
+            self.assertEqual(2, len(errors), errors)
+
+            (root / "skills" / "nobrainer-tech-flow").mkdir(parents=True)
+            (root / "skills" / "nobrainer-tech-flow" / "VERSION").write_text(
+                "2.0.1\n", encoding="utf-8"
+            )
+            (root / "package-lock.json").write_text(
+                json.dumps({"version": "2.0.1", "packages": {"": {"version": "2.0.0"}}}),
+                encoding="utf-8",
+            )
+            versions, errors = validate_skills.release_version_sources(root)
+            self.assertEqual([], errors)
+            self.assertEqual(
+                {
+                    "skills/nobrainer-tech-flow/VERSION": "2.0.1",
+                    "package-lock.json": "2.0.1",
+                    'package-lock.json packages[""]': "2.0.0",
+                },
+                versions,
+            )
+            # The stale nested lockfile version is what a partial bump leaves behind.
+            self.assertGreater(len(set(versions.values())), 1)
 
     def test_review_has_one_evidence_gated_owner(self) -> None:
         directory = SKILLS / "nobrainer-review"

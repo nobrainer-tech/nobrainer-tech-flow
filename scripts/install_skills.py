@@ -7,22 +7,42 @@ import argparse
 import ctypes
 import hashlib
 import os
+import re
 import shutil
 import stat
 import sys
 import tempfile
+from collections.abc import Mapping
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
-CLIENT_DESTINATIONS = {
-    "claude": Path.home() / ".claude" / "skills",
-    "codex": Path.home() / ".agents" / "skills",
-    "opencode": Path.home() / ".config" / "opencode" / "skills",
-    "copilot": Path.home() / ".copilot" / "skills",
-    "agents": Path.home() / ".agents" / "skills",
-}
+
+
+def client_destinations(
+    environ: Mapping[str, str] | None = None, home: Path | None = None
+) -> dict[str, Path]:
+    """Skill directories per client, honouring the variables the clients read.
+
+    Claude Code reads CLAUDE_CONFIG_DIR and OpenCode follows XDG_CONFIG_HOME; an
+    empty value counts as unset.
+    """
+
+    environ = os.environ if environ is None else environ
+    home = Path.home() if home is None else home
+    claude = environ.get("CLAUDE_CONFIG_DIR") or ""
+    xdg = environ.get("XDG_CONFIG_HOME") or ""
+    return {
+        "claude": (Path(claude) if claude else home / ".claude") / "skills",
+        "codex": home / ".agents" / "skills",
+        "opencode": (Path(xdg) if xdg else home / ".config") / "opencode" / "skills",
+        "copilot": home / ".copilot" / "skills",
+        "agents": home / ".agents" / "skills",
+    }
+
+
+CLIENT_DESTINATIONS = client_destinations()
 
 CURATED_SKILLS = frozenset(
     {
@@ -327,7 +347,12 @@ def legacy_link_snapshot(
         (ROOT / legacy_name).resolve(strict=False),
         (SKILLS / legacy_name).resolve(strict=False),
     }
-    if resolved.resolve(strict=False) not in known_sources:
+    try:
+        resolved_target = resolved.resolve(strict=False)
+    except (OSError, RuntimeError):
+        # A symlink loop is never one of the known legacy links.
+        return None
+    if resolved_target not in known_sources:
         return None
     return before_id[0], before_id[1], before_id[2], linked
 
@@ -391,6 +416,12 @@ def claim_legacy_link(
 def atomic_rename_no_replace(source: Path, target: Path) -> None:
     """Rename one entry only when target is absent, using the native primitive."""
 
+    if os.name == "nt":
+        # Windows os.rename already refuses to replace an existing target, and
+        # ctypes.CDLL(None) is not supported there.
+        os.rename(source, target)
+        return
+
     libc = ctypes.CDLL(None, use_errno=True)
     source_bytes = os.fsencode(source)
     target_bytes = os.fsencode(target)
@@ -417,10 +448,6 @@ def atomic_rename_no_replace(source: Path, target: Path) -> None:
         result = renameat2(
             -100, source_bytes, -100, target_bytes, 0x00000001
         )  # AT_FDCWD, RENAME_NOREPLACE
-    elif os.name == "nt":
-        # Windows os.rename already refuses to replace an existing target.
-        os.rename(source, target)
-        return
     else:
         raise RuntimeError("atomic no-replace rename is unavailable")
 
@@ -480,11 +507,63 @@ def existing_state(target: Path, source: Path, mode: str) -> str:
                 strict=True
             ):
                 return "current"
-        except FileNotFoundError:
+        except (OSError, RuntimeError):
+            # Dangling links and symlink loops are conflicts, not crashes.
             pass
         if legacy_name_for(target, source) is not None:
             return "legacy"
+    elif mode == "copy" and target.is_dir():
+        try:
+            if tree_manifest(target) == tree_manifest(source):
+                return "current"
+        except (OSError, RuntimeError):
+            pass
     return "conflict"
+
+
+def destination_problem(destination: Path) -> str | None:
+    """Explain why a destination cannot hold skills, before anything is planned."""
+
+    for candidate in (destination, *destination.parents):
+        if candidate.exists():
+            if not candidate.is_dir():
+                return f"destination is not a directory: {candidate}"
+            return None
+    return None
+
+
+def linked_skills(name: str, catalogue: dict[str, Path]) -> list[str]:
+    """Other skills that a skill links into with relative Markdown links."""
+
+    found: list[str] = []
+    for markdown in sorted(catalogue[name].rglob("*.md")):
+        text = markdown.read_text(encoding="utf-8")
+        for match in re.finditer(r"\]\((\.\./[^)#\s]+)", text):
+            target = os.path.normpath(markdown.parent / match.group(1))
+            try:
+                relative = Path(target).relative_to(SKILLS)
+            except ValueError:
+                continue
+            other = relative.parts[0] if relative.parts else ""
+            if other and other != name and other in catalogue and other not in found:
+                found.append(other)
+    return found
+
+
+def unmet_references(
+    names: list[str], catalogue: dict[str, Path], destination: Path
+) -> list[tuple[str, str]]:
+    """Cross-skill links from selected skills to skills that will be absent."""
+
+    present = set(names) | {
+        name for name in catalogue if (destination / name / "SKILL.md").is_file()
+    }
+    return [
+        (name, other)
+        for name in names
+        for other in linked_skills(name, catalogue)
+        if other not in present
+    ]
 
 
 def parse_args() -> argparse.Namespace:
@@ -539,7 +618,13 @@ def main() -> int:
         print(f"ERROR: unknown active skill(s): {', '.join(unknown)}", file=sys.stderr)
         return 2
 
-    destination = (args.dest or CLIENT_DESTINATIONS[args.client]).expanduser().resolve()
+    destination = (
+        args.dest or client_destinations()[args.client]
+    ).expanduser().resolve()
+    problem = destination_problem(destination)
+    if problem:
+        print(f"ERROR: {problem}", file=sys.stderr)
+        return 2
     plan: list[tuple[str, Path, Path, str]] = []
     conflicts: list[Path] = []
     for name in requested:
@@ -593,6 +678,12 @@ def main() -> int:
         )
         print(f"{action}: {legacy_name} -> {canonical_name}: {target}")
 
+    for name, other in unmet_references(requested, catalogue, destination):
+        print(
+            f"NOTE: {name} links to {other}, which is not selected or installed; "
+            f"add --skill {other} to include it"
+        )
+
     for target in unmapped_plan:
         print(
             "UNMAPPED_CONFLICT: "
@@ -628,11 +719,18 @@ def main() -> int:
         print(f"DRY_RUN: no files changed; rerun{suffix} to install")
         return 0
 
-    destination.mkdir(parents=True, exist_ok=True)
+    try:
+        destination.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        print(f"ERROR: cannot create destination {destination}: {exc}", file=sys.stderr)
+        return 2
     created: list[tuple[Path, EntryFingerprint, TreeManifest | None]] = []
     migrated: list[tuple[Path, Path, str, EntryFingerprint]] = []
     copied_manifests: dict[Path, TreeManifest] = {}
     try:
+        for _, source, target, state in plan:
+            if state == "current" and args.mode == "copy":
+                copied_manifests[target] = tree_manifest(source)
         for legacy_name, _, target, state in alias_plan:
             if state != "legacy":
                 continue

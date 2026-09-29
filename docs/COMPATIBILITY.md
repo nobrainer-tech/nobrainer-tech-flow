@@ -21,13 +21,13 @@ Never promote one level from evidence belonging to another.
 Merge is a repository delivery state, not a client-compatibility level; release
 evidence records it separately.
 
-The current source version is **2.0.0**. Its release scope and reproducible
-checks are recorded in the [2.0.0 verification record](releases/v2.0.0.md).
-The previous [1.14.1 record](releases/v1.14.1.md) is historical evidence,
-not a statement about the current source. The package/entrypoint migration
+The current source version is **2.0.1**. Its release scope and reproducible
+checks are recorded in the [2.0.1 verification record](releases/v2.0.1.md).
+The [2.0.0](releases/v2.0.0.md) and [1.14.1](releases/v1.14.1.md) records are
+historical evidence, not statements about the current source. The package/entrypoint migration
 is documented in the [migration guide](MIGRATION_TO_FLOW.md).
 
-For 2.0.0, portable structure, installation, selected setup, personalization,
+For 2.0.x, portable structure, installation, selected setup, personalization,
 update checks and guarded cleanup have repository-level tests. The historical
 client matrix below does not establish fresh 2.0 automatic discovery,
 parallel execution, live Jev/Laya access or marketplace acceptance.
@@ -95,20 +95,41 @@ not mean the external client's parser accepted or loaded the package.
 | Generic Agent Skills consumers | `SOURCE_VALIDATED` | canonical folders only | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 
 Adapter checks apply to the current source. The client/runtime cells retain their
-recorded historical versions and hashes; they do not silently transfer to v1.6.
-Consult the v1.6 evidence for new probes. There is deliberately no blanket “works everywhere”
+recorded historical versions and hashes; they do not silently transfer to the current source.
+Consult the current release record for new probes. There is deliberately no blanket “works everywhere”
 badge: an unknown harness gets portable skill folders, then needs its own
 discovery/bootstrap proof before promotion.
 
 ## Adapter contract
+
+### Current-source readback (2026-09-29)
+
+Run on Linux against a checkout of the 2.0.1 source, with isolated client
+configuration and no real model request: the Claude Code session ran against a
+local stand-in API endpoint and Codex against a closed network. They show what
+the client loads and sends, not how a model behaves.
+
+| Client | Readback | Level |
+|---|---|---|
+| Claude Code `2.1.284` | `claude plugin validate` passed. `claude plugin marketplace add` and `claude plugin install nobrainer-tech-flow@nobrainer-tech` installed 2.0.1 with 18 skills. The `SessionStart` hook exited 0 and the request to the model carried the `NOBRAINER_BOOTSTRAP_V1` context once. With `CLAUDE_CONFIG_DIR` set, guided setup installed into that directory, the client listed the installed skills, the instruction block reached the request and `~/.claude` stayed untouched. | `CLIENT_LOADED`; bootstrap delivery observed; routing unverified |
+| Codex `0.158.0` | `codex plugin marketplace add` and `codex plugin add nobrainer-tech-flow@nobrainer-tech-skills-dev` installed 2.0.1. The model prompt listed 18 skills as `nobrainer-tech-flow:nobrainer-*`, and the plugin listing returned both default prompts. With 2.0.0 neither plugin name installed. | `CLIENT_LOADED`; routing unverified |
+| Pi `0.87.1` (resource loader only) | The extension loaded with its `resources_discover` and `context` handlers, 18 skills and no diagnostics. | `CLIENT_LOADED` for the loader; no session |
+
+The other rows above keep their earlier level: no readback of OpenCode, Cursor,
+Gemini CLI, Kimi Code or Copilot CLI was made for this source, and no Windows
+host was available; the Windows CI job covers the scripts, hooks and adapters
+listed in [Testing](TESTING.md).
 
 All adapters point at the same eighteen directories. They may expose discovery and
 one small `NOBRAINER_BOOTSTRAP_V1` routing context, but they must not copy or
 rewrite skill bodies.
 
 - Claude and Cursor hooks emit exactly one platform-specific JSON field.
-- OpenCode and Pi inject once per relevant context and detect their marker;
-  Pi permits one re-injection after compaction.
+- OpenCode and Pi detect their marker so one request never carries the bootstrap
+  twice. OpenCode prefixes the first user message's text and, when that message
+  has none (after a compaction), adds a synthetic text part. Pi adds it to every
+  model request that lacks it, because the host rebuilds the message list per
+  request.
 - Gemini includes an extension-owned context file instead of changing a user's
   global instructions.
 - Kimi maps native tools but explicitly refuses to treat a hidden subagent as
@@ -246,7 +267,7 @@ valid explicit `$nobrainer-tech-flow` run proves explicit loading, not automatic
 
 The Sessions helper runs explicit argv commands using Python 3.11+ on POSIX.
 It is opt-in and ships with the skill; no daemon or new hook registration is
-required. Windows process-group enforcement is unsupported. The seventeen
+required. Windows process-group enforcement is unsupported. The eighteen
 plain-text skills remain portable; this helper does not narrow their format
 compatibility. See [runtime limits and examples](BOUNDED_RUNNER.md).
 

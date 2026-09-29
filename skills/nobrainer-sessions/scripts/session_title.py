@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Format an observed session start; never rename or invent a missing date."""
-from datetime import datetime
+from datetime import datetime, timezone as utc_zone
 import json
 import re
 import sys
@@ -15,7 +15,8 @@ def format_title(title: str, started_at: str, timezone: str = 'UTC') -> dict:
     started = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
     if started.tzinfo is None:
         raise ValueError('start_requires_offset')
-    zone = ZoneInfo(timezone)
+    # UTC needs no time-zone database, which Windows does not ship.
+    zone = utc_zone.utc if timezone == 'UTC' else ZoneInfo(timezone)
     base = re.sub(r'(?: \| started \d{2}-\d{2})+$', '', title.strip()).strip()
     if not base:
         raise ValueError('missing_title_base')

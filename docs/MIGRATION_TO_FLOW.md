@@ -9,7 +9,7 @@ work, and checks the result.
 The canonical public repository identity is
 [`nobrainer-tech/nobrainer-tech-flow`](https://github.com/nobrainer-tech/nobrainer-tech-flow)
 and the product website is [nobrainer.tech/flow](https://nobrainer.tech/flow/).
-The earlier 1.7.1 rename changed display/source routing. The proposed 2.0.0
+The earlier 1.7.1 rename changed display/source routing. The 2.0.0
 upgrade also changes the entry skill and public package/plugin identities.
 Done still means the agreed criteria are met and the result is checked; missing
 access or an unresolved decision can require an explicit unblock action.
