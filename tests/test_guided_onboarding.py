@@ -866,6 +866,120 @@ class GuidedOnboardingTests(unittest.TestCase):
             if line[:2].isdigit() and " Fit (heuristic)=" in line
         )
 
+    @unittest.skipIf(os.name == "nt", "creating symlinks needs elevated rights on Windows")
+    def test_a_variable_the_client_does_not_read_never_blocks_its_setup_or_undo(self) -> None:
+        # Claude Code never reads XDG_CONFIG_HOME, so a bad value must neither stop the setup
+        # nor leave a finished setup impossible to undo.
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            variables = {"XDG_CONFIG_HOME": "~/.config", "CODEX_HOME": "relative"}
+            common = (
+                "--repo-url", "https://github.com/example/work-repo", "--offline",
+                "--client", "claude", *self.ANSWERS, "--selection", "01",
+            )
+
+            applied = self.run_setup_in(home, variables, *common, "--apply")
+            self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+            self.assertTrue((home / ".claude" / "skills" / "nobrainer-tech-flow").is_symlink())
+
+            rolled_back = self.run_setup_in(
+                home, variables, "--repo-url", "https://github.com/example/work-repo",
+                "--client", "claude", "--rollback", "--apply",
+            )
+            self.assertEqual(0, rolled_back.returncode, rolled_back.stdout + rolled_back.stderr)
+            self.assertFalse((home / ".claude" / "skills").exists())
+
+    @unittest.skipIf(os.name == "nt", "Windows paths are never raw bytes")
+    def test_a_path_that_is_not_valid_utf8_fails_before_anything_is_written(self) -> None:
+        # The rollback state is read back from the helpers' printed paths, so a path that
+        # cannot be printed exactly would leave a finished setup impossible to undo.
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            home = root / os.fsdecode(b"h\xe9me")
+            try:
+                (home / ".codex").mkdir(parents=True)
+            except OSError:
+                self.skipTest("this file system rejects names that are not valid UTF-8")
+            instruction = home / ".codex" / "AGENTS.md"
+            instruction.write_text("# mine\n", encoding="utf-8")
+
+            result = self.run_setup(
+                "--repo-url", "https://github.com/example/work-repo", "--offline",
+                "--client", "codex", *self.ANSWERS, "--selection", "01",
+                "--home", str(home), "--apply",
+            )
+
+            self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+            self.assertIn("not valid UTF-8", result.stderr)
+            self.assertEqual("# mine\n", instruction.read_text(encoding="utf-8"))
+            self.assertEqual([".codex"], sorted(entry.name for entry in home.iterdir()))
+
+    def test_an_upgrade_that_moves_the_block_says_how_to_continue(self) -> None:
+        # A file whose import an earlier release recognised, and this one does not, would
+        # write the block to a different place than the recorded setup used.
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            home = root / "home"
+            claude_file = home / ".claude" / "CLAUDE.md"
+            claude_file.parent.mkdir(parents=True)
+            claude_file.write_text("@~/.codex/AGENTS.md\n", encoding="utf-8")
+            codex = self.run_setup(
+                *self.common(root / "codex-skills", home), *self.ANSWERS, "--selection", "01",
+                "--apply",
+            )
+            self.assertEqual(0, codex.returncode, codex.stdout + codex.stderr)
+            common = (*self.common(root / "skills", home, "claude"), *self.ANSWERS, "--selection", "01",
+                      "--preferences", "Keep answers short.")
+            first = self.run_setup(*common, "--apply")
+            self.assertEqual(0, first.returncode, first.stdout + first.stderr)
+            # The import is real, so the preference went into the Codex file.
+            self.assertIn(f"PREFERENCE_READBACK: {home / '.codex' / 'AGENTS.md'}", first.stdout)
+
+            claude_file.write_text("- Shared rules:\n\n    @~/.codex/AGENTS.md\n", encoding="utf-8")
+            second = self.run_setup(*common, "--apply")
+
+            self.assertEqual(2, second.returncode, second.stdout + second.stderr)
+            self.assertIn("different personalization target", second.stderr)
+            self.assertIn("--rollback --apply", second.stderr)
+
+    def test_end_of_input_at_the_selection_prompt_ends_the_run_without_a_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            stdout = io.StringIO()
+            with mock.patch.object(GUIDED, "stdin_is_terminal", return_value=True), mock.patch(
+                "builtins.input", side_effect=EOFError
+            ), contextlib.redirect_stdout(stdout):
+                code = GUIDED.main([
+                    "--repo-url", "https://github.com/example/work-repo", "--offline",
+                    "--client", "codex", *self.ANSWERS, "--home", str(root / "home"),
+                    "--dest", str(root / "skills"),
+                ])
+
+            self.assertEqual(0, code)
+            self.assertIn("DRY_RUN: no files changed", stdout.getvalue())
+
+    def test_a_closed_standard_input_is_not_a_terminal(self) -> None:
+        closed = io.StringIO()
+        closed.close()
+
+        with mock.patch.object(sys, "stdin", closed):
+            self.assertFalse(GUIDED.stdin_is_terminal())
+        with mock.patch.object(sys, "stdin", None):
+            self.assertFalse(GUIDED.stdin_is_terminal())
+
+    def test_a_relative_home_directory_is_refused_instead_of_landing_in_the_checkout(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            result = self.run_setup_in(
+                Path("relative-home"), {},
+                "--repo-url", "https://github.com/example/work-repo", "--offline",
+                "--client", "codex", *self.ANSWERS, "--selection", "01",
+                "--dest", str(Path(temp) / "skills"), "--apply",
+            )
+
+            self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+            self.assertIn("absolute path", result.stderr)
+            self.assertFalse((ROOT / "relative-home").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

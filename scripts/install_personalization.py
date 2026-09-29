@@ -32,6 +32,43 @@ LEGACY_FLOW_INSTRUCTIONS = re.compile(
 # text in a preference cannot forge one.
 AUTO_UPDATE_RULE = "- On the first `nobrainer-tech-flow` use each calendar day, check for a safe verified update when this client exposes a supported check. This setting grants standing authorization to apply a `nobrainer-tech-flow`-only update after verifying the canonical source/version, reviewing the exact changes, and making a recoverable backup. Never apply destructive, unrelated, or uncertain changes; ask the owner first. If the client is inactive or cannot check, do not claim a check occurred."
 AUTO_SESSION_RULE = "- This setting grants standing authorization for session rotation only when the host supports creating a fresh successor, context or checkpoint evidence warrants rotation, and no write is in flight. Create the successor, verify exact takeover by ID/readback, and archive the old session only after that readback. Do not create recursive visible workers or claim a restart when unsupported."
+
+
+def has_rule_line(text: str, rule: str) -> bool:
+    """True when ``rule`` is a whole line of ``text``.
+
+    Only ``\\n`` and ``\\r\\n`` end a line here. ``str.splitlines`` would also split on
+    U+2028, U+0085 and other separators, which a path or a preference could carry.
+    """
+
+    return re.search(r"(?m)^" + re.escape(rule) + r"\r?$", text) is not None
+
+
+def earlier_grant(existing: str, rule: str, phrase: str, label: str, flag: str) -> bool:
+    """Whether the block already holds this exact grant line; says so when one was edited."""
+
+    if has_rule_line(existing, rule):
+        return True
+    if phrase in existing:
+        print(
+            f"NOTE: an earlier {label} authorization was not kept because its line no longer "
+            f"matches what this installer writes; pass {flag} to grant it again"
+        )
+    return False
+
+
+def unsafe_line(value: str) -> bool:
+    """True when ``value`` cannot be one plain Markdown line (or could split into two)."""
+
+    return "`" in value or not value.isprintable()
+
+
+def preference_problem(value: str) -> str | None:
+    if len(value) > 240 or "<" in value or ">" in value or unsafe_line(value):
+        return "preferences must be a single line of at most 240 safe characters"
+    return None
+
+
 SAVED_WIKI = re.compile(r"^- Relevant project wiki: read `([^`\r\n]+)`", re.MULTILINE)
 SAVED_PREFERENCE = re.compile(
     r"^- Owner-approved setup preference: ([^\r\n]+)$", re.MULTILINE
@@ -84,16 +121,39 @@ class Client:
     display: str
 
 
+# The variable each client reads to locate its own configuration directory.
+CLIENT_CONFIG_VARIABLE = {
+    "claude": "CLAUDE_CONFIG_DIR",
+    "codex": "CODEX_HOME",
+    "opencode": "XDG_CONFIG_HOME",
+}
+
+
+def config_directory(environ: Mapping[str, str], name: str) -> str:
+    """The directory a client variable names, or "" when it is unset.
+
+    A blank value counts as unset and any other value is used exactly as written. A
+    relative path is an error: the client resolves it against its own directory, the
+    script runs from the checkout, and neither can know where the other means.
+    """
+
+    value = environ.get(name) or ""
+    if not value.strip():
+        return ""
+    if not Path(value).is_absolute():
+        raise ValueError(f"{name} must be an absolute path, not {value!r}")
+    return value
+
+
 def known_client_path(
     client: str, home: Path | None = None, environ: Mapping[str, str] | None = None
 ) -> Client | None:
     """Return a global instruction path only where the client defines one.
 
     An explicit ``home`` selects the documented default locations under it. Without
-    one, the variables the clients read themselves apply: CLAUDE_CONFIG_DIR for
-    Claude Code, CODEX_HOME for Codex and XDG_CONFIG_HOME for OpenCode. An empty
-    value counts as unset; a value that is not an absolute path is an error (it
-    would resolve against whatever directory the script happens to run from).
+    one, the variable the client reads itself applies: CLAUDE_CONFIG_DIR for Claude
+    Code, CODEX_HOME for Codex and XDG_CONFIG_HOME for OpenCode. Variables of other
+    clients are none of this client's business, so they are never checked.
     """
 
     if client == "agents":
@@ -101,19 +161,12 @@ def known_client_path(
     if environ is None:
         environ = os.environ if home is None else {}
     home = Path.home() if home is None else home
-    values = {}
-    for name in ("CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_CONFIG_HOME"):
-        value = (environ.get(name) or "").strip()
-        if value and not Path(value).is_absolute():
-            raise ValueError(f"{name} must be an absolute path, not {value!r}")
-        values[name] = value
-    claude = values["CLAUDE_CONFIG_DIR"]
-    codex = values["CODEX_HOME"]
-    xdg = values["XDG_CONFIG_HOME"]
+    variable = CLIENT_CONFIG_VARIABLE.get(client)
+    base = config_directory(environ, variable) if variable else ""
     paths = {
-        "codex": (Path(codex) if codex else home / ".codex") / "AGENTS.md",
-        "claude": (Path(claude) if claude else home / ".claude") / "CLAUDE.md",
-        "opencode": (Path(xdg) if xdg else home / ".config") / "opencode" / "AGENTS.md",
+        "codex": (Path(base) if base else home / ".codex") / "AGENTS.md",
+        "claude": (Path(base) if base else home / ".claude") / "CLAUDE.md",
+        "opencode": (Path(base) if base else home / ".config") / "opencode" / "AGENTS.md",
         "copilot": home / ".copilot" / "copilot-instructions.md",
     }
     return Client(paths[client], client)
@@ -159,33 +212,178 @@ def managed_block_status(content: str, block: str) -> tuple[str, str | None]:
     return "UPDATE", content[:block_start] + block + content[block_end:]
 
 
+# Raw HTML blocks that end at a marker instead of at the next blank line.
+HTML_TYPE_ONE = re.compile(r"^ {0,3}<(pre|script|style|textarea)(?:[\s>]|$)", re.IGNORECASE)
+HTML_END_MARKERS = (
+    (re.compile(r"^ {0,3}<\?"), re.compile(r"\?>")),
+    (re.compile(r"^ {0,3}<!\[CDATA\["), re.compile(r"\]\]>")),
+    (re.compile(r"^ {0,3}<![A-Za-z]"), re.compile(r">")),
+)
+LINK_DEFINITION = re.compile(r"^ {0,3}\[[^\]\n]+\]:")
+FENCE_OPEN = re.compile(r"^[ \t>]*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?(`{3,}|~{3,})(.*)$")
+FENCE_CLOSE = re.compile(r"^[ \t>]*(`{3,}|~{3,})[ \t]*$")
+BLANK_LINE = re.compile(r"\n[ \t]*\n")
+
+
+def html_block_end(line: str) -> tuple[re.Pattern[str], bool] | None:
+    """How the raw HTML block starting on this line ends, and whether it ends a paragraph.
+
+    ``<pre>``, ``<script>``, ``<style>`` and ``<textarea>`` end at their own closing tag
+    only: an unclosed one runs to the end of the file, and so does a comment.
+    """
+
+    tag = HTML_TYPE_ONE.match(line)
+    if tag:
+        return re.compile(f"</{tag.group(1)}>", re.IGNORECASE), True
+    end = next((end for start, end in HTML_END_MARKERS if start.match(line)), None)
+    return (end, False) if end else None
+
+
+def prose_lines(content: str) -> list[str]:
+    """The lines Claude Code may scan for ``@`` imports, with blank lines where code was.
+
+    Fenced code, indented code, HTML comments, raw HTML blocks and link definitions are
+    not scanned. The rules are deliberately wide: a line that might be code is treated as
+    code, because a missed import only writes a second copy of the block while an import
+    that is not one would leave Claude without the block. An unclosed fence or comment
+    runs to the end of the file, and only ``\n``, ``\r\n`` and ``\r`` end a line.
+    """
+
+    kept: list[str] = []
+    fence: tuple[str, int] | None = None
+    html_end: tuple[re.Pattern[str], bool] | None = None
+    comment = False
+    comment_splits = False
+    in_html = False
+
+    def hide(splits: bool) -> None:
+        # Fenced code and block-level HTML end the paragraph before them, so they must
+        # not join two paragraphs. Where that is unsure the paragraphs stay joined.
+        if splits and kept and kept[-1]:
+            kept.append("")
+
+    for line in content.replace("\r\n", "\n").replace("\r", "\n").split("\n"):
+        if fence:
+            closing = FENCE_CLOSE.match(line)
+            if closing and closing.group(1)[0] == fence[0] and len(closing.group(1)) >= fence[1]:
+                fence = None
+            hide(True)
+            continue
+        if comment:
+            comment = "-->" not in line
+            hide(comment_splits)
+            continue
+        if html_end:
+            if html_end[0].search(line):
+                in_html = True
+                hide(html_end[1])
+                html_end = None
+            else:
+                hide(html_end[1])
+            continue
+        # From here on a start marker wins over the state of a surrounding HTML block:
+        # hiding more is always the safe error.
+        opening = FENCE_OPEN.match(line)
+        if opening and not (opening.group(1)[0] == "`" and "`" in opening.group(2)):
+            fence = (opening.group(1)[0], len(opening.group(1)))
+            hide(True)
+            continue
+        if "<!--" in line:
+            comment = line.rfind("-->") < line.rfind("<!--")
+            comment_splits = line.lstrip(" ").startswith("<!--")
+            hide(comment_splits)
+            continue
+        block = html_block_end(line)
+        if block:
+            # Whatever follows stays hidden to the next blank line: the surrounding markup
+            # may make this block part of a longer one.
+            if block[0].search(line):
+                in_html = True
+            else:
+                html_end = block
+            hide(block[1])
+            continue
+        if in_html:
+            in_html = bool(line.strip())
+            hide(False)
+            continue
+        if line.startswith(("    ", "\t")) or LINK_DEFINITION.match(line):
+            continue
+        if line.lstrip(" ").startswith("<"):
+            in_html = True
+            continue
+        kept.append(line)
+    return kept
+
+
+def without_code_spans(text: str) -> str:
+    """Drop inline code: a run of backticks up to the next run of the same length."""
+
+    pieces: list[str] = []
+    position = 0
+    while position < len(text):
+        if text[position] == "\\" and position + 1 < len(text):
+            # A backslash escapes the next character, so an escaped backtick opens nothing.
+            pieces.append(text[position : position + 2])
+            position += 2
+            continue
+        if text[position] != "`":
+            pieces.append(text[position])
+            position += 1
+            continue
+        opening_end = position
+        while opening_end < len(text) and text[opening_end] == "`":
+            opening_end += 1
+        length = opening_end - position
+        paragraph_end = BLANK_LINE.search(text, opening_end)
+        limit = paragraph_end.start() if paragraph_end else len(text)
+        close = None
+        scan = opening_end
+        while scan < limit:
+            if text[scan] != "`":
+                scan += 1
+                continue
+            run_end = scan
+            while run_end < limit and text[run_end] == "`":
+                run_end += 1
+            if run_end - scan == length:
+                close = run_end
+                break
+            scan = run_end
+        if close is None:
+            pieces.append(text[position:opening_end])
+            position = opening_end
+        else:
+            pieces.append(" ")
+            position = close
+    return "".join(pieces)
+
+
 def imports_codex_global(content: str, codex_path: Path, home: Path) -> bool:
     """Detect a Claude ``@`` import of the Codex global file.
 
-    Claude Code follows ``@path`` in prose and ignores it inside code fences and inline
-    code, so those are not counted. A prose mention such as "read ~/.codex/AGENTS.md"
-    is a request to the model, not an import. The documented boundary rules are thin,
-    so this errs towards "not an import": the import must be a word of its own, and
-    comments and indented code are ignored. A false "not an import" only writes a
-    second copy of the block; a false "import" would leave Claude with no
-    instructions at all.
+    Claude Code follows ``@path`` in prose and ignores it in code and raw HTML. A prose
+    mention such as "read ~/.codex/AGENTS.md" is a request to the model, not an import,
+    and so is ``@path.`` with punctuation stuck to it: the path ends at whitespace and
+    stops at a backslash, so a backslash spelling never matches. See ``prose_lines`` for
+    why every doubt resolves to "not an import".
     """
 
-    spellings = {str(codex_path), codex_path.as_posix()}
+    spellings = {codex_path.as_posix()}
     try:
         spellings.add("~/" + codex_path.relative_to(home).as_posix())
     except ValueError:
         pass
-    prose = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
-    # An unclosed fence runs to the end of the file.
-    prose = re.sub(r"(```|~~~).*?(?:\1|\Z)", "", prose, flags=re.DOTALL)
-    prose = "\n".join(
-        line for line in prose.splitlines() if not line.startswith(("    ", "\t"))
+    # A paragraph left with a lone backtick may pair it with a line this scan cannot see,
+    # so nothing in it counts.
+    paragraphs = BLANK_LINE.split("\n".join(prose_lines(content)))
+    prose = "\n\n".join(
+        text for text in map(without_code_spans, paragraphs) if "`" not in text
     )
-    prose = re.sub(r"`[^`\n]*`", "", prose)
     return any(
         re.search(r"(?<!\S)@" + re.escape(spelling) + r"(?!\S)", prose)
         for spelling in spellings
+        if "\\" not in spelling
     )
 
 
@@ -368,15 +566,12 @@ def main(argv: list[str] | None = None) -> int:
             # Persist the caller's canonical alias path, while normalizing relative
             # segments. Path.resolve() would silently replace user-facing symlinks.
             wiki_root = Path(os.path.abspath(args.wiki_root.expanduser()))
-            if any(char in str(wiki_root) for char in ("\n", "\r", "`")):
+            if unsafe_line(str(wiki_root)):
                 raise ValueError("wiki root path contains characters unsafe for Markdown")
             if not (wiki_root / "WIKI.md").is_file():
                 raise ValueError(f"wiki root must contain WIKI.md: {wiki_root}")
-        if args.preferences and (
-            len(args.preferences) > 240
-            or any(char in args.preferences for char in ("\n", "\r", "`", "<", ">"))
-        ):
-            raise ValueError("preferences must be a single line of at most 240 safe characters")
+        if args.preferences and preference_problem(args.preferences):
+            raise ValueError(preference_problem(args.preferences))
         existing = existing_managed_block(path)
         preferences = args.preferences
         if preferences is None and existing:
@@ -387,17 +582,26 @@ def main(argv: list[str] | None = None) -> int:
         auto_session_restart = args.auto_session_restart
         if args.keep_options and existing:
             kept: list[str] = []
-            lines = existing.splitlines()
-            if not auto_update and AUTO_UPDATE_RULE in lines:
+            if not auto_update and earlier_grant(
+                existing, AUTO_UPDATE_RULE, "grants standing authorization to apply", "auto-update", "--auto-update"
+            ):
                 auto_update = True
                 kept.append("auto-update")
-            if not auto_session_restart and AUTO_SESSION_RULE in lines:
+            if not auto_session_restart and earlier_grant(
+                existing,
+                AUTO_SESSION_RULE,
+                "grants standing authorization for session rotation",
+                "session-restart",
+                "--auto-session-restart",
+            ):
                 auto_session_restart = True
                 kept.append("session-restart")
             saved_wiki = SAVED_WIKI.search(existing)
             if wiki_root is None and saved_wiki:
                 candidate = Path(saved_wiki.group(1)).parent
-                if (candidate / "WIKI.md").is_file():
+                if unsafe_line(str(candidate)):
+                    print("NOTE: saved wiki root is not a plain path and was not kept")
+                elif (candidate / "WIKI.md").is_file():
                     wiki_root = candidate
                     kept.append("wiki-root")
                 else:
@@ -406,12 +610,16 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"KEPT_OPTIONS: {', '.join(kept)}")
         block = build_block(wiki_root, auto_update, auto_session_restart, preferences)
         if args.client == "claude":
-            codex_global = known_client_path("codex", home).path
+            try:
+                codex_global = known_client_path("codex", home).path
+            except ValueError:
+                # Without a usable Codex path there is nothing to inherit from.
+                codex_global = None
             try:
                 metadata = path.lstat()
             except FileNotFoundError:
                 metadata = None
-            if metadata is not None and stat.S_ISREG(metadata.st_mode):
+            if codex_global is not None and metadata is not None and stat.S_ISREG(metadata.st_mode):
                 with path.open("r", encoding="utf-8", newline="") as handle:
                     imported = imports_codex_global(
                         handle.read(), codex_global, home or Path.home()

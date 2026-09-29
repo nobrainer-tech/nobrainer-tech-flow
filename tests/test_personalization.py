@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import importlib.util
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,6 +16,12 @@ END = "<!-- NOBRAINER-TECH-FLOW:END -->"
 
 
 CONFIG_VARIABLES = ("CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_CONFIG_HOME")
+
+SPEC = importlib.util.spec_from_file_location("personalization_under_test", SCRIPT)
+assert SPEC and SPEC.loader
+MODULE = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = MODULE
+SPEC.loader.exec_module(MODULE)
 
 
 class PersonalizationInstallerTests(unittest.TestCase):
@@ -566,6 +573,181 @@ class PersonalizationInstallerTests(unittest.TestCase):
             )
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertTrue(target.read_bytes().startswith(original.encode("utf-8")))
+
+    def test_plain_imports_count_and_prose_that_looks_like_one_never_does(self) -> None:
+        # A wrong "import" leaves Claude without the block, so anything that Claude Code
+        # might treat as code, HTML or a paragraph it cannot read is "not an import". The
+        # cases were checked against Claude Code's own extraction (its @ regex over the
+        # tokens of a Markdown lexer that skips code and HTML).
+        home = Path("/home/u")
+        codex = home / ".codex" / "AGENTS.md"
+        imports = (
+            "@~/.codex/AGENTS.md\n",
+            "- @~/.codex/AGENTS.md\n",
+            "> @~/.codex/AGENTS.md\n",
+            "1. @~/.codex/AGENTS.md\n",
+            "See @~/.codex/AGENTS.md for the shared rules.\n",
+            "@/home/u/.codex/AGENTS.md\r\nmore\r\n",
+            "```\ncode\n```\n@~/.codex/AGENTS.md\n",
+            "<!-- note -->\n\n@~/.codex/AGENTS.md\n",
+        )
+        not_imports = (
+            "Do not add ``@~/.codex/AGENTS.md`` here.\n",  # double-backtick code span
+            "`@~/.codex/AGENTS.md`\n",
+            "text `code\n@~/.codex/AGENTS.md` more\n",  # code span wrapped over two lines
+            "text `code\n @~/.codex/AGENTS.md ` more\n",
+            "````\n```\n@~/.codex/AGENTS.md\n```\n````\n",  # fence inside a longer fence
+            "Tag every ``` fence\n\n```\n@~/.codex/AGENTS.md\n```\n",  # stray ``` in prose
+            "```\nline with ``` inside\n@~/.codex/AGENTS.md\n```\n",
+            "~~~\n@~/.codex/AGENTS.md\n~~~\n",
+            "```\n@~/.codex/AGENTS.md\n",  # an unclosed fence runs to the end
+            "<!-- open\n@~/.codex/AGENTS.md\n",  # so does an unclosed comment
+            "<!-- x --> @~/.codex/AGENTS.md\n",
+            "<div>\n@~/.codex/AGENTS.md\n</div>\n",
+            "<pre>\n\n@~/.codex/AGENTS.md\n\n</pre>\n",
+            "<pre>\n</script>\n@~/.codex/AGENTS.md\n",  # only its own closing tag ends <pre>
+            "</div>\n<script>\n\n@~/.codex/AGENTS.md\n",
+            "<details>\n<!DOCTYPE html>\n@~/.codex/AGENTS.md\n",
+            "<details>\n<?php\n</details>\n?>\n@~/.codex/AGENTS.md\n",
+            "[ref]: @~/.codex/AGENTS.md\n",
+            "    @~/.codex/AGENTS.md\n",
+            "\t@~/.codex/AGENTS.md\n",
+            "\\@~/.codex/AGENTS.md\n",
+            "back\\`tick\n` @~/.codex/AGENTS.md `\n",  # an escaped backtick opens no span
+            "text `unclosed\n<!-- c -->\n` @~/.codex/AGENTS.md `\n",
+            "a `stray\n@~/.codex/AGENTS.md\n",  # a lone backtick may pair with unseen text
+            "see @~/.codex/AGENTS.md.\n",
+            "(@~/.codex/AGENTS.md)\n",
+            "Read ~/.codex/AGENTS.md first.\n",
+            "mail me at someone@~/.codex/AGENTS.md.example\n",
+        )
+        for text in imports:
+            with self.subTest(import_text=text):
+                self.assertTrue(MODULE.imports_codex_global(text, codex, home))
+        for text in not_imports:
+            with self.subTest(not_an_import=text):
+                self.assertFalse(MODULE.imports_codex_global(text, codex, home))
+
+    def test_a_backslash_spelling_is_never_an_import(self) -> None:
+        # Claude Code ends an import path at a backslash, so this captures only "C:".
+        home = PureWindowsPath("C:/Profiles/me")
+        codex = home / ".codex" / "AGENTS.md"
+
+        self.assertFalse(MODULE.imports_codex_global("@C:\\Profiles\\me\\.codex\\AGENTS.md\n", codex, home))
+        self.assertTrue(MODULE.imports_codex_global("@~/.codex/AGENTS.md\n", codex, home))
+
+    def test_a_claude_file_that_only_mentions_the_import_still_gets_its_own_block(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            home = Path(raw)
+            codex = self.run_installer("--client", "codex", "--home", raw, "--apply")
+            self.assertEqual(0, codex.returncode, codex.stderr)
+            claude_file = home / ".claude" / "CLAUDE.md"
+            claude_file.parent.mkdir()
+            claude_file.write_text(
+                "Keep Claude separate: do not add ``@~/.codex/AGENTS.md`` to this file.\n",
+                encoding="utf-8",
+            )
+
+            result = self.run_installer("--client", "claude", "--home", raw, "--apply")
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertNotIn("INHERITS_CODEX", result.stdout)
+            self.assertIn(START, claude_file.read_text(encoding="utf-8"))
+
+    def test_a_variable_the_client_never_reads_is_not_checked(self) -> None:
+        home = Path("/home/u")
+        broken = {"CODEX_HOME": "relative", "CLAUDE_CONFIG_DIR": "relative", "XDG_CONFIG_HOME": "~/.config"}
+        for client in ("copilot", "agents"):
+            with self.subTest(client=client):
+                MODULE.known_client_path(client, home, broken)
+        self.assertEqual(
+            home / ".claude" / "CLAUDE.md",
+            MODULE.known_client_path("claude", home, {"XDG_CONFIG_HOME": "~/.config"}).path,
+        )
+        for client, variable in (("claude", "CLAUDE_CONFIG_DIR"), ("codex", "CODEX_HOME"), ("opencode", "XDG_CONFIG_HOME")):
+            with self.subTest(client=client), self.assertRaises(ValueError):
+                MODULE.known_client_path(client, home, {variable: "relative"})
+
+    def test_a_broken_codex_variable_does_not_stop_the_claude_block(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            home = Path(raw)
+            result = self.run_installer_in(home, {"CODEX_HOME": "relative"}, "--client", "claude", "--apply")
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertIn(START, (home / ".claude" / "CLAUDE.md").read_text(encoding="utf-8"))
+
+    def test_a_variable_is_used_exactly_as_written_unless_it_is_blank(self) -> None:
+        home = Path("/home/u")
+        self.assertEqual(
+            Path("/profile ") / "CLAUDE.md",
+            MODULE.known_client_path("claude", home, {"CLAUDE_CONFIG_DIR": "/profile "}).path,
+        )
+        self.assertEqual(
+            home / ".claude" / "CLAUDE.md",
+            MODULE.known_client_path("claude", home, {"CLAUDE_CONFIG_DIR": " \t"}).path,
+        )
+
+    def test_a_grant_is_a_whole_line_and_only_newlines_end_a_line(self) -> None:
+        rule = MODULE.AUTO_SESSION_RULE
+        self.assertTrue(MODULE.has_rule_line(f"before\n{rule}\nafter\n", rule))
+        self.assertTrue(MODULE.has_rule_line(f"before\r\n{rule}\r\nafter\r\n", rule))
+        for separator in ("\u2028", "\u2029", "\x85", "\x0b", "\x0c", "\x1c", "\x1d", "\x1e"):
+            with self.subTest(separator=repr(separator)):
+                self.assertFalse(MODULE.has_rule_line(f"x{separator}{rule}{separator}y\n", rule))
+        self.assertFalse(MODULE.has_rule_line(f"{rule} \n", rule))
+        self.assertFalse(MODULE.has_rule_line(f"- {rule}\n", rule))
+
+    def test_a_preference_or_wiki_path_cannot_carry_a_line_separator(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            target = Path(raw) / "profile.md"
+            for separator in ("\u2028", "\u2029", "\x85", "\x1c", "\t"):
+                with self.subTest(preference_separator=repr(separator)):
+                    result = self.run_installer(
+                        "--client", "agents", "--path", str(target),
+                        "--preferences", f"a{separator}b", "--apply",
+                    )
+                    self.assertEqual(3, result.returncode)
+                    self.assertIn("single line", result.stderr)
+                    self.assertFalse(target.exists())
+            wiki = Path(raw) / "wi\u2028ki"
+            try:
+                wiki.mkdir()
+            except OSError:
+                self.skipTest("this file system cannot hold a line separator in a name")
+            (wiki / "WIKI.md").write_text("# Wiki\n", encoding="utf-8")
+            result = self.run_installer(
+                "--client", "agents", "--path", str(target), "--wiki-root", str(wiki), "--apply"
+            )
+            self.assertEqual(3, result.returncode)
+            self.assertIn("unsafe for Markdown", result.stderr)
+            self.assertFalse(target.exists())
+
+    def test_a_grant_line_that_was_edited_is_reported_instead_of_dropped_silently(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            target = Path(raw) / "profile.md"
+            granted = self.run_installer(
+                "--client", "agents", "--path", str(target), "--auto-session-restart", "--apply"
+            )
+            self.assertEqual(0, granted.returncode, granted.stderr)
+            content = target.read_text(encoding="utf-8")
+            crlf = content.replace("\n", "\r\n")
+            target.write_bytes(crlf.encode("utf-8"))
+
+            kept = self.run_installer("--client", "agents", "--path", str(target), "--keep-options")
+            self.assertEqual(0, kept.returncode, kept.stderr)
+            self.assertIn("KEPT_OPTIONS: session-restart", kept.stdout)
+
+            edited = content.replace("in flight. Create", "in flight.  Create")
+            self.assertNotEqual(content, edited)
+            target.write_text(edited, encoding="utf-8")
+            dropped = self.run_installer("--client", "agents", "--path", str(target), "--keep-options")
+            self.assertEqual(0, dropped.returncode, dropped.stderr)
+            self.assertNotIn("KEPT_OPTIONS", dropped.stdout)
+            self.assertIn("AUTO_SESSION_RESTART: ASSESS_CHECKPOINT_RECOMMEND", dropped.stdout)
+            self.assertIn(
+                "NOTE: an earlier session-restart authorization was not kept", dropped.stdout
+            )
+            self.assertIn("--auto-session-restart", dropped.stdout)
 
 
 if __name__ == "__main__":

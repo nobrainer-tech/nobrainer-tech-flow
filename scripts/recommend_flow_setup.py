@@ -62,7 +62,7 @@ def _sibling(path: Path):
 
 
 def skills_destination(client: str, home: Path, environ) -> Path:
-    return _sibling(INSTALL_SKILLS).client_destinations(environ, home)[client]
+    return _sibling(INSTALL_SKILLS).client_destinations(environ, home, client)[client]
 
 
 def instruction_file(client: str, home: Path, environ) -> Path:
@@ -515,6 +515,17 @@ def selected_ids(raw: str | None) -> list[str]:
     return sorted(chosen)
 
 
+def require_utf8(*paths: Path) -> None:
+    """Refuse a path the helpers cannot print back exactly: the rollback state is read from
+    their output, and a mangled path would make a finished setup impossible to undo."""
+
+    for path in paths:
+        try:
+            str(path).encode("utf-8")
+        except UnicodeEncodeError:
+            raise ValueError(f"path is not valid UTF-8, so the setup cannot record it: {path!r}") from None
+
+
 def stdin_is_terminal() -> bool:
     """False when there is nobody to ask: no stdin at all, a closed one, or a pipe."""
 
@@ -709,11 +720,14 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     target_path = Path(str(profile.get("target", ""))) if profile else None
     backup = profile.get("backup") if profile else None
     if target_path:
-        allowed_paths = {
-            instruction_file(client, args.home, environ)
-            for client in CLIENTS
-            for environ in (args.environ, {})
-        }
+        allowed_paths = set()
+        for client in CLIENTS:
+            for environ in (args.environ, {}):
+                try:
+                    allowed_paths.add(instruction_file(client, args.home, environ))
+                except ValueError:
+                    # Another client's broken variable must not block this undo.
+                    pass
         if target_path not in allowed_paths:
             print(f"ERROR: refusing unexpected personalization target: {target_path}", file=sys.stderr)
             return 3
@@ -869,6 +883,8 @@ def main(argv: list[str] | None = None) -> int:
         args.home = (
             Path(os.path.abspath(args.home.expanduser())) if args.home_explicit else Path.home()
         )
+        if not args.home.is_absolute():
+            raise ValueError(f"the home directory must be an absolute path, not {str(args.home)!r}")
         repo_url = safe_repo_url(args.repo_url)
         state = state_path(args.home, args.state_file, args.client)
         legacy_state = legacy_state_path(args.home, args.state_file)
@@ -906,11 +922,8 @@ def main(argv: list[str] | None = None) -> int:
         ask_if_missing(args)
         if args.apply and not args.selection:
             raise ValueError("--apply requires an explicit --selection")
-        if args.preferences and (
-            len(args.preferences) > 240
-            or any(char in args.preferences for char in ("\n", "\r", "`", "<", ">"))
-        ):
-            raise ValueError("preferences must be a single line of at most 240 safe characters")
+        if args.preferences and _sibling(PERSONALIZATION).preference_problem(args.preferences):
+            raise ValueError(_sibling(PERSONALIZATION).preference_problem(args.preferences))
         if args.repo_path is not None:
             repository_context = inspect_local_repository(args.repo_path)
         elif args.offline:
@@ -920,6 +933,7 @@ def main(argv: list[str] | None = None) -> int:
         destination = (
             args.dest or skills_destination(args.client, args.home, args.environ)
         ).expanduser().resolve()
+        require_utf8(args.home, destination)
         if previous and Path(str(previous["destination"])).expanduser().resolve() != destination:
             raise ValueError(
                 "existing setup state belongs to a different skills destination: "
@@ -983,7 +997,10 @@ def main(argv: list[str] | None = None) -> int:
             )
         selection_text = args.selection
         if not selection_text and stdin_is_terminal():
-            selection_text = input("Choose any recommendation IDs to install (comma-separated, blank to stop): ").strip()
+            try:
+                selection_text = input("Choose any recommendation IDs to install (comma-separated, blank to stop): ").strip()
+            except EOFError:
+                selection_text = ""
         chosen = selected_ids(selection_text)
         if not chosen:
             print("DRY_RUN: no files changed; choose IDs with --selection and review this plan.")
@@ -1022,9 +1039,14 @@ def main(argv: list[str] | None = None) -> int:
                 profile_failure_hint(profile_output)
                 return code
         profile_target = instruction_file(personalization_client, args.home, args.environ)
+        require_utf8(profile_target)
         old_profile = previous.get("profile", {})
         if old_profile.get("target") and Path(str(old_profile["target"])) != profile_target:
-            raise ValueError(f"existing setup state belongs to a different personalization target: {old_profile['target']}")
+            raise ValueError(
+                "existing setup state belongs to a different personalization target: "
+                f"{old_profile['target']} (an earlier run wrote its instructions there; undo that "
+                "setup with --rollback --apply, then run this command again)"
+            )
         if not args.apply:
             return 0
         # Inspect every target before writing any of them. This keeps a later
