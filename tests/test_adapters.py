@@ -11,6 +11,21 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BOOTSTRAP_MARKER = "NOBRAINER_BOOTSTRAP_V1"
+
+
+def bash_executable() -> str:
+    """Git Bash on Windows: a bare `bash` finds the WSL launcher in System32 first."""
+
+    if os.name == "nt":
+        for candidate in (
+            r"C:\Program Files\Git\bin\bash.exe",
+            r"C:\Program Files (x86)\Git\bin\bash.exe",
+        ):
+            if Path(candidate).is_file():
+                return candidate
+    return "bash"
+
+
 CANONICAL_SKILLS = {
     "nobrainer-codex-context",
     "nobrainer-skill-doctor",
@@ -118,7 +133,7 @@ class AdapterTests(unittest.TestCase):
                 }
                 environment.update(extra_env)
                 result = subprocess.run(
-                    ["bash", str(hook)],
+                    [bash_executable(), str(hook)],
                     cwd=ROOT,
                     env=environment,
                     text=True,
