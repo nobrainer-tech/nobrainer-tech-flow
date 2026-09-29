@@ -78,10 +78,10 @@ file back byte for byte (and keeps edits made outside the block since), a foreig
 target is refused before any write, and the variables and `--home` select the same
 place the helpers do. The shell installer's tests also run it in every POSIX shell
 found (dash, bash in POSIX mode, busybox sh, zsh emulating sh), with no Python on
-its `PATH`, and check
-that its block is byte for byte the Python helper's and that either installer
-undoes what the other did. Each check was verified against a mutated script that
-must fail it (8 mutants of `install.py` and 18 of `install.sh`, all caught).
+its `PATH`, and check that its block is byte for byte the Python helper's, that
+either installer undoes what the other did with the same bytes, and that a
+tampered setup record is refused. They catch 30 of 34 mutants of `install.sh`; the
+[2.0.2 record](releases/v2.0.2.md) says why the other four are not caught.
 
 ## 3. Forward behavior evaluation
 

@@ -454,11 +454,14 @@ class ShellInstallerTests(unittest.TestCase):
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_a_setup_recorded_elsewhere_stops_the_next_run_and_its_hint_undoes_it(self) -> None:
-        for client, name, message in (
-            ("claude", "CLAUDE_CONFIG_DIR", "different skills destination"),
-            ("codex", "CODEX_HOME", "different personalization target"),
+        for client, name, message, via_home in (
+            ("claude", "CLAUDE_CONFIG_DIR", "different skills destination", False),
+            ("codex", "CODEX_HOME", "different personalization target", False),
+            # With --home the variables do not count, so the printed undo sets the home
+            # and the variable instead of passing --home.
+            ("claude", "CLAUDE_CONFIG_DIR", "different skills destination", True),
         ):
-            with self.subTest(client=client), tempfile.TemporaryDirectory() as temp:
+            with self.subTest(client=client, via_home=via_home), tempfile.TemporaryDirectory() as temp:
                 root = Path(temp).resolve()
                 home, first, second = root / "home", root / "first", root / "second"
                 for folder in (home, first, second):
@@ -466,7 +469,12 @@ class ShellInstallerTests(unittest.TestCase):
                 applied = run_sh("--client", client, "--apply", home=home, variables={name: str(first)})
                 self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
 
-                refused = run_sh("--client", client, home=home, variables={name: str(second)})
+                if via_home:
+                    refused = run_sh("--client", client, "--home", str(home), home=home)
+                    later_home, later = second, {}
+                else:
+                    refused = run_sh("--client", client, home=home, variables={name: str(second)})
+                    later_home, later = home, {name: str(second)}
 
                 self.assertEqual(3, refused.returncode, refused.stdout + refused.stderr)
                 self.assertIn(message, refused.stderr)
@@ -474,11 +482,11 @@ class ShellInstallerTests(unittest.TestCase):
                 hint = re.search(r"^HINT: undo that setup with (.*), then run this again$", refused.stderr, re.MULTILINE)
                 self.assertIsNotNone(hint, refused.stderr)
                 self.assertIn(f"{name}=", hint.group(1))
-                # The hint works as printed, while the variable still names the other place.
+                # The hint works as printed, from an environment that names other places.
                 path = f"{Path(SHELL).parent}{os.pathsep}{os.environ.get('PATH', '')}"
                 undone = subprocess.run(
                     [SHELL, "-c", hint.group(1)],
-                    cwd=root, env=environment(home, {name: str(second), "PATH": path}),
+                    cwd=root, env=environment(later_home, {**later, "PATH": path}),
                     text=True, encoding="utf-8", errors="replace", capture_output=True, check=False, stdin=subprocess.DEVNULL,
                 )
                 self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
