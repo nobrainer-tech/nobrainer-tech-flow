@@ -12,8 +12,9 @@ Hard limits:
 
 - MAIN keeps the model and effort the user selected. The setup's `main` picks
   are advice to show the user, never an automatic change.
-- Route a job only to a model in that job's `candidates` (or the setup's
-  `jobs.bulk` pick for cheap bulk work). Learning never adds a model.
+- Route a job only to a model in that job's `candidates`. Cheap bulk work uses
+  the setup's fixed `jobs.bulk` pick, which has no candidates and is never
+  re-ordered. Learning never adds a model.
 - Never use a model the user excluded, even if it has the best record.
 - Never invent or hand-edit a setup. With no usable setup, keep the current
   routing and report `UNKNOWN`. A setup with `empty: true` is no
@@ -62,7 +63,8 @@ python3 <skill-dir>/scripts/benchmark_routing.py fetch --routes openai,anthropic
 python3 <skill-dir>/scripts/benchmark_routing.py fetch --routes openai,anthropic --offline  # cache only
 ```
 
-`fetch` calls the network at most once per local day unless forced. It sends
+`fetch` calls the network at most once per local day unless forced; a failed
+attempt does not count toward that limit. It sends
 `If-None-Match` and checks the file's sha256 against the manifest when the
 manifest was fetched. It keeps the last good copy per key and never caches a
 file that fails the check. Report its result as it is:
@@ -94,6 +96,9 @@ Exit 3 always means keep the current routing; `routing` says why.
 - A `null` pick means nothing reachable fits. Keep the current routing for that
   job. When `empty` is `true`, every pick is `null`, `subagents` is empty and
   `blocks` is `null`.
+- `candidates[job]` holds up to six picks, distinct by `id` + `effort`, so the
+  same model can appear at two efforts. The first is always `jobs[job]`, the
+  default pick; with no local evidence the order stays as published.
 - `subagents` is the default worker, then the fallback chain for quota or
   availability errors. The same family can appear twice on different routes;
   those are separate quotas, so the second one is a real fallback.
@@ -110,14 +115,16 @@ Use `unknown` when nothing was verified.
 
 ```sh
 python3 <skill-dir>/scripts/benchmark_routing.py record --job coding \
-  --model openai/<model-id> --route openai --outcome pass --duration 212
+  --model openai/<model-id> --route openai --effort xhigh --outcome pass --duration 212
 python3 <skill-dir>/scripts/benchmark_routing.py record --job research \
   --model <bare-model-id> --route anthropic --outcome unknown --quota-error
 ```
 
-Jobs: `coding`, `agentic`, `research`, `planning`, `orchestration`, `bulk`. A
-row holds only the timestamp, job, model id, route, outcome, duration and a
-quota/limit flag. Never put prompts, code, file contents, paths, task titles or
+Jobs: `coding`, `agentic`, `research`, `planning`, `orchestration`, `bulk`
+(bulk rows are kept for the record but never re-order the fixed bulk pick). A
+row holds only the timestamp, job, model id, route, effort, outcome, duration
+and a quota/limit flag. Pass `--effort` whenever it is known: a row without it
+counts only for a model that appears at a single effort in that job. Never put prompts, code, file contents, paths, task titles or
 secrets in it. The helper refuses any model value that is not an id.
 
 ## 5. Recompute the policy
@@ -129,7 +136,7 @@ python3 <skill-dir>/scripts/benchmark_routing.py policy --routes openai,anthropi
 
 `policy` reads only the cached setup and the ledger, with no network, and writes
 `.nobrainer/routing-policy.json`. For each job it keeps the setup's candidates,
-drops duplicates and excluded models, then orders them by the Beta(1, 1)
+drops duplicates (same `id` + `effort`) and excluded models, then orders them by the Beta(1, 1)
 posterior mean of verified passes and failures. It is a bounded re-ordering,
 not an open-ended optimization loop:
 
@@ -140,9 +147,12 @@ not an open-ended optimization loop:
   means following the fallback chain, not demoting the model.
 - Exclusions are kept in the policy file; `--clear-excludes` resets them.
 - `order: LEARNED` marks a job whose order moved away from the benchmark order.
-- For an `empty` setup the policy says `recommendation: NONE`, lists no
-  candidates and exits 3. It still writes the file, so an older policy for the
-  same key is not used by mistake.
+- `bulk` and the fallback chain are copied as published, minus exclusions.
+- `skip` repeats the setup's skipped families with `reason` and, when present,
+  `excludedBy`, so the user can see why a family is missing.
+- For an `empty` setup, `policy` writes nothing, leaves any previous policy
+  file as it was, prints `no recommendation: keep the current routing` and
+  exits 3.
 
 When it freezes `MODEL_POLICY` for a delegated unit, nobrainer-tech-flow reads
 the policy without network access. It takes the first candidate for the unit's
@@ -150,7 +160,9 @@ job that this client can call, and records `MODEL_REQUESTED` and
 `MODEL_ACTUAL`. `nobrainer-dispatcher` carries that frozen policy and never
 picks a model itself. If the policy is missing, lists no candidates for the
 job, or its `key` differs from the current reachable routes, refresh it or keep
-the current routing.
+the current routing. When the latest `fetch` reports `NO_RECOMMENDATION`, or its
+`version` differs from the policy's `setupVersion`, do not use an older policy
+file; keep the current routing or run `policy` again.
 
 ## 6. Write the routing block into an instruction file
 

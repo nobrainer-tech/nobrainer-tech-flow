@@ -221,14 +221,14 @@
       },
       {
         "family": "Gamma Mini",
-        "name": "Gamma Mini (medium)",
+        "name": "Gamma Mini (high)",
         "id": "openai/gamma-mini",
         "route": "openai",
-        "effort": "medium",
+        "effort": "high",
         "intelligence": 58.3,
-        "score": 60.2,
-        "costPerTask": 0.08,
-        "timePerTask": 95
+        "score": 61.0,
+        "costPerTask": 0.12,
+        "timePerTask": 140
       },
       {
         "family": "Delta Small",
@@ -425,6 +425,12 @@
     {
       "family": "Epsilon",
       "reason": "data"
+    },
+    {
+      "family": "Zeta",
+      "reason": "weak",
+      "betterValue": "Gamma Mini",
+      "excludedBy": "cost"
     }
   ],
   "blocks": {

@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "skills/nobrainer-auto-fine-tune/scripts/benchmark_routing.py"
 FIXTURE = ROOT / "tests/fixtures/routing-setup-openai-anthropic.f0.b0.json"
+EMPTY_FIXTURE = ROOT / "tests/fixtures/routing-setup-empty.json"
 SPEC = importlib.util.spec_from_file_location("benchmark_routing", SCRIPT)
 routing = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(routing)
@@ -24,10 +25,8 @@ SETUP_URL = routing.BASE_URL + f"setups/{KEY}.json"
 
 
 def empty_setup(setup: dict) -> dict:
-    """What the producer publishes when nothing reachable fits the limits."""
-    return dict(setup, empty=True, main={"highStakes": None, "everyday": None}, subagents=[],
-                jobs={job: None for job in setup["jobs"]}, candidates={job: [] for job in setup["candidates"]},
-                blocks=None)
+    """What the producer publishes when nothing reachable fits the limits (same key as the main fixture)."""
+    return json.loads(EMPTY_FIXTURE.read_text())
 
 
 def manifest_for(setup_bytes: bytes, sha: str | None = None) -> bytes:
@@ -170,24 +169,28 @@ class LedgerPolicyTests(Base):
         for _ in range(times):
             routing.record(self.state, job=job, model=model, route=route, outcome=outcome, now=NOW, **kw)
 
-    def order(self, job: str = "coding", **kw) -> list[str]:
+    def policy(self, **kw) -> dict:
         rows, _ = routing.read_ledger(self.state)
-        policy = routing.compute_policy(self.setup, rows, kw.pop("excluded", []), kw.pop("min_samples", 5), NOW)
-        return [c["id"] for c in policy["jobs"][job]["candidates"]]
+        return routing.compute_policy(self.setup, rows, kw.pop("excluded", []), kw.pop("min_samples", 5), NOW)
+
+    def order(self, job: str = "coding", **kw) -> list[str]:
+        return [c["id"] for c in self.policy(**kw)["jobs"][job]["candidates"]]
 
     def test_ledger_rows_are_content_free(self) -> None:
         self.record("coding", "openai/alpha-2", "openai", "pass", duration=12.345, quota_error=True)
         row = json.loads((self.state / "routing-ledger.jsonl").read_text())
-        self.assertEqual(set(row), {"ts", "job", "model", "route", "outcome", "durationS", "quotaError"})
+        self.assertEqual(set(row), {"ts", "job", "model", "route", "effort", "outcome", "durationS", "quotaError"})
         self.assertEqual(row["durationS"], 12.3)
         for model in ("fix the login bug in app.py", "openai/alpha 2", "x" * 200):
             with self.assertRaises(routing.RoutingError):
                 self.record("coding", model, "openai", "pass")
-        with self.assertRaises(routing.RoutingError):
-            self.record("writing", "openai/alpha-2", "openai", "pass")
+        for job, effort in (("writing", None), ("coding", "turbo")):
+            with self.assertRaises(routing.RoutingError):
+                self.record(job, "openai/alpha-2", "openai", "pass", effort=effort)
 
     def test_benchmark_order_holds_below_the_minimum_sample_count(self) -> None:
-        benchmark = ["openai/alpha-2", "anthropic/beta-5", "openai/gamma-mini", "anthropic/delta-small", "astra-native"]
+        benchmark = ["openai/alpha-2", "anthropic/beta-5", "openai/gamma-mini", "openai/gamma-mini",
+                     "anthropic/delta-small", "astra-native"]
         self.assertEqual(self.order(), benchmark)
         self.record("coding", "openai/alpha-2", "openai", "fail", times=4)
         self.assertEqual(self.order(), benchmark)
@@ -200,7 +203,8 @@ class LedgerPolicyTests(Base):
         order = self.order()
         self.assertEqual(order[0], "anthropic/delta-small")
         self.assertEqual(set(order), {p["id"] for p in self.setup["candidates"]["coding"]})
-        self.assertEqual(len(order), len(set(order)))
+        pairs = [(c["id"], c["effort"]) for c in self.policy()["jobs"]["coding"]["candidates"]]
+        self.assertEqual(len(pairs), len(set(pairs)))
         self.assertEqual(self.order("planning"), ["anthropic/beta-5", "openai/alpha-2"])
 
     def test_bare_openai_ids_match_prefixed_ledger_rows(self) -> None:
@@ -208,7 +212,12 @@ class LedgerPolicyTests(Base):
         self.assertEqual(self.order()[0], "astra-native")
         self.assertEqual(self.order(excluded=["astra-native"])[-1], "anthropic/delta-small")
 
-    def test_empty_setup_policy_has_no_candidates_and_cli_writes_no_block(self) -> None:
+    def test_empty_setup_writes_no_block_and_no_new_policy(self) -> None:
+        self.fetch(self.server())
+        base = [sys.executable, str(SCRIPT), "--state-dir", str(self.state)]
+        routes = ["--routes", "openai,anthropic"]
+        self.assertEqual(subprocess.run(base + ["policy", *routes], capture_output=True).returncode, 0)
+        previous = (self.state / "routing-policy.json").read_bytes()
         self.setup = empty_setup(self.setup)
         self.record("coding", "openai/alpha-2", "openai", "pass", times=9)
         rows, _ = routing.read_ledger(self.state)
@@ -216,21 +225,41 @@ class LedgerPolicyTests(Base):
         self.assertEqual(policy["recommendation"], "NONE")
         self.assertTrue(all(not job["candidates"] for job in policy["jobs"].values()))
         self.assertEqual((policy["bulk"], policy["fallbackChain"]), (None, []))
-        self.fetch(self.server(json.dumps(self.setup).encode()))
+        fetched = self.fetch(self.server(json.dumps(self.setup).encode()), force=True)
+        self.assertEqual(fetched["action"], routing.NO_RECOMMENDATION)
         target = Path(self.temp.name) / "AGENTS.md"
         target.write_text("# Rules\n")
-        base = [sys.executable, str(SCRIPT), "--state-dir", str(self.state)]
-        routes = ["--routes", "openai,anthropic"]
-        run = subprocess.run(base + ["apply", *routes, "--file", str(target), "--block", "router"],
-                             capture_output=True, text=True)
-        self.assertEqual(run.returncode, 3)
-        self.assertEqual(json.loads(run.stdout)["routing"], "NO_RECOMMENDATION")
+        for command in (["apply", *routes, "--file", str(target), "--block", "router"], ["policy", *routes]):
+            run = subprocess.run(base + command, capture_output=True, text=True)
+            self.assertEqual(run.returncode, 3)
+            self.assertEqual(json.loads(run.stdout)["action"], "no recommendation: keep the current routing")
         self.assertEqual(target.read_text(), "# Rules\n")
-        self.assertEqual(subprocess.run(base + ["policy", *routes], capture_output=True).returncode, 3)
-        written = json.loads((self.state / "routing-policy.json").read_text())
-        self.assertEqual(written["recommendation"], "NONE")
+        self.assertEqual((self.state / "routing-policy.json").read_bytes(), previous)
         with self.assertRaises(routing.RoutingError):
             routing.apply_block(target, self.setup, "router")
+
+    def test_without_evidence_each_job_starts_with_its_default_pick(self) -> None:
+        policy = self.policy()
+        for job, data in policy["jobs"].items():
+            first, default = data["candidates"][0], self.setup["jobs"][job]
+            self.assertEqual((first["id"], first["effort"]), (default["id"], default["effort"]), job)
+            self.assertEqual(data["order"], "BENCHMARK")
+        self.assertEqual(policy["bulk"]["id"], self.setup["jobs"]["bulk"]["id"])
+
+    def test_effort_variants_learn_separately(self) -> None:
+        self.record("coding", "openai/gamma-mini", "openai", "pass", times=6)
+        self.assertEqual(self.order()[:2], ["openai/alpha-2", "anthropic/beta-5"])
+        self.record("coding", "openai/gamma-mini", "openai", "pass", times=6, effort="high")
+        top = self.policy()["jobs"]["coding"]["candidates"][0]
+        self.assertEqual((top["id"], top["effort"], top["pass"]), ("openai/gamma-mini", "high", 6))
+        self.record("coding", "delta-small", "anthropic", "pass", times=6)
+        delta = [c for c in self.policy()["jobs"]["coding"]["candidates"] if c["id"].endswith("delta-small")]
+        self.assertEqual(delta[0]["pass"], 6)
+
+    def test_skip_entries_keep_excluded_by(self) -> None:
+        skip = {item["family"]: item for item in self.policy()["skip"]}
+        self.assertEqual(skip["Zeta"]["excludedBy"], "cost")
+        self.assertNotIn("excludedBy", skip["Alpha 1"])
 
     def test_quota_and_unknown_outcomes_do_not_count_as_failures(self) -> None:
         self.record("coding", "openai/alpha-2", "openai", "unknown", times=6, quota_error=True)

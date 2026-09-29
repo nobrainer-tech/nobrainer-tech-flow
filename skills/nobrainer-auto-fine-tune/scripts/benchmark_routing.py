@@ -39,6 +39,9 @@ ROUTE_ORDER = tuple(ROUTE_PREFIX)
 JOBS = ("coding", "agentic", "research", "planning", "orchestration", "bulk")
 CANDIDATE_JOBS = JOBS[:-1]
 OUTCOMES = ("pass", "fail", "unknown")
+EFFORTS = ("none", "minimal", "low", "medium", "high", "xhigh", "max")
+SKIP_FIELDS = ("family", "reason", "replacedBy", "betterValue", "excludedBy")
+NO_RECOMMENDATION = "no recommendation: keep the current routing"
 BLOCKS = ("router", "plain", "bare")
 START = "<!-- nobrainer-routing:start -->"
 END = "<!-- nobrainer-routing:end -->"
@@ -232,7 +235,7 @@ def _report(key: str, setup: dict[str, Any] | None, entry: dict[str, Any], statu
                 "action": "keep the current routing; no setup is cached for this key"}
     stale = now > parse_time(setup["expiresAt"])
     return {"routing": "NO_RECOMMENDATION" if setup["empty"] else "AVAILABLE", "status": status, "key": key,
-            "version": setup.get("version"),
+            "version": setup.get("version"), **({"action": NO_RECOMMENDATION} if setup["empty"] else {}),
             "expiresAt": setup["expiresAt"], "stale": stale, "refreshDue": stale,
             "integrity": entry.get("integrity", "UNVERIFIED"), "checkedOn": entry.get("checkedOn"),
             "reason": reason}
@@ -297,16 +300,16 @@ def fetch_setup(key: str, state_dir: Path, *, now: dt.datetime, force: bool = Fa
 
 
 def record(state_dir: Path, *, job: str, model: str, route: str, outcome: str, now: dt.datetime,
-           duration: float | None = None, quota_error: bool = False) -> dict[str, Any]:
+           duration: float | None = None, quota_error: bool = False, effort: str | None = None) -> dict[str, Any]:
     """Append one content-free ledger row: no prompts, code, file contents or secrets."""
-    if job not in JOBS or route not in ROUTE_PREFIX or outcome not in OUTCOMES:
-        raise RoutingError("job, route or outcome is not an allowed value")
+    if job not in JOBS or route not in ROUTE_PREFIX or outcome not in OUTCOMES or effort not in (None, *EFFORTS):
+        raise RoutingError("job, route, outcome or effort is not an allowed value")
     if not MODEL_RE.fullmatch(model):
         raise RoutingError("model must be a bare model id or provider/model id")
     if duration is not None and not 0 <= duration < 1_000_000:
         raise RoutingError("duration must be seconds between 0 and 1000000")
     row = {"ts": now.astimezone(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
-           "job": job, "model": model, "route": route, "outcome": outcome,
+           "job": job, "model": model, "route": route, "effort": effort, "outcome": outcome,
            "durationS": None if duration is None else round(duration, 1), "quotaError": bool(quota_error)}
     path = state_dir / "routing-ledger.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -336,23 +339,30 @@ def compute_policy(setup: dict[str, Any], rows: list[dict[str, Any]], excluded: 
                    min_samples: int, now: dt.datetime) -> dict[str, Any]:
     """Re-order only inside each job's candidates; never add a model or touch MAIN."""
     blocked = {name.lower() for name in excluded}
-    stats: dict[tuple[str, str], list[int]] = {}
+    # Keyed by job, model and effort; a row without effort is None-keyed.
+    stats: dict[tuple[str, str, str | None], list[int]] = {}
     for row in rows:
         if row.get("job") not in JOBS or row.get("route") not in ROUTE_PREFIX or not isinstance(row.get("model"), str):
             continue
-        counts = stats.setdefault((row["job"], _normal_id(row["model"], row["route"])), [0, 0, 0])
+        key = (row["job"], _normal_id(row["model"], row["route"]), row.get("effort"))
+        counts = stats.setdefault(key, [0, 0, 0])
         if row.get("outcome") in ("pass", "fail"):
             counts[0 if row["outcome"] == "pass" else 1] += 1
         counts[2] += row.get("quotaError") is True
     jobs = {}
     for job in CANDIDATE_JOBS:
         entries, seen = [], set()
-        for rank, pick in enumerate(setup["candidates"][job], start=1):
-            nid = _normal_id(pick["id"], pick["route"])
-            if nid in seen or _excluded(pick, blocked):
+        picks = [(pick, _normal_id(pick["id"], pick["route"])) for pick in setup["candidates"][job]]
+        for rank, (pick, nid) in enumerate(picks, start=1):
+            # Candidates are distinct by id + effort; the same model can appear at two efforts.
+            if (nid, pick.get("effort")) in seen or _excluded(pick, blocked):
                 continue
-            seen.add(nid)
-            passed, failed, quota = stats.get((job, nid), (0, 0, 0))
+            seen.add((nid, pick.get("effort")))
+            counts = [stats.get((job, nid, pick.get("effort")), [0, 0, 0])]
+            # A row without effort counts only when the model has a single effort among the candidates.
+            if pick.get("effort") is not None and len({p.get("effort") for p, n in picks if n == nid}) == 1:
+                counts.append(stats.get((job, nid, None), [0, 0, 0]))
+            passed, failed, quota = (sum(c[i] for c in counts) for i in range(3))
             entries.append({**_summary(pick, blocked), "benchmarkRank": rank, "pass": passed, "fail": failed,
                             "quotaErrors": quota, "posteriorMean": round((passed + 1) / (passed + failed + 2), 4),
                             "eligible": passed + failed >= min_samples})
@@ -367,6 +377,8 @@ def compute_policy(setup: dict[str, Any], rows: list[dict[str, Any]], excluded: 
         "minSamples": min_samples, "excluded": sorted(blocked), "jobs": jobs,
         "bulk": _summary(bulk, blocked) if bulk and not _excluded(bulk, blocked) else None,
         "fallbackChain": [_summary(p, blocked) for p in setup["subagents"] if not _excluded(p, blocked)],
+        "skip": [{k: item[k] for k in SKIP_FIELDS if k in item} for item in setup.get("skip") or []
+                 if isinstance(item, dict)],
     }
 
 
@@ -460,7 +472,7 @@ def other_routing_lines(text: str, setup: dict[str, Any], region: tuple[str, int
 def apply_block(path: Path, setup: dict[str, Any], choice: str, *, write: bool = False,
                 confirm: str | None = None) -> dict[str, Any]:
     if setup["empty"]:
-        raise RoutingError("the setup is empty (no recommendation); keep the current routing")
+        raise RoutingError(f"the setup is empty: {NO_RECOMMENDATION}")
     block = setup["blocks"].get(choice)
     if block is None:
         raise RoutingError(f"this setup has no {choice} block; use router or plain")
@@ -511,6 +523,7 @@ def main(argv: list[str] | None = None) -> int:
     commands["record"].add_argument("--model", required=True)
     commands["record"].add_argument("--route", choices=ROUTE_ORDER, required=True)
     commands["record"].add_argument("--outcome", choices=OUTCOMES, required=True)
+    commands["record"].add_argument("--effort", choices=EFFORTS)
     commands["record"].add_argument("--duration", type=float)
     commands["record"].add_argument("--quota-error", action="store_true")
     commands["policy"].add_argument("--exclude", action="append", default=[],
@@ -527,7 +540,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "record":
             print(json.dumps(record(args.state_dir, job=args.job, model=args.model, route=args.route,
                                     outcome=args.outcome, now=now, duration=args.duration,
-                                    quota_error=args.quota_error), sort_keys=True))
+                                    quota_error=args.quota_error, effort=args.effort), sort_keys=True))
             return 0
         key = build_key(args.routes.split(","), args.fast, args.budget)
         if args.command == "key":
@@ -543,6 +556,10 @@ def main(argv: list[str] | None = None) -> int:
         if setup is None:
             print(json.dumps({"routing": "UNKNOWN", "key": key, "action": "run fetch first; keep the current routing"}))
             return 3
+        if setup["empty"]:
+            # Never write a block or a new policy from an empty setup; any previous policy file stays as it was.
+            print(json.dumps({"routing": "NO_RECOMMENDATION", "key": key, "action": NO_RECOMMENDATION}))
+            return 3
         if args.command == "policy":
             if args.min_samples < 1:
                 raise RoutingError("--min-samples must be at least 1")
@@ -556,11 +573,7 @@ def main(argv: list[str] | None = None) -> int:
             policy.update(ledgerRows=len(rows), skippedRows=skipped)
             _write_atomic(path, _dump(policy))
             print(json.dumps(policy, indent=2, sort_keys=True))
-            return 3 if setup["empty"] else 0
-        if setup["empty"]:
-            print(json.dumps({"routing": "NO_RECOMMENDATION", "key": key,
-                              "action": "keep the current routing; no block is written"}))
-            return 3
+            return 0
         result = apply_block(args.file, setup, args.block, write=args.write, confirm=args.confirm)
     except (RoutingError, OSError, UnicodeDecodeError) as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)
