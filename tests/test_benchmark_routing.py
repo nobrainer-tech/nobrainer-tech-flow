@@ -23,6 +23,13 @@ MANIFEST_URL = routing.BASE_URL + "manifest.json"
 SETUP_URL = routing.BASE_URL + f"setups/{KEY}.json"
 
 
+def empty_setup(setup: dict) -> dict:
+    """What the producer publishes when nothing reachable fits the limits."""
+    return dict(setup, empty=True, main={"highStakes": None, "everyday": None}, subagents=[],
+                jobs={job: None for job in setup["jobs"]}, candidates={job: [] for job in setup["candidates"]},
+                blocks=None)
+
+
 def manifest_for(setup_bytes: bytes, sha: str | None = None) -> bytes:
     return json.dumps({
         "schema": "nobrainer-routing-manifest/1",
@@ -142,6 +149,15 @@ class FetchTests(Base):
         other = json.dumps(dict(self.setup, key="openai.f0.b0")).encode()
         self.assertEqual(self.fetch(self.server(other))["routing"], "UNKNOWN")
 
+    def test_empty_setup_is_no_recommendation(self) -> None:
+        result = self.fetch(self.server(json.dumps(empty_setup(self.setup)).encode()))
+        self.assertEqual((result["routing"], result["integrity"]), ("NO_RECOMMENDATION", "VERIFIED"))
+        broken = dict(empty_setup(self.setup), blocks=self.setup["blocks"])
+        with self.assertRaises(routing.RoutingError):
+            routing.validate_setup(broken, KEY)
+        with self.assertRaises(routing.RoutingError):
+            routing.validate_setup(dict(self.setup, blocks=None), KEY)
+
     def test_cli_offline_without_cache_exits_unknown(self) -> None:
         run = subprocess.run([sys.executable, str(SCRIPT), "--state-dir", str(self.state), "fetch",
                               "--routes", "anthropic,openai", "--offline"], capture_output=True, text=True)
@@ -171,7 +187,7 @@ class LedgerPolicyTests(Base):
             self.record("writing", "openai/alpha-2", "openai", "pass")
 
     def test_benchmark_order_holds_below_the_minimum_sample_count(self) -> None:
-        benchmark = ["openai/alpha-2", "anthropic/beta-5", "openai/gamma-mini", "anthropic/delta-small"]
+        benchmark = ["openai/alpha-2", "anthropic/beta-5", "openai/gamma-mini", "anthropic/delta-small", "astra-native"]
         self.assertEqual(self.order(), benchmark)
         self.record("coding", "openai/alpha-2", "openai", "fail", times=4)
         self.assertEqual(self.order(), benchmark)
@@ -186,6 +202,35 @@ class LedgerPolicyTests(Base):
         self.assertEqual(set(order), {p["id"] for p in self.setup["candidates"]["coding"]})
         self.assertEqual(len(order), len(set(order)))
         self.assertEqual(self.order("planning"), ["anthropic/beta-5", "openai/alpha-2"])
+
+    def test_bare_openai_ids_match_prefixed_ledger_rows(self) -> None:
+        self.record("coding", "openai/astra-native", "openai", "pass", times=5)
+        self.assertEqual(self.order()[0], "astra-native")
+        self.assertEqual(self.order(excluded=["astra-native"])[-1], "anthropic/delta-small")
+
+    def test_empty_setup_policy_has_no_candidates_and_cli_writes_no_block(self) -> None:
+        self.setup = empty_setup(self.setup)
+        self.record("coding", "openai/alpha-2", "openai", "pass", times=9)
+        rows, _ = routing.read_ledger(self.state)
+        policy = routing.compute_policy(self.setup, rows, [], 5, NOW)
+        self.assertEqual(policy["recommendation"], "NONE")
+        self.assertTrue(all(not job["candidates"] for job in policy["jobs"].values()))
+        self.assertEqual((policy["bulk"], policy["fallbackChain"]), (None, []))
+        self.fetch(self.server(json.dumps(self.setup).encode()))
+        target = Path(self.temp.name) / "AGENTS.md"
+        target.write_text("# Rules\n")
+        base = [sys.executable, str(SCRIPT), "--state-dir", str(self.state)]
+        routes = ["--routes", "openai,anthropic"]
+        run = subprocess.run(base + ["apply", *routes, "--file", str(target), "--block", "router"],
+                             capture_output=True, text=True)
+        self.assertEqual(run.returncode, 3)
+        self.assertEqual(json.loads(run.stdout)["routing"], "NO_RECOMMENDATION")
+        self.assertEqual(target.read_text(), "# Rules\n")
+        self.assertEqual(subprocess.run(base + ["policy", *routes], capture_output=True).returncode, 3)
+        written = json.loads((self.state / "routing-policy.json").read_text())
+        self.assertEqual(written["recommendation"], "NONE")
+        with self.assertRaises(routing.RoutingError):
+            routing.apply_block(target, self.setup, "router")
 
     def test_quota_and_unknown_outcomes_do_not_count_as_failures(self) -> None:
         self.record("coding", "openai/alpha-2", "openai", "unknown", times=6, quota_error=True)
@@ -236,7 +281,7 @@ class BlockTests(Base):
         text = path.read_text()
         self.assertTrue(text.startswith("# Rules\n\n- Keep it small.\n\n" + routing.START))
         self.assertEqual(text.count(routing.START), 1)
-        self.assertEqual(text.count("## Model routing for NoBrainer.Tech Flow"), 1)
+        self.assertEqual(text.count("## Model routing for nobrainer-tech-flow"), 1)
         plain = routing.apply_block(path, self.setup, "plain")
         self.assertIn("-1. Alpha 2, reasoning xhigh (openai/alpha-2)", plain["diff"])
         self.assertIn("MARKERS", plain["region"])
@@ -251,13 +296,23 @@ class BlockTests(Base):
         self.apply_twice(path)
         text = path.read_text()
         self.assertNotIn("Old Model", text)
-        self.assertEqual(text.count("## Model routing for NoBrainer.Tech Flow"), 1)
+        self.assertNotIn("NoBrainer.Tech Flow", text)
+        self.assertEqual(text.count("## Model routing for nobrainer-tech-flow"), 1)
         self.assertTrue(text.startswith("# Flow\n\nIntro.\n\n" + routing.START))
         self.assertTrue(text.endswith(routing.END + "\n\n## Knowledge\n\n- Keep the wiki.\n"))
 
+    def test_unmarked_section_with_current_title_is_replaced(self) -> None:
+        path = self.target("# Flow\n\n## Model routing for nobrainer-tech-flow\n\n- Old line.\n\n## Next\n")
+        self.assertEqual(routing.apply_block(path, self.setup, "router")["region"], "SECTION lines 3-5")
+        self.apply_twice(path)
+        self.assertNotIn("Old line", path.read_text())
+        self.assertTrue(path.read_text().endswith(routing.END + "\n\n## Next\n"))
+
     def test_ambiguous_or_broken_regions_are_refused(self) -> None:
         both = self.setup["blocks"]["router"] + "\n\n## Model routing for NoBrainer.Tech Flow\n\nOld.\n"
-        for text in (both, routing.START + "\nhalf a block\n", "text\n" + routing.END + "\n"):
+        titles = ("## Model routing for nobrainer-tech-flow\n\nNew.\n\n"
+                  "## Model routing for NoBrainer.Tech Flow\n\nOld.\n")
+        for text in (both, titles, routing.START + "\nhalf a block\n", "text\n" + routing.END + "\n"):
             with self.assertRaises(routing.RoutingError):
                 routing.apply_block(self.target(text), self.setup, "router")
 

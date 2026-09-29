@@ -42,10 +42,14 @@ OUTCOMES = ("pass", "fail", "unknown")
 BLOCKS = ("router", "plain", "bare")
 START = "<!-- nobrainer-routing:start -->"
 END = "<!-- nobrainer-routing:end -->"
-SECTION_RE = re.compile(r"^(#{1,6})[ \t]+Model routing for NoBrainer\.Tech Flow[ \t#]*$", re.I)
+# Current title first; older copies say "NoBrainer.Tech Flow". Both count as existing routing.
+SECTION_RE = re.compile(
+    r"^(#{1,6})[ \t]+Model routing for (?:nobrainer-tech-flow|NoBrainer\.Tech Flow)[ \t#]*$", re.I
+)
 HEADING_RE = re.compile(r"^(#{1,6})[ \t]")
 FENCE_RE = re.compile(r"^[ \t]{0,3}(```|~~~)")
-PICK_ID_RE = re.compile(r"^[a-z0-9-]+/[A-Za-z0-9._:-]+$")
+# Router ids carry a provider prefix; Codex-native openai ids may be bare.
+PICK_ID_RE = re.compile(r"^(?:[a-z0-9-]+/)?[A-Za-z0-9._:-]+$")
 MODEL_RE = re.compile(r"^(?:[a-z0-9-]+/)?[A-Za-z0-9._:-]{1,120}$")
 ROLE = r"\b(subagents?|workers?|main agent)\b"
 MODEL_LINE_RE = re.compile(rf"(?i)\bmodels?\b.*{ROLE}|{ROLE}.*\bmodels?\b")
@@ -110,6 +114,8 @@ def validate_setup(data: Any, key: str) -> dict[str, Any]:
     if data.get("routes") != routes or flags != f"f{int(data['fast'])}.b{int(data['budget'])}":
         raise RoutingError("setup routes or flags do not match its key")
     parse_time(data.get("expiresAt"))
+    if not isinstance(data.get("empty"), bool):
+        raise RoutingError("setup empty must be a boolean")
     main, jobs, candidates, blocks = (data.get(k) for k in ("main", "jobs", "candidates", "blocks"))
     if not isinstance(main, dict) or not {"highStakes", "everyday"} <= set(main):
         raise RoutingError("setup main is incomplete")
@@ -127,6 +133,11 @@ def validate_setup(data: Any, key: str) -> dict[str, Any]:
             _check_pick(pick, routes, f"candidates.{job}[{index}]")
     for index, pick in enumerate(data["subagents"]):
         _check_pick(pick, routes, f"subagents[{index}]")
+    if data["empty"]:
+        picks = [main["highStakes"], main["everyday"], *jobs.values(), *data["subagents"]]
+        if blocks is not None or any(p is not None for p in picks) or any(candidates[j] for j in CANDIDATE_JOBS):
+            raise RoutingError("an empty setup must have no picks, no candidates and no blocks")
+        return data
     if not isinstance(blocks, dict):
         raise RoutingError("setup blocks are missing")
     for name in BLOCKS:
@@ -220,7 +231,8 @@ def _report(key: str, setup: dict[str, Any] | None, entry: dict[str, Any], statu
         return {"routing": "UNKNOWN", "status": status, "key": key, "reason": reason,
                 "action": "keep the current routing; no setup is cached for this key"}
     stale = now > parse_time(setup["expiresAt"])
-    return {"routing": "AVAILABLE", "status": status, "key": key, "version": setup.get("version"),
+    return {"routing": "NO_RECOMMENDATION" if setup["empty"] else "AVAILABLE", "status": status, "key": key,
+            "version": setup.get("version"),
             "expiresAt": setup["expiresAt"], "stale": stale, "refreshDue": stale,
             "integrity": entry.get("integrity", "UNVERIFIED"), "checkedOn": entry.get("checkedOn"),
             "reason": reason}
@@ -351,7 +363,8 @@ def compute_policy(setup: dict[str, Any], rows: list[dict[str, Any]], excluded: 
         "schema": "nobrainer-routing-policy/1", "key": setup["key"], "setupVersion": setup.get("version"),
         "expiresAt": setup["expiresAt"], "stale": now > parse_time(setup["expiresAt"]),
         "generatedAt": now.astimezone(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
-        "main": "PRESERVED", "minSamples": min_samples, "excluded": sorted(blocked), "jobs": jobs,
+        "recommendation": "NONE" if setup["empty"] else "AVAILABLE", "main": "PRESERVED",
+        "minSamples": min_samples, "excluded": sorted(blocked), "jobs": jobs,
         "bulk": _summary(bulk, blocked) if bulk and not _excluded(bulk, blocked) else None,
         "fallbackChain": [_summary(p, blocked) for p in setup["subagents"] if not _excluded(p, blocked)],
     }
@@ -434,7 +447,7 @@ def plan_block(text: str, block: str) -> tuple[str, tuple[str, int, int] | None]
 
 def other_routing_lines(text: str, setup: dict[str, Any], region: tuple[str, int, int] | None) -> list[str]:
     ids = {p["id"] for job in CANDIDATE_JOBS for p in setup["candidates"][job]}
-    ids |= {i.split("/", 1)[1] for i in ids}
+    ids |= {i.split("/", 1)[-1] for i in ids}
     found = []
     for index, line in enumerate(text.splitlines(), start=1):
         if region and region[1] < index <= region[2]:
@@ -446,6 +459,8 @@ def other_routing_lines(text: str, setup: dict[str, Any], region: tuple[str, int
 
 def apply_block(path: Path, setup: dict[str, Any], choice: str, *, write: bool = False,
                 confirm: str | None = None) -> dict[str, Any]:
+    if setup["empty"]:
+        raise RoutingError("the setup is empty (no recommendation); keep the current routing")
     block = setup["blocks"].get(choice)
     if block is None:
         raise RoutingError(f"this setup has no {choice} block; use router or plain")
@@ -522,6 +537,7 @@ def main(argv: list[str] | None = None) -> int:
             result = fetch_setup(key, args.state_dir, now=now, force=args.force, offline=args.offline,
                                  base_url=args.base_url)
             print(json.dumps(result, indent=2, sort_keys=True))
+            # 3 means keep the current routing: no usable setup, or one with no recommendation.
             return 0 if result["routing"] == "AVAILABLE" else 3
         setup, _ = load_cached_setup(args.state_dir, key)
         if setup is None:
@@ -540,7 +556,11 @@ def main(argv: list[str] | None = None) -> int:
             policy.update(ledgerRows=len(rows), skippedRows=skipped)
             _write_atomic(path, _dump(policy))
             print(json.dumps(policy, indent=2, sort_keys=True))
-            return 0
+            return 3 if setup["empty"] else 0
+        if setup["empty"]:
+            print(json.dumps({"routing": "NO_RECOMMENDATION", "key": key,
+                              "action": "keep the current routing; no block is written"}))
+            return 3
         result = apply_block(args.file, setup, args.block, write=args.write, confirm=args.confirm)
     except (RoutingError, OSError, UnicodeDecodeError) as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)

@@ -281,9 +281,9 @@ The Auto Fine Tune routing helper needs Python 3.11+ and only the standard
 library. It fetches public routing setups over HTTPS from nobrainer.tech. It
 writes only the project's `.nobrainer/` folder, plus an instruction file after
 a confirmed preview. Without Python or network access and with no cached setup,
-Flow keeps the current routing and reports the benchmark prior as `UNKNOWN`. A
-fetched setup is benchmark evidence, not proof that this client can call a
-model. See [benchmark routing](../skills/nobrainer-auto-fine-tune/references/benchmark-routing.md).
+nobrainer-tech-flow keeps the current routing and reports the benchmark prior as
+`UNKNOWN`; an empty setup is reported as no recommendation. A fetched setup is
+benchmark evidence, not proof that this client can call a model. See [benchmark routing](../skills/nobrainer-auto-fine-tune/references/benchmark-routing.md).
 
 ## Session restart capability levels
 
