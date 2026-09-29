@@ -151,7 +151,7 @@ More first tasks, with acceptance criteria: [docs/TRY_IT.md](docs/TRY_IT.md). Th
 <details>
 <summary><strong>Install manually from a reviewed commit</strong></summary>
 
-Clone a reviewed ref, validate it, preview exact targets, then apply:
+Clone a reviewed ref, validate it, preview what would change, then apply:
 
 ```bash
 (
@@ -164,10 +164,8 @@ Clone a reviewed ref, validate it, preview exact targets, then apply:
   git checkout --detach "$NB_REVIEWED_COMMIT" || exit 3
   test "$(git rev-parse HEAD)" = "$NB_REVIEWED_COMMIT" || exit 3
   python3 scripts/validate_skills.py --suite || exit 4
-  python3 scripts/install_skills.py --client codex || exit 4
-  python3 scripts/install_personalization.py --client codex || exit 4
-  python3 scripts/install_skills.py --client codex --apply || exit 4
-  python3 scripts/install_personalization.py --client codex --apply || exit 4
+  python3 scripts/install.py --client codex || exit 4          # preview: changes nothing
+  python3 scripts/install.py --client codex --apply || exit 4  # link the skills, add the block
 )
 ```
 
@@ -175,10 +173,14 @@ Set `NB_REVIEWED_COMMIT` to the exact full commit SHA you reviewed. Tags and
 branches are rejected because they can move; every failed gate stops before the
 next command.
 
-The installer defaults to all eighteen canonical skills, supports an exact
-subset, refuses foreign targets and can use links or copies. Restart the client
-and perform clean-session discovery before claiming runtime installation. Full
-client-specific steps and rollback are in [Installation](docs/INSTALL.md).
+`install.py` links all eighteen skills and adds one managed instruction block for
+`claude`, `codex`, `opencode` or `copilot`. The preview shows the exact text it
+would write, a target that is not its own link is refused, no authorization is
+ever granted, and `python3 scripts/install.py --client codex --undo --apply`
+reverses it. It needs symbolic links (Windows: Developer Mode). For a subset, a
+copy install, the shared `agents` folder or another client, use the individual
+scripts in [Installation](docs/INSTALL.md). Restart the client and perform
+clean-session discovery before claiming runtime installation.
 
 </details>
 
@@ -388,9 +390,9 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-Current source version: **2.0.1**. Check the
+Current source version: **2.0.2**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.0.1 verification record](docs/releases/v2.0.1.md) for
+for distribution and the [2.0.2 verification record](docs/releases/v2.0.2.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier

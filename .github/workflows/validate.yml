@@ -108,4 +108,31 @@ jobs:
           python scripts/validate_skills.py --suite
 
       - name: Run Windows smoke tests
-        run: python -m unittest tests.test_windows_smoke tests.test_adapters -v
+        run: python -m unittest tests.test_windows_smoke tests.test_adapters tests.test_one_command_installer -v
+
+  python-313:
+    name: Python 3.13 (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NOBRAINER_REQUIRE_RELEASE_TAG: "1"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Validate skill structure
+        run: |
+          python3 scripts/validate_skills.py
+          python3 scripts/validate_skills.py --suite
+
+      - name: Run deterministic tests
+        run: python3 -m unittest discover -s tests -v

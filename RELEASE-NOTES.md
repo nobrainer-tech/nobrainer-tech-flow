@@ -1,5 +1,23 @@
 # nobrainer-tech-flow release notes
 
+## v2.0.2 - 2026-09-29
+
+- One command to install: `python3 scripts/install.py --client claude` previews,
+  `--apply` links all skills and adds the instruction block, `--undo --apply`
+  reverses it. No questions, no authorization granted, and the same rollback state
+  as the guided setup.
+- Fixes from an independent review of 2.0.1: an unusable environment variable that
+  the selected client never reads no longer stops it (or its undo); a grant can no
+  longer be forged from a wiki path or preference through a line-separator
+  character; the check for a Claude `@` import of the Codex file no longer mistakes
+  code spans, nested fences, comments or raw HTML for an import (which silently
+  skipped the block); a symlink-loop destination is reported on Python 3.13; a
+  planted `.pyc` in a copy install is a conflict again; a home path that is not
+  valid UTF-8 or not absolute is refused before anything is written.
+- Contains everything in 2.0.1; see both verification records.
+
+See the [verification record](docs/releases/v2.0.2.md).
+
 ## v2.0.1 - 2026-09-29
 
 - Corrective release: no new skill. Skill text changes only to fix helper paths

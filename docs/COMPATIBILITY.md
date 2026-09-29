@@ -21,8 +21,9 @@ Never promote one level from evidence belonging to another.
 Merge is a repository delivery state, not a client-compatibility level; release
 evidence records it separately.
 
-The current source version is **2.0.1**. Its release scope and reproducible
-checks are recorded in the [2.0.1 verification record](releases/v2.0.1.md).
+The current source version is **2.0.2**. Its release scope and reproducible
+checks are recorded in the [2.0.2 verification record](releases/v2.0.2.md), which
+builds on the [2.0.1 record](releases/v2.0.1.md).
 The [2.0.0](releases/v2.0.0.md) and [1.14.1](releases/v1.14.1.md) records are
 historical evidence, not statements about the current source. The package/entrypoint migration
 is documented in the [migration guide](MIGRATION_TO_FLOW.md).
@@ -128,7 +129,8 @@ rewrite skill bodies.
 
 ## Current-source readback (2026-09-29)
 
-Run against a checkout of the 2.0.1 source with isolated client configuration and
+Run against a checkout of the 2.0.1 source (the adapters, manifests and hooks are
+unchanged in 2.0.2) with isolated client configuration and
 no real model request: the Claude Code session ran against a local stand-in API
 endpoint and Codex against a closed network, and both plugin installs used a
 local checkout, not the GitHub source. The rows show what the client loads and

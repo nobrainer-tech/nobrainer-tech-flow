@@ -54,15 +54,26 @@ not prove that Codex, Claude Code,
 OpenCode or another host exposes those signals; that requires the clean-session
 readback below.
 
-GitHub Actions runs these deterministic layers on Linux and macOS. It checks
+GitHub Actions runs these deterministic layers on Linux and macOS, and the whole
+suite once more on Python 3.13 (a symlink-loop check that relied on an exception
+Python 3.13 no longer raises went unnoticed on 3.11). It checks
 Python, Node and shell syntax plus deterministic adapter contracts, and runs a
 checksum-pinned Gitleaks tree scan on Linux. A Windows job runs the structure
 validators, the adapter tests (including the LF pins for the hook scripts and the
-bootstrap) and [`tests/test_windows_smoke.py`](../tests/test_windows_smoke.py):
+bootstrap), [`tests/test_windows_smoke.py`](../tests/test_windows_smoke.py):
 the hook wrapper under Git Bash, a copy-mode install, personalization and the UTC
-session title. It does not run the whole suite: some historical evidence tests
+session title, and [`tests/test_one_command_installer.py`](../tests/test_one_command_installer.py):
+`install.py` previewing, installing, repeating and undoing on that runner. It does
+not run the whole suite there: some historical evidence tests
 compare text byte for byte and assume LF checkouts. CI does not claim a client UI
 or model followed a skill.
+
+The one-command installer tests run the real scripts against a private home:
+preview writes nothing, apply links every skill and writes one block without any
+standing authorization, a second apply changes nothing, undo restores the profile
+byte for byte, a foreign target is refused before any write, and the variables and
+`--home` select the same place the helpers do. Each was checked against a mutated
+script that must fail it.
 
 ## 3. Forward behavior evaluation
 
