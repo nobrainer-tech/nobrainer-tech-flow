@@ -408,7 +408,15 @@ def legacy_link_snapshot(
     if before_id != after_id:
         return None
 
-    resolved = Path(linked)
+    shown = linked
+    if os.name == "nt":
+        # Windows reports the substitute name, which carries a \\?\ prefix that
+        # resolve() keeps, so it would never equal the checkout path.
+        if shown.startswith("\\\\?\\UNC\\"):
+            shown = "\\\\" + shown[8:]
+        elif shown.startswith("\\\\?\\"):
+            shown = shown[4:]
+    resolved = Path(shown)
     if not resolved.is_absolute():
         resolved = target.parent / resolved
     known_sources = {

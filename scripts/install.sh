@@ -35,6 +35,7 @@ END='<!-- NOBRAINER-TECH-FLOW:END -->'
 LEGACY_TEXT='(^|[^[:alnum:]_])nobrainer-ultra([^[:alnum:]_]|$)|^[[:space:]]*#{1,6}[[:space:]]+nobrainer([ .]?tech)?[[:space:]]+flow([^[:alnum:]_]|$)'
 CONTROL=$(printf '*[\001-\037\177]*')
 TAB=$(printf '\t')
+CR=$(printf '\r')
 
 # The block scripts/install_personalization.py writes without options, byte for byte
 # (a test compares them).
@@ -304,6 +305,8 @@ json_field() {
 read_state() {
 	st_dest= st_created= st_target= st_backup= st_hash= _r_in=
 	while IFS= read -r _r_line || [ -n "$_r_line" ]; do
+		# Python writes the record with CRLF line breaks on Windows.
+		_r_line=${_r_line%"$CR"}
 		case $_r_in in
 			skills)
 				case $_r_line in
@@ -487,14 +490,22 @@ plan_instructions() {
 	file_status=present
 }
 
+# line_of MARKER FILE: the numbers of the lines that hold MARKER and nothing else.
+line_of() {
+	grep -n -x -F -e "$1" -e "$1$CR" "$2" | cut -d : -f 1
+}
+
+# block_lines FILE: sets block_from and block_to to the lines of the one managed
+# block in FILE whose markers stand on lines of their own, or fails.
+block_lines() {
+	block_from=$(line_of "$START" "$1") block_to=$(line_of "$END" "$1")
+	case $block_from in '' | *[!0-9]*) return 1 ;; esac
+	case $block_to in '' | *[!0-9]*) return 1 ;; esac
+	[ "$block_from" -lt "$block_to" ]
+}
+
 block_is_default() {
-	_b_file=$(mktemp) || return 1
-	block >"$_b_file"
-	awk -v s="$START" -v e="$END" 'index($0, s) { on = 1 } on { print } on && index($0, e) { on = 0 }' "$target" |
-		cmp -s - "$_b_file"
-	_b_status=$?
-	rm -f "$_b_file"
-	return "$_b_status"
+	block_lines "$target" && [ "$(head -n "$block_to" "$target" | tail -n "+$block_from")" = "$(block)" ]
 }
 
 variable_note() {
@@ -642,22 +653,21 @@ install() {
 	say "NEXT: restart $label, then give it one small task with a checkable result (docs/TRY_IT.md)."
 }
 
-# The managed block must stand on lines of its own for the line-based undo below.
-block_on_own_lines() {
-	[ "$(grep -c -x -F -e "$START" -e "$START$(printf '\r')" "$1")" = 1 ] &&
-		[ "$(grep -c -x -F -e "$END" -e "$END$(printf '\r')" "$1")" = 1 ]
-}
-
 # restore_into CURRENT BACKUP OUT: CURRENT with its managed block replaced by the one
 # BACKUP held, or removed when BACKUP had none. Everything outside the block stays as
-# it is now; when nothing else changed, OUT is BACKUP byte for byte.
+# it is now; when nothing else changed, OUT is BACKUP byte for byte. head and tail
+# copy bytes as they are, which awk does not do everywhere (Git Bash drops CRs).
 restore_into() {
+	block_lines "$1" || return 1
+	_x_start=$block_from _x_end=$block_to _x_from= _x_to=
+	if [ -n "$2" ] && grep -q -F -e "$START" "$2"; then
+		block_lines "$2" || return 1
+		_x_from=$block_from _x_to=$block_to
+	fi
 	{
-		awk -v s="$START" 'index($0, s) { exit } { print }' "$1"
-		if [ -n "$2" ]; then
-			awk -v s="$START" -v e="$END" 'index($0, s) { on = 1 } on { print } on && index($0, e) { exit }' "$2"
-		fi
-		awk -v e="$END" 'after { print } index($0, e) { after = 1 }' "$1"
+		{ [ "$_x_start" -eq 1 ] || head -n "$((_x_start - 1))" "$1"; } &&
+			{ [ -z "$_x_from" ] || head -n "$_x_to" "$2" | tail -n "+$_x_from"; } &&
+			tail -n "+$((_x_end + 1))" "$1"
 	} >"$3" || return 1
 	if [ -n "$2" ] && { cat "$2"; printf '\n'; } | cmp -s - "$3"; then
 		# The setup added one line break before the block, and it goes too.
@@ -715,7 +725,8 @@ undo() {
 				say "PRESERVED: personalization changed since setup: $st_target"
 				exit 3
 			fi
-			if ! block_on_own_lines "$st_target" || { [ -n "$st_backup" ] && grep -q -F -e "$START" "$st_backup" && ! block_on_own_lines "$st_backup"; }; then
+			# The line-based undo below needs each block on lines of its own.
+			if ! block_lines "$st_target" || { [ -n "$st_backup" ] && grep -q -F -e "$START" "$st_backup" && ! block_lines "$st_backup"; }; then
 				die 3 "the managed block in $st_target does not stand on lines of its own" \
 					"undo it with python3 scripts/install.py --client $client --undo --apply"
 			fi

@@ -280,6 +280,37 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertFalse((home / ".claude" / "skills").exists())
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_windows_line_breaks_in_the_record_and_the_file_are_undone_byte_for_byte(self) -> None:
+        for undoer in ("sh", "py"):
+            with self.subTest(undone_by=undoer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                earlier = run_py(str(PERSONALIZATION), "--client", "claude", "--home", str(home), "--apply", home=home)
+                self.assertEqual(0, earlier.returncode, earlier.stderr)
+                instructions = home / ".claude" / "CLAUDE.md"
+                # A Windows editor saved the file, its block included, with CRLF line breaks.
+                block = instructions.read_bytes().replace(b"\n", b"\r\n")
+                original = b"# Mine\r\n\r\n" + block + b"\r\n# After\r\n"
+                instructions.write_bytes(original)
+                flags = ("--client", "claude", "--home", str(home))
+                applied = run_py(str(INSTALL_PY), *flags, "--apply", home=home)
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                self.assertNotEqual(original, instructions.read_bytes())
+                # Python writes the record with CRLF line breaks on Windows.
+                record = home / ".nobrainer-flow-onboarding-claude.json"
+                record.write_bytes(record.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+
+                if undoer == "sh":
+                    undone = run_sh(*flags, "--undo", "--apply", home=home)
+                else:
+                    undone = run_py(str(INSTALL_PY), *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertIn("is back as it was before the setup", undone.stdout)
+                self.assertEqual(original, instructions.read_bytes())
+                self.assertFalse((home / ".claude" / "skills").exists())
+                self.assertFalse(record.exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_edits_outside_the_block_survive_the_undo(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
@@ -579,7 +610,7 @@ class ShellInstallerTests(unittest.TestCase):
     @unittest.skipIf(os.name == "nt", "the tool sandbox is built from POSIX paths")
     def test_it_runs_with_no_python_on_the_path(self) -> None:
         tools = (
-            "sh uname mktemp rm mkdir ln rmdir cat sed tr grep cut awk cmp tail od date cp mv sort chmod git"
+            "sh uname mktemp rm mkdir ln rmdir cat sed tr grep cut head tail cmp od date cp mv sort chmod git"
         ).split()
         with tempfile.TemporaryDirectory() as temp:
             sandbox = Path(temp) / "bin"

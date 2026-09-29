@@ -364,10 +364,10 @@ class OneCommandInstallerTests(unittest.TestCase):
             original = b"# Mine\n"
             instructions.write_bytes(original)
             self.assertEqual(0, self.install(home, "--apply").returncode)
-            older = instructions.read_text(encoding="utf-8").replace(
-                "Split substantial work into bounded tasks", "Split work into bounded tasks"
+            older = instructions.read_bytes().replace(
+                b"Split substantial work into bounded tasks", b"Split work into bounded tasks"
             )
-            instructions.write_text(older, encoding="utf-8")
+            instructions.write_bytes(older)
 
             again = self.install(home, "--apply")
             self.assertEqual(0, again.returncode, again.stdout + again.stderr)
