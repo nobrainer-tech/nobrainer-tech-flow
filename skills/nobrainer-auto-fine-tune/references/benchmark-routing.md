@@ -76,6 +76,11 @@ file that fails the check. Report its result as it is:
 - `stale: true`: past `expiresAt`. The setup is still usable, but report it as
   stale; a refresh is due.
 - `UNKNOWN` (exit 3): no usable copy for this key. Keep the current routing.
+- `MANIFEST_REFUSED` (exit 3, `routing: UNKNOWN`): the manifest arrived but has
+  no `approve` review, a `routeOrder` this helper does not know, or is not a
+  valid manifest. This fails closed: no setup is fetched and the cached copy is
+  not used. Keep the current routing and ask for a nobrainer-tech-flow update;
+  a new route arrives as `v2`, not as a change to `v1`.
 - `routing: NO_RECOMMENDATION` (exit 3): the setup is valid but `empty`, because
   nothing reachable fits the limits. Keep the current routing.
 
@@ -97,8 +102,10 @@ Exit 3 always means keep the current routing; `routing` says why.
   job. When `empty` is `true`, every pick is `null`, `subagents` is empty and
   `blocks` is `null`.
 - `candidates[job]` holds up to six picks, distinct by `id` + `effort`, so the
-  same model can appear at two efforts. The first is always `jobs[job]`, the
-  default pick; with no local evidence the order stays as published.
+  same model can appear at two efforts. The order is meaningful: the first is
+  always `jobs[job]`, the default pick, followed by the top three, fastest and
+  cheapest. With no local evidence the order stays as published.
+- `jobs.bulk` is a fixed pick with no candidates; it is never re-ordered.
 - `subagents` is the default worker, then the fallback chain for quota or
   availability errors. The same family can appear twice on different routes;
   those are separate quotas, so the second one is a real fallback.

@@ -144,6 +144,19 @@ class FetchTests(Base):
         result = self.fetch(server)
         self.assertEqual((result["routing"], result["integrity"]), ("AVAILABLE", "UNVERIFIED"))
 
+    def test_refused_manifest_fails_closed_even_with_a_cache(self) -> None:
+        self.fetch(self.server())
+        good = json.loads(manifest_for(self.setup_bytes))
+        for manifest in (dict(good, routeOrder=[*routing.ROUTE_ORDER, "newplan"]),
+                         dict(good, review={"reviewedAt": "2026-09-30T09:00:00Z", "reviewer": "r", "verdict": "reject"}),
+                         "not json"):
+            body = manifest.encode() if isinstance(manifest, str) else json.dumps(manifest).encode()
+            server = self.server(manifest=body)
+            result = self.fetch(server, force=True)
+            self.assertEqual((result["routing"], result["status"]), ("UNKNOWN", "MANIFEST_REFUSED"))
+            self.assertEqual([url for url, _ in server.calls], [MANIFEST_URL])
+        self.assertEqual((self.state / "routing-cache" / "manifest.json").read_bytes(), manifest_for(self.setup_bytes))
+
     def test_setup_for_another_key_is_refused(self) -> None:
         other = json.dumps(dict(self.setup, key="openai.f0.b0")).encode()
         self.assertEqual(self.fetch(self.server(other))["routing"], "UNKNOWN")

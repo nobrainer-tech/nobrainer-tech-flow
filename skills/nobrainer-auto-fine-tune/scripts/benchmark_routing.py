@@ -157,7 +157,7 @@ def validate_manifest(data: Any) -> dict[str, Any]:
     if not isinstance(data, dict) or data.get("schema") != "nobrainer-routing-manifest/1":
         raise RoutingError("not a nobrainer-routing-manifest/1 file")
     if tuple(data.get("routeOrder") or ()) != ROUTE_ORDER:
-        raise RoutingError("manifest route order differs from this helper; update Flow")
+        raise RoutingError("manifest route order differs from this helper; update nobrainer-tech-flow")
     if not isinstance(data.get("review"), dict) or data["review"].get("verdict") != "approve":
         raise RoutingError("manifest has no approve verdict")
     setups = data.get("setups")
@@ -260,16 +260,22 @@ def fetch_setup(key: str, state_dir: Path, *, now: dt.datetime, force: bool = Fa
         return _report(key, cached, entry, "CACHED_TODAY", now)
 
     manifest, notes = None, []
+    old = cache / "manifest.json"
     try:
-        old = cache / "manifest.json"
         etag = (state.get("manifest") or {}).get("etag") if old.is_file() else None
         code, body, new_etag = fetcher(base_url + "manifest.json", etag)
-        manifest = validate_manifest(json.loads(old.read_bytes() if code == 304 else body))
+    except (RoutingError, OSError) as exc:
+        notes.append(f"manifest unavailable: {exc}")
+    else:
+        try:
+            manifest = validate_manifest(json.loads(old.read_bytes() if code == 304 else body))
+        except (RoutingError, ValueError, OSError) as exc:
+            # Fail closed: a manifest that arrived but is unapproved or not understood blocks every setup.
+            return {"routing": "UNKNOWN", "status": "MANIFEST_REFUSED", "key": key, "reason": str(exc),
+                    "action": "keep the current routing; update nobrainer-tech-flow if the manifest changed"}
         if code != 304:
             _write_atomic(old, body)
             state["manifest"] = {"etag": new_etag, "version": manifest.get("version")}
-    except (RoutingError, ValueError, OSError) as exc:
-        notes.append(f"manifest unavailable: {exc}")
     expected = None
     if manifest is not None:
         expected = manifest["setups"].get(key)
