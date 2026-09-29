@@ -170,6 +170,37 @@ class OneCommandInstallerTests(unittest.TestCase):
             self.assertEqual(original, instructions.read_bytes())
             self.assertFalse((home / ".nobrainer-flow-onboarding-claude.json").exists())
 
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_claude_profile_that_imports_the_codex_file_keeps_its_single_copy_of_the_block(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            codex = subprocess.run(
+                [sys.executable, str(PERSONALIZATION), "--client", "codex", "--home", str(home), "--apply"],
+                cwd=ROOT, text=True, capture_output=True, check=False, stdin=subprocess.DEVNULL,
+            )
+            self.assertEqual(0, codex.returncode, codex.stderr)
+            instructions = home / ".claude" / "CLAUDE.md"
+            instructions.parent.mkdir(parents=True)
+            original = "@~/.codex/AGENTS.md\nClaude-only rules.\n"
+            instructions.write_text(original, encoding="utf-8")
+
+            preview = self.run_install("--client", "claude", "--home", str(home))
+            self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+            self.assertIn("INHERITS_CODEX", preview.stdout)
+
+            applied = self.run_install("--client", "claude", "--home", str(home), "--apply")
+            self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+            self.assertIn("inherited from the Codex global instructions", applied.stdout)
+            self.assertEqual(original, instructions.read_text(encoding="utf-8"))
+            self.assertTrue((home / ".claude" / "skills" / "nobrainer-tech-flow").is_symlink())
+
+            undone = self.run_install("--client", "claude", "--home", str(home), "--undo", "--apply")
+            self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+            self.assertIn(f"SKILLS: {SKILL_COUNT} unlinked", undone.stdout)
+            self.assertNotIn("INSTRUCTIONS:", undone.stdout)
+            self.assertEqual(original, instructions.read_text(encoding="utf-8"))
+            self.assertFalse((home / ".claude" / "skills").exists())
+
     def test_a_foreign_skill_is_refused_before_anything_is_written(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
