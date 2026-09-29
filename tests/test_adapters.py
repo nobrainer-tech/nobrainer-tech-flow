@@ -8,23 +8,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from tests.support import find_bash
+
 
 ROOT = Path(__file__).resolve().parents[1]
 BOOTSTRAP_MARKER = "NOBRAINER_BOOTSTRAP_V1"
-
-
-def bash_executable() -> str:
-    """Git Bash on Windows: a bare `bash` finds the WSL launcher in System32 first."""
-
-    if os.name == "nt":
-        for candidate in (
-            r"C:\Program Files\Git\bin\bash.exe",
-            r"C:\Program Files (x86)\Git\bin\bash.exe",
-        ):
-            if Path(candidate).is_file():
-                return candidate
-    return "bash"
-
 
 CANONICAL_SKILLS = {
     "nobrainer-codex-context",
@@ -122,10 +110,13 @@ class AdapterTests(unittest.TestCase):
                 "additional_context",
             ),
         )
+        bash = find_bash()
+        if bash is None:
+            self.skipTest("bash is not available")
         for extra_env, expected_key in cases:
             with self.subTest(expected_key=expected_key):
-                # Keep the system variables (Git Bash needs SYSTEMROOT on Windows) and
-                # drop only the host variables, so the case names exactly one host.
+                # Inherit the environment and drop only the host variables, so the case
+                # names exactly one host.
                 environment = {
                     key: value
                     for key, value in os.environ.items()
@@ -133,7 +124,7 @@ class AdapterTests(unittest.TestCase):
                 }
                 environment.update(extra_env)
                 result = subprocess.run(
-                    [bash_executable(), str(hook)],
+                    [bash, str(hook)],
                     cwd=ROOT,
                     env=environment,
                     text=True,
@@ -305,12 +296,14 @@ if (result !== undefined) process.exit(2);
                 self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
     def test_hook_scripts_keep_lf_line_endings_on_every_platform(self) -> None:
+        # A Windows checkout with core.autocrlf=true turns unpinned text files into CRLF:
+        # bash cannot run the hook scripts then, and the bootstrap would reach the model
+        # with carriage returns.
         attributes = (ROOT / ".gitattributes").read_text(encoding="utf-8").splitlines()
-        self.assertIn("hooks/session-start text eol=lf", attributes)
-        self.assertIn("hooks/run-hook.cmd text eol=lf", attributes)
-        for name in ("session-start", "run-hook.cmd"):
-            with self.subTest(script=name):
-                self.assertNotIn(b"\r", (ROOT / "hooks" / name).read_bytes())
+        for name in ("hooks/session-start", "hooks/run-hook.cmd", "adapters/bootstrap.md"):
+            with self.subTest(file=name):
+                self.assertIn(f"{name} text eol=lf", attributes)
+                self.assertNotIn(b"\r", (ROOT / name).read_bytes())
 
     def test_codex_marketplace_entry_matches_the_plugin_manifest(self) -> None:
         marketplace = json.loads(
@@ -319,6 +312,8 @@ if (result !== undefined) process.exit(2);
         manifest = json.loads(
             (ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
         )
+        # docs/INSTALL.md and docs/COMPATIBILITY.md give the `plugin@marketplace` form.
+        self.assertEqual("nobrainer-tech-skills-dev", marketplace["name"])
         (entry,) = marketplace["plugins"]
         self.assertEqual(manifest["name"], entry["name"])
         self.assertEqual({"source": "local", "path": "./"}, entry["source"])

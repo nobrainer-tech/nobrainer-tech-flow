@@ -89,7 +89,7 @@ not mean the external client's parser accepted or loaded the package.
 | Gemini CLI | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: extension manifest and owned context include | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Kimi Code | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: canonical skills path, `nobrainer-tech-flow` session-start field and native-tool boundary | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Devin CLI | `SOURCE_VALIDATED` | no dedicated adapter | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
-| Pi | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: package resources, dedupe, lifecycle reset and post-compaction transform | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
+| Pi | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: package resources and per-request dedupe transform | `CLIENT_LOADED`: resource loader `0.87.1` only, no session (see the current-source readback) | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Hermes Agent | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: root Agent Plugins v1 manifest only; no bootstrap | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Antigravity and other plugin hosts | `SOURCE_VALIDATED` | no host-specific contract | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Generic Agent Skills consumers | `SOURCE_VALIDATED` | canonical folders only | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
@@ -101,24 +101,6 @@ badge: an unknown harness gets portable skill folders, then needs its own
 discovery/bootstrap proof before promotion.
 
 ## Adapter contract
-
-### Current-source readback (2026-09-29)
-
-Run on Linux against a checkout of the 2.0.1 source, with isolated client
-configuration and no real model request: the Claude Code session ran against a
-local stand-in API endpoint and Codex against a closed network. They show what
-the client loads and sends, not how a model behaves.
-
-| Client | Readback | Level |
-|---|---|---|
-| Claude Code `2.1.284` | `claude plugin validate` passed. `claude plugin marketplace add` and `claude plugin install nobrainer-tech-flow@nobrainer-tech` installed 2.0.1 with 18 skills. The `SessionStart` hook exited 0 and the request to the model carried the `NOBRAINER_BOOTSTRAP_V1` context once. With `CLAUDE_CONFIG_DIR` set, guided setup installed into that directory, the client listed the installed skills, the instruction block reached the request and `~/.claude` stayed untouched. | `CLIENT_LOADED`; bootstrap delivery observed; routing unverified |
-| Codex `0.158.0` | `codex plugin marketplace add` and `codex plugin add nobrainer-tech-flow@nobrainer-tech-skills-dev` installed 2.0.1. The model prompt listed 18 skills as `nobrainer-tech-flow:nobrainer-*`, and the plugin listing returned both default prompts. With 2.0.0 neither plugin name installed. | `CLIENT_LOADED`; routing unverified |
-| Pi `0.87.1` (resource loader only) | The extension loaded with its `resources_discover` and `context` handlers, 18 skills and no diagnostics. | `CLIENT_LOADED` for the loader; no session |
-
-The other rows above keep their earlier level: no readback of OpenCode, Cursor,
-Gemini CLI, Kimi Code or Copilot CLI was made for this source, and no Windows
-host was available; the Windows CI job covers the scripts, hooks and adapters
-listed in [Testing](TESTING.md).
 
 All adapters point at the same eighteen directories. They may expose discovery and
 one small `NOBRAINER_BOOTSTRAP_V1` routing context, but they must not copy or
@@ -143,6 +125,26 @@ rewrite skill bodies.
   explicitly selected until a clean runtime transcript proves more.
 - Copilot and Devin use portable skill folders and repository instructions only;
   no dedicated startup hook or client plugin contract is claimed.
+
+## Current-source readback (2026-09-29)
+
+Run against a checkout of the 2.0.1 source with isolated client configuration and
+no real model request: the Claude Code session ran against a local stand-in API
+endpoint and Codex against a closed network, and both plugin installs used a
+local checkout, not the GitHub source. The rows show what the client loads and
+sends, not how a model behaves.
+
+| Client | Readback | Level |
+|---|---|---|
+| Claude Code `2.1.284` (Linux) | `claude plugin validate` passed. `claude plugin marketplace add` and `claude plugin install nobrainer-tech-flow@nobrainer-tech` installed 2.0.1 with 18 skills. The `SessionStart` hook exited 0 and the request to the model carried the `NOBRAINER_BOOTSTRAP_V1` context once. With `CLAUDE_CONFIG_DIR` set, guided setup installed into that directory, the client listed the installed skills, the instruction block reached the request and `~/.claude` stayed untouched. | `CLIENT_LOADED`; bootstrap delivery observed; routing unverified |
+| Codex `0.158.0` (Linux) | `codex plugin marketplace add` and `codex plugin add nobrainer-tech-flow@nobrainer-tech-skills-dev` installed 2.0.1. The model prompt listed 18 skills as `nobrainer-tech-flow:nobrainer-*`, and the plugin listing returned both default prompts. With 2.0.0 neither plugin name installed. | `CLIENT_LOADED`; routing unverified |
+| Pi `0.87.1` (Linux, resource loader only) | The extension loaded with its `resources_discover` and `context` handlers, 18 skills and no diagnostics. | `CLIENT_LOADED` for the loader; no session |
+| Windows (CI only: GitHub-hosted `windows-latest`, Git Bash, Python 3.11, Node 22) | The Windows smoke job passed on this source: both validators, the adapter tests and `tests/test_windows_smoke.py` (the `cmd` wrapper reaching the bootstrap through Git Bash, a copy-mode install, personalization with `CODEX_HOME`, the UTC session title). | `REPOSITORY_CHECKED` on Windows; no client read back |
+
+The other rows above keep their earlier level: no readback of OpenCode, Cursor,
+Gemini CLI, Kimi Code or Copilot CLI was made for this source. The Windows job
+runs the validators and the modules listed in [Testing](TESTING.md), not the
+whole suite.
 
 ## Clean-session acceptance
 

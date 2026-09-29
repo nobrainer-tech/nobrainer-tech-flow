@@ -263,7 +263,9 @@ def _github_json(endpoint: str, timeout: int = 8) -> tuple[dict[str, object] | N
             result = subprocess.run(
                 [gh, "api", "--hostname", "github.com", endpoint],
                 cwd=ROOT,
-                text=True,
+                # GitHub JSON is UTF-8; the Windows code page cannot decode all of it.
+                encoding="utf-8",
+                errors="replace",
                 capture_output=True,
                 timeout=timeout,
                 check=False,
@@ -888,7 +890,13 @@ def main(argv: list[str] | None = None) -> int:
             args.dest or skills_destination(args.client, args.home, args.environ)
         ).expanduser().resolve()
         if previous and Path(str(previous["destination"])).expanduser().resolve() != destination:
-            raise ValueError(f"existing setup state belongs to a different skills destination: {previous['destination']}")
+            raise ValueError(
+                "existing setup state belongs to a different skills destination: "
+                f"{previous['destination']} (after an upgrade this can mean the earlier "
+                "setup used the default location instead of CLAUDE_CONFIG_DIR or "
+                "XDG_CONFIG_HOME: undo it with --rollback --apply, or pass --home to "
+                "keep that location)"
+            )
         before = installed_ids(destination)
         ranked = recommendations(
             args.work_profile,

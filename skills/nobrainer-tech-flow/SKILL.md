@@ -18,9 +18,8 @@ Repository work follows the [task worktree lifecycle](references/worktrees.md).
 
 ## Automatic session care
 
-On explicit Flow entry, run Sessions [startup and health](../nobrainer-sessions/references/session-restart.md#automatic-start-and-observation).
+On explicit Flow entry, when `nobrainer-sessions` is installed, run Sessions [startup and health](../nobrainer-sessions/references/session-restart.md#automatic-start-and-observation); otherwise stay in MAIN.
 Verify fresh MAIN takeover before authorized archive; installation grants no consent.
-Without `nobrainer-sessions`, skip this and stay in MAIN.
 
 ## Current instructions
 

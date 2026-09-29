@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import io
+import re
 import os
 import shutil
 import subprocess
@@ -1326,14 +1327,24 @@ class InstallerRobustnessTests(unittest.TestCase):
             self.assertEqual(0, complete.returncode, complete.stderr)
             self.assertNotIn("NOTE:", complete.stdout)
 
+
+class CrossSkillLinkTests(unittest.TestCase):
+    """A subset install has dead links when a skill links into a skill that is absent."""
+
+    def load_module(self):
+        spec = importlib.util.spec_from_file_location("install_skills_links", INSTALLER)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def catalogue(self, module) -> dict[str, Path]:
+        return {path.parent.name: path.parent for path in module.SKILLS.glob("*/SKILL.md")}
+
     def test_cross_skill_links_are_the_documented_dependencies(self) -> None:
-        # A subset install has dead links when a skill links into a skill that is
-        # absent. Adding a dependency is fine, but it must be deliberate: update this
-        # map and the subset example in docs/INSTALL.md together.
+        # Adding a dependency is fine, but it must be deliberate: update this map and the
+        # subset example in docs/INSTALL.md together.
         module = self.load_module()
-        catalogue = {
-            path.parent.name: path.parent for path in module.SKILLS.glob("*/SKILL.md")
-        }
+        catalogue = self.catalogue(module)
         actual = {
             name: sorted(module.linked_skills(name, catalogue))
             for name in sorted(catalogue)
@@ -1351,6 +1362,18 @@ class InstallerRobustnessTests(unittest.TestCase):
             },
             actual,
         )
+
+    def test_the_subset_documented_in_install_md_has_no_dead_links(self) -> None:
+        module = self.load_module()
+        text = (ROOT / "docs" / "INSTALL.md").read_text(encoding="utf-8")
+        example = re.search(r"repeating `--skill`:\n\n```bash\n(.*?)```", text, re.DOTALL)
+        self.assertIsNotNone(example, "the explicit-subset example moved")
+        names = re.findall(r"--skill (\S+)", example.group(1))
+        self.assertGreaterEqual(len(names), 2)
+        with tempfile.TemporaryDirectory() as temp:
+            self.assertEqual(
+                [], module.unmet_references(names, self.catalogue(module), Path(temp) / "skills")
+            )
 
 
 if __name__ == "__main__":

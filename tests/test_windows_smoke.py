@@ -1,8 +1,8 @@
 """Behaviours that broke, or could break, on Windows.
 
 The module runs on every platform; the Windows-only checks skip elsewhere. CI runs it
-on a Windows runner, which is the only place the hook wrapper, the copy-mode
-publish and the checkout line-endings are exercised for real.
+on a Windows runner, which is the only place the hook wrapper and the copy-mode
+publish are exercised for real.
 """
 
 from __future__ import annotations
@@ -16,23 +16,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from tests.support import find_bash
+
 
 ROOT = Path(__file__).resolve().parents[1]
 MARKER = "NOBRAINER_BOOTSTRAP_V1"
 CONFIG_VARIABLES = ("CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_CONFIG_HOME")
-
-
-def find_bash() -> str | None:
-    """Git Bash on Windows (the hooks' documented runtime), otherwise bash on PATH."""
-
-    if os.name == "nt":
-        for candidate in (
-            r"C:\Program Files\Git\bin\bash.exe",
-            r"C:\Program Files (x86)\Git\bin\bash.exe",
-        ):
-            if Path(candidate).is_file():
-                return candidate
-    return shutil.which("bash")
 
 
 def run(command: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
@@ -59,13 +48,6 @@ def clean_environment(**extra: str) -> dict[str, str]:
 
 
 class HookScriptTests(unittest.TestCase):
-    def test_hook_scripts_are_checked_out_with_lf_endings(self) -> None:
-        # Git for Windows checks text files out as CRLF by default, and bash cannot
-        # run a CRLF script, so .gitattributes pins these two to LF.
-        for name in ("session-start", "run-hook.cmd"):
-            with self.subTest(script=name):
-                self.assertNotIn(b"\r", (ROOT / "hooks" / name).read_bytes())
-
     @unittest.skipIf(find_bash() is None, "bash is not available")
     def test_session_start_emits_the_bootstrap_for_each_host(self) -> None:
         bash = find_bash()
@@ -96,14 +78,39 @@ class HookScriptTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertIn(MARKER, result.stdout)
 
+    @unittest.skipIf(os.name == "nt", "a backslash cannot be part of a Windows directory name")
+    @unittest.skipIf(find_bash() is None, "bash is not available")
+    def test_session_start_still_works_in_a_directory_with_a_backslash_in_its_name(self) -> None:
+        # Only Windows hosts pass backslash paths; on POSIX a backslash is an ordinary
+        # character and must not be rewritten.
+        with tempfile.TemporaryDirectory() as raw:
+            plugin = Path(raw) / "back\\slash"
+            (plugin / "hooks").mkdir(parents=True)
+            (plugin / "adapters").mkdir()
+            shutil.copy(ROOT / "hooks" / "session-start", plugin / "hooks" / "session-start")
+            shutil.copy(ROOT / "adapters" / "bootstrap.md", plugin / "adapters" / "bootstrap.md")
+
+            result = run(
+                [find_bash(), str(plugin / "hooks" / "session-start")],
+                env=clean_environment(CLAUDE_PLUGIN_ROOT=str(plugin)),
+            )
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn(MARKER, result.stdout)
+
     @unittest.skipIf(shutil.which("sh") is None, "sh is not available")
     def test_wrapper_shell_half_runs_under_a_plain_posix_sh(self) -> None:
         # A host may start the wrapper through /bin/sh (dash on Debian and Ubuntu), so
         # its shell half must not use bash-only syntax; session-start, which the
         # wrapper hands to bash, may. Forward slashes: how hosts build the command.
+        environment = clean_environment(CLAUDE_PLUGIN_ROOT=str(ROOT))
+        bash = find_bash()
+        if os.name == "nt" and bash is not None:
+            # The wrapper's inner `exec bash` must find Git Bash, not the WSL launcher.
+            environment["PATH"] = str(Path(bash).parent) + os.pathsep + environment.get("PATH", "")
         result = run(
             ["sh", (ROOT / "hooks" / "run-hook.cmd").as_posix(), "session-start"],
-            env=clean_environment(CLAUDE_PLUGIN_ROOT=str(ROOT)),
+            env=environment,
         )
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertIn(MARKER, result.stdout)

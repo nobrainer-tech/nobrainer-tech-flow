@@ -268,10 +268,13 @@ class SuiteTests(unittest.TestCase):
         )
 
     def test_canonical_skills_and_aliases(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
         for name, alias in CANONICAL.items():
             with self.subTest(name=name):
                 skill = SKILLS / name / "SKILL.md"
                 self.assertTrue(skill.is_file(), f"missing {skill}")
+                # The README table once listed 17 of the 18 skills.
+                self.assertIn(f"[`{name}`](skills/{name}/)", readme)
                 frontmatter = parse_frontmatter(skill)
                 self.assertEqual({"name", "description"}, set(frontmatter))
                 self.assertEqual(name, frontmatter["name"])

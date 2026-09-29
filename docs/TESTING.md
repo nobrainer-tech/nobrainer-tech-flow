@@ -57,10 +57,12 @@ readback below.
 GitHub Actions runs these deterministic layers on Linux and macOS. It checks
 Python, Node and shell syntax plus deterministic adapter contracts, and runs a
 checksum-pinned Gitleaks tree scan on Linux. A Windows job runs the structure
-validators, the adapter tests and
-[`tests/test_windows_smoke.py`](../tests/test_windows_smoke.py): the hook wrapper
-under Git Bash, LF hook checkouts, a copy-mode install, personalization and the
-UTC session title. CI does not claim a client UI or model followed a skill.
+validators, the adapter tests (including the LF pins for the hook scripts and the
+bootstrap) and [`tests/test_windows_smoke.py`](../tests/test_windows_smoke.py):
+the hook wrapper under Git Bash, a copy-mode install, personalization and the UTC
+session title. It does not run the whole suite: some historical evidence tests
+compare text byte for byte and assume LF checkouts. CI does not claim a client UI
+or model followed a skill.
 
 ## 3. Forward behavior evaluation
 

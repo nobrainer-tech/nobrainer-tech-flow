@@ -2,7 +2,8 @@
 
 ## v2.0.1 - 2026-09-29
 
-- Corrective release: no new skill and no routing change.
+- Corrective release: no new skill. Skill text changes only to fix helper paths
+  and to say what to do when `nobrainer-sessions` is not installed.
 - Codex: the marketplace entry now installs and the default prompts fit the
   client's limit, so they are no longer dropped.
 - Windows: copy-mode installs work, hook scripts stay LF, and CI has a Windows job.

@@ -251,11 +251,14 @@ through the client-supported Agent Skills path. The checked adapter includes a
 `SessionStart` hook that injects only `adapters/bootstrap.md`.
 
 ```bash
-claude plugin marketplace add nobrainer-tech/nobrainer-tech-flow
+claude plugin marketplace add /path/to/reviewed/nobrainer-tech-flow
 claude plugin install nobrainer-tech-flow@nobrainer-tech
 ```
 
-The same commands work inside a session as `/plugin marketplace add ...` and
+The path is the checkout pinned to a reviewed commit in "Safe default" above.
+`claude plugin marketplace add nobrainer-tech/nobrainer-tech-flow` tracks the
+default branch instead, so prefer it only where that is acceptable. The same
+commands work inside a session as `/plugin marketplace add ...` and
 `/plugin install ...`. A plugin namespaces its skills, so the entry point is
 `/nobrainer-tech-flow:nobrainer-tech-flow`; skills installed with
 `--client claude` keep the plain `/nobrainer-tech-flow`. Either way the model
@@ -264,8 +267,9 @@ can also load the skill by name. The `$nobrainer-tech-flow` form is Codex syntax
 Claude Code lists every skill name but drops the descriptions of the least-used
 skills once the listing passes its budget (1% of the context window by default).
 In a session that already carries many skills the Flow descriptions may reach
-the model as names only; the entry point still works because the bootstrap
-and the personalization block call it by name. The companion
+the model as names only. The bootstrap and the personalization block name the
+entry skill, so it can still be loaded by name; what is lost is routing to the
+specialists by their descriptions. The companion
 [`nobrainer-claude`](https://github.com/nobrainer-tech/nobrainer-claude)
 installer can raise the budget on request (`--raise-skill-budget`).
 
@@ -306,10 +310,9 @@ legacy entries under `~/.codex/skills` are not deleted or rewritten automaticall
 ### Cursor
 
 Use `.cursor-plugin/plugin.json`. Its session hook runs the shared bootstrap
-through `hooks/run-hook.cmd`, supporting Git Bash or another available Bash
-runtime on Windows. Repository tests cover the manifest and the hook script;
-Cursor itself has not been read back, so confirm one injection and native skill
-discovery after restart.
+through `hooks/run-hook.cmd`, which uses Git Bash on Windows. Repository tests
+cover the manifest and the hook script; Cursor itself has not been read back, so
+confirm one injection and native skill discovery after restart.
 
 ### OpenCode
 
@@ -357,11 +360,14 @@ extension contract; a real client readback is still required.
 
 ### Windows
 
-Run the Python scripts with `py -3` or `python`. The hook adapters need Git Bash
-or another Bash on `PATH`; the repository pins the hook scripts to LF endings so
-a Git checkout with `core.autocrlf=true` still runs them. Creating symlinks
-needs developer mode or an elevated shell; without either, install with
-`--mode copy`.
+Run the Python scripts with `py -3` or `python`. The hook adapters need Git Bash,
+not the `bash.exe` launcher that Windows ships for WSL (Windows finds that one
+first when a command says just `bash`). The repository pins the hook scripts and
+the bootstrap to LF endings so a Git checkout with `core.autocrlf=true` still
+runs them. Creating symlinks needs developer mode or an elevated shell; without
+either, install with `--mode copy`. CI runs the structure validators, the
+adapter tests and a Windows smoke module on a Windows runner; it does not run the
+whole suite there, and no client was read back on Windows.
 
 ### Other Agent Skills clients
 
@@ -386,7 +392,8 @@ After every install or upgrade:
 2. list/read back the loaded source and skill count;
 3. start a clean task with no pasted skill body;
 4. issue one explicit canonical request and one semantic non-trivial request;
-   for Codex the canonical form is `$nobrainer-tech-flow`;
+   for Codex the canonical form is `$nobrainer-tech-flow` (a plugin install lists
+   the skills under the plugin's name, so use the name the client shows);
 5. confirm nobrainer-tech-flow asks no more than one ordinary requirements round, shows one
    compact Progress checklist and routes a specialist only when needed;
 6. issue a one-step task and confirm it remains direct;

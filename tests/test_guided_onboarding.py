@@ -252,6 +252,18 @@ class GuidedOnboardingTests(unittest.TestCase):
             )
         )
 
+    def test_github_cli_output_is_decoded_as_utf_8_on_every_platform(self) -> None:
+        completed = subprocess.CompletedProcess(
+            args=["gh"], returncode=0, stdout='{"language":"Python"}', stderr=""
+        )
+        with mock.patch.object(GUIDED.shutil, "which", return_value="/usr/bin/gh"), mock.patch.object(
+            GUIDED.subprocess, "run", return_value=completed
+        ) as runner:
+            GUIDED._github_json("repos/acme/repo")
+        # A Windows code page cannot decode every character GitHub returns.
+        self.assertEqual("utf-8", runner.call_args.kwargs["encoding"])
+        self.assertEqual("replace", runner.call_args.kwargs["errors"])
+
     def test_partial_selection_personalization_readback_and_rollback(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -681,6 +693,40 @@ class GuidedOnboardingTests(unittest.TestCase):
             )
             self.assertEqual(0, rolled_back.returncode, rolled_back.stdout + rolled_back.stderr)
             self.assertEqual(original, instruction.read_text(encoding="utf-8"))
+
+    @unittest.skipIf(os.name == "nt", "creating symlinks needs elevated rights on Windows")
+    def test_a_setup_made_before_config_dir_support_can_be_rolled_back_and_redone(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            home = root / "home"
+            profile = root / "claude-profile"
+            variables = {"CLAUDE_CONFIG_DIR": str(profile)}
+            common = (
+                "--repo-url", "https://github.com/example/work-repo", "--offline",
+                "--client", "claude",
+            )
+            # 2.0.0 always wrote under the home directory, whatever CLAUDE_CONFIG_DIR said.
+            earlier = self.run_setup(
+                *common, *self.ANSWERS, "--selection", "01", "--home", str(home), "--apply"
+            )
+            self.assertEqual(0, earlier.returncode, earlier.stdout + earlier.stderr)
+
+            blocked = self.run_setup_in(
+                home, variables, *common, *self.ANSWERS, "--selection", "01", "--apply"
+            )
+            self.assertEqual(2, blocked.returncode)
+            self.assertIn("--rollback --apply", blocked.stderr)
+            self.assertFalse(profile.exists())
+
+            undone = self.run_setup_in(home, variables, *common, "--rollback", "--apply")
+            self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+            self.assertFalse((home / ".claude" / "skills").exists())
+
+            redone = self.run_setup_in(
+                home, variables, *common, *self.ANSWERS, "--selection", "01", "--apply"
+            )
+            self.assertEqual(0, redone.returncode, redone.stdout + redone.stderr)
+            self.assertTrue((profile / "skills" / "nobrainer-tech-flow").is_symlink())
 
     def test_links_out_of_the_install_set_are_named_once_for_the_whole_set(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

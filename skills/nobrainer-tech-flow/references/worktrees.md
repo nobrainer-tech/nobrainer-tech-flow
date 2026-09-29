@@ -117,8 +117,8 @@ evidence input, not proof that the host actually queried its registry.
 
 Run without `--apply` first to verify and preview. The helper is read-only with
 respect to the worktree in this mode, though it fetches the target branch into
-a unique temporary Git ref (then removes that exact ref) and calls `gh`. Run it
-from the project, replacing `<flow-skill-dir>` with this skill's directory:
+a unique temporary Git ref (then removes that exact ref) and calls `gh`. Replace
+`<flow-skill-dir>` with this skill's directory:
 
 ```bash
 python3 <flow-skill-dir>/scripts/cleanup_worktree.py --manifest <task-manifest.json>

@@ -1,7 +1,8 @@
 # Daily release check and safe upgrade
 
-Use `scripts/check_flow_update.py --client CLIENT` on the first active Flow
-use of each local calendar day. The script caches the result per client,
+Use `<flow-skill-dir>/scripts/check_flow_update.py --client CLIENT` (replace
+`<flow-skill-dir>` with this skill's directory) on the first active Flow use of
+each local calendar day. The script caches the result per client,
 day and installed version. Read the actual installed manifest or native
 plugin identity first; a source checkout is not proof of the loaded version.
 If the identity is unavailable, report `UNVERIFIED` and do not infer that
