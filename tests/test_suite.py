@@ -2733,6 +2733,18 @@ class SuiteTests(unittest.TestCase):
             # The stale nested lockfile version is what a partial bump leaves behind.
             self.assertGreater(len(set(versions.values())), 1)
 
+    def test_release_version_sources_are_wired_into_the_validator(self) -> None:
+        # The helper can be right and still be forgotten: prove validate() consults it.
+        drifted = ({"skills/nobrainer-tech-flow/VERSION": "0.0.1"}, [])
+        with mock.patch.object(
+            validate_skills, "release_version_sources", return_value=drifted
+        ):
+            errors = validate_skills.validate(True)
+
+        self.assertTrue(
+            any("manifest version mismatch" in error for error in errors), errors
+        )
+
     def test_review_has_one_evidence_gated_owner(self) -> None:
         directory = SKILLS / "nobrainer-review"
         text = (directory / "SKILL.md").read_text(encoding="utf-8")

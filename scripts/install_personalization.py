@@ -27,10 +27,11 @@ LEGACY_FLOW_INSTRUCTIONS = re.compile(
     r"\bnobrainer-ultra\b|^\s*#{1,6}\s+NoBrainer(?:[ .]?Tech)?\s+Flow\b",
     re.IGNORECASE | re.MULTILINE,
 )
-# Phrases only the authorized variants of the block contain; --keep-options reads
-# them back so a re-run cannot silently drop a setting the owner already granted.
-AUTO_UPDATE_GRANT = "grants standing authorization to apply a `nobrainer-tech-flow`-only update"
-AUTO_SESSION_GRANT = "grants standing authorization for session rotation"
+# The two lines that carry a standing authorization. --keep-options recognises a grant
+# only as one of these exact lines, never as a phrase somewhere in the block, so free
+# text in a preference cannot forge one.
+AUTO_UPDATE_RULE = "- On the first `nobrainer-tech-flow` use each calendar day, check for a safe verified update when this client exposes a supported check. This setting grants standing authorization to apply a `nobrainer-tech-flow`-only update after verifying the canonical source/version, reviewing the exact changes, and making a recoverable backup. Never apply destructive, unrelated, or uncertain changes; ask the owner first. If the client is inactive or cannot check, do not claim a check occurred."
+AUTO_SESSION_RULE = "- This setting grants standing authorization for session rotation only when the host supports creating a fresh successor, context or checkpoint evidence warrants rotation, and no write is in flight. Create the successor, verify exact takeover by ID/readback, and archive the old session only after that readback. Do not create recursive visible workers or claim a restart when unsupported."
 SAVED_WIKI = re.compile(r"^- Relevant project wiki: read `([^`\r\n]+)`", re.MULTILINE)
 SAVED_PREFERENCE = re.compile(
     r"^- Owner-approved setup preference: ([^\r\n]+)$", re.MULTILINE
@@ -48,12 +49,12 @@ def build_block(
         else "- At project start, discover whether a relevant wiki exists. If one exists, read its `WIKI.md`, locate relevant `index.md` entries with a targeted search, then read only the relevant pages. Ask before creating a wiki unless project rules or prior authorization already settle it."
     )
     update_rule = (
-        "- On the first `nobrainer-tech-flow` use each calendar day, check for a safe verified update when this client exposes a supported check. This setting grants standing authorization to apply a `nobrainer-tech-flow`-only update after verifying the canonical source/version, reviewing the exact changes, and making a recoverable backup. Never apply destructive, unrelated, or uncertain changes; ask the owner first. If the client is inactive or cannot check, do not claim a check occurred."
+        AUTO_UPDATE_RULE
         if auto_update
         else "- On the first `nobrainer-tech-flow` use each calendar day, check for available updates when this client exposes a supported check and notify the owner; do not apply them automatically. If the client is inactive or cannot check, do not claim a check occurred."
     )
     session_rule = (
-        "- This setting grants standing authorization for session rotation only when the host supports creating a fresh successor, context or checkpoint evidence warrants rotation, and no write is in flight. Create the successor, verify exact takeover by ID/readback, and archive the old session only after that readback. Do not create recursive visible workers or claim a restart when unsupported."
+        AUTO_SESSION_RULE
         if auto_session_restart
         else "- Assess context and checkpoint at appropriate milestones. Recommend session rotation when it would help; do not restart or archive automatically. When rotation is authorized, use the supported lifecycle, verify exact successor takeover by ID/readback, and archive the old session only after that readback. Do not create recursive visible workers or claim a restart when unsupported."
     )
@@ -91,7 +92,8 @@ def known_client_path(
     An explicit ``home`` selects the documented default locations under it. Without
     one, the variables the clients read themselves apply: CLAUDE_CONFIG_DIR for
     Claude Code, CODEX_HOME for Codex and XDG_CONFIG_HOME for OpenCode. An empty
-    value counts as unset.
+    value counts as unset; a value that is not an absolute path is an error (it
+    would resolve against whatever directory the script happens to run from).
     """
 
     if client == "agents":
@@ -99,9 +101,15 @@ def known_client_path(
     if environ is None:
         environ = os.environ if home is None else {}
     home = Path.home() if home is None else home
-    claude = environ.get("CLAUDE_CONFIG_DIR") or ""
-    codex = environ.get("CODEX_HOME") or ""
-    xdg = environ.get("XDG_CONFIG_HOME") or ""
+    values = {}
+    for name in ("CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_CONFIG_HOME"):
+        value = (environ.get(name) or "").strip()
+        if value and not Path(value).is_absolute():
+            raise ValueError(f"{name} must be an absolute path, not {value!r}")
+        values[name] = value
+    claude = values["CLAUDE_CONFIG_DIR"]
+    codex = values["CODEX_HOME"]
+    xdg = values["XDG_CONFIG_HOME"]
     paths = {
         "codex": (Path(codex) if codex else home / ".codex") / "AGENTS.md",
         "claude": (Path(claude) if claude else home / ".claude") / "CLAUDE.md",
@@ -154,9 +162,13 @@ def managed_block_status(content: str, block: str) -> tuple[str, str | None]:
 def imports_codex_global(content: str, codex_path: Path, home: Path) -> bool:
     """Detect a Claude ``@`` import of the Codex global file.
 
-    Claude Code follows ``@path`` anywhere in prose and ignores it inside code
-    fences and inline code, so those are not counted. A prose mention such as
-    "read ~/.codex/AGENTS.md" is a request to the model, not an import.
+    Claude Code follows ``@path`` in prose and ignores it inside code fences and inline
+    code, so those are not counted. A prose mention such as "read ~/.codex/AGENTS.md"
+    is a request to the model, not an import. The documented boundary rules are thin,
+    so this errs towards "not an import": the import must be a word of its own, and
+    comments and indented code are ignored. A false "not an import" only writes a
+    second copy of the block; a false "import" would leave Claude with no
+    instructions at all.
     """
 
     spellings = {str(codex_path), codex_path.as_posix()}
@@ -164,10 +176,15 @@ def imports_codex_global(content: str, codex_path: Path, home: Path) -> bool:
         spellings.add("~/" + codex_path.relative_to(home).as_posix())
     except ValueError:
         pass
-    prose = re.sub(r"(```|~~~).*?\1", "", content, flags=re.DOTALL)
+    prose = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
+    # An unclosed fence runs to the end of the file.
+    prose = re.sub(r"(```|~~~).*?(?:\1|\Z)", "", prose, flags=re.DOTALL)
+    prose = "\n".join(
+        line for line in prose.splitlines() if not line.startswith(("    ", "\t"))
+    )
     prose = re.sub(r"`[^`\n]*`", "", prose)
     return any(
-        re.search(r"(?<![\w`])@" + re.escape(spelling) + r"(?![\w/-]|\.\w)", prose)
+        re.search(r"(?<!\S)@" + re.escape(spelling) + r"(?!\S)", prose)
         for spelling in spellings
     )
 
@@ -191,10 +208,12 @@ def existing_managed_block(path: Path) -> str | None:
         return None
     if not stat.S_ISREG(metadata.st_mode):
         return None
+    try:
+        content = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"target is not UTF-8 text: {path}") from exc
     managed = re.search(
-        re.escape(START) + r"(.*?)" + re.escape(END),
-        path.read_text(encoding="utf-8"),
-        re.DOTALL,
+        re.escape(START) + r"(.*?)" + re.escape(END), content, re.DOTALL
     )
     return managed.group(1) if managed else None
 
@@ -317,9 +336,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            # Piped output on Windows uses the ANSI code page, which cannot print every
+            # character of the instruction files this preview echoes.
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     args = parse_args(argv)
     home = args.home.expanduser() if args.home is not None else None
-    resolved = known_client_path(args.client, home)
+    try:
+        resolved = known_client_path(args.client, home)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 3
     if resolved is None and args.path is None:
         print(
             f"UNSUPPORTED: no single documented global instruction path is defined for {args.client}; use --path only when the owner supplies the exact target",
@@ -357,10 +387,11 @@ def main(argv: list[str] | None = None) -> int:
         auto_session_restart = args.auto_session_restart
         if args.keep_options and existing:
             kept: list[str] = []
-            if not auto_update and AUTO_UPDATE_GRANT in existing:
+            lines = existing.splitlines()
+            if not auto_update and AUTO_UPDATE_RULE in lines:
                 auto_update = True
                 kept.append("auto-update")
-            if not auto_session_restart and AUTO_SESSION_GRANT in existing:
+            if not auto_session_restart and AUTO_SESSION_RULE in lines:
                 auto_session_restart = True
                 kept.append("session-restart")
             saved_wiki = SAVED_WIKI.search(existing)

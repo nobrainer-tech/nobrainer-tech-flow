@@ -64,8 +64,9 @@ the shared `agents` path. `codex` and `agents` both target the current shared
 `~/.agents/skills` location documented by
 [Codex Agent Skills](https://developers.openai.com/codex/skills). Claude Code
 follows `CLAUDE_CONFIG_DIR` and OpenCode follows `XDG_CONFIG_HOME`; the installer
-honours both, and an empty value counts as unset. Override a destination only
-when you have inspected it:
+honours both. An empty value counts as unset, and a value that is not an
+absolute path is an error (Claude Code does not accept relative or `~` values
+either). Override a destination only when you have inspected it:
 
 ```bash
 python3 scripts/install_skills.py \
@@ -77,8 +78,9 @@ python3 scripts/install_skills.py \
 `symlink` is the default and keeps one source of truth. `copy` is useful for an
 isolated release/archive test, or where the operating system does not allow
 symlinks (for example Windows without developer mode). Repeating a `copy`
-install over an identical copy reports it as current; a copy that differs is a
-conflict and must be replaced by hand after review.
+install over an identical copy reports it as current, whatever bytecode
+(`__pycache__`) or file-manager litter (`.DS_Store`) has appeared in it since; a
+copy that differs is a conflict and must be replaced by hand after review.
 
 Use one channel per client. Gemini CLI, Pi, OpenCode and Kimi Code also read
 `~/.agents/skills`, so installing there (`--client agents` or `codex`) on top of
@@ -132,17 +134,21 @@ empty, so the installer refuses to write `AGENTS.md` next to one; remove or
 empty the override, or pass `--path` to target it on purpose.
 
 Claude Code may already import the Codex global file with `@~/.codex/AGENTS.md`.
-The installer skips the duplicate block only when that import is real (in
-prose, not inside a code span or fence) and the imported file already carries
-the managed block; otherwise it writes the block to the Claude file and says
-why. `agents` needs an explicit verified `--path`. For a resolved global wiki,
+The installer skips the duplicate block only when that import is real (a word of
+its own in prose, not inside a code span, fence, indented block or comment) and
+the imported file already carries the managed block; otherwise it writes the
+block to the Claude file and says why. A second copy of the block is harmless;
+a missing one would leave Claude without the instructions, so the check errs
+that way. `agents` needs an explicit verified `--path`. For a resolved global wiki,
 pass `--wiki-root PATH` pointing at a directory containing `WIKI.md`; this
 records the actual location in the personalization block. `--auto-update`
 opts into safe checked `nobrainer-tech-flow`-only upgrades where standing owner
 authorization exists, and `--auto-session-restart` opts into evidence-gated
 session rotation. A later run without those flags writes the default block
 again; add `--keep-options` to keep the update, session-restart and wiki-root
-settings already in the block (the guided setup always does). Without the
+settings already in the block (the guided setup always does). A grant counts
+only as the exact line the installer writes for it, so wording quoted in a
+`--preferences` value never becomes one. Without the
 update opt-in, the first active `nobrainer-tech-flow` use each day checks and
 notifies. Use a scheduler separately if updates must be checked on inactive days.
 

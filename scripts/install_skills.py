@@ -26,13 +26,20 @@ def client_destinations(
     """Skill directories per client, honouring the variables the clients read.
 
     Claude Code reads CLAUDE_CONFIG_DIR and OpenCode follows XDG_CONFIG_HOME; an
-    empty value counts as unset.
+    empty value counts as unset, and a value that is not an absolute path is an error
+    (it would resolve against whatever directory the script happens to run from).
     """
 
     environ = os.environ if environ is None else environ
     home = Path.home() if home is None else home
-    claude = environ.get("CLAUDE_CONFIG_DIR") or ""
-    xdg = environ.get("XDG_CONFIG_HOME") or ""
+    values = {}
+    for name in ("CLAUDE_CONFIG_DIR", "XDG_CONFIG_HOME"):
+        value = (environ.get(name) or "").strip()
+        if value and not Path(value).is_absolute():
+            raise ValueError(f"{name} must be an absolute path, not {value!r}")
+        values[name] = value
+    claude = values["CLAUDE_CONFIG_DIR"]
+    xdg = values["XDG_CONFIG_HOME"]
     return {
         "claude": (Path(claude) if claude else home / ".claude") / "skills",
         "codex": home / ".agents" / "skills",
@@ -42,7 +49,11 @@ def client_destinations(
     }
 
 
-CLIENT_DESTINATIONS = client_destinations()
+try:
+    CLIENT_DESTINATIONS = client_destinations()
+except ValueError:
+    # main() reports a bad environment value; the module itself must still import.
+    CLIENT_DESTINATIONS = client_destinations({})
 
 CURATED_SKILLS = frozenset(
     {
@@ -140,14 +151,39 @@ def entry_fingerprint(target: Path) -> EntryFingerprint | None:
     return metadata.st_dev, metadata.st_ino, metadata.st_mode, linked
 
 
-def tree_manifest(root: Path) -> TreeManifest:
-    """Fingerprint a tree without following links or accepting special files."""
+JUNK_NAMES = frozenset({"__pycache__", ".DS_Store", "Thumbs.db"})
+
+
+def is_junk(name: str) -> bool:
+    """Bytecode and file-manager litter: never part of a skill, so never compared."""
+
+    return name in JUNK_NAMES or name.endswith(".pyc")
+
+
+def file_digest(path: Path) -> str:
+    """SHA-256 in bounded chunks, so a huge foreign file cannot exhaust memory."""
+
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def tree_manifest(root: Path, hash_files: bool = True) -> TreeManifest:
+    """Fingerprint a tree without following links or accepting special files.
+
+    With ``hash_files=False`` a file is identified by its size only, which is enough
+    to tell two different trees apart without reading a byte of either.
+    """
 
     entries: list[tuple[str, str, int, str]] = []
     for current, directories, files in os.walk(root, topdown=True, followlinks=False):
         current_path = Path(current)
         traversable: list[str] = []
         for name in sorted(directories):
+            if is_junk(name):
+                continue
             path = current_path / name
             relative = path.relative_to(root).as_posix()
             metadata = path.lstat()
@@ -163,13 +199,17 @@ def tree_manifest(root: Path) -> TreeManifest:
         directories[:] = traversable
 
         for name in sorted(files):
+            if is_junk(name):
+                continue
             path = current_path / name
             relative = path.relative_to(root).as_posix()
             metadata = path.lstat()
             if stat.S_ISLNK(metadata.st_mode):
                 entries.append((relative, "symlink", 0, os.readlink(path)))
             elif stat.S_ISREG(metadata.st_mode):
-                digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                digest = (
+                    file_digest(path) if hash_files else f"size:{metadata.st_size}"
+                )
                 entries.append(
                     (relative, "file", stat.S_IMODE(metadata.st_mode), digest)
                 )
@@ -189,7 +229,12 @@ def stage_and_publish_copy(
     staged = stage_parent / target.name
     try:
         source_before = tree_manifest(source)
-        shutil.copytree(source, staged, symlinks=True)
+        shutil.copytree(
+            source,
+            staged,
+            symlinks=True,
+            ignore=lambda _directory, names: [name for name in names if is_junk(name)],
+        )
         staged_manifest = tree_manifest(staged)
         source_after = tree_manifest(source)
         if source_before != source_after:
@@ -514,7 +559,11 @@ def existing_state(target: Path, source: Path, mode: str) -> str:
             return "legacy"
     elif mode == "copy" and target.is_dir():
         try:
-            if tree_manifest(target) == tree_manifest(source):
+            # Compare names, kinds and sizes first: a foreign directory (possibly with
+            # gigabytes in it) is then rejected without reading any file.
+            if tree_manifest(target, hash_files=False) == tree_manifest(
+                source, hash_files=False
+            ) and tree_manifest(target) == tree_manifest(source):
                 return "current"
         except (OSError, RuntimeError):
             pass
@@ -600,6 +649,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            # Piped output on Windows uses the ANSI code page, which cannot print every
+            # character of a user's paths.
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     args = parse_args()
     catalogue = available_skills()
     actual_inventory = set(catalogue)
@@ -618,10 +674,15 @@ def main() -> int:
         print(f"ERROR: unknown active skill(s): {', '.join(unknown)}", file=sys.stderr)
         return 2
 
-    destination = (
-        args.dest or client_destinations()[args.client]
-    ).expanduser().resolve()
-    problem = destination_problem(destination)
+    try:
+        destination = (
+            args.dest or client_destinations()[args.client]
+        ).expanduser().resolve()
+        problem = destination_problem(destination)
+    except (OSError, RuntimeError, ValueError) as exc:
+        # Symlink loops, unreadable parents and unusable environment variables.
+        print(f"ERROR: cannot use the destination: {exc}", file=sys.stderr)
+        return 2
     if problem:
         print(f"ERROR: {problem}", file=sys.stderr)
         return 2
