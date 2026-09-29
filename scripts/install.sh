@@ -644,8 +644,8 @@ install() {
 
 # The managed block must stand on lines of its own for the line-based undo below.
 block_on_own_lines() {
-	[ "$(grep -c -x -e "$START" -e "$START$(printf '\r')" "$1")" = 1 ] &&
-		[ "$(grep -c -x -e "$END" -e "$END$(printf '\r')" "$1")" = 1 ]
+	[ "$(grep -c -x -F -e "$START" -e "$START$(printf '\r')" "$1")" = 1 ] &&
+		[ "$(grep -c -x -F -e "$END" -e "$END$(printf '\r')" "$1")" = 1 ]
 }
 
 # restore_into CURRENT BACKUP OUT: CURRENT with its managed block replaced by the one
