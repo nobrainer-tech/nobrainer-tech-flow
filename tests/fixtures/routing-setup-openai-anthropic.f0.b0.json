@@ -1,0 +1,433 @@
+{
+  "schema": "nobrainer-routing-setup/1",
+  "key": "openai-anthropic.f0.b0",
+  "version": "2026-09-29.1",
+  "aaFetchedAt": "2026-09-29T22:34+02:00",
+  "expiresAt": "2026-10-21T10:00:00Z",
+  "routes": [
+    "openai",
+    "anthropic"
+  ],
+  "fast": false,
+  "budget": false,
+  "main": {
+    "highStakes": {
+      "family": "Alpha 2",
+      "name": "Alpha 2 (xhigh)",
+      "id": "openai/alpha-2",
+      "route": "openai",
+      "effort": "xhigh",
+      "intelligence": 71.2,
+      "score": null,
+      "costPerTask": 0.41,
+      "timePerTask": 212,
+      "ifNotAvailable": {
+        "family": "Alpha 1",
+        "name": "Alpha 1 (high)",
+        "id": "openai/alpha-1",
+        "route": "openai",
+        "effort": "high",
+        "intelligence": 64.0,
+        "score": 62.5,
+        "costPerTask": 0.52,
+        "timePerTask": 260
+      }
+    },
+    "everyday": {
+      "family": "Beta 5",
+      "name": "Beta 5 (high)",
+      "id": "anthropic/beta-5",
+      "route": "anthropic",
+      "effort": "high",
+      "intelligence": 69.0,
+      "score": null,
+      "costPerTask": 0.63,
+      "timePerTask": 180
+    }
+  },
+  "subagents": [
+    {
+      "family": "Alpha 2",
+      "name": "Alpha 2 (xhigh)",
+      "id": "openai/alpha-2",
+      "route": "openai",
+      "effort": "xhigh",
+      "intelligence": 71.2,
+      "score": null,
+      "costPerTask": 0.41,
+      "timePerTask": 212,
+      "ifNotAvailable": {
+        "family": "Alpha 1",
+        "name": "Alpha 1 (high)",
+        "id": "openai/alpha-1",
+        "route": "openai",
+        "effort": "high",
+        "intelligence": 64.0,
+        "score": 62.5,
+        "costPerTask": 0.52,
+        "timePerTask": 260
+      },
+      "fallback": false
+    },
+    {
+      "family": "Beta 5",
+      "name": "Beta 5 (high)",
+      "id": "anthropic/beta-5",
+      "route": "anthropic",
+      "effort": "high",
+      "intelligence": 69.0,
+      "score": null,
+      "costPerTask": 0.63,
+      "timePerTask": 180,
+      "fallback": true
+    }
+  ],
+  "jobs": {
+    "coding": {
+      "family": "Alpha 2",
+      "name": "Alpha 2 (xhigh)",
+      "id": "openai/alpha-2",
+      "route": "openai",
+      "effort": "xhigh",
+      "intelligence": 71.2,
+      "score": 70.4,
+      "costPerTask": 0.41,
+      "timePerTask": 212,
+      "ifNotAvailable": {
+        "family": "Alpha 1",
+        "name": "Alpha 1 (high)",
+        "id": "openai/alpha-1",
+        "route": "openai",
+        "effort": "high",
+        "intelligence": 64.0,
+        "score": 62.5,
+        "costPerTask": 0.52,
+        "timePerTask": 260
+      }
+    },
+    "agentic": {
+      "family": "Beta 5",
+      "name": "Beta 5 (high)",
+      "id": "anthropic/beta-5",
+      "route": "anthropic",
+      "effort": "high",
+      "intelligence": 69.0,
+      "score": 68.1,
+      "costPerTask": 0.63,
+      "timePerTask": 180
+    },
+    "research": {
+      "family": "Alpha 2",
+      "name": "Alpha 2 (xhigh)",
+      "id": "openai/alpha-2",
+      "route": "openai",
+      "effort": "xhigh",
+      "intelligence": 71.2,
+      "score": 70.4,
+      "costPerTask": 0.41,
+      "timePerTask": 212,
+      "ifNotAvailable": {
+        "family": "Alpha 1",
+        "name": "Alpha 1 (high)",
+        "id": "openai/alpha-1",
+        "route": "openai",
+        "effort": "high",
+        "intelligence": 64.0,
+        "score": 62.5,
+        "costPerTask": 0.52,
+        "timePerTask": 260
+      }
+    },
+    "planning": {
+      "family": "Beta 5",
+      "name": "Beta 5 (high)",
+      "id": "anthropic/beta-5",
+      "route": "anthropic",
+      "effort": "high",
+      "intelligence": 69.0,
+      "score": 68.1,
+      "costPerTask": 0.63,
+      "timePerTask": 180
+    },
+    "orchestration": {
+      "family": "Beta 5",
+      "name": "Beta 5 (high)",
+      "id": "anthropic/beta-5",
+      "route": "anthropic",
+      "effort": "high",
+      "intelligence": 69.0,
+      "score": 68.1,
+      "costPerTask": 0.63,
+      "timePerTask": 180
+    },
+    "bulk": {
+      "family": "Gamma Mini",
+      "name": "Gamma Mini (medium)",
+      "id": "openai/gamma-mini",
+      "route": "openai",
+      "effort": "medium",
+      "intelligence": 58.3,
+      "score": 60.2,
+      "costPerTask": 0.08,
+      "timePerTask": 95
+    }
+  },
+  "candidates": {
+    "coding": [
+      {
+        "family": "Alpha 2",
+        "name": "Alpha 2 (xhigh)",
+        "id": "openai/alpha-2",
+        "route": "openai",
+        "effort": "xhigh",
+        "intelligence": 71.2,
+        "score": 70.4,
+        "costPerTask": 0.41,
+        "timePerTask": 212,
+        "ifNotAvailable": {
+          "family": "Alpha 1",
+          "name": "Alpha 1 (high)",
+          "id": "openai/alpha-1",
+          "route": "openai",
+          "effort": "high",
+          "intelligence": 64.0,
+          "score": 62.5,
+          "costPerTask": 0.52,
+          "timePerTask": 260
+        }
+      },
+      {
+        "family": "Beta 5",
+        "name": "Beta 5 (high)",
+        "id": "anthropic/beta-5",
+        "route": "anthropic",
+        "effort": "high",
+        "intelligence": 69.0,
+        "score": 68.1,
+        "costPerTask": 0.63,
+        "timePerTask": 180
+      },
+      {
+        "family": "Gamma Mini",
+        "name": "Gamma Mini (medium)",
+        "id": "openai/gamma-mini",
+        "route": "openai",
+        "effort": "medium",
+        "intelligence": 58.3,
+        "score": 60.2,
+        "costPerTask": 0.08,
+        "timePerTask": 95
+      },
+      {
+        "family": "Gamma Mini",
+        "name": "Gamma Mini (medium)",
+        "id": "openai/gamma-mini",
+        "route": "openai",
+        "effort": "medium",
+        "intelligence": 58.3,
+        "score": 60.2,
+        "costPerTask": 0.08,
+        "timePerTask": 95
+      },
+      {
+        "family": "Delta Small",
+        "name": "Delta Small",
+        "id": "anthropic/delta-small",
+        "route": "anthropic",
+        "effort": null,
+        "intelligence": 49.9,
+        "score": 51.0,
+        "costPerTask": 0.03,
+        "timePerTask": 40
+      },
+      {
+        "family": "Delta Small",
+        "name": "Delta Small",
+        "id": "anthropic/delta-small",
+        "route": "anthropic",
+        "effort": null,
+        "intelligence": 49.9,
+        "score": 51.0,
+        "costPerTask": 0.03,
+        "timePerTask": 40
+      }
+    ],
+    "agentic": [
+      {
+        "family": "Beta 5",
+        "name": "Beta 5 (high)",
+        "id": "anthropic/beta-5",
+        "route": "anthropic",
+        "effort": "high",
+        "intelligence": 69.0,
+        "score": 68.1,
+        "costPerTask": 0.63,
+        "timePerTask": 180
+      },
+      {
+        "family": "Alpha 2",
+        "name": "Alpha 2 (xhigh)",
+        "id": "openai/alpha-2",
+        "route": "openai",
+        "effort": "xhigh",
+        "intelligence": 71.2,
+        "score": 70.4,
+        "costPerTask": 0.41,
+        "timePerTask": 212,
+        "ifNotAvailable": {
+          "family": "Alpha 1",
+          "name": "Alpha 1 (high)",
+          "id": "openai/alpha-1",
+          "route": "openai",
+          "effort": "high",
+          "intelligence": 64.0,
+          "score": 62.5,
+          "costPerTask": 0.52,
+          "timePerTask": 260
+        }
+      },
+      {
+        "family": "Delta Small",
+        "name": "Delta Small",
+        "id": "anthropic/delta-small",
+        "route": "anthropic",
+        "effort": null,
+        "intelligence": 49.9,
+        "score": 51.0,
+        "costPerTask": 0.03,
+        "timePerTask": 40
+      }
+    ],
+    "research": [
+      {
+        "family": "Alpha 2",
+        "name": "Alpha 2 (xhigh)",
+        "id": "openai/alpha-2",
+        "route": "openai",
+        "effort": "xhigh",
+        "intelligence": 71.2,
+        "score": 70.4,
+        "costPerTask": 0.41,
+        "timePerTask": 212,
+        "ifNotAvailable": {
+          "family": "Alpha 1",
+          "name": "Alpha 1 (high)",
+          "id": "openai/alpha-1",
+          "route": "openai",
+          "effort": "high",
+          "intelligence": 64.0,
+          "score": 62.5,
+          "costPerTask": 0.52,
+          "timePerTask": 260
+        }
+      },
+      {
+        "family": "Beta 5",
+        "name": "Beta 5 (high)",
+        "id": "anthropic/beta-5",
+        "route": "anthropic",
+        "effort": "high",
+        "intelligence": 69.0,
+        "score": 68.1,
+        "costPerTask": 0.63,
+        "timePerTask": 180
+      }
+    ],
+    "planning": [
+      {
+        "family": "Beta 5",
+        "name": "Beta 5 (high)",
+        "id": "anthropic/beta-5",
+        "route": "anthropic",
+        "effort": "high",
+        "intelligence": 69.0,
+        "score": 68.1,
+        "costPerTask": 0.63,
+        "timePerTask": 180
+      },
+      {
+        "family": "Alpha 2",
+        "name": "Alpha 2 (xhigh)",
+        "id": "openai/alpha-2",
+        "route": "openai",
+        "effort": "xhigh",
+        "intelligence": 71.2,
+        "score": 70.4,
+        "costPerTask": 0.41,
+        "timePerTask": 212,
+        "ifNotAvailable": {
+          "family": "Alpha 1",
+          "name": "Alpha 1 (high)",
+          "id": "openai/alpha-1",
+          "route": "openai",
+          "effort": "high",
+          "intelligence": 64.0,
+          "score": 62.5,
+          "costPerTask": 0.52,
+          "timePerTask": 260
+        }
+      }
+    ],
+    "orchestration": [
+      {
+        "family": "Beta 5",
+        "name": "Beta 5 (high)",
+        "id": "anthropic/beta-5",
+        "route": "anthropic",
+        "effort": "high",
+        "intelligence": 69.0,
+        "score": 68.1,
+        "costPerTask": 0.63,
+        "timePerTask": 180
+      },
+      {
+        "family": "Alpha 2",
+        "name": "Alpha 2 (xhigh)",
+        "id": "openai/alpha-2",
+        "route": "openai",
+        "effort": "xhigh",
+        "intelligence": 71.2,
+        "score": 70.4,
+        "costPerTask": 0.41,
+        "timePerTask": 212,
+        "ifNotAvailable": {
+          "family": "Alpha 1",
+          "name": "Alpha 1 (high)",
+          "id": "openai/alpha-1",
+          "route": "openai",
+          "effort": "high",
+          "intelligence": 64.0,
+          "score": 62.5,
+          "costPerTask": 0.52,
+          "timePerTask": 260
+        }
+      },
+      {
+        "family": "Gamma Mini",
+        "name": "Gamma Mini (medium)",
+        "id": "openai/gamma-mini",
+        "route": "openai",
+        "effort": "medium",
+        "intelligence": 58.3,
+        "score": 60.2,
+        "costPerTask": 0.08,
+        "timePerTask": 95
+      }
+    ]
+  },
+  "skip": [
+    {
+      "family": "Alpha 1",
+      "reason": "succ",
+      "replacedBy": "Alpha 2"
+    },
+    {
+      "family": "Epsilon",
+      "reason": "data"
+    }
+  ],
+  "blocks": {
+    "router": "<!-- nobrainer-routing:start -->\n## Model routing for NoBrainer.Tech Flow\n\nGenerated at nobrainer.tech/benchmark from Artificial Analysis data of 29 September 2026. Models change fast, so regenerate it every few weeks.\n\nMain agent\n- High-stakes work (architecture, hard debugging, risky changes): Alpha 2, reasoning xhigh (openai/alpha-2).\n- Everyday work: Beta 5, reasoning high (anthropic/beta-5).\n\nSubagents, in this order. If one is unavailable or out of quota, use the next:\n1. Alpha 2, reasoning xhigh (openai/alpha-2)\n2. Beta 5, reasoning high (anthropic/beta-5)\n\nModel per job\n- Coding: Alpha 2, reasoning xhigh (openai/alpha-2).\n- Cheap bulk work: Gamma Mini, reasoning medium (openai/gamma-mini).\n- Time does not matter: take the higher score or the lower cost, even if a task takes longer.\n<!-- nobrainer-routing:end -->",
+    "plain": "<!-- nobrainer-routing:start -->\n## Model routing for NoBrainer.Tech Flow\n\nGenerated at nobrainer.tech/benchmark from Artificial Analysis data of 29 September 2026. Models change fast, so regenerate it every few weeks.\n\nMain agent\n- High-stakes work (architecture, hard debugging, risky changes): Alpha 2, reasoning xhigh.\n- Everyday work: Beta 5, reasoning high.\n\nSubagents, in this order. If one is unavailable or out of quota, use the next:\n1. Alpha 2, reasoning xhigh\n2. Beta 5, reasoning high\n\nModel per job\n- Coding: Alpha 2, reasoning xhigh.\n- Cheap bulk work: Gamma Mini, reasoning medium.\n- Time does not matter: take the higher score or the lower cost, even if a task takes longer.\n<!-- nobrainer-routing:end -->"
+  }
+}
