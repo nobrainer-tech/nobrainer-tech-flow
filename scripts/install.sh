@@ -35,7 +35,9 @@ wiki-add wiki-get wiki-tidy'
 START='<!-- NOBRAINER-TECH-FLOW:START -->'
 END='<!-- NOBRAINER-TECH-FLOW:END -->'
 LEGACY_TEXT='(^|[^[:alnum:]_])nobrainer-ultra([^[:alnum:]_]|$)|^[[:space:]]*#{1,6}[[:space:]]+nobrainer([ .]?tech)?[[:space:]]+flow([^[:alnum:]_]|$)'
-CONTROL=$(printf '*[\001-\037\177]*')
+# The characters a bare shell word may hold, listed rather than given as ranges:
+# bash 3.2, the sh of macOS, matches [A-Z] by the locale's collation.
+SAFE='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_./:=@%+-'
 # U+0080 to U+009F, and U+2028 and U+2029, in UTF-8.
 C1=$(printf '\302[\200-\237]')
 SEPARATORS=$(printf '\342\200[\250\251]')
@@ -100,7 +102,12 @@ usage_error() {
 # would take it. The setup record must stay readable to them, and a line break or a
 # control character in a path breaks the one-line output both print.
 path_problem() {
-	case $1 in $CONTROL) printf 'contains a control character'; return 0 ;; esac
+	# tr reads the octal escapes itself, so no control byte ever sits in a pattern
+	# (bash keeps \001 and \177 for its own quoting).
+	if [ "$(printf '%s' "$1" | LC_ALL=C tr -d '\001-\037\177')" != "$1" ]; then
+		printf 'contains a control character'
+		return 0
+	fi
 	if printf '%s\n' "$1" | LC_ALL=C grep -q -e "$C1" -e "$SEPARATORS"; then
 		printf 'contains a control character or a line separator'
 		return 0
@@ -119,7 +126,7 @@ reject_control() {
 # Windows spellings (C:\... under Git Bash or Cygwin) to the POSIX form the shell uses.
 to_posix() {
 	if [ "$windows" = 1 ]; then
-		case $1 in [A-Za-z]:* | *\\*) cygpath -u "$1"; return ;; esac
+		case $1 in ?:* | *\\*) cygpath -u "$1"; return ;; esac
 	fi
 	printf '%s\n' "$1"
 }
@@ -165,7 +172,7 @@ physical() {
 
 quote() {
 	case $1 in
-		'' | *[!A-Za-z0-9_./:=@%+-]*) printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")" ;;
+		'' | *[!$SAFE]*) printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")" ;;
 		*) printf '%s' "$1" ;;
 	esac
 }
@@ -580,8 +587,8 @@ line_of() {
 # block in FILE whose markers stand on lines of their own, or fails.
 block_lines() {
 	block_from=$(line_of "$START" "$1") block_to=$(line_of "$END" "$1")
-	case $block_from in '' | *[!0-9]*) return 1 ;; esac
-	case $block_to in '' | *[!0-9]*) return 1 ;; esac
+	case $block_from in '' | *[!0123456789]*) return 1 ;; esac
+	case $block_to in '' | *[!0123456789]*) return 1 ;; esac
 	[ "$block_from" -lt "$block_to" ]
 }
 
@@ -708,7 +715,7 @@ install() {
 		new_target=$target new_backup=$made_backup new_hash=$(sha256 "$target")
 	fi
 	if [ -n "$created" ] || [ "$wrote" = 1 ] || { [ "$record" = 1 ] && [ "$new_hash" != "$st_hash" ]; }; then
-		new_created=$(printf '%s\n' $st_created $created | sort -u | tr '\n' ' ')
+		new_created=$(printf '%s\n' $st_created $created | LC_ALL=C sort -u | tr '\n' ' ')
 		new_created=${new_created# }
 		new_created=${new_created% }
 		if ! write_state; then
@@ -803,7 +810,7 @@ undo() {
 			die 3 "refusing unexpected personalization target: $st_target"
 		fi
 		case $st_hash in
-			*[!0-9a-f]* | '') die 3 "invalid personalization readback hash in rollback state" ;;
+			*[!0123456789abcdef]* | '') die 3 "invalid personalization readback hash in rollback state" ;;
 		esac
 		[ "${#st_hash}" = 64 ] || die 3 "invalid personalization readback hash in rollback state"
 		if [ -n "$st_backup" ]; then
