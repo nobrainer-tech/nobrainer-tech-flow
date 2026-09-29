@@ -5,7 +5,7 @@ description: "Use when setting up nobrainer-tech-flow for the first time, when t
 
 # nobrainer-tech-flow: Orchestration Calibration
 
-Run this skill as the standard first-setup step for nobrainer-tech-flow. Discover the current client's and project's actual capabilities, evaluate whether delegation helps, and record evidence-backed recommendations. Read [capacity and update audit](references/capacity-audit.md) at project setup or when limits are in question. It does not train or fine-tune model weights, choose a replacement for MAIN, create sessions, schedule workers, or run an open-ended optimization loop.
+Run this skill as the standard first-setup step for nobrainer-tech-flow. Discover the current client's and project's actual capabilities, evaluate whether delegation helps, and record evidence-backed recommendations. Read [capacity and update audit](references/capacity-audit.md) at project setup or when limits are in question. Read [benchmark routing](references/benchmark-routing.md) when the owner wants ready-made worker routing from the published benchmark setups, or asks to refresh or apply it; only verified local outcomes may re-order that prior. It does not train or fine-tune model weights, choose a replacement for MAIN, create sessions, schedule workers, or run an open-ended optimization loop.
 
 ## Preserve the owner's choice
 
