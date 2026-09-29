@@ -1297,9 +1297,8 @@ class InstallerRobustnessTests(unittest.TestCase):
             custom = module.client_destinations(
                 {"CLAUDE_CONFIG_DIR": str(profile), "XDG_CONFIG_HOME": str(xdg)}, home
             )
-            blank = module.client_destinations(
-                {"CLAUDE_CONFIG_DIR": "", "XDG_CONFIG_HOME": "  "}, home
-            )
+            # An empty XDG_CONFIG_HOME is unset (XDG specification).
+            blank = module.client_destinations({"XDG_CONFIG_HOME": ""}, home)
 
             self.assertEqual(home / ".claude" / "skills", default["claude"])
             self.assertEqual(profile / "skills", custom["claude"])
@@ -1310,6 +1309,48 @@ class InstallerRobustnessTests(unittest.TestCase):
             # A relative value would resolve against wherever the script runs from.
             with self.assertRaises(ValueError):
                 module.client_destinations({"CLAUDE_CONFIG_DIR": "claude-profile"}, home)
+
+    def test_a_broken_variable_only_matters_to_the_client_that_reads_it(self) -> None:
+        module = self.load_module()
+        home = Path("/home/u")
+        broken = {"XDG_CONFIG_HOME": "~/.config", "CLAUDE_CONFIG_DIR": "relative"}
+
+        self.assertEqual(
+            home / ".claude" / "skills",
+            module.client_destinations({"XDG_CONFIG_HOME": "~/.config"}, home, "claude")["claude"],
+        )
+        for client in ("codex", "copilot", "agents"):
+            with self.subTest(client=client):
+                module.client_destinations(broken, home, client)
+        for client, variable in (("claude", "CLAUDE_CONFIG_DIR"), ("opencode", "XDG_CONFIG_HOME")):
+            with self.subTest(client=client), self.assertRaises(ValueError):
+                module.client_destinations({variable: "relative"}, home, client)
+
+    def test_a_variable_is_used_exactly_as_written(self) -> None:
+        module = self.load_module()
+        home = Path("/home/u")
+
+        self.assertEqual(
+            Path("/profile ") / "skills",
+            module.client_destinations({"CLAUDE_CONFIG_DIR": "/profile "}, home)["claude"],
+        )
+        # A value of spaces is a relative path, and Claude Code uses an empty
+        # CLAUDE_CONFIG_DIR as written, so both are errors for the client that reads them.
+        for variables in ({"CLAUDE_CONFIG_DIR": " \t"}, {"CLAUDE_CONFIG_DIR": ""}, {"XDG_CONFIG_HOME": " "}):
+            with self.subTest(variables=variables), self.assertRaises(ValueError):
+                module.client_destinations(variables, home)
+
+    def test_a_variable_the_selected_client_never_reads_does_not_stop_the_install(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            environment = {key: value for key, value in os.environ.items() if key != "CLAUDE_CONFIG_DIR"}
+            environment.update({"XDG_CONFIG_HOME": "~/.config", "HOME": temp, "USERPROFILE": temp})
+            result = subprocess.run(
+                [sys.executable, str(INSTALLER), "--client", "claude", "--skill", "nobrainer-build"],
+                cwd=ROOT, text=True, capture_output=True, check=False, env=environment,
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertIn(str(Path(temp).resolve() / ".claude" / "skills" / "nobrainer-build"), result.stdout)
 
     def test_windows_publish_never_touches_ctypes(self) -> None:
         module = self.load_module()
@@ -1391,6 +1432,37 @@ class InstallerRobustnessTests(unittest.TestCase):
             self.assertEqual(0, second.returncode, second.stdout + second.stderr)
             self.assertIn("KEEP: nobrainer-sessions", second.stdout)
 
+    def test_only_bytecode_caches_and_file_manager_litter_are_ignored(self) -> None:
+        module = self.load_module()
+
+        self.assertTrue(module.is_junk("__pycache__", True))
+        self.assertTrue(module.is_junk(".DS_Store", False))
+        self.assertTrue(module.is_junk("Thumbs.db", False))
+        # A loose .pyc next to a script is importable and shadows the standard library, and a
+        # name that is litter as a file is content as a directory (and the other way round).
+        self.assertFalse(module.is_junk("json.pyc", False))
+        self.assertFalse(module.is_junk("__pycache__", False))
+        self.assertFalse(module.is_junk(".DS_Store", True))
+        self.assertFalse(module.is_junk("Thumbs.db", True))
+
+    def test_a_loose_bytecode_file_in_a_copy_is_a_conflict_not_litter(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "skills"
+            args = (
+                "--client", "agents", "--dest", str(destination), "--mode", "copy",
+                "--skill", "nobrainer-sessions",
+            )
+            first = self.run_installer(*args, "--apply")
+            self.assertEqual(0, first.returncode, first.stderr)
+            planted = destination / "nobrainer-sessions" / "scripts" / "json.pyc"
+            planted.write_bytes(b"\0")
+
+            second = self.run_installer(*args, "--apply")
+
+            self.assertEqual(3, second.returncode, second.stdout + second.stderr)
+            self.assertIn("CONFLICT: nobrainer-sessions", second.stdout)
+            self.assertTrue(planted.exists())
+
     def test_copy_publish_leaves_bytecode_in_the_source_behind(self) -> None:
         module = self.load_module()
         with tempfile.TemporaryDirectory() as temp:
@@ -1423,14 +1495,23 @@ class InstallerRobustnessTests(unittest.TestCase):
 
     def test_digest_is_computed_in_bounded_chunks(self) -> None:
         module = self.load_module()
-        with tempfile.TemporaryDirectory() as temp:
-            path = Path(temp) / "data.bin"
-            payload = b"abc" * 1_000_000
-            path.write_bytes(payload)
+        import hashlib
 
-            import hashlib
+        payload = b"abc" * 1_000_000
+        reads: list[int | None] = []
 
-            self.assertEqual(hashlib.sha256(payload).hexdigest(), module.file_digest(path))
+        class Recording(io.BytesIO):
+            def read(self, size: int | None = -1) -> bytes:
+                reads.append(size)
+                return super().read(size)
+
+        with mock.patch.object(Path, "open", return_value=Recording(payload)):
+            digest = module.file_digest(Path("data.bin"))
+
+        self.assertEqual(hashlib.sha256(payload).hexdigest(), digest)
+        # A whole-file read (size -1 or None) would need memory in proportion to the file.
+        self.assertGreater(len(reads), 2)
+        self.assertTrue(all(size is not None and 0 < size <= 4 * 1024 * 1024 for size in reads), reads)
 
 
 class CrossSkillLinkTests(unittest.TestCase):

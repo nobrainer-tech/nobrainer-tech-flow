@@ -26,8 +26,9 @@ shared `adapters/bootstrap.md` context to the first user message once. It does
 not copy skill bodies into the prompt, add alternate skill trees, or inject on
 every step when the marker is already present.
 
-For a local checkout, either use `scripts/install_skills.py --client opencode`
-or configure the checkout's `skills/` directory as an OpenCode skills path.
+For a local checkout, either run `sh scripts/install.sh --client opencode` (no
+Python needed; `scripts/install_skills.py --client opencode` installs the skills
+alone) or configure the checkout's `skills/` directory as an OpenCode skills path.
 See [the full installation guide](../docs/INSTALL.md).
 
 The package ID is `nobrainer-tech-flow`. Existing

@@ -32,6 +32,43 @@ LEGACY_FLOW_INSTRUCTIONS = re.compile(
 # text in a preference cannot forge one.
 AUTO_UPDATE_RULE = "- On the first `nobrainer-tech-flow` use each calendar day, check for a safe verified update when this client exposes a supported check. This setting grants standing authorization to apply a `nobrainer-tech-flow`-only update after verifying the canonical source/version, reviewing the exact changes, and making a recoverable backup. Never apply destructive, unrelated, or uncertain changes; ask the owner first. If the client is inactive or cannot check, do not claim a check occurred."
 AUTO_SESSION_RULE = "- This setting grants standing authorization for session rotation only when the host supports creating a fresh successor, context or checkpoint evidence warrants rotation, and no write is in flight. Create the successor, verify exact takeover by ID/readback, and archive the old session only after that readback. Do not create recursive visible workers or claim a restart when unsupported."
+
+
+def has_rule_line(text: str, rule: str) -> bool:
+    """True when ``rule`` is a whole line of ``text``.
+
+    Only ``\\n`` and ``\\r\\n`` end a line here. ``str.splitlines`` would also split on
+    U+2028, U+0085 and other separators, which a path or a preference could carry.
+    """
+
+    return re.search(r"(?m)^" + re.escape(rule) + r"\r?$", text) is not None
+
+
+def earlier_grant(existing: str, rule: str, phrase: str, label: str, flag: str) -> bool:
+    """Whether the block already holds this exact grant line; says so when one was edited."""
+
+    if has_rule_line(existing, rule):
+        return True
+    if phrase in existing:
+        print(
+            f"NOTE: an earlier {label} authorization was not kept because its line no longer "
+            f"matches what this installer writes; pass {flag} to grant it again"
+        )
+    return False
+
+
+def unsafe_line(value: str) -> bool:
+    """True when ``value`` cannot be one plain Markdown line (or could split into two)."""
+
+    return "`" in value or not value.isprintable()
+
+
+def preference_problem(value: str) -> str | None:
+    if len(value) > 240 or "<" in value or ">" in value or unsafe_line(value):
+        return "preferences must be a single line of at most 240 safe characters"
+    return None
+
+
 SAVED_WIKI = re.compile(r"^- Relevant project wiki: read `([^`\r\n]+)`", re.MULTILINE)
 SAVED_PREFERENCE = re.compile(
     r"^- Owner-approved setup preference: ([^\r\n]+)$", re.MULTILINE
@@ -84,16 +121,41 @@ class Client:
     display: str
 
 
+# The variable each client reads to locate its own configuration directory.
+CLIENT_CONFIG_VARIABLE = {
+    "claude": "CLAUDE_CONFIG_DIR",
+    "codex": "CODEX_HOME",
+    "opencode": "XDG_CONFIG_HOME",
+}
+
+
+def config_directory(environ: Mapping[str, str], name: str) -> str:
+    """The directory a client variable names, or "" when it is unset.
+
+    An empty CODEX_HOME or XDG_CONFIG_HOME counts as unset, as it does for Codex and
+    in the XDG specification. Any other value is used exactly as written, and one that
+    is not absolute is an error, including an empty CLAUDE_CONFIG_DIR: the client
+    resolves it against its own working directory, the script runs from the checkout,
+    and neither can know where the other means.
+    """
+
+    value = environ.get(name)
+    if value is None or (value == "" and name != "CLAUDE_CONFIG_DIR"):
+        return ""
+    if not Path(value).is_absolute():
+        raise ValueError(f"{name} must be an absolute path, not {value!r}")
+    return value
+
+
 def known_client_path(
     client: str, home: Path | None = None, environ: Mapping[str, str] | None = None
 ) -> Client | None:
     """Return a global instruction path only where the client defines one.
 
     An explicit ``home`` selects the documented default locations under it. Without
-    one, the variables the clients read themselves apply: CLAUDE_CONFIG_DIR for
-    Claude Code, CODEX_HOME for Codex and XDG_CONFIG_HOME for OpenCode. An empty
-    value counts as unset; a value that is not an absolute path is an error (it
-    would resolve against whatever directory the script happens to run from).
+    one, the variable the client reads itself applies: CLAUDE_CONFIG_DIR for Claude
+    Code, CODEX_HOME for Codex and XDG_CONFIG_HOME for OpenCode. Variables of other
+    clients are none of this client's business, so they are never checked.
     """
 
     if client == "agents":
@@ -101,19 +163,12 @@ def known_client_path(
     if environ is None:
         environ = os.environ if home is None else {}
     home = Path.home() if home is None else home
-    values = {}
-    for name in ("CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_CONFIG_HOME"):
-        value = (environ.get(name) or "").strip()
-        if value and not Path(value).is_absolute():
-            raise ValueError(f"{name} must be an absolute path, not {value!r}")
-        values[name] = value
-    claude = values["CLAUDE_CONFIG_DIR"]
-    codex = values["CODEX_HOME"]
-    xdg = values["XDG_CONFIG_HOME"]
+    variable = CLIENT_CONFIG_VARIABLE.get(client)
+    base = config_directory(environ, variable) if variable else ""
     paths = {
-        "codex": (Path(codex) if codex else home / ".codex") / "AGENTS.md",
-        "claude": (Path(claude) if claude else home / ".claude") / "CLAUDE.md",
-        "opencode": (Path(xdg) if xdg else home / ".config") / "opencode" / "AGENTS.md",
+        "codex": (Path(base) if base else home / ".codex") / "AGENTS.md",
+        "claude": (Path(base) if base else home / ".claude") / "CLAUDE.md",
+        "opencode": (Path(base) if base else home / ".config") / "opencode" / "AGENTS.md",
         "copilot": home / ".copilot" / "copilot-instructions.md",
     }
     return Client(paths[client], client)
@@ -160,33 +215,27 @@ def managed_block_status(content: str, block: str) -> tuple[str, str | None]:
 
 
 def imports_codex_global(content: str, codex_path: Path, home: Path) -> bool:
-    """Detect a Claude ``@`` import of the Codex global file.
+    """Whether a Claude file is nothing but an ``@`` import of the Codex global file.
 
-    Claude Code follows ``@path`` in prose and ignores it inside code fences and inline
-    code, so those are not counted. A prose mention such as "read ~/.codex/AGENTS.md"
-    is a request to the model, not an import. The documented boundary rules are thin,
-    so this errs towards "not an import": the import must be a word of its own, and
-    comments and indented code are ignored. A false "not an import" only writes a
-    second copy of the block; a false "import" would leave Claude with no
-    instructions at all.
+    Only that form counts. Whether an import elsewhere in a Markdown file is live
+    depends on how Claude Code parses the whole file (lists, quotes, fences, raw HTML,
+    link definitions, tabs), and an independent review found many ordinary files that
+    looked like imports and were not, which left Claude without the block. A second
+    copy of the block is harmless, so every other Claude file gets its own. Claude
+    Code ends an import path at a backslash, so only slash spellings can match.
     """
 
-    spellings = {str(codex_path), codex_path.as_posix()}
+    spellings = {"@" + codex_path.as_posix()}
     try:
-        spellings.add("~/" + codex_path.relative_to(home).as_posix())
+        spellings.add("@~/" + codex_path.relative_to(home).as_posix())
     except ValueError:
         pass
-    prose = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
-    # An unclosed fence runs to the end of the file.
-    prose = re.sub(r"(```|~~~).*?(?:\1|\Z)", "", prose, flags=re.DOTALL)
-    prose = "\n".join(
-        line for line in prose.splitlines() if not line.startswith(("    ", "\t"))
-    )
-    prose = re.sub(r"`[^`\n]*`", "", prose)
-    return any(
-        re.search(r"(?<!\S)@" + re.escape(spelling) + r"(?!\S)", prose)
-        for spelling in spellings
-    )
+    lines = [
+        line
+        for line in content.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+        if line.strip(" \t")
+    ]
+    return len(lines) == 1 and lines[0].rstrip(" \t") in spellings
 
 
 def has_managed_block(path: Path) -> bool:
@@ -368,15 +417,12 @@ def main(argv: list[str] | None = None) -> int:
             # Persist the caller's canonical alias path, while normalizing relative
             # segments. Path.resolve() would silently replace user-facing symlinks.
             wiki_root = Path(os.path.abspath(args.wiki_root.expanduser()))
-            if any(char in str(wiki_root) for char in ("\n", "\r", "`")):
+            if unsafe_line(str(wiki_root)):
                 raise ValueError("wiki root path contains characters unsafe for Markdown")
             if not (wiki_root / "WIKI.md").is_file():
                 raise ValueError(f"wiki root must contain WIKI.md: {wiki_root}")
-        if args.preferences and (
-            len(args.preferences) > 240
-            or any(char in args.preferences for char in ("\n", "\r", "`", "<", ">"))
-        ):
-            raise ValueError("preferences must be a single line of at most 240 safe characters")
+        if args.preferences and preference_problem(args.preferences):
+            raise ValueError(preference_problem(args.preferences))
         existing = existing_managed_block(path)
         preferences = args.preferences
         if preferences is None and existing:
@@ -387,17 +433,26 @@ def main(argv: list[str] | None = None) -> int:
         auto_session_restart = args.auto_session_restart
         if args.keep_options and existing:
             kept: list[str] = []
-            lines = existing.splitlines()
-            if not auto_update and AUTO_UPDATE_RULE in lines:
+            if not auto_update and earlier_grant(
+                existing, AUTO_UPDATE_RULE, "grants standing authorization to apply", "auto-update", "--auto-update"
+            ):
                 auto_update = True
                 kept.append("auto-update")
-            if not auto_session_restart and AUTO_SESSION_RULE in lines:
+            if not auto_session_restart and earlier_grant(
+                existing,
+                AUTO_SESSION_RULE,
+                "grants standing authorization for session rotation",
+                "session-restart",
+                "--auto-session-restart",
+            ):
                 auto_session_restart = True
                 kept.append("session-restart")
             saved_wiki = SAVED_WIKI.search(existing)
             if wiki_root is None and saved_wiki:
                 candidate = Path(saved_wiki.group(1)).parent
-                if (candidate / "WIKI.md").is_file():
+                if unsafe_line(str(candidate)):
+                    print("NOTE: saved wiki root is not a plain path and was not kept")
+                elif (candidate / "WIKI.md").is_file():
                     wiki_root = candidate
                     kept.append("wiki-root")
                 else:
@@ -406,12 +461,16 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"KEPT_OPTIONS: {', '.join(kept)}")
         block = build_block(wiki_root, auto_update, auto_session_restart, preferences)
         if args.client == "claude":
-            codex_global = known_client_path("codex", home).path
+            try:
+                codex_global = known_client_path("codex", home).path
+            except ValueError:
+                # Without a usable Codex path there is nothing to inherit from.
+                codex_global = None
             try:
                 metadata = path.lstat()
             except FileNotFoundError:
                 metadata = None
-            if metadata is not None and stat.S_ISREG(metadata.st_mode):
+            if codex_global is not None and metadata is not None and stat.S_ISREG(metadata.st_mode):
                 with path.open("r", encoding="utf-8", newline="") as handle:
                     imported = imports_codex_global(
                         handle.read(), codex_global, home or Path.home()

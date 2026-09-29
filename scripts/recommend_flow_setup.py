@@ -15,6 +15,7 @@ import subprocess
 import stat
 import sys
 import tempfile
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -62,11 +63,48 @@ def _sibling(path: Path):
 
 
 def skills_destination(client: str, home: Path, environ) -> Path:
-    return _sibling(INSTALL_SKILLS).client_destinations(environ, home)[client]
+    return _sibling(INSTALL_SKILLS).client_destinations(environ, home, client)[client]
 
 
 def instruction_file(client: str, home: Path, environ) -> Path:
     return _sibling(PERSONALIZATION).known_client_path(client, home, environ).path
+
+
+CLIENT_VARIABLES = {"claude": "CLAUDE_CONFIG_DIR", "codex": "CODEX_HOME", "opencode": "XDG_CONFIG_HOME"}
+
+
+def recorded_setting(client: str, home: Path, destination: object, target: object) -> str | None:
+    """The variable setting under which a setup lands where its record says it went,
+    as "NAME=value" or "NAME unset", or None when no one setting explains the record.
+
+    The variable, not the record, decides where an undo may write, so this is what a
+    person must set to undo a setup made with another value.
+    """
+
+    name = CLIENT_VARIABLES.get(client)
+    if name is None:
+        return None
+    if client == "codex":
+        if not isinstance(target, str) or not target:
+            return None
+        base = Path(target).parent
+    else:
+        if not isinstance(destination, str) or not destination:
+            return None
+        base = Path(destination).parent if client == "claude" else Path(destination).parent.parent
+    for environ, setting in (({}, f"{name} unset"), ({name: str(base)}, f"{name}={base}")):
+        try:
+            if client != "codex" and (
+                skills_destination(client, home, environ).expanduser().resolve()
+                != Path(str(destination)).expanduser().resolve()
+            ):
+                continue
+            if isinstance(target, str) and target and instruction_file(client, home, environ) != Path(target):
+                continue
+        except (OSError, ValueError):
+            continue
+        return setting
+    return None
 
 
 def links_to(target: Path, source: Path) -> bool:
@@ -515,6 +553,21 @@ def selected_ids(raw: str | None) -> list[str]:
     return sorted(chosen)
 
 
+def require_utf8(*paths: Path) -> None:
+    """Refuse a path the helpers cannot print back exactly: the rollback state is read from
+    their output, and a mangled path would make a finished setup impossible to undo."""
+
+    for path in paths:
+        try:
+            str(path).encode("utf-8")
+        except UnicodeEncodeError:
+            raise ValueError(f"path is not valid UTF-8, so the setup cannot record it: {path!r}") from None
+        if any(unicodedata.category(char) in ("Cc", "Zl", "Zp") for char in str(path)):
+            raise ValueError(
+                f"path contains a line break or control character, so the setup cannot record it: {path!r}"
+            )
+
+
 def stdin_is_terminal() -> bool:
     """False when there is nobody to ask: no stdin at all, a closed one, or a pipe."""
 
@@ -630,6 +683,84 @@ def save_state(path: Path, state: dict[str, object]) -> None:
         raise
 
 
+BLOCK_START = b"<!-- NOBRAINER-TECH-FLOW:START -->"
+BLOCK_END = b"<!-- NOBRAINER-TECH-FLOW:END -->"
+
+
+def block_span(data: bytes) -> tuple[int, int] | None:
+    start = data.find(BLOCK_START)
+    end = data.find(BLOCK_END)
+    if start < 0 or end < start:
+        return None
+    return start, end + len(BLOCK_END)
+
+
+def _fills_line(data: bytes, start: int, end: int) -> bool:
+    """Whether data[start:end] is a whole line, a CR before its line break allowed."""
+
+    if start and data[start - 1 : start] != b"\n":
+        return False
+    after = data[end : end + 2]
+    return after in (b"", b"\r", b"\r\n") or after.startswith(b"\n")
+
+
+def block_lines(data: bytes) -> tuple[int, int] | None:
+    """The managed block as whole lines, the END line's line break included, when
+    each marker stands on a line of its own, as scripts/install.sh requires."""
+
+    span = block_span(data)
+    if span is None:
+        return None
+    start, end = span
+    if not (
+        _fills_line(data, start, start + len(BLOCK_START))
+        and _fills_line(data, end - len(BLOCK_END), end)
+    ):
+        return None
+    line_break = data.find(b"\n", end)
+    return start, len(data) if line_break < 0 else line_break + 1
+
+
+def restored_content(current: bytes, original: bytes | None) -> bytes:
+    """The instruction file with its managed block put back as it was before the setup.
+
+    Everything outside the block stays as it is now, so edits made since the setup
+    survive. When nothing outside the block changed, the result is the original file
+    byte for byte: the setup added one line break before the block when the file did
+    not end with one, and that goes too. A block on lines of its own is replaced as
+    whole lines, as scripts/install.sh does, so both undo to the same bytes.
+    """
+
+    whole = block_lines(current)
+    span = whole or block_span(current)
+    if span is None:
+        raise ValueError("managed block not found")
+    before = b""
+    if original is not None:
+        original_span = (block_lines(original) if whole else None) or block_span(original)
+        if original_span is not None:
+            before = original[original_span[0] : original_span[1]]
+    after = current[span[1] :]
+    if whole and before and not before.endswith(b"\n") and after:
+        # The block ended the original file; the text now after it keeps its own line.
+        before += b"\n"
+    restored = current[: span[0]] + before + after
+    if original is not None and restored == original + b"\n":
+        return original
+    return restored
+
+
+def save_preimage(path: Path, preimage: tuple[bytes, int]) -> Path:
+    """Keep the file as it was before the setup next to it, as the helper's backups are."""
+
+    backup = _sibling(PERSONALIZATION).backup_path(path)
+    data, mode = preimage
+    with backup.open("xb") as handle:
+        handle.write(data)
+    os.chmod(backup, mode)
+    return backup
+
+
 def read_file_preimage(path: Path) -> tuple[bytes, int] | None:
     """Capture an exact regular-file preimage for a bounded rollback."""
     try:
@@ -709,13 +840,19 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     target_path = Path(str(profile.get("target", ""))) if profile else None
     backup = profile.get("backup") if profile else None
     if target_path:
-        allowed_paths = {
-            instruction_file(client, args.home, environ)
-            for client in CLIENTS
-            for environ in (args.environ, {})
-        }
+        allowed_paths = set()
+        for client in CLIENTS:
+            for environ in (args.environ, {}):
+                try:
+                    allowed_paths.add(instruction_file(client, args.home, environ))
+                except ValueError:
+                    # Another client's broken variable must not block this undo.
+                    pass
         if target_path not in allowed_paths:
             print(f"ERROR: refusing unexpected personalization target: {target_path}", file=sys.stderr)
+            setting = recorded_setting(args.client, args.home, state.get("destination"), str(target_path))
+            if setting:
+                print(f"HINT: if the setup went there, it was made with {setting}; undo it with that setting", file=sys.stderr)
             return 3
         if backup:
             backup_file = Path(str(backup))
@@ -736,6 +873,8 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     if target_path and backup and not target_path.exists():
         print(f"PRESERVED: personalization target is missing: {target_path}")
         return 3
+    restored: bytes | None = None
+    original: bytes | None = None
     if target_path and target_path.exists():
         current = target_path.read_bytes()
         expected_hash = profile.get("written_sha256")
@@ -744,6 +883,12 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
             return 3
         if backup and not Path(str(backup)).is_file():
             print(f"ERROR: personalization backup missing: {backup}", file=sys.stderr)
+            return 3
+        original = Path(str(backup)).read_bytes() if backup else None
+        try:
+            restored = restored_content(current, original)
+        except ValueError:
+            print(f"PRESERVED: managed block not found in {target_path}")
             return 3
     for name in created:
         target = destination / name
@@ -768,18 +913,20 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         elif target.exists() or target.is_symlink():
             print(f"PRESERVED: changed target {target}")
 
-    if target_path and target_path.exists():
-        current = target_path.read_bytes()
-        backup = profile.get("backup")
-        if backup:
-            backup_path = Path(str(backup))
-            original = backup_path.read_bytes()
+    if target_path and restored is not None:
+        if original is None and not restored.strip():
+            # The setup created the file, and it holds nothing else.
+            target_path.unlink()
+            if target_path.exists() or target_path.is_symlink():
+                raise OSError(f"personalization file remained after rollback: {target_path}")
+            print(f"REMOVED_MANAGED_BLOCK: {target_path}")
+        else:
             mode = target_path.stat().st_mode & 0o777
             descriptor, temporary_name = tempfile.mkstemp(prefix=f".{target_path.name}.rollback.", dir=target_path.parent)
             temporary = Path(temporary_name)
             try:
                 with os.fdopen(descriptor, "wb") as handle:
-                    handle.write(original)
+                    handle.write(restored)
                     handle.flush()
                     os.fsync(handle.fileno())
                 temporary.chmod(mode)
@@ -787,28 +934,12 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
             except Exception:
                 temporary.unlink(missing_ok=True)
                 raise
-            if target_path.read_bytes() != original:
+            if target_path.read_bytes() != restored:
                 raise OSError(f"personalization restore readback mismatch: {target_path}")
-            print(f"RESTORED: {target_path} from {backup_path}")
-        else:
-            content = current.decode("utf-8")
-            start = content.find("<!-- NOBRAINER-TECH-FLOW:START -->")
-            end_marker = "<!-- NOBRAINER-TECH-FLOW:END -->"
-            end = content.find(end_marker)
-            if start < 0 or end < start:
-                print(f"PRESERVED: managed block not found in {target_path}")
-                return 3
-            end += len(end_marker)
-            content = content[:start] + content[end:]
-            if content.strip():
-                target_path.write_text(content, encoding="utf-8")
-                if target_path.read_text(encoding="utf-8") != content:
-                    raise OSError(f"personalization rollback readback mismatch: {target_path}")
+            if restored == original:
+                print(f"RESTORED: {target_path} from {backup}")
             else:
-                target_path.unlink()
-                if target_path.exists() or target_path.is_symlink():
-                    raise OSError(f"personalization file remained after rollback: {target_path}")
-            print(f"REMOVED_MANAGED_BLOCK: {target_path}")
+                print(f"REMOVED_MANAGED_BLOCK: {target_path}; the rest of the file is kept as it is now")
 
     if state_file.lstat().st_ino != metadata.st_ino or state_file.lstat().st_dev != metadata.st_dev:
         print(f"ERROR: rollback state changed during rollback; preserved at {state_file}", file=sys.stderr)
@@ -866,9 +997,13 @@ def main(argv: list[str] | None = None) -> int:
         # The helpers run from the checkout, so a relative path would land inside it.
         args.home_explicit = args.home is not None
         args.environ = {} if args.home_explicit else os.environ
+        if not args.home_explicit and os.name != "nt" and os.environ.get("HOME") == "":
+            raise ValueError("HOME is set but empty")
         args.home = (
             Path(os.path.abspath(args.home.expanduser())) if args.home_explicit else Path.home()
         )
+        if not args.home.is_absolute():
+            raise ValueError(f"the home directory must be an absolute path, not {str(args.home)!r}")
         repo_url = safe_repo_url(args.repo_url)
         state = state_path(args.home, args.state_file, args.client)
         legacy_state = legacy_state_path(args.home, args.state_file)
@@ -906,11 +1041,8 @@ def main(argv: list[str] | None = None) -> int:
         ask_if_missing(args)
         if args.apply and not args.selection:
             raise ValueError("--apply requires an explicit --selection")
-        if args.preferences and (
-            len(args.preferences) > 240
-            or any(char in args.preferences for char in ("\n", "\r", "`", "<", ">"))
-        ):
-            raise ValueError("preferences must be a single line of at most 240 safe characters")
+        if args.preferences and _sibling(PERSONALIZATION).preference_problem(args.preferences):
+            raise ValueError(_sibling(PERSONALIZATION).preference_problem(args.preferences))
         if args.repo_path is not None:
             repository_context = inspect_local_repository(args.repo_path)
         elif args.offline:
@@ -920,13 +1052,21 @@ def main(argv: list[str] | None = None) -> int:
         destination = (
             args.dest or skills_destination(args.client, args.home, args.environ)
         ).expanduser().resolve()
+        require_utf8(args.home, destination)
         if previous and Path(str(previous["destination"])).expanduser().resolve() != destination:
+            setting = recorded_setting(
+                args.client, args.home, previous["destination"], (previous.get("profile") or {}).get("target")
+            )
+            if setting is None:
+                remedy = "undo it with --rollback --apply and the --home or --dest it was made with"
+            elif setting.endswith(" unset"):
+                # After an upgrade: 2.0.0 used the default place even when the variable was set.
+                remedy = f"undo it with {setting} and --rollback --apply, or pass --home to keep that location"
+            else:
+                remedy = f"undo it with {setting} and --rollback --apply"
             raise ValueError(
                 "existing setup state belongs to a different skills destination: "
-                f"{previous['destination']} (after an upgrade this can mean the earlier "
-                "setup used the default location instead of CLAUDE_CONFIG_DIR or "
-                "XDG_CONFIG_HOME: undo it with --rollback --apply, or pass --home to "
-                "keep that location)"
+                f"{previous['destination']} ({remedy}, then run this command again)"
             )
         before = installed_ids(destination)
         ranked = recommendations(
@@ -983,7 +1123,10 @@ def main(argv: list[str] | None = None) -> int:
             )
         selection_text = args.selection
         if not selection_text and stdin_is_terminal():
-            selection_text = input("Choose any recommendation IDs to install (comma-separated, blank to stop): ").strip()
+            try:
+                selection_text = input("Choose any recommendation IDs to install (comma-separated, blank to stop): ").strip()
+            except EOFError:
+                selection_text = ""
         chosen = selected_ids(selection_text)
         if not chosen:
             print("DRY_RUN: no files changed; choose IDs with --selection and review this plan.")
@@ -1022,9 +1165,16 @@ def main(argv: list[str] | None = None) -> int:
                 profile_failure_hint(profile_output)
                 return code
         profile_target = instruction_file(personalization_client, args.home, args.environ)
+        require_utf8(profile_target)
         old_profile = previous.get("profile", {})
         if old_profile.get("target") and Path(str(old_profile["target"])) != profile_target:
-            raise ValueError(f"existing setup state belongs to a different personalization target: {old_profile['target']}")
+            setting = recorded_setting(args.client, args.home, previous.get("destination"), old_profile["target"])
+            with_setting = f" with {setting} and" if setting else " with"
+            raise ValueError(
+                "existing setup state belongs to a different personalization target: "
+                f"{old_profile['target']} (an earlier run wrote its instructions there; undo that "
+                f"setup{with_setting} --rollback --apply, then run this command again)"
+            )
         if not args.apply:
             return 0
         # Inspect every target before writing any of them. This keeps a later
@@ -1054,9 +1204,21 @@ def main(argv: list[str] | None = None) -> int:
         if inherited and not args.preferences:
             profile = {}
         else:
+            if old_profile.get("target"):
+                # Undo puts the block back as it was before the first setup, so a later
+                # run keeps the first backup (or its absence), not the one it just made.
+                recorded_backup = old_profile.get("backup")
+            elif backup_match:
+                recorded_backup = backup_match.group(1)
+            elif profile_preimage is not None:
+                # The file already held this exact block, so nothing was written and no
+                # backup was made: keep its preimage so undo leaves that block in place.
+                recorded_backup = str(save_preimage(profile_target, profile_preimage))
+            else:
+                recorded_backup = None
             profile = {
                 "target": str(profile_target),
-                "backup": backup_match.group(1) if backup_match else old_profile.get("backup"),
+                "backup": recorded_backup,
                 "written_sha256": hashlib.sha256(profile_target.read_bytes()).hexdigest(),
             }
         created = sorted(set(previous.get("created_skills", [])) | {name for name in new_skills if (destination / name).is_symlink()})

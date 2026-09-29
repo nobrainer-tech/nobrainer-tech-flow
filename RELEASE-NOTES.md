@@ -1,5 +1,33 @@
 # nobrainer-tech-flow release notes
 
+## v2.0.2 - 2026-09-29
+
+- Install without Python: paste the prompt from the README into your agent, or run
+  `sh scripts/install.sh --client claude` (macOS, Linux, WSL, Git Bash on Windows).
+  It previews, `--apply` links all skills and adds the instruction block, and
+  `--undo --apply` reverses it. `python3 scripts/install.py` does the same with
+  Python; both share the setup record, so either one undoes the other.
+- Undo now puts the instruction file back as it was before the first setup, even
+  after later installs, and keeps edits made outside the managed block since (for
+  setups recorded by 2.0.2; see the verification record for older records).
+- A Claude file counts as inheriting the Codex instructions only when it holds
+  nothing but the import line; every other Claude file gets its own block. The
+  earlier check skipped the block for files Claude Code does not import.
+- Fixes from an independent review of 2.0.1: an unusable environment variable that
+  the selected client never reads no longer stops it (or its undo); a grant can no
+  longer be forged from a wiki path or preference through a line-separator
+  character; a symlink-loop destination is reported on Python 3.13; a planted
+  `.pyc` in a copy install is a conflict again; a home path that is not valid
+  UTF-8, holds a line break or is not absolute is refused before anything is
+  written.
+- Fixes from a review of the new scripts: undo hints keep `--home` and name the
+  variable a setup was made with, runs at the same time no longer write into the
+  checkout, and `install.sh` handles `CDPATH`, `--home=~/x`, old Mac line breaks and
+  the paths the Python scripts refuse.
+- Contains everything in 2.0.1; see both verification records.
+
+See the [verification record](docs/releases/v2.0.2.md).
+
 ## v2.0.1 - 2026-09-29
 
 - Corrective release: no new skill. Skill text changes only to fix helper paths

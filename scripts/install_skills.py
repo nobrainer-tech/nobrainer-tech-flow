@@ -20,26 +20,42 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
 
 
+def config_directory(environ: Mapping[str, str], name: str, relevant: bool) -> str:
+    """The directory a client variable names, or "" when it is unset or not ours to judge.
+
+    An empty XDG_CONFIG_HOME counts as unset, as the XDG specification says. Any other
+    value is used exactly as written. One that is not absolute (an empty
+    CLAUDE_CONFIG_DIR included) is an error for the client that reads the variable,
+    since the scripts run from the checkout while the client resolves it against its
+    own directory, and is ignored for every other client, which never looks at it.
+    """
+
+    value = environ.get(name)
+    if value is None or (value == "" and name != "CLAUDE_CONFIG_DIR"):
+        return ""
+    if not Path(value).is_absolute():
+        if relevant:
+            raise ValueError(f"{name} must be an absolute path, not {value!r}")
+        return ""
+    return value
+
+
 def client_destinations(
-    environ: Mapping[str, str] | None = None, home: Path | None = None
+    environ: Mapping[str, str] | None = None,
+    home: Path | None = None,
+    client: str | None = None,
 ) -> dict[str, Path]:
     """Skill directories per client, honouring the variables the clients read.
 
-    Claude Code reads CLAUDE_CONFIG_DIR and OpenCode follows XDG_CONFIG_HOME; an
-    empty value counts as unset, and a value that is not an absolute path is an error
-    (it would resolve against whatever directory the script happens to run from).
+    Claude Code reads CLAUDE_CONFIG_DIR and OpenCode follows XDG_CONFIG_HOME. A bad
+    value is an error only for the client that reads it; without ``client`` every
+    variable is checked.
     """
 
     environ = os.environ if environ is None else environ
     home = Path.home() if home is None else home
-    values = {}
-    for name in ("CLAUDE_CONFIG_DIR", "XDG_CONFIG_HOME"):
-        value = (environ.get(name) or "").strip()
-        if value and not Path(value).is_absolute():
-            raise ValueError(f"{name} must be an absolute path, not {value!r}")
-        values[name] = value
-    claude = values["CLAUDE_CONFIG_DIR"]
-    xdg = values["XDG_CONFIG_HOME"]
+    claude = config_directory(environ, "CLAUDE_CONFIG_DIR", client in (None, "claude"))
+    xdg = config_directory(environ, "XDG_CONFIG_HOME", client in (None, "opencode"))
     return {
         "claude": (Path(claude) if claude else home / ".claude") / "skills",
         "codex": home / ".agents" / "skills",
@@ -151,13 +167,18 @@ def entry_fingerprint(target: Path) -> EntryFingerprint | None:
     return metadata.st_dev, metadata.st_ino, metadata.st_mode, linked
 
 
-JUNK_NAMES = frozenset({"__pycache__", ".DS_Store", "Thumbs.db"})
+JUNK_DIRECTORIES = frozenset({"__pycache__"})
+JUNK_FILES = frozenset({".DS_Store", "Thumbs.db"})
 
 
-def is_junk(name: str) -> bool:
-    """Bytecode and file-manager litter: never part of a skill, so never compared."""
+def is_junk(name: str, is_directory: bool) -> bool:
+    """Bytecode caches and file-manager litter: never part of a skill, so never compared.
 
-    return name in JUNK_NAMES or name.endswith(".pyc")
+    Only these exact names count. A loose ``.pyc`` next to a script is importable and
+    changes what the skill runs, so it is a difference like any other file.
+    """
+
+    return name in (JUNK_DIRECTORIES if is_directory else JUNK_FILES)
 
 
 def file_digest(path: Path) -> str:
@@ -182,7 +203,7 @@ def tree_manifest(root: Path, hash_files: bool = True) -> TreeManifest:
         current_path = Path(current)
         traversable: list[str] = []
         for name in sorted(directories):
-            if is_junk(name):
+            if is_junk(name, True):
                 continue
             path = current_path / name
             relative = path.relative_to(root).as_posix()
@@ -199,7 +220,7 @@ def tree_manifest(root: Path, hash_files: bool = True) -> TreeManifest:
         directories[:] = traversable
 
         for name in sorted(files):
-            if is_junk(name):
+            if is_junk(name, False):
                 continue
             path = current_path / name
             relative = path.relative_to(root).as_posix()
@@ -233,7 +254,9 @@ def stage_and_publish_copy(
             source,
             staged,
             symlinks=True,
-            ignore=lambda _directory, names: [name for name in names if is_junk(name)],
+            ignore=lambda directory, names: [
+                name for name in names if is_junk(name, (Path(directory) / name).is_dir())
+            ],
         )
         staged_manifest = tree_manifest(staged)
         source_after = tree_manifest(source)
@@ -385,7 +408,15 @@ def legacy_link_snapshot(
     if before_id != after_id:
         return None
 
-    resolved = Path(linked)
+    shown = linked
+    if os.name == "nt":
+        # Windows reports the substitute name, which carries a \\?\ prefix that
+        # resolve() keeps, so it would never equal the checkout path.
+        if shown.startswith("\\\\?\\UNC\\"):
+            shown = "\\\\" + shown[8:]
+        elif shown.startswith("\\\\?\\"):
+            shown = shown[4:]
+    resolved = Path(shown)
     if not resolved.is_absolute():
         resolved = target.parent / resolved
     known_sources = {
@@ -578,6 +609,10 @@ def destination_problem(destination: Path) -> str | None:
             if not candidate.is_dir():
                 return f"destination is not a directory: {candidate}"
             return None
+        if candidate.is_symlink():
+            # exists() is False for a dangling link and for a loop, and since Python 3.13
+            # resolve() no longer raises on a loop.
+            return f"destination is a dangling or looping link: {candidate}"
     return None
 
 
@@ -676,7 +711,7 @@ def main() -> int:
 
     try:
         destination = (
-            args.dest or client_destinations()[args.client]
+            args.dest or client_destinations(client=args.client)[args.client]
         ).expanduser().resolve()
         problem = destination_problem(destination)
     except (OSError, RuntimeError, ValueError) as exc:
