@@ -139,15 +139,21 @@ flowchart TD
 
 ## Install safely
 
-1. Paste this into your coding agent. It works on macOS, Linux and Windows and needs no Python:
+1. Paste this into your coding agent, whichever it is. The same prompt installs and updates, and
+   the default install works on macOS, Linux and Windows without Python:
 
    ```text
-   Install nobrainer-tech-flow for yourself from https://github.com/nobrainer-tech/nobrainer-tech-flow.
-   Clone it into ~/.nobrainer-tech-flow (or git pull it there if it is already there) and keep that
-   folder: the skills link to it. There, run `sh scripts/install.sh --client <you>`, where <you> is
-   claude, codex, opencode or copilot (on Windows, run it in Git Bash). Show me what it plans; after
-   I agree, run it again with --apply and give me the undo command it prints. If you are Cursor,
-   Gemini CLI, Pi or Kimi Code, follow your section of docs/INSTALL.md instead.
+   Install nobrainer-tech-flow from https://github.com/nobrainer-tech/nobrainer-tech-flow
+   for the coding agent you are, or update it if it is already installed.
+
+   1. Keep a copy in ~/.nobrainer-tech-flow: clone the repository there, or run
+      git pull there if it already exists. Do not delete that folder later; the
+      skills link to it.
+   2. Read the install section of its README and follow the method it gives for
+      your client and operating system (docs/INSTALL.md has the details).
+   3. Preview first and show me what will change. Apply only after I agree, and
+      do not edit my files beyond what that method does.
+   4. Tell me the undo command, and whether I need to restart you.
    ```
 
    Or run it yourself in a terminal (on Windows, in Git Bash):
@@ -158,10 +164,13 @@ flowchart TD
    sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude --apply   # link the skills, add the block
    ```
 
-   It links all eighteen skills and adds one instruction block, shows the exact text first, refuses
-   anything that is not its own, grants no authorization and undoes itself with `--undo --apply`.
-   Update later with `git -C ~/.nobrainer-tech-flow pull`. With Python, `python3 scripts/install.py`
-   takes the same flags.
+   `--client` is `claude`, `codex`, `opencode` or `copilot`. Cursor, Gemini CLI, Pi and Kimi Code
+   take Flow as a plugin or extension instead: see their sections in
+   [docs/INSTALL.md](docs/INSTALL.md#client-channels). The script links all eighteen skills and adds
+   one instruction block, shows the exact text first, refuses anything that is not its own, grants
+   no authorization and undoes itself with `--undo --apply`. To update, run `git pull` in
+   `~/.nobrainer-tech-flow` and the same two commands again, or paste the prompt again. With Python,
+   `python3 scripts/install.py` takes the same flags.
 2. In a fresh session, give it one small task with a checkable result:
 
 > Use nobrainer-tech-flow. Fix one bug in this project. Reproduce it first, make the
