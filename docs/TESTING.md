@@ -62,18 +62,25 @@ checksum-pinned Gitleaks tree scan on Linux. A Windows job runs the structure
 validators, the adapter tests (including the LF pins for the hook scripts and the
 bootstrap), [`tests/test_windows_smoke.py`](../tests/test_windows_smoke.py):
 the hook wrapper under Git Bash, a copy-mode install, personalization and the UTC
-session title, and [`tests/test_one_command_installer.py`](../tests/test_one_command_installer.py):
-`install.py` previewing, installing, repeating and undoing on that runner. It does
-not run the whole suite there: some historical evidence tests
-compare text byte for byte and assume LF checkouts. CI does not claim a client UI
-or model followed a skill.
+session title, and both one-command installers,
+[`tests/test_one_command_installer.py`](../tests/test_one_command_installer.py)
+and [`tests/test_shell_installer.py`](../tests/test_shell_installer.py) (the shell
+one under Git Bash), previewing, installing, repeating and undoing on that runner.
+CI sets `NOBRAINER_REQUIRE_SYMLINKS=1`, so a runner that cannot create links fails
+those tests instead of skipping them. It does not run the whole suite on Windows:
+some historical evidence tests compare text byte for byte and assume LF checkouts.
+CI does not claim a client UI or model followed a skill.
 
 The one-command installer tests run the real scripts against a private home:
 preview writes nothing, apply links every skill and writes one block without any
-standing authorization, a second apply changes nothing, undo restores the profile
-byte for byte, a foreign target is refused before any write, and the variables and
-`--home` select the same place the helpers do. Each was checked against a mutated
-script that must fail it.
+standing authorization, a second apply changes nothing, undo puts the instruction
+file back byte for byte (and keeps edits made outside the block since), a foreign
+target is refused before any write, and the variables and `--home` select the same
+place the helpers do. The shell installer's tests also run it in every POSIX shell
+found (dash, bash in POSIX mode, busybox), with no Python on its `PATH`, and check
+that its block is byte for byte the Python helper's and that either installer
+undoes what the other did. Each check was verified against a mutated script that
+must fail it (8 mutants of `install.py` and 18 of `install.sh`, all caught).
 
 ## 3. Forward behavior evaluation
 

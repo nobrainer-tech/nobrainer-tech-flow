@@ -13,3 +13,4 @@ docs/evals/artifacts/*.raw.b64 -text -whitespace
 hooks/session-start text eol=lf
 hooks/run-hook.cmd text eol=lf
 adapters/bootstrap.md text eol=lf
+scripts/install.sh text eol=lf

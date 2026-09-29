@@ -129,8 +129,8 @@ rewrite skill bodies.
 
 ## Current-source readback (2026-09-29)
 
-Run against a checkout of the 2.0.1 source (the adapters, manifests and hooks are
-unchanged in 2.0.2) with isolated client configuration and
+Run against a checkout of the 2.0.1 source (2.0.2 changes no adapter or hook and
+only the version in the manifests) with isolated client configuration and
 no real model request: the Claude Code session ran against a local stand-in API
 endpoint and Codex against a closed network, and both plugin installs used a
 local checkout, not the GitHub source. The rows show what the client loads and

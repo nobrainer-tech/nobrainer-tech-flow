@@ -20,7 +20,7 @@
 <p align="center">
   <a href="https://nobrainer.tech/flow/">Launch page</a>
   ·
-  <a href="https://nobrainer.tech/flow/#setup">Copy the setup prompt</a>
+  <a href="#install-safely">Copy the setup prompt</a>
   ·
   <a href="https://nobrainer.tech/flow/compare/">Compare 50+ tools</a>
   ·
@@ -139,7 +139,29 @@ flowchart TD
 
 ## Install safely
 
-1. Copy the setup prompt from the [launch page](https://nobrainer.tech/flow/#setup) and paste it into your agent. It verifies the release, shows the planned changes with a rollback path, then installs.
+1. Paste this into your coding agent. It works on macOS, Linux and Windows and needs no Python:
+
+   ```text
+   Install nobrainer-tech-flow for yourself from https://github.com/nobrainer-tech/nobrainer-tech-flow.
+   Clone it into ~/.nobrainer-tech-flow (or git pull it there if it is already there) and keep that
+   folder: the skills link to it. There, run `sh scripts/install.sh --client <you>`, where <you> is
+   claude, codex, opencode or copilot (on Windows, run it in Git Bash). Show me what it plans; after
+   I agree, run it again with --apply and give me the undo command it prints. If you are Cursor,
+   Gemini CLI, Pi or Kimi Code, follow your section of docs/INSTALL.md instead.
+   ```
+
+   Or run it yourself in a terminal (on Windows, in Git Bash):
+
+   ```sh
+   git clone https://github.com/nobrainer-tech/nobrainer-tech-flow ~/.nobrainer-tech-flow
+   sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude           # preview: changes nothing
+   sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude --apply   # link the skills, add the block
+   ```
+
+   It links all eighteen skills and adds one instruction block, shows the exact text first, refuses
+   anything that is not its own, grants no authorization and undoes itself with `--undo --apply`.
+   Update later with `git -C ~/.nobrainer-tech-flow pull`. With Python, `python3 scripts/install.py`
+   takes the same flags.
 2. In a fresh session, give it one small task with a checkable result:
 
 > Use nobrainer-tech-flow. Fix one bug in this project. Reproduce it first, make the
@@ -173,14 +195,15 @@ Set `NB_REVIEWED_COMMIT` to the exact full commit SHA you reviewed. Tags and
 branches are rejected because they can move; every failed gate stops before the
 next command.
 
-`install.py` links all eighteen skills and adds one managed instruction block for
-`claude`, `codex`, `opencode` or `copilot`. The preview shows the exact text it
-would write, a target that is not its own link is refused, no authorization is
-ever granted, and `python3 scripts/install.py --client codex --undo --apply`
-reverses it. It needs symbolic links (Windows: Developer Mode). For a subset, a
-copy install, the shared `agents` folder or another client, use the individual
-scripts in [Installation](docs/INSTALL.md). Restart the client and perform
-clean-session discovery before claiming runtime installation.
+`install.py`, like `scripts/install.sh` without Python, links all eighteen skills
+and adds one managed instruction block for `claude`, `codex`, `opencode` or
+`copilot`. The preview shows the exact text it would write, a target that is not
+its own link is refused, no authorization is ever granted, and
+`python3 scripts/install.py --client codex --undo --apply` reverses it. It needs
+symbolic links (Windows: Developer Mode). For a subset, a copy install, the shared
+`agents` folder or another client, use the individual scripts in
+[Installation](docs/INSTALL.md). Restart the client and perform clean-session
+discovery before claiming runtime installation.
 
 </details>
 

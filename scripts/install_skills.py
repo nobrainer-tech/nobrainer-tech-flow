@@ -23,14 +23,15 @@ SKILLS = ROOT / "skills"
 def config_directory(environ: Mapping[str, str], name: str, relevant: bool) -> str:
     """The directory a client variable names, or "" when it is unset or not ours to judge.
 
-    A blank value counts as unset and any other value is used exactly as written. A
-    relative path is an error for the client that reads the variable (the scripts run
-    from the checkout, while the client resolves it against its own directory) and is
-    ignored for every other client, which never looks at it.
+    An empty XDG_CONFIG_HOME counts as unset, as the XDG specification says. Any other
+    value is used exactly as written. One that is not absolute (an empty
+    CLAUDE_CONFIG_DIR included) is an error for the client that reads the variable,
+    since the scripts run from the checkout while the client resolves it against its
+    own directory, and is ignored for every other client, which never looks at it.
     """
 
-    value = environ.get(name) or ""
-    if not value.strip():
+    value = environ.get(name)
+    if value is None or (value == "" and name != "CLAUDE_CONFIG_DIR"):
         return ""
     if not Path(value).is_absolute():
         if relevant:

@@ -15,6 +15,7 @@ import subprocess
 import stat
 import sys
 import tempfile
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -524,6 +525,10 @@ def require_utf8(*paths: Path) -> None:
             str(path).encode("utf-8")
         except UnicodeEncodeError:
             raise ValueError(f"path is not valid UTF-8, so the setup cannot record it: {path!r}") from None
+        if any(unicodedata.category(char) in ("Cc", "Zl", "Zp") for char in str(path)):
+            raise ValueError(
+                f"path contains a line break or control character, so the setup cannot record it: {path!r}"
+            )
 
 
 def stdin_is_terminal() -> bool:
@@ -641,6 +646,52 @@ def save_state(path: Path, state: dict[str, object]) -> None:
         raise
 
 
+BLOCK_START = b"<!-- NOBRAINER-TECH-FLOW:START -->"
+BLOCK_END = b"<!-- NOBRAINER-TECH-FLOW:END -->"
+
+
+def block_span(data: bytes) -> tuple[int, int] | None:
+    start = data.find(BLOCK_START)
+    end = data.find(BLOCK_END)
+    if start < 0 or end < start:
+        return None
+    return start, end + len(BLOCK_END)
+
+
+def restored_content(current: bytes, original: bytes | None) -> bytes:
+    """The instruction file with its managed block put back as it was before the setup.
+
+    Everything outside the block stays as it is now, so edits made since the setup
+    survive. When nothing outside the block changed, the result is the original file
+    byte for byte: the setup added one line break before the block when the file did
+    not end with one, and that goes too.
+    """
+
+    span = block_span(current)
+    if span is None:
+        raise ValueError("managed block not found")
+    before = b""
+    if original is not None:
+        original_span = block_span(original)
+        if original_span is not None:
+            before = original[original_span[0] : original_span[1]]
+    restored = current[: span[0]] + before + current[span[1] :]
+    if original is not None and restored == original + b"\n":
+        return original
+    return restored
+
+
+def save_preimage(path: Path, preimage: tuple[bytes, int]) -> Path:
+    """Keep the file as it was before the setup next to it, as the helper's backups are."""
+
+    backup = _sibling(PERSONALIZATION).backup_path(path)
+    data, mode = preimage
+    with backup.open("xb") as handle:
+        handle.write(data)
+    os.chmod(backup, mode)
+    return backup
+
+
 def read_file_preimage(path: Path) -> tuple[bytes, int] | None:
     """Capture an exact regular-file preimage for a bounded rollback."""
     try:
@@ -750,6 +801,8 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     if target_path and backup and not target_path.exists():
         print(f"PRESERVED: personalization target is missing: {target_path}")
         return 3
+    restored: bytes | None = None
+    original: bytes | None = None
     if target_path and target_path.exists():
         current = target_path.read_bytes()
         expected_hash = profile.get("written_sha256")
@@ -758,6 +811,12 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
             return 3
         if backup and not Path(str(backup)).is_file():
             print(f"ERROR: personalization backup missing: {backup}", file=sys.stderr)
+            return 3
+        original = Path(str(backup)).read_bytes() if backup else None
+        try:
+            restored = restored_content(current, original)
+        except ValueError:
+            print(f"PRESERVED: managed block not found in {target_path}")
             return 3
     for name in created:
         target = destination / name
@@ -782,18 +841,20 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         elif target.exists() or target.is_symlink():
             print(f"PRESERVED: changed target {target}")
 
-    if target_path and target_path.exists():
-        current = target_path.read_bytes()
-        backup = profile.get("backup")
-        if backup:
-            backup_path = Path(str(backup))
-            original = backup_path.read_bytes()
+    if target_path and restored is not None:
+        if original is None and not restored.strip():
+            # The setup created the file, and it holds nothing else.
+            target_path.unlink()
+            if target_path.exists() or target_path.is_symlink():
+                raise OSError(f"personalization file remained after rollback: {target_path}")
+            print(f"REMOVED_MANAGED_BLOCK: {target_path}")
+        else:
             mode = target_path.stat().st_mode & 0o777
             descriptor, temporary_name = tempfile.mkstemp(prefix=f".{target_path.name}.rollback.", dir=target_path.parent)
             temporary = Path(temporary_name)
             try:
                 with os.fdopen(descriptor, "wb") as handle:
-                    handle.write(original)
+                    handle.write(restored)
                     handle.flush()
                     os.fsync(handle.fileno())
                 temporary.chmod(mode)
@@ -801,28 +862,12 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
             except Exception:
                 temporary.unlink(missing_ok=True)
                 raise
-            if target_path.read_bytes() != original:
+            if target_path.read_bytes() != restored:
                 raise OSError(f"personalization restore readback mismatch: {target_path}")
-            print(f"RESTORED: {target_path} from {backup_path}")
-        else:
-            content = current.decode("utf-8")
-            start = content.find("<!-- NOBRAINER-TECH-FLOW:START -->")
-            end_marker = "<!-- NOBRAINER-TECH-FLOW:END -->"
-            end = content.find(end_marker)
-            if start < 0 or end < start:
-                print(f"PRESERVED: managed block not found in {target_path}")
-                return 3
-            end += len(end_marker)
-            content = content[:start] + content[end:]
-            if content.strip():
-                target_path.write_text(content, encoding="utf-8")
-                if target_path.read_text(encoding="utf-8") != content:
-                    raise OSError(f"personalization rollback readback mismatch: {target_path}")
+            if restored == original:
+                print(f"RESTORED: {target_path} from {backup}")
             else:
-                target_path.unlink()
-                if target_path.exists() or target_path.is_symlink():
-                    raise OSError(f"personalization file remained after rollback: {target_path}")
-            print(f"REMOVED_MANAGED_BLOCK: {target_path}")
+                print(f"REMOVED_MANAGED_BLOCK: {target_path}; the rest of the file is kept as it is now")
 
     if state_file.lstat().st_ino != metadata.st_ino or state_file.lstat().st_dev != metadata.st_dev:
         print(f"ERROR: rollback state changed during rollback; preserved at {state_file}", file=sys.stderr)
@@ -880,6 +925,8 @@ def main(argv: list[str] | None = None) -> int:
         # The helpers run from the checkout, so a relative path would land inside it.
         args.home_explicit = args.home is not None
         args.environ = {} if args.home_explicit else os.environ
+        if not args.home_explicit and os.name != "nt" and os.environ.get("HOME") == "":
+            raise ValueError("HOME is set but empty")
         args.home = (
             Path(os.path.abspath(args.home.expanduser())) if args.home_explicit else Path.home()
         )
@@ -1076,9 +1123,21 @@ def main(argv: list[str] | None = None) -> int:
         if inherited and not args.preferences:
             profile = {}
         else:
+            if old_profile.get("target"):
+                # Undo puts the block back as it was before the first setup, so a later
+                # run keeps the first backup (or its absence), not the one it just made.
+                recorded_backup = old_profile.get("backup")
+            elif backup_match:
+                recorded_backup = backup_match.group(1)
+            elif profile_preimage is not None:
+                # The file already held this exact block, so nothing was written and no
+                # backup was made: keep its preimage so undo leaves that block in place.
+                recorded_backup = str(save_preimage(profile_target, profile_preimage))
+            else:
+                recorded_backup = None
             profile = {
                 "target": str(profile_target),
-                "backup": backup_match.group(1) if backup_match else old_profile.get("backup"),
+                "backup": recorded_backup,
                 "written_sha256": hashlib.sha256(profile_target.read_bytes()).hexdigest(),
             }
         created = sorted(set(previous.get("created_skills", [])) | {name for name in new_skills if (destination / name).is_symlink()})

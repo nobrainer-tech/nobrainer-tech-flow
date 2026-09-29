@@ -293,7 +293,7 @@ class PersonalizationInstallerTests(unittest.TestCase):
             self.assertEqual(0, codex.returncode, codex.stderr)
             claude_file = home / ".claude" / "CLAUDE.md"
             claude_file.parent.mkdir()
-            original = "@~/.codex/AGENTS.md\nClaude-only preferences\n"
+            original = "@~/.codex/AGENTS.md\n"
             claude_file.write_text(original, encoding="utf-8")
             result = self.run_installer(
                 "--client", "claude", "--home", raw, "--apply"
@@ -302,6 +302,13 @@ class PersonalizationInstallerTests(unittest.TestCase):
             self.assertIn("INHERITS_CODEX", result.stdout)
             self.assertEqual(original, claude_file.read_text(encoding="utf-8"))
             self.assertEqual([], list(claude_file.parent.glob("CLAUDE.md.bak.*")))
+
+            # Anything else in the file, and it gets its own copy of the block.
+            claude_file.write_text(original + "Claude-only preferences\n", encoding="utf-8")
+            own = self.run_installer("--client", "claude", "--home", raw, "--apply")
+            self.assertEqual(0, own.returncode, own.stderr)
+            self.assertNotIn("INHERITS_CODEX", own.stdout)
+            self.assertEqual(1, claude_file.read_text(encoding="utf-8").count(START))
 
     def test_claude_import_of_a_codex_file_without_the_block_still_gets_the_block(self) -> None:
         # Claiming "inherited" while the imported file carries no block would leave
@@ -314,7 +321,7 @@ class PersonalizationInstallerTests(unittest.TestCase):
                     (home / ".codex" / "AGENTS.md").write_text(codex_file, encoding="utf-8")
                 claude_file = home / ".claude" / "CLAUDE.md"
                 claude_file.parent.mkdir()
-                original = "@~/.codex/AGENTS.md\nClaude-only preferences\n"
+                original = "@~/.codex/AGENTS.md\n"
                 claude_file.write_text(original, encoding="utf-8")
                 result = self.run_installer("--client", "claude", "--home", raw, "--apply")
                 self.assertEqual(0, result.returncode, result.stderr)
@@ -326,14 +333,15 @@ class PersonalizationInstallerTests(unittest.TestCase):
 
     def test_only_a_real_claude_import_counts_as_inheriting_codex(self) -> None:
         cases = (
-            ("Shared rules live in @~/.codex/AGENTS.md today.\n", True),
+            ("@~/.codex/AGENTS.md\n", True),
             ("@{codex}\n", True),
+            # Only a file that is nothing but the import counts: a wrong "not an import"
+            # only duplicates the block, a wrong "import" leaves Claude without it.
+            ("Shared rules live in @~/.codex/AGENTS.md today.\n", False),
             ("Do not write `@~/.codex/AGENTS.md` here.\n", False),
             ("```\n@~/.codex/AGENTS.md\n```\n", False),
             ("Read ~/.codex/AGENTS.md first.\n", False),
             ("mail me at someone@~/.codex/AGENTS.md.example\n", False),
-            # Anything short of a plain, stand-alone import is not trusted: a wrong "not an
-            # import" only duplicates the block, a wrong "import" leaves Claude without it.
             ("```\n@~/.codex/AGENTS.md\n", False),
             ("<!-- @~/.codex/AGENTS.md -->\n", False),
             ("    @~/.codex/AGENTS.md\n", False),
@@ -382,11 +390,19 @@ class PersonalizationInstallerTests(unittest.TestCase):
             )
             self.assertIn(f"TARGET: {root / 'other' / '.claude' / 'CLAUDE.md'}", explicit.stdout)
 
-            # Empty values count as unset, as the clients treat them.
-            empty = self.run_installer_in(
-                home, {name: "" for name in CONFIG_VARIABLES}, "--client", "claude"
-            )
-            self.assertIn(f"TARGET: {home / '.claude' / 'CLAUDE.md'}", empty.stdout)
+            # An empty CODEX_HOME or XDG_CONFIG_HOME counts as unset, as Codex and the XDG
+            # specification treat it; Claude Code uses an empty CLAUDE_CONFIG_DIR as written.
+            for client, name, default in (
+                ("codex", "CODEX_HOME", home / ".codex" / "AGENTS.md"),
+                ("opencode", "XDG_CONFIG_HOME", home / ".config" / "opencode" / "AGENTS.md"),
+            ):
+                with self.subTest(empty=name):
+                    empty = self.run_installer_in(home, {name: ""}, "--client", client)
+                    self.assertEqual(0, empty.returncode, empty.stderr)
+                    self.assertIn(f"TARGET: {default}", empty.stdout)
+            empty_claude = self.run_installer_in(home, {"CLAUDE_CONFIG_DIR": ""}, "--client", "claude")
+            self.assertEqual(3, empty_claude.returncode)
+            self.assertIn("CLAUDE_CONFIG_DIR must be an absolute path", empty_claude.stderr)
 
     def test_codex_override_file_blocks_the_default_target_only(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -519,7 +535,8 @@ class PersonalizationInstallerTests(unittest.TestCase):
                     self.assertNotIn("Create the successor, verify exact takeover", content)
                     self.assertNotIn("Never apply destructive, unrelated, or uncertain changes", content)
 
-    def test_config_dir_variables_must_be_absolute_and_blank_ones_are_unset(self) -> None:
+    def test_config_dir_variables_must_be_absolute_even_when_blank(self) -> None:
+        # A value of spaces is a relative path to the clients, not an unset variable.
         with tempfile.TemporaryDirectory() as raw:
             home = Path(raw)
             for name, client in (
@@ -527,14 +544,12 @@ class PersonalizationInstallerTests(unittest.TestCase):
                 ("CODEX_HOME", "codex"),
                 ("XDG_CONFIG_HOME", "opencode"),
             ):
-                with self.subTest(variable=name):
-                    relative = self.run_installer_in(home, {name: "profile"}, "--client", client)
-                    self.assertEqual(3, relative.returncode)
-                    self.assertIn(f"{name} must be an absolute path", relative.stderr)
-                    self.assertNotIn("Traceback", relative.stderr)
-                    blank = self.run_installer_in(home, {name: "  "}, "--client", client)
-                    self.assertEqual(0, blank.returncode, blank.stderr)
-                    self.assertIn(str(home), blank.stdout)
+                for value in ("profile", "  "):
+                    with self.subTest(variable=name, value=value):
+                        result = self.run_installer_in(home, {name: value}, "--client", client)
+                        self.assertEqual(3, result.returncode)
+                        self.assertIn(f"{name} must be an absolute path", result.stderr)
+                        self.assertNotIn("Traceback", result.stderr)
 
     def test_a_non_utf8_target_names_the_file_even_when_preferences_are_given(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -574,52 +589,48 @@ class PersonalizationInstallerTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertTrue(target.read_bytes().startswith(original.encode("utf-8")))
 
-    def test_plain_imports_count_and_prose_that_looks_like_one_never_does(self) -> None:
-        # A wrong "import" leaves Claude without the block, so anything that Claude Code
-        # might treat as code, HTML or a paragraph it cannot read is "not an import". The
-        # cases were checked against Claude Code's own extraction (its @ regex over the
-        # tokens of a Markdown lexer that skips code and HTML).
+    def test_only_a_file_that_is_nothing_but_the_import_counts(self) -> None:
+        # Whether an import inside a longer Markdown file is live depends on Claude Code's
+        # own parser. An independent review found ordinary files that looked like imports
+        # and were not (checked against the real client), which left Claude without the
+        # block, so only the unambiguous form counts; everything else gets a second copy.
         home = Path("/home/u")
         codex = home / ".codex" / "AGENTS.md"
         imports = (
+            "@~/.codex/AGENTS.md",
             "@~/.codex/AGENTS.md\n",
-            "- @~/.codex/AGENTS.md\n",
-            "> @~/.codex/AGENTS.md\n",
-            "1. @~/.codex/AGENTS.md\n",
-            "See @~/.codex/AGENTS.md for the shared rules.\n",
-            "@/home/u/.codex/AGENTS.md\r\nmore\r\n",
-            "```\ncode\n```\n@~/.codex/AGENTS.md\n",
-            "<!-- note -->\n\n@~/.codex/AGENTS.md\n",
+            "\n\n@/home/u/.codex/AGENTS.md  \r\n\r\n",
+            "@~/.codex/AGENTS.md\t\r",
         )
         not_imports = (
-            "Do not add ``@~/.codex/AGENTS.md`` here.\n",  # double-backtick code span
-            "`@~/.codex/AGENTS.md`\n",
-            "text `code\n@~/.codex/AGENTS.md` more\n",  # code span wrapped over two lines
-            "text `code\n @~/.codex/AGENTS.md ` more\n",
-            "````\n```\n@~/.codex/AGENTS.md\n```\n````\n",  # fence inside a longer fence
-            "Tag every ``` fence\n\n```\n@~/.codex/AGENTS.md\n```\n",  # stray ``` in prose
-            "```\nline with ``` inside\n@~/.codex/AGENTS.md\n```\n",
-            "~~~\n@~/.codex/AGENTS.md\n~~~\n",
-            "```\n@~/.codex/AGENTS.md\n",  # an unclosed fence runs to the end
-            "<!-- open\n@~/.codex/AGENTS.md\n",  # so does an unclosed comment
-            "<!-- x --> @~/.codex/AGENTS.md\n",
-            "<div>\n@~/.codex/AGENTS.md\n</div>\n",
-            "<pre>\n\n@~/.codex/AGENTS.md\n\n</pre>\n",
-            "<pre>\n</script>\n@~/.codex/AGENTS.md\n",  # only its own closing tag ends <pre>
-            "</div>\n<script>\n\n@~/.codex/AGENTS.md\n",
-            "<details>\n<!DOCTYPE html>\n@~/.codex/AGENTS.md\n",
-            "<details>\n<?php\n</details>\n?>\n@~/.codex/AGENTS.md\n",
-            "[ref]: @~/.codex/AGENTS.md\n",
+            # Real imports that sit among other text still get their own block.
+            "- @~/.codex/AGENTS.md\n",
+            "See @~/.codex/AGENTS.md for the shared rules.\n",
+            "@~/.codex/AGENTS.md\nClaude-only rules.\n",
+            "```\ncode\n```\n@~/.codex/AGENTS.md\n",
+            # Files the review showed were not imports at all.
+            "# Shared rules\n\n1.  Install:\n    ```sh\n    npm i\n```\n\n@~/.codex/AGENTS.md\n",
+            "> Import them with:\n>\n>     @~/.codex/AGENTS.md\n",
+            " \t@~/.codex/AGENTS.md\n",
+            "```\n    ```\n@~/.codex/AGENTS.md\n",
+            "[codex]:\n@~/.codex/AGENTS.md\n",
+            "<div>\n\u00a0\n@~/.codex/AGENTS.md\n",
+            "\x1c@~/.codex/AGENTS.md\n",
+            "@~/.codex/AGENTS.md\x85\n",
+            "> <details>\n> @~/.codex/AGENTS.md\n",
+            "1. \t@~/.codex/AGENTS.md\n",
+            "- use `x\n- `@~/.codex/AGENTS.md\n",
+            # Single lines that are not the bare import.
             "    @~/.codex/AGENTS.md\n",
-            "\t@~/.codex/AGENTS.md\n",
-            "\\@~/.codex/AGENTS.md\n",
-            "back\\`tick\n` @~/.codex/AGENTS.md `\n",  # an escaped backtick opens no span
-            "text `unclosed\n<!-- c -->\n` @~/.codex/AGENTS.md `\n",
-            "a `stray\n@~/.codex/AGENTS.md\n",  # a lone backtick may pair with unseen text
-            "see @~/.codex/AGENTS.md.\n",
+            " @~/.codex/AGENTS.md\n",
+            "\ufeff@~/.codex/AGENTS.md\n",
+            "`@~/.codex/AGENTS.md`\n",
+            "@~/.codex/AGENTS.md.\n",
             "(@~/.codex/AGENTS.md)\n",
+            "\\@~/.codex/AGENTS.md\n",
+            "@~/.codex/AGENTS.md#part\n",
             "Read ~/.codex/AGENTS.md first.\n",
-            "mail me at someone@~/.codex/AGENTS.md.example\n",
+            "",
         )
         for text in imports:
             with self.subTest(import_text=text):
@@ -676,16 +687,21 @@ class PersonalizationInstallerTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertIn(START, (home / ".claude" / "CLAUDE.md").read_text(encoding="utf-8"))
 
-    def test_a_variable_is_used_exactly_as_written_unless_it_is_blank(self) -> None:
+    def test_a_variable_is_used_exactly_as_written(self) -> None:
         home = Path("/home/u")
         self.assertEqual(
             Path("/profile ") / "CLAUDE.md",
             MODULE.known_client_path("claude", home, {"CLAUDE_CONFIG_DIR": "/profile "}).path,
         )
         self.assertEqual(
-            home / ".claude" / "CLAUDE.md",
-            MODULE.known_client_path("claude", home, {"CLAUDE_CONFIG_DIR": " \t"}).path,
+            home / ".codex" / "AGENTS.md",
+            MODULE.known_client_path("codex", home, {"CODEX_HOME": ""}).path,
         )
+        for name, client in (("CLAUDE_CONFIG_DIR", "claude"), ("CODEX_HOME", "codex")):
+            with self.subTest(variable=name), self.assertRaises(ValueError):
+                MODULE.known_client_path(client, home, {name: " \t"})
+        with self.assertRaises(ValueError):
+            MODULE.known_client_path("claude", home, {"CLAUDE_CONFIG_DIR": ""})
 
     def test_a_grant_is_a_whole_line_and_only_newlines_end_a_line(self) -> None:
         rule = MODULE.AUTO_SESSION_RULE

@@ -32,32 +32,43 @@ subshell rejects unset values, tags, branches and malformed hashes, and stops on
 every failed command. The first installer command is a dry-run; stop the block
 there to read the plan, then run the `--apply` command.
 
-`scripts/install.py` is the shortest path for one client (`claude`, `codex`,
-`opencode` or `copilot`) and asks nothing:
+`scripts/install.sh` is the shortest path for one client (`claude`, `codex`,
+`opencode` or `copilot`). It needs no Python and asks nothing; it runs as `sh` on
+macOS, Linux and WSL (tested with dash, bash, busybox and zsh emulating sh), and in
+Git Bash on Windows. Run it where the agent runs: an install made inside WSL lands in the WSL
+home, which a Windows-native client does not read.
 
-```bash
-python3 scripts/install.py --client claude            # preview: changes nothing
-python3 scripts/install.py --client claude --apply    # link all skills, add the block
-python3 scripts/install.py --client claude --undo --apply
+```sh
+git clone https://github.com/nobrainer-tech/nobrainer-tech-flow ~/.nobrainer-tech-flow
+sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude            # preview: changes nothing
+sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude --apply    # link all skills, add the block
+sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude --undo --apply
 ```
+
+`scripts/install.py` does the same with Python (`python3 scripts/install.py`, same
+flags). The two share the setup record, so either one undoes what the other did.
 
 - The preview names the source commit, how many skills it would link and where,
   and shows the exact text it would write to the client's global instruction file.
 - A target that is not a link to this checkout is a conflict: nothing is written
   and the command says which one.
-- It never grants a standing authorization. Earlier auto-update, session-restart
-  and wiki-root settings in the block are kept as `--keep-options` keeps them;
-  change them with `install_personalization.py`.
-- `--undo` (a preview until `--apply` is added) removes exactly the links this
-  setup created and restores the instruction file from the backup it made, and
-  stops with the reason if the file changed since. It is the guided setup's
-  rollback, so it also reverses a setup made by the guided setup below, and the
-  other way round.
+- It never grants a standing authorization. `install.py` keeps earlier
+  auto-update, session-restart and wiki-root settings in the block as
+  `--keep-options` keeps them; `install.sh` leaves a block that is already there
+  exactly as it is. Change options with `install_personalization.py`.
+- `--undo` (a preview until `--apply` is added) removes exactly the links the setup
+  created and puts the managed block back as it was before the first setup:
+  removed, or the block that was there before. The rest of the instruction file
+  stays as it is now, so the file comes back byte for byte when nothing else
+  changed. It stops with the reason if the file changed since the last run. It is
+  the guided setup's rollback, so it also reverses a setup made by the guided setup
+  below, and the other way round.
 - It needs symbolic links. On Windows turn on Developer Mode or run from an
   elevated shell; the command checks first and says so. Otherwise use
   `install_skills.py --mode copy` (see Windows below).
 - `--home` and the client variables behave as described for the individual
-  scripts below.
+  scripts below. When a variable chose the location, the output says so; keep it
+  set when you undo.
 
 The individual scripts remain the way to install a subset, use copies, target
 the shared `agents` folder or another client, and are documented next.
@@ -92,12 +103,14 @@ the shared `agents` path. `codex` and `agents` both target the current shared
 `~/.agents/skills` location documented by
 [Codex Agent Skills](https://developers.openai.com/codex/skills). Claude Code
 follows `CLAUDE_CONFIG_DIR` and OpenCode follows `XDG_CONFIG_HOME`; the installer
-honours both. A blank value counts as unset and any other value is used exactly
-as written. A value that is not an absolute path is an error for the client that
-reads it: Claude Code resolves a relative `CLAUDE_CONFIG_DIR` against its own
-working directory and does not expand `~`, so the installer, which runs from the
-checkout, cannot know where it points. A variable the selected client does not
-read is ignored. Override a destination only when you have inspected it:
+honours both. An empty `XDG_CONFIG_HOME` (or `CODEX_HOME`) counts as unset, as the
+XDG specification (and Codex) say; any other value is used exactly as written. A
+value that is not an absolute path is an error for the client that reads it,
+spaces-only and an empty `CLAUDE_CONFIG_DIR` included: Claude Code resolves such a
+value against its own working directory and does not expand `~`, so the
+installer, which runs from the checkout, cannot know where it points. A variable
+the selected client does not read is ignored. Override a destination only when you
+have inspected it:
 
 ```bash
 python3 scripts/install_skills.py \
@@ -166,16 +179,14 @@ empty, so the installer refuses to write `AGENTS.md` next to one; remove or
 empty the override, or pass `--path` to target it on purpose.
 
 Claude Code may already import the Codex global file with `@~/.codex/AGENTS.md`.
-The installer skips the duplicate block only when that import is one Claude Code
-would follow (a word of its own in prose, not inside a code span, fence, comment,
-raw HTML, link definition, indented block, or a paragraph with a lone backtick)
-and the imported file already carries the managed block; otherwise it writes the
-block to the Claude file and says why. A second copy of the block is harmless;
-a missing one would leave Claude without the instructions, so every doubt counts
-as "not an import". That includes real imports in an indented list continuation
-or inside emphasis or a link, which Claude Code does follow: they get a second
-copy, and a guided setup recorded earlier for the Codex file asks for
-`--rollback --apply` before it continues. `agents` needs an explicit verified
+The installer skips the duplicate block only when the Claude file holds nothing
+but that import line and the imported file already carries the managed block;
+otherwise it writes the block to the Claude file. Whether an import inside a
+longer file is live depends on how Claude Code parses the whole file, and an
+independent review found ordinary files that looked like imports and were not.
+A second copy of the block is harmless; a missing one would leave Claude without
+the instructions. A guided setup recorded earlier for the Codex file asks for an
+undo before it writes the Claude file. `agents` needs an explicit verified
 `--path`. For a resolved global wiki,
 pass `--wiki-root PATH` pointing at a directory containing `WIKI.md`; this
 records the actual location in the personalization block. `--auto-update`
@@ -251,9 +262,9 @@ and updated through `install_personalization.py`; an optional one-line
 targets that conflict stop the operation before writes. The successful readback
 reports installed IDs, whether unselected items remain absent, preference-file
 hash and a local rollback-state path. Rollback removes only exact
-`nobrainer-tech-flow` symlinks
-created by that setup and restores the prior instruction backup only if its
-managed result has not changed since installation:
+`nobrainer-tech-flow` symlinks created by that setup and, if the instruction file
+has not changed since the last run, puts its managed block back as it was before
+the first setup, leaving the rest of the file as it is:
 
 ```bash
 python3 scripts/recommend_flow_setup.py \
@@ -405,14 +416,16 @@ extension contract; a real client readback is still required.
 
 ### Windows
 
-Run the Python scripts with `py -3` or `python`. The hook adapters need Git Bash,
-not the `bash.exe` launcher that Windows ships for WSL (Windows finds that one
-first when a command says just `bash`). The repository pins the hook scripts and
-the bootstrap to LF endings so a Git checkout with `core.autocrlf=true` still
-runs them. Creating symlinks needs developer mode or an elevated shell; without
-either, install with `--mode copy`. CI runs the structure validators, the
-adapter tests and a Windows smoke module on a Windows runner; it does not run the
-whole suite there, and no client was read back on Windows.
+Run `scripts/install.sh` in Git Bash (it comes with Git for Windows), or the
+Python scripts with `py -3` or `python`. The hook adapters need Git Bash too, not
+the `bash.exe` launcher that Windows ships for WSL (Windows finds that one first
+when a command says just `bash`). The repository pins the hook scripts, the shell
+installer and the bootstrap to LF endings so a Git checkout with
+`core.autocrlf=true` still runs them. Creating symlinks needs developer mode or an
+elevated shell; without either, install with `install_skills.py --mode copy`. CI
+runs the structure validators, the adapter tests, a Windows smoke module and both
+one-command installers on a Windows runner; it does not run the whole suite
+there, and no client was read back on Windows.
 
 ### Other Agent Skills clients
 

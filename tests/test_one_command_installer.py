@@ -27,7 +27,8 @@ CONFIG_VARIABLES = ("CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_CONFIG_HOME")
 
 
 def symlinks_work() -> bool:
-    return INSTALL.symlinks_available()
+    # CI sets this so that a runner without link rights fails instead of skipping.
+    return os.environ.get("NOBRAINER_REQUIRE_SYMLINKS") == "1" or INSTALL.symlinks_available()
 
 
 class OneCommandInstallerTests(unittest.TestCase):
@@ -156,7 +157,7 @@ class OneCommandInstallerTests(unittest.TestCase):
 
             self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
             self.assertIn(f"UNDO_PLAN: unlink {SKILL_COUNT} skills", preview.stdout)
-            self.assertIn("restore it from", preview.stdout)
+            self.assertIn("put the managed block back as it was before the setup", preview.stdout)
             self.assertIn("NO_CHANGES:", preview.stdout)
             self.assertEqual(SKILL_COUNT, len(list(skills.iterdir())))
             self.assertEqual(written, instructions.read_bytes())
@@ -181,7 +182,7 @@ class OneCommandInstallerTests(unittest.TestCase):
             self.assertEqual(0, codex.returncode, codex.stderr)
             instructions = home / ".claude" / "CLAUDE.md"
             instructions.parent.mkdir(parents=True)
-            original = "@~/.codex/AGENTS.md\nClaude-only rules.\n"
+            original = "@~/.codex/AGENTS.md\n"
             instructions.write_text(original, encoding="utf-8")
 
             preview = self.run_install("--client", "claude", "--home", str(home))
@@ -344,6 +345,180 @@ class OneCommandInstallerTests(unittest.TestCase):
         with mock.patch.object(os, "symlink", side_effect=OSError(1314, "A required privilege is not held")):
             self.assertFalse(INSTALL.symlinks_available())
         self.assertIsInstance(INSTALL.symlinks_available(), bool)
+
+    def install(self, home: Path, *flags: str, variables: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+        arguments = ["--client", "claude", *flags]
+        if variables is None:
+            arguments += ["--home", str(home)]
+        result = self.run_install(*arguments, home=home, variables=variables)
+        return result
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_undo_after_a_second_apply_puts_back_the_file_from_before_the_first(self) -> None:
+        # A later release changes the block, and --apply runs again: the undo must not
+        # restore the file as it was just before that second run, block included.
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            instructions = home / ".claude" / "CLAUDE.md"
+            instructions.parent.mkdir(parents=True)
+            original = b"# Mine\n"
+            instructions.write_bytes(original)
+            self.assertEqual(0, self.install(home, "--apply").returncode)
+            older = instructions.read_text(encoding="utf-8").replace(
+                "Split substantial work into bounded tasks", "Split work into bounded tasks"
+            )
+            instructions.write_text(older, encoding="utf-8")
+
+            again = self.install(home, "--apply")
+            self.assertEqual(0, again.returncode, again.stdout + again.stderr)
+            undone = self.install(home, "--undo", "--apply")
+
+            self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+            self.assertEqual(original, instructions.read_bytes())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_edits_outside_the_block_between_two_installs_survive_the_undo(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            instructions = home / ".claude" / "CLAUDE.md"
+            instructions.parent.mkdir(parents=True)
+            instructions.write_bytes(b"# Mine\n")
+            self.assertEqual(0, self.install(home, "--apply").returncode)
+            with instructions.open("ab") as handle:
+                handle.write(b"\n# Added later\n")
+
+            self.assertEqual(0, self.install(home, "--apply").returncode)
+            undone = self.install(home, "--undo", "--apply")
+
+            self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+            content = instructions.read_text(encoding="utf-8")
+            self.assertTrue(content.startswith("# Mine\n"))
+            self.assertIn("# Added later", content)
+            self.assertNotIn(START, content)
+            self.assertIn("the rest of the file is kept as it is now", undone.stdout)
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_block_that_was_there_before_the_install_is_still_there_after_the_undo(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            earlier = subprocess.run(
+                [sys.executable, str(PERSONALIZATION), "--client", "claude", "--home", str(home),
+                 "--auto-update", "--preferences", "Answer in Polish.", "--apply"],
+                cwd=ROOT, text=True, capture_output=True, check=False, stdin=subprocess.DEVNULL,
+            )
+            self.assertEqual(0, earlier.returncode, earlier.stderr)
+            instructions = home / ".claude" / "CLAUDE.md"
+            before = instructions.read_bytes()
+
+            self.assertEqual(0, self.install(home, "--apply").returncode)
+            self.assertEqual(before, instructions.read_bytes())
+            undone = self.install(home, "--undo", "--apply")
+
+            self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+            self.assertEqual(before, instructions.read_bytes())
+            self.assertFalse((home / ".claude" / "skills").exists())
+
+    def test_the_preview_shows_an_authorization_that_apply_would_keep(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            earlier = subprocess.run(
+                [sys.executable, str(PERSONALIZATION), "--client", "claude", "--home", str(home),
+                 "--auto-update", "--apply"],
+                cwd=ROOT, text=True, capture_output=True, check=False, stdin=subprocess.DEVNULL,
+            )
+            self.assertEqual(0, earlier.returncode, earlier.stderr)
+
+            preview = self.install(home)
+
+            self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+            self.assertIn("KEPT_OPTIONS: auto-update", preview.stdout)
+            self.assertIn("UNCHANGED: managed block is current", preview.stdout)
+            self.assertNotIn("CHECK_AND_NOTIFY", preview.stdout)
+
+    def test_an_explicit_home_wins_over_the_client_variable_in_the_preview(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp).resolve()
+            home = root / "home"
+            home.mkdir()
+
+            preview = self.run_install(
+                "--client", "claude", "--home", str(home),
+                home=root, variables={"CLAUDE_CONFIG_DIR": str(root / "other")},
+            )
+
+            self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+            skills_line = next(line for line in preview.stdout.splitlines() if line.startswith("SKILLS:"))
+            self.assertIn(str(home / ".claude" / "skills"), skills_line)
+            self.assertNotIn(str(root / "other"), preview.stdout)
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_the_preview_refuses_what_apply_would_refuse_and_names_this_commands_flags(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp).resolve()
+            home = root / "home"
+            (root / "A").mkdir()
+            (root / "B").mkdir()
+            home.mkdir()
+            first = self.run_install("--client", "claude", "--apply", home=home, variables={"CLAUDE_CONFIG_DIR": str(root / "A")})
+            self.assertEqual(0, first.returncode, first.stdout + first.stderr)
+            self.assertIn(f"NOTE: this setup follows CLAUDE_CONFIG_DIR={root / 'A'}", first.stdout)
+
+            preview = self.run_install("--client", "claude", home=home, variables={"CLAUDE_CONFIG_DIR": str(root / "B")})
+
+            self.assertEqual(2, preview.returncode, preview.stdout + preview.stderr)
+            self.assertIn("different skills destination", preview.stderr)
+            self.assertIn("--undo --apply", preview.stderr)
+            self.assertNotIn("--rollback", preview.stderr)
+            self.assertEqual([], list((root / "B").iterdir()))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_an_undo_counts_the_links_it_removed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            self.assertEqual(0, self.install(home, "--apply").returncode)
+            skills = home / ".claude" / "skills"
+            for item in GUIDED.ITEMS[:5]:
+                (skills / item.skill).unlink()
+
+            undone = self.install(home, "--undo", "--apply")
+
+            self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+            self.assertIn(f"SKILLS: {SKILL_COUNT - 5} unlinked", undone.stdout)
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_link_from_an_earlier_layout_gets_the_migration_command(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            skills = home / ".claude" / "skills"
+            skills.mkdir(parents=True)
+            (skills / "nobrainer-ultra").symlink_to(ROOT / "nobrainer-ultra")
+
+            result = self.install(home)
+
+            self.assertEqual(3, result.returncode, result.stdout + result.stderr)
+            self.assertIn("scripts/install_skills.py --client claude --dest", result.stderr)
+            self.assertIn("--migrate-legacy --apply", result.stderr)
+            self.assertNotIn("rerun with --migrate-legacy", result.stderr)
+
+    @unittest.skipIf(os.name == "nt", "HOME does not choose the home directory on Windows")
+    def test_an_empty_home_variable_is_refused(self) -> None:
+        result = self.run_install("--client", "claude", home=None, variables={"HOME": ""})
+
+        self.assertEqual(2, result.returncode)
+        self.assertIn("HOME is set but empty", result.stderr)
+
+    @unittest.skipIf(os.name == "nt", "Windows paths cannot hold a line break")
+    def test_a_home_with_a_line_break_is_refused_before_anything_is_written(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "new\nline"
+            home.mkdir()
+
+            for flags in ((), ("--apply",)):
+                with self.subTest(flags=flags):
+                    result = self.install(home, *flags)
+                    self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+                    self.assertIn("line break or control character", result.stderr)
+                    self.assertEqual([], self.entries(home))
 
 
 if __name__ == "__main__":

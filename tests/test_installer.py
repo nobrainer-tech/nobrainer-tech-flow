@@ -1297,9 +1297,8 @@ class InstallerRobustnessTests(unittest.TestCase):
             custom = module.client_destinations(
                 {"CLAUDE_CONFIG_DIR": str(profile), "XDG_CONFIG_HOME": str(xdg)}, home
             )
-            blank = module.client_destinations(
-                {"CLAUDE_CONFIG_DIR": "", "XDG_CONFIG_HOME": "  "}, home
-            )
+            # An empty XDG_CONFIG_HOME is unset (XDG specification).
+            blank = module.client_destinations({"XDG_CONFIG_HOME": ""}, home)
 
             self.assertEqual(home / ".claude" / "skills", default["claude"])
             self.assertEqual(profile / "skills", custom["claude"])
@@ -1327,7 +1326,7 @@ class InstallerRobustnessTests(unittest.TestCase):
             with self.subTest(client=client), self.assertRaises(ValueError):
                 module.client_destinations({variable: "relative"}, home, client)
 
-    def test_a_variable_is_used_exactly_as_written_unless_it_is_blank(self) -> None:
+    def test_a_variable_is_used_exactly_as_written(self) -> None:
         module = self.load_module()
         home = Path("/home/u")
 
@@ -1335,16 +1334,19 @@ class InstallerRobustnessTests(unittest.TestCase):
             Path("/profile ") / "skills",
             module.client_destinations({"CLAUDE_CONFIG_DIR": "/profile "}, home)["claude"],
         )
-        self.assertEqual(
-            home / ".claude" / "skills",
-            module.client_destinations({"CLAUDE_CONFIG_DIR": " \t"}, home)["claude"],
-        )
+        # A value of spaces is a relative path, and Claude Code uses an empty
+        # CLAUDE_CONFIG_DIR as written, so both are errors for the client that reads them.
+        for variables in ({"CLAUDE_CONFIG_DIR": " \t"}, {"CLAUDE_CONFIG_DIR": ""}, {"XDG_CONFIG_HOME": " "}):
+            with self.subTest(variables=variables), self.assertRaises(ValueError):
+                module.client_destinations(variables, home)
 
     def test_a_variable_the_selected_client_never_reads_does_not_stop_the_install(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
-            result = self.run_installer(
-                "--client", "claude", "--skill", "nobrainer-build",
-                env={"XDG_CONFIG_HOME": "~/.config", "CLAUDE_CONFIG_DIR": "", "HOME": temp, "USERPROFILE": temp},
+            environment = {key: value for key, value in os.environ.items() if key != "CLAUDE_CONFIG_DIR"}
+            environment.update({"XDG_CONFIG_HOME": "~/.config", "HOME": temp, "USERPROFILE": temp})
+            result = subprocess.run(
+                [sys.executable, str(INSTALLER), "--client", "claude", "--skill", "nobrainer-build"],
+                cwd=ROOT, text=True, capture_output=True, check=False, env=environment,
             )
 
             self.assertEqual(0, result.returncode, result.stderr)
