@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import contextlib
 import datetime as dt
 import hashlib
+import http.client
+import io
 import importlib.util
 import json
 import subprocess
@@ -9,6 +12,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "skills/nobrainer-auto-fine-tune/scripts/benchmark_routing.py"
@@ -148,7 +152,7 @@ class FetchTests(Base):
         self.fetch(self.server())
         good = json.loads(manifest_for(self.setup_bytes))
         for manifest in (dict(good, routeOrder=[*routing.ROUTE_ORDER, "newplan"]),
-                         dict(good, review={"reviewedAt": "2026-09-30T09:00:00Z", "reviewer": "r", "verdict": "reject"}),
+                         dict(good, review={"reviewedAt": "2026-09-30T09:00:00Z", "verdict": "reject"}),
                          "not json"):
             body = manifest.encode() if isinstance(manifest, str) else json.dumps(manifest).encode()
             server = self.server(manifest=body)
@@ -156,6 +160,84 @@ class FetchTests(Base):
             self.assertEqual((result["routing"], result["status"]), ("UNKNOWN", "MANIFEST_REFUSED"))
             self.assertEqual([url for url, _ in server.calls], [MANIFEST_URL])
         self.assertEqual((self.state / "routing-cache" / "manifest.json").read_bytes(), manifest_for(self.setup_bytes))
+
+    def cli(self, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([sys.executable, str(SCRIPT), "--state-dir", str(self.state), *args],
+                              capture_output=True, text=True)
+
+    def test_refusal_persists_until_an_acceptable_manifest(self) -> None:
+        self.fetch(self.server())
+        good = json.loads(manifest_for(self.setup_bytes))
+        bad = json.dumps(dict(good, version="2026-10-01.1", review={"verdict": "reject"})).encode()
+        self.assertEqual(self.fetch(self.server(manifest=bad), force=True)["status"], "MANIFEST_REFUSED")
+        state = json.loads((self.state / "routing-cache" / "state.json").read_text())
+        self.assertEqual(state["refused"]["manifestVersion"], "2026-10-01.1")
+        for kw in ({"offline": True}, {}):
+            self.assertEqual(self.fetch(self.server(offline=True), **kw)["status"], "MANIFEST_REFUSED")
+        target = Path(self.temp.name) / "AGENTS.md"
+        target.write_text("# Rules\n")
+        for command in (["policy"], ["apply", "--file", str(target), "--block", "router"]):
+            run = self.cli(command[0], "--routes", "openai,anthropic", *command[1:])
+            self.assertEqual(run.returncode, 3, run.stderr)
+            self.assertEqual(json.loads(run.stdout)["status"], "MANIFEST_REFUSED")
+        self.assertEqual(self.fetch(self.server(), force=True)["routing"], "AVAILABLE")
+        self.assertEqual(self.cli("policy", "--routes", "openai,anthropic").returncode, 0)
+
+    def test_tampered_cache_is_never_reported_as_verified(self) -> None:
+        self.fetch(self.server())
+        cached = self.state / "routing-cache" / f"{KEY}.json"
+        cached.write_bytes(json.dumps(dict(self.setup, version="tampered")).encode())
+        for now in (NOW, NOW + dt.timedelta(days=1)):
+            result = self.fetch(self.server(offline=True), now=now)
+            self.assertEqual((result["routing"], result["status"]), ("UNKNOWN", "INTEGRITY_MISMATCH"))
+        self.assertEqual(self.fetch(self.server(offline=True), offline=True)["routing"], "UNKNOWN")
+        self.assertEqual(self.cli("policy", "--routes", "openai,anthropic").returncode, 3)
+        repaired = self.fetch(self.server())
+        self.assertEqual((repaired["status"], repaired["version"]), ("UPDATED", "2026-09-29.1"))
+
+    def test_not_modified_cache_that_misses_the_manifest_is_not_used(self) -> None:
+        self.fetch(self.server())
+        newer = json.dumps(dict(self.setup, version="2026-10-06.1")).encode()
+        calls = []
+
+        def stale_host(body: bytes):
+            def fetcher(url: str, etag: str | None):
+                calls.append((url, etag))
+                if url == MANIFEST_URL:
+                    return 200, manifest_for(newer), '"m2"'
+                return (304, b"", etag) if etag else (200, body, '"s2"')
+            return fetcher
+
+        result = self.fetch(stale_host(newer), force=True)
+        self.assertEqual((result["status"], result["version"]), ("UPDATED", "2026-10-06.1"))
+        self.assertEqual(calls[-1], (SETUP_URL, None))
+        self.assertEqual(self.fetch(self.server(), force=True)["version"], "2026-09-29.1")  # original again
+        result = self.fetch(stale_host(b"{}"), force=True)
+        self.assertEqual((result["routing"], result["status"]), ("UNKNOWN", "SHA_MISMATCH"))
+
+    def test_broken_http_responses_fall_back_instead_of_crashing(self) -> None:
+        self.fetch(self.server())
+        with mock.patch.object(routing.urllib.request, "urlopen", side_effect=http.client.IncompleteRead(b"")):
+            with self.assertRaises(routing.RoutingError):
+                routing.http_fetch(SETUP_URL, None)
+            result = routing.fetch_setup(KEY, self.state, now=NOW, force=True)
+        self.assertEqual((result["routing"], result["status"]), ("AVAILABLE", "CACHED_AFTER_ERROR"))
+
+    def test_cli_only_fetches_from_the_published_host(self) -> None:
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as exit_:
+            routing.main(["--state-dir", str(self.state), "fetch", "--routes", "openai", "--offline",
+                          "--base-url", "https://example.com/"])
+        self.assertEqual(exit_.exception.code, 2)
+
+    def test_corrupt_state_counts_as_an_empty_cache(self) -> None:
+        cache = self.state / "routing-cache"
+        cache.mkdir(parents=True)
+        (cache / f"{KEY}.json").write_bytes(self.setup_bytes)
+        for broken in ('{"setups": [1, 2], "manifest": "x"}', '[1]', '{"setups": {"%s": 5}}' % KEY):
+            (cache / "state.json").write_text(broken)
+            self.assertEqual(self.fetch(self.server(offline=True), offline=True)["routing"], "UNKNOWN")
+            self.assertEqual(self.cli("policy", "--routes", "openai,anthropic").returncode, 3)
+        self.assertEqual(self.fetch(self.server())["status"], "UPDATED")
 
     def test_setup_for_another_key_is_refused(self) -> None:
         other = json.dumps(dict(self.setup, key="openai.f0.b0")).encode()
@@ -311,9 +393,14 @@ class BlockTests(Base):
         self.assertEqual(preview["change"], "PENDING_CONFIRMATION")
         with self.assertRaises(routing.RoutingError):
             routing.apply_block(path, self.setup, "router", write=True, confirm="wrong")
-        written = routing.apply_block(path, self.setup, "router", write=True, confirm=preview["previewId"])
+        backups = self.state / "routing-backups"
+        written = routing.apply_block(path, self.setup, "router", write=True, confirm=preview["previewId"],
+                                      backup_dir=backups)
         self.assertEqual((written["change"], written["readback"]), ("WRITTEN", "OK"))
-        self.assertTrue(Path(written["backup"]).is_file())
+        backup = Path(written["backup"])
+        self.assertEqual(backup.parent, backups)
+        self.assertTrue(backup.name.startswith(path.name + ".") and backup.name.endswith("Z.bak"))
+        self.assertEqual([p.name for p in path.parent.iterdir() if p.is_file()], [path.name])
         self.assertEqual(routing.apply_block(path, self.setup, "router")["change"], "NO_CHANGE")
         return written
 
@@ -374,7 +461,9 @@ class BlockTests(Base):
         path = Path(self.temp.name) / "CLAUDE.md"
         path.write_bytes(b"# Rules\r\n")
         preview = routing.apply_block(path, self.setup, "router")
-        routing.apply_block(path, self.setup, "router", write=True, confirm=preview["previewId"])
+        written = routing.apply_block(path, self.setup, "router", write=True, confirm=preview["previewId"],
+                                      backup_dir=self.state / "routing-backups")
+        self.assertEqual(written["readback"], "OK")
         self.assertNotIn(b"\n", path.read_bytes().replace(b"\r\n", b""))
         self.assertEqual(routing.apply_block(path, self.setup, "router")["change"], "NO_CHANGE")
 

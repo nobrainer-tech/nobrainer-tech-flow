@@ -12,6 +12,7 @@ import argparse
 import datetime as dt
 import difflib
 import hashlib
+import http.client
 import json
 import os
 import re
@@ -183,7 +184,7 @@ def http_fetch(url: str, etag: str | None) -> tuple[int, bytes, str | None]:
         if exc.code == 304:
             return 304, b"", etag
         raise RoutingError(f"HTTP {exc.code} for {url}") from None
-    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+    except (urllib.error.URLError, http.client.HTTPException, TimeoutError, OSError) as exc:
         raise RoutingError(f"network error: {type(exc).__name__}") from None
     if len(body) > MAX_BYTES:
         raise RoutingError("routing file exceeded the size limit")
@@ -217,22 +218,48 @@ def _dump(value: Any) -> bytes:
     return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
 
-def load_cached_setup(state_dir: Path, key: str) -> tuple[dict[str, Any] | None, dict[str, Any]]:
-    cache = state_dir / "routing-cache"
-    state = _read_json(cache / "state.json", {})
-    entry = (state.get("setups") or {}).get(key) if isinstance(state, dict) else None
+def load_state(state_dir: Path) -> dict[str, Any]:
+    """Read the cache state; any part with the wrong shape counts as an empty cache."""
+    raw = _read_json(state_dir / "routing-cache" / "state.json", {})
+    raw = raw if isinstance(raw, dict) else {}
+    setups = raw.get("setups") if isinstance(raw.get("setups"), dict) else {}
+    state: dict[str, Any] = {"setups": {k: v for k, v in setups.items() if isinstance(v, dict)}}
+    if isinstance(raw.get("manifest"), dict):
+        state["manifest"] = raw["manifest"]
+    if raw.get("refused"):
+        # Fail closed: a recorded refusal stands until an acceptable manifest arrives.
+        refused = raw["refused"]
+        state["refused"] = refused if isinstance(refused, dict) else {"reason": "unreadable refusal record"}
+    return state
+
+
+def load_cached_setup(state_dir: Path, key: str, state: dict[str, Any] | None = None
+                      ) -> tuple[dict[str, Any] | None, dict[str, Any], bytes | None, str | None]:
+    """Return (setup, entry, bytes, problem); the bytes are re-hashed against the recorded sha256."""
+    entry = (state or load_state(state_dir))["setups"].get(key, {})
     try:
-        setup = validate_setup(json.loads((cache / f"{key}.json").read_bytes()), key)
-    except (OSError, ValueError, RoutingError):
-        return None, {}
-    return setup, entry if isinstance(entry, dict) else {}
+        data = (state_dir / "routing-cache" / f"{key}.json").read_bytes()
+    except OSError:
+        return None, {}, None, None
+    if not isinstance(entry.get("sha256"), str) or hashlib.sha256(data).hexdigest() != entry["sha256"]:
+        return None, {}, None, "INTEGRITY_MISMATCH: the cached setup does not match its recorded sha256"
+    try:
+        return validate_setup(json.loads(data), key), entry, data, None
+    except (ValueError, RoutingError) as exc:
+        return None, {}, None, f"CACHE_INVALID: {exc}"
+
+
+def refused_report(key: str, refused: dict[str, Any]) -> dict[str, Any]:
+    return {"routing": "UNKNOWN", "status": "MANIFEST_REFUSED", "key": key, "reason": refused.get("reason"),
+            "manifestVersion": refused.get("manifestVersion"),
+            "action": "keep the current routing; update nobrainer-tech-flow or wait for an approved manifest"}
 
 
 def _report(key: str, setup: dict[str, Any] | None, entry: dict[str, Any], status: str,
             now: dt.datetime, reason: str | None = None) -> dict[str, Any]:
     if setup is None:
         return {"routing": "UNKNOWN", "status": status, "key": key, "reason": reason,
-                "action": "keep the current routing; no setup is cached for this key"}
+                "action": "keep the current routing"}
     stale = now > parse_time(setup["expiresAt"])
     return {"routing": "NO_RECOMMENDATION" if setup["empty"] else "AVAILABLE", "status": status, "key": key,
             "version": setup.get("version"), **({"action": NO_RECOMMENDATION} if setup["empty"] else {}),
@@ -248,21 +275,28 @@ def fetch_setup(key: str, state_dir: Path, *, now: dt.datetime, force: bool = Fa
         raise RoutingError("base URL must use https")
     base_url = base_url.rstrip("/") + "/"
     cache = state_dir / "routing-cache"
-    state = _read_json(cache / "state.json", {})
-    if not isinstance(state, dict):
-        state = {}
-    state.setdefault("setups", {})
-    cached, entry = load_cached_setup(state_dir, key)
+    state = load_state(state_dir)
+    cached, entry, cached_bytes, problem = load_cached_setup(state_dir, key, state)
+    refused = state.get("refused")
     today = now.astimezone().date().isoformat()
+
+    def fallback(reason: str) -> dict[str, Any]:
+        reason = "; ".join(x for x in (problem, reason) if x)
+        if cached:
+            return _report(key, cached, entry, "CACHED_AFTER_ERROR", now, reason)
+        return _report(key, None, {}, problem.split(":", 1)[0] if problem else "UNKNOWN", now, reason)
+
     if offline:
-        return _report(key, cached, entry, "CACHED_OFFLINE" if cached else "UNKNOWN", now, "offline")
-    if cached and not force and entry.get("checkedOn") == today:
+        if refused:
+            return refused_report(key, refused)
+        return _report(key, cached, entry, "CACHED_OFFLINE", now, "offline") if cached else fallback("offline")
+    if cached and not refused and not force and entry.get("checkedOn") == today:
         return _report(key, cached, entry, "CACHED_TODAY", now)
 
     manifest, notes = None, []
     old = cache / "manifest.json"
     try:
-        etag = (state.get("manifest") or {}).get("etag") if old.is_file() else None
+        etag = state.get("manifest", {}).get("etag") if old.is_file() else None
         code, body, new_etag = fetcher(base_url + "manifest.json", etag)
     except (RoutingError, OSError) as exc:
         notes.append(f"manifest unavailable: {exc}")
@@ -270,31 +304,55 @@ def fetch_setup(key: str, state_dir: Path, *, now: dt.datetime, force: bool = Fa
         try:
             manifest = validate_manifest(json.loads(old.read_bytes() if code == 304 else body))
         except (RoutingError, ValueError, OSError) as exc:
-            # Fail closed: a manifest that arrived but is unapproved or not understood blocks every setup.
-            return {"routing": "UNKNOWN", "status": "MANIFEST_REFUSED", "key": key, "reason": str(exc),
-                    "action": "keep the current routing; update nobrainer-tech-flow if the manifest changed"}
+            # Fail closed: a manifest that arrived but is unapproved or not understood blocks every setup,
+            # and the refusal is kept so cached, offline, policy and apply runs refuse too.
+            version = None
+            try:
+                version = json.loads(body).get("version")
+            except (ValueError, AttributeError):
+                pass
+            state["refused"] = {"reason": str(exc), "manifestVersion": version,
+                                "at": now.isoformat(timespec="seconds")}
+            _write_atomic(cache / "state.json", _dump(state))
+            return refused_report(key, state["refused"])
         if code != 304:
             _write_atomic(old, body)
             state["manifest"] = {"etag": new_etag, "version": manifest.get("version")}
+        if code != 304 or refused:
+            state.pop("refused", None)
+            _write_atomic(cache / "state.json", _dump(state))
+    if manifest is None and refused:
+        return refused_report(key, refused)
     expected = None
     if manifest is not None:
         expected = manifest["setups"].get(key)
         if expected is None:
-            return _report(key, cached, entry, "CACHED_AFTER_ERROR" if cached else "UNKNOWN", now,
-                           f"manifest does not list {key}")
+            return fallback(f"manifest does not list {key}")
+    url, stale_cache = base_url + f"setups/{key}.json", False
     try:
         path = cache / f"{key}.json"
-        code, body, new_etag = fetcher(base_url + f"setups/{key}.json", entry.get("etag") if cached else None)
+        code, body, new_etag = fetcher(url, entry.get("etag") if cached else None)
         if code == 304:
-            body = path.read_bytes()
+            if cached_bytes is None:
+                raise RoutingError("host answered 304 but no verified copy is cached")
+            body = cached_bytes
+            if expected is not None and hashlib.sha256(body).hexdigest() != expected:
+                # The cache is older than the manifest: never fall back to it; ask once without a validator.
+                stale_cache = True
+                code, body, new_etag = fetcher(url, None)
+                if code == 304:
+                    raise RoutingError("host answered 304 to a request without If-None-Match")
         digest = hashlib.sha256(body).hexdigest()
         if expected is not None and digest != expected:
             raise RoutingError("SHA_MISMATCH: setup bytes do not match the manifest")
         setup = validate_setup(json.loads(body), key)
     except (RoutingError, ValueError, OSError) as exc:
         reason = "; ".join(notes + [str(exc)])
-        return _report(key, cached, entry, "CACHED_AFTER_ERROR" if cached else "UNKNOWN", now, reason)
-    changed = code != 304
+        if stale_cache:
+            reason = "the cached setup does not match the manifest; " + reason
+            return _report(key, None, {}, "SHA_MISMATCH", now, reason)
+        return fallback(reason)
+    changed = code != 304 or stale_cache
     if changed:
         _write_atomic(path, body)
     entry = {"etag": new_etag if changed else entry.get("etag"), "checkedOn": today,
@@ -476,7 +534,7 @@ def other_routing_lines(text: str, setup: dict[str, Any], region: tuple[str, int
 
 
 def apply_block(path: Path, setup: dict[str, Any], choice: str, *, write: bool = False,
-                confirm: str | None = None) -> dict[str, Any]:
+                confirm: str | None = None, backup_dir: Path | None = None) -> dict[str, Any]:
     if setup["empty"]:
         raise RoutingError(f"the setup is empty: {NO_RECOMMENDATION}")
     block = setup["blocks"].get(choice)
@@ -499,16 +557,21 @@ def apply_block(path: Path, setup: dict[str, Any], choice: str, *, write: bool =
         return result
     if confirm != preview_id:
         raise RoutingError("file or setup changed since the confirmed preview; preview again")
+    if backup_dir is None:
+        raise RoutingError("a write needs a backup directory")
     backup = None
     if path.exists():
-        backup = path.with_name(f"{path.name}.bak.{dt.datetime.now(dt.timezone.utc):%Y%m%dT%H%M%S%fZ}")
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        backup = backup_dir / f"{path.name}.{dt.datetime.now(dt.timezone.utc):%Y%m%dT%H%M%S%fZ}.bak"
         shutil.copy2(path, backup)
     _write_atomic(path, after, stat.S_IMODE(path.stat().st_mode) if path.exists() else 0o644)
-    written = path.read_text(encoding="utf-8")
-    regions = find_regions(written.splitlines(keepends=True))
-    newline = "\r\n" if "\r\n" in written else "\n"
-    ok = written == after_text and len(regions) == 1 and regions[0][0] == "MARKERS" and "".join(
-        written.splitlines(keepends=True)[regions[0][1]:regions[0][2]]).rstrip("\r\n") == block.replace("\n", newline)
+    # Compare bytes: text-mode reads would turn CRLF into LF and fail every CRLF file.
+    written_bytes = path.read_bytes()
+    lines = written_bytes.decode("utf-8").splitlines(keepends=True)
+    regions = find_regions(lines)
+    newline = "\r\n" if b"\r\n" in written_bytes else "\n"
+    ok = written_bytes == after and len(regions) == 1 and regions[0][0] == "MARKERS" and "".join(
+        lines[regions[0][1]:regions[0][2]]).rstrip("\r\n") == block.replace("\n", newline)
     result.update(change="WRITTEN", backup=str(backup) if backup else None, readback="OK" if ok else "FAILED")
     return result
 
@@ -524,7 +587,6 @@ def main(argv: list[str] | None = None) -> int:
         commands[name].add_argument("--budget", action="store_true", help="small budget")
     commands["fetch"].add_argument("--force", action="store_true", help="refresh now (on request)")
     commands["fetch"].add_argument("--offline", action="store_true")
-    commands["fetch"].add_argument("--base-url", default=BASE_URL)
     commands["record"].add_argument("--job", choices=JOBS, required=True)
     commands["record"].add_argument("--model", required=True)
     commands["record"].add_argument("--route", choices=ROUTE_ORDER, required=True)
@@ -553,14 +615,18 @@ def main(argv: list[str] | None = None) -> int:
             print(key)
             return 0
         if args.command == "fetch":
-            result = fetch_setup(key, args.state_dir, now=now, force=args.force, offline=args.offline,
-                                 base_url=args.base_url)
+            result = fetch_setup(key, args.state_dir, now=now, force=args.force, offline=args.offline)
             print(json.dumps(result, indent=2, sort_keys=True))
             # 3 means keep the current routing: no usable setup, or one with no recommendation.
             return 0 if result["routing"] == "AVAILABLE" else 3
-        setup, _ = load_cached_setup(args.state_dir, key)
+        state = load_state(args.state_dir)
+        if state.get("refused"):
+            print(json.dumps(refused_report(key, state["refused"])))
+            return 3
+        setup, _, _, problem = load_cached_setup(args.state_dir, key, state)
         if setup is None:
-            print(json.dumps({"routing": "UNKNOWN", "key": key, "action": "run fetch first; keep the current routing"}))
+            print(json.dumps({"routing": "UNKNOWN", "key": key, "reason": problem,
+                              "action": "run fetch first; keep the current routing"}))
             return 3
         if setup["empty"]:
             # Never write a block or a new policy from an empty setup; any previous policy file stays as it was.
@@ -580,7 +646,8 @@ def main(argv: list[str] | None = None) -> int:
             _write_atomic(path, _dump(policy))
             print(json.dumps(policy, indent=2, sort_keys=True))
             return 0
-        result = apply_block(args.file, setup, args.block, write=args.write, confirm=args.confirm)
+        result = apply_block(args.file, setup, args.block, write=args.write, confirm=args.confirm,
+                             backup_dir=args.state_dir / "routing-backups")
     except (RoutingError, OSError, UnicodeDecodeError) as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)
         return 2

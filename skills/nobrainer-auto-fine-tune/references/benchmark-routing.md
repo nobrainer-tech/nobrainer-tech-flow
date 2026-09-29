@@ -23,8 +23,8 @@ Hard limits:
 The helper is `scripts/benchmark_routing.py` (Python 3.11+, standard library
 only). Run it from the project directory, with `<skill-dir>` as this skill's
 directory. Its state lives in the project's `.nobrainer/` folder. Keep
-`routing-cache/` out of version control, and ask the owner before committing
-the ledger or policy. Without Python or network access and with no cached
+`routing-cache/` and `routing-backups/` out of version control, and ask the
+owner before committing the ledger or policy. Without Python or network access and with no cached
 setup, keep the current routing and report `UNKNOWN`.
 
 ## 1. Work out the reachable routes
@@ -67,20 +67,32 @@ python3 <skill-dir>/scripts/benchmark_routing.py fetch --routes openai,anthropic
 attempt does not count toward that limit. It sends
 `If-None-Match` and checks the file's sha256 against the manifest when the
 manifest was fetched. It keeps the last good copy per key and never caches a
-file that fails the check. Report its result as it is:
+file that fails the check. Every later read re-hashes the cached copy against
+the sha256 recorded when it was fetched. It fetches only from the published
+host. Report its result as it is:
 
 - `UPDATED`, `NOT_MODIFIED`, `CACHED_TODAY`: usable. `integrity` is `VERIFIED`
   when the manifest hash matched and `UNVERIFIED` when no manifest was reachable.
 - `CACHED_OFFLINE`, `CACHED_AFTER_ERROR`: the last good copy is used and
-  `reason` says why. A `SHA_MISMATCH` is never used.
+  `reason` says why. A network or HTTP failure, including a broken response,
+  lands here.
 - `stale: true`: past `expiresAt`. The setup is still usable, but report it as
   stale; a refresh is due.
-- `UNKNOWN` (exit 3): no usable copy for this key. Keep the current routing.
-- `MANIFEST_REFUSED` (exit 3, `routing: UNKNOWN`): the manifest arrived but has
-  no `approve` review, a `routeOrder` this helper does not know, or is not a
-  valid manifest. This fails closed: no setup is fetched and the cached copy is
-  not used. Keep the current routing and ask for a nobrainer-tech-flow update;
-  a new route arrives as `v2`, not as a change to `v1`.
+- `routing: UNKNOWN` (exit 3): there is no usable setup, and `status` says
+  why. Keep the current routing. The statuses are:
+  - `UNKNOWN`: nothing is cached for this key and the network gave nothing usable.
+  - `INTEGRITY_MISMATCH`: the cached copy no longer matches its recorded sha256.
+    It is never used; the next successful fetch replaces it.
+  - `SHA_MISMATCH`: the host answered "not modified", but the cached copy does
+    not match the manifest, and a fresh download did not match either. The
+    cache is not used as a fallback.
+  - `MANIFEST_REFUSED`: the manifest arrived but has no `approve` review, a
+    `routeOrder` this helper does not know, or is not a valid manifest. This
+    fails closed: no setup is fetched and the cached copy is not used. The
+    refusal is recorded (with the manifest version and reason), so cached,
+    `--offline`, `policy` and `apply` runs also refuse until a later fetch gets
+    an acceptable manifest. Ask for a nobrainer-tech-flow update if the route
+    order changed; a new route arrives as `v2`, not as a change to `v1`.
 - `routing: NO_RECOMMENDATION` (exit 3): the setup is valid but `empty`, because
   nothing reachable fits the limits. Keep the current routing.
 
@@ -167,9 +179,11 @@ job that this client can call, and records `MODEL_REQUESTED` and
 `MODEL_ACTUAL`. `nobrainer-dispatcher` carries that frozen policy and never
 picks a model itself. If the policy is missing, lists no candidates for the
 job, or its `key` differs from the current reachable routes, refresh it or keep
-the current routing. When the latest `fetch` reports `NO_RECOMMENDATION`, or its
-`version` differs from the policy's `setupVersion`, do not use an older policy
-file; keep the current routing or run `policy` again.
+the current routing. When the latest `fetch` does not report
+`routing: AVAILABLE` (for example `NO_RECOMMENDATION`, `MANIFEST_REFUSED` or
+`INTEGRITY_MISMATCH`), or its `version` differs from the policy's
+`setupVersion`, do not use an older policy file; keep the current routing or
+run `policy` again after a successful fetch.
 
 ## 6. Write the routing block into an instruction file
 
@@ -196,8 +210,9 @@ Show the user the before -> after diff and the other model-choosing lines
 (the helper reports those but never edits them). Wait for explicit
 confirmation, then run the same command with `--write --confirm <PREVIEW_ID>`.
 The write stops if the file or setup changed since the preview. It backs up the
-file, replaces the routing once, and reads the file back to check that exactly
-one marker block holds the setup's block. Running it again gives `NO_CHANGE`.
+file to `.nobrainer/routing-backups/<file name>.<UTC time>.bak`, replaces the
+routing once, and reads the bytes back to check that they match the preview and
+that exactly one marker block holds the setup's block. Running it again gives `NO_CHANGE`.
 Keep this block separate from nobrainer-tech-flow's own managed instruction
 block and never nest one inside the other.
 
@@ -206,7 +221,7 @@ block and never nest one inside the other.
 Add these lines to the routing policy:
 
 ```text
-BENCHMARK_PRIOR: <key> <version> VERIFIED | UNVERIFIED [STALE] | NO_RECOMMENDATION | UNKNOWN
+BENCHMARK_PRIOR: <key> <version> VERIFIED | UNVERIFIED [STALE] | NO_RECOMMENDATION | UNKNOWN (<status>)
 LEARNING: BENCHMARK | LEARNED for <jobs> (<ledger rows>, min <n> samples)
 INSTRUCTION_BLOCK: NOT_PROPOSED | PREVIEWED | WRITTEN (backup, readback OK)
 ```
