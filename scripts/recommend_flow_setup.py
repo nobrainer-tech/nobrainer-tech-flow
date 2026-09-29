@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -29,7 +30,52 @@ except ModuleNotFoundError:  # Python 3.10 can still inspect JSON-based clients.
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS_DIR = ROOT / "skills"
 PERSONALIZATION = ROOT / "scripts" / "install_personalization.py"
+INSTALL_SKILLS = ROOT / "scripts" / "install_skills.py"
 STATE_NAME = ".nobrainer-flow-onboarding.json"
+CLIENTS = ("codex", "claude", "opencode", "copilot")
+
+
+class InputRequired(ValueError):
+    """The guided flow needs answers that were not supplied and cannot be asked."""
+
+
+_SIBLINGS: dict[Path, object] = {}
+
+
+def _sibling(path: Path):
+    """Load a sibling script as a module, so client path rules have one source."""
+
+    if path not in _SIBLINGS:
+        spec = importlib.util.spec_from_file_location(f"_flow_{path.stem}", path)
+        if spec is None or spec.loader is None:
+            raise ValueError(f"cannot load {path}")
+        module = importlib.util.module_from_spec(spec)
+        # dataclasses resolve string annotations through sys.modules.
+        sys.modules[spec.name] = module
+        try:
+            spec.loader.exec_module(module)
+        except BaseException:
+            sys.modules.pop(spec.name, None)
+            raise
+        _SIBLINGS[path] = module
+    return _SIBLINGS[path]
+
+
+def skills_destination(client: str, home: Path, environ) -> Path:
+    return _sibling(INSTALL_SKILLS).client_destinations(environ, home)[client]
+
+
+def instruction_file(client: str, home: Path, environ) -> Path:
+    return _sibling(PERSONALIZATION).known_client_path(client, home, environ).path
+
+
+def links_to(target: Path, source: Path) -> bool:
+    """True when target is a symlink resolving to source; loops and dangling links are not."""
+
+    try:
+        return target.is_symlink() and target.resolve(strict=True) == source.resolve(strict=True)
+    except (OSError, RuntimeError):
+        return False
 
 
 @dataclass(frozen=True)
@@ -217,7 +263,9 @@ def _github_json(endpoint: str, timeout: int = 8) -> tuple[dict[str, object] | N
             result = subprocess.run(
                 [gh, "api", "--hostname", "github.com", endpoint],
                 cwd=ROOT,
-                text=True,
+                # GitHub JSON is UTF-8; the Windows code page cannot decode all of it.
+                encoding="utf-8",
+                errors="replace",
                 capture_output=True,
                 timeout=timeout,
                 check=False,
@@ -288,16 +336,18 @@ def inspect_github_repository(repo_url: str) -> RepositoryContext:
     return RepositoryContext(source + (f"+README_{readme_source}" if readme_source else ""), signals=signals, summary=summary)
 
 
-CLIENT_CONFIGS = {
-    "codex": ".codex/config.toml",
-    "claude": ".claude/settings.json",
-    "opencode": ".config/opencode/opencode.json",
-    "copilot": ".copilot/config.json",
+# Each client keeps its settings file next to its global instruction file.
+CLIENT_CONFIG_FILES = {
+    "codex": "config.toml",
+    "claude": "settings.json",
+    "opencode": "opencode.json",
+    "copilot": "config.json",
 }
 
 
-def inspect_client_config(client: str, home: Path) -> dict[str, str]:
-    path = home.expanduser() / CLIENT_CONFIGS[client]
+def inspect_client_config(client: str, home: Path, environ=None) -> dict[str, str]:
+    environ = {} if environ is None else environ
+    path = instruction_file(client, home.expanduser(), environ).parent / CLIENT_CONFIG_FILES[client]
     report = {
         "config_path": str(path),
         "config_status": "MISSING",
@@ -345,12 +395,19 @@ def ask_if_missing(args: argparse.Namespace) -> None:
         ("tools", "Which client and tools do you already use?", None),
         ("existing_setup", "What relevant skills, instructions or workflows are already installed?", None),
     )
+    missing = [attribute for attribute, _, _ in questions if not getattr(args, attribute)]
+    if missing and not sys.stdin.isatty():
+        flags = ", ".join("--" + attribute.replace("_", "-") for attribute in missing)
+        raise InputRequired(f"answers are missing and no terminal is attached; pass {flags}")
     for attribute, prompt, choices in questions:
         value = getattr(args, attribute)
         if value:
             continue
         while True:
-            entered = input(f"{prompt}: ").strip()
+            try:
+                entered = input(f"{prompt}: ").strip()
+            except EOFError:
+                raise InputRequired(f"input ended before {attribute.replace('_', '-')} was answered") from None
             if entered and (choices is None or entered in choices):
                 setattr(args, attribute, entered)
                 break
@@ -432,13 +489,8 @@ def recommendations(
 def installed_ids(destination: Path) -> set[str]:
     found: set[str] = set()
     for item in ITEMS:
-        target = destination / item.skill
-        if target.is_symlink():
-            try:
-                if target.resolve(strict=True) == (SKILLS_DIR / item.skill).resolve(strict=True):
-                    found.add(item.id)
-            except FileNotFoundError:
-                continue
+        if links_to(destination / item.skill, SKILLS_DIR / item.skill):
+            found.add(item.id)
     return found
 
 
@@ -446,12 +498,8 @@ def target_state(destination: Path, item: Item) -> str:
     target = destination / item.skill
     if not target.exists() and not target.is_symlink():
         return "MISSING"
-    if target.is_symlink():
-        try:
-            if target.resolve(strict=True) == (SKILLS_DIR / item.skill).resolve(strict=True):
-                return "CURRENT"
-        except FileNotFoundError:
-            pass
+    if links_to(target, SKILLS_DIR / item.skill):
+        return "CURRENT"
     return "CONFLICT"
 
 
@@ -467,11 +515,16 @@ def selected_ids(raw: str | None) -> list[str]:
     return sorted(chosen)
 
 
-def run(command: list[str]) -> tuple[int, str]:
+def run(command: list[str], hide: tuple[str, ...] = ()) -> tuple[int, str]:
+    """Run a helper and echo its output, minus lines that start with a hidden prefix."""
+
     result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False)
     output = result.stdout + result.stderr
-    if output:
-        print(output, end="" if output.endswith("\n") else "\n")
+    shown = "".join(
+        line for line in output.splitlines(keepends=True) if not line.startswith(hide)
+    )
+    if shown:
+        print(shown, end="" if shown.endswith("\n") else "\n")
     return result.returncode, output
 
 
@@ -480,11 +533,8 @@ def remove_exact_created_links(destination: Path, names: list[str]) -> None:
         if name not in BY_SKILL:
             continue
         target = destination / name
-        try:
-            if target.is_symlink() and target.resolve(strict=True) == (SKILLS_DIR / name).resolve(strict=True):
-                target.unlink()
-        except FileNotFoundError:
-            continue
+        if links_to(target, SKILLS_DIR / name):
+            target.unlink()
 
 
 def state_path(home: Path, override: Path | None, client: str) -> Path:
@@ -639,10 +689,9 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     backup = profile.get("backup") if profile else None
     if target_path:
         allowed_paths = {
-            args.home / ".codex" / "AGENTS.md",
-            args.home / ".claude" / "CLAUDE.md",
-            args.home / ".config" / "opencode" / "AGENTS.md",
-            args.home / ".copilot" / "copilot-instructions.md",
+            instruction_file(client, args.home, environ)
+            for client in CLIENTS
+            for environ in (args.environ, {})
         }
         if target_path not in allowed_paths:
             print(f"ERROR: refusing unexpected personalization target: {target_path}", file=sys.stderr)
@@ -678,11 +727,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     for name in created:
         target = destination / name
         if target.is_symlink():
-            try:
-                matches = target.resolve(strict=True) == (SKILLS_DIR / name).resolve(strict=True)
-            except FileNotFoundError:
-                matches = False
-            if not matches:
+            if not links_to(target, SKILLS_DIR / name):
                 print(f"PRESERVED: changed target {target}")
                 return 3
         elif target.exists():
@@ -696,7 +741,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     for name in created:
         target = destination / name
         source = SKILLS_DIR / name
-        if target.is_symlink() and target.resolve(strict=True) == source.resolve(strict=True):
+        if links_to(target, source):
             target.unlink()
             removed.append(name)
         elif target.exists() or target.is_symlink():
@@ -772,7 +817,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--existing-setup", help="existing skills or workflow setup")
     parser.add_argument("--selection", help="comma-separated recommendation IDs; required for --apply")
     parser.add_argument("--preferences", help="short owner-approved persistent setup preference")
-    parser.add_argument("--home", type=Path, default=Path.home())
+    parser.add_argument(
+        "--home",
+        type=Path,
+        help="profile home for the documented default locations; when omitted, "
+        "CLAUDE_CONFIG_DIR, CODEX_HOME and XDG_CONFIG_HOME are honoured",
+    )
     parser.add_argument("--dest", type=Path, help="skill target directory override for controlled setup/tests")
     parser.add_argument("--state-file", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--apply", action="store_true", help="apply the reviewed selected subset")
@@ -783,7 +833,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     try:
-        args.home = args.home.expanduser()
+        # An explicit --home selects the documented defaults under it and ignores
+        # the environment, which keeps isolated runs from touching a real profile.
+        args.home_explicit = args.home is not None
+        args.environ = {} if args.home_explicit else os.environ
+        args.home = args.home.expanduser() if args.home_explicit else Path.home()
         repo_url = safe_repo_url(args.repo_url)
         state = state_path(args.home, args.state_file, args.client)
         legacy_state = legacy_state_path(args.home, args.state_file)
@@ -832,15 +886,17 @@ def main(argv: list[str] | None = None) -> int:
             repository_context = RepositoryContext("OFFLINE")
         else:
             repository_context = inspect_github_repository(repo_url)
-        client_destinations = {
-            "codex": args.home / ".agents" / "skills",
-            "claude": args.home / ".claude" / "skills",
-            "opencode": args.home / ".config" / "opencode" / "skills",
-            "copilot": args.home / ".copilot" / "skills",
-        }
-        destination = (args.dest or client_destinations[args.client]).expanduser().resolve()
+        destination = (
+            args.dest or skills_destination(args.client, args.home, args.environ)
+        ).expanduser().resolve()
         if previous and Path(str(previous["destination"])).expanduser().resolve() != destination:
-            raise ValueError(f"existing setup state belongs to a different skills destination: {previous['destination']}")
+            raise ValueError(
+                "existing setup state belongs to a different skills destination: "
+                f"{previous['destination']} (after an upgrade this can mean the earlier "
+                "setup used the default location instead of CLAUDE_CONFIG_DIR or "
+                "XDG_CONFIG_HOME: undo it with --rollback --apply, or pass --home to "
+                "keep that location)"
+            )
         before = installed_ids(destination)
         ranked = recommendations(
             args.work_profile,
@@ -858,7 +914,7 @@ def main(argv: list[str] | None = None) -> int:
             if len(value) > 240 or any(ord(char) < 0x20 for char in value):
                 raise ValueError(f"{name} must be a single line of at most 240 characters")
         print(f"NEEDS: profile={args.work_profile}; goal={args.goal}; tools={args.tools}; existing={args.existing_setup}")
-        capability = inspect_client_config(args.client, args.home)
+        capability = inspect_client_config(args.client, args.home, args.environ)
         print(
             "CLIENT_CAPABILITY_AUDIT: "
             f"client={args.client}; config_status={capability['config_status']}; "
@@ -906,8 +962,20 @@ def main(argv: list[str] | None = None) -> int:
         new_skills = [name for name in install_names if BY_SKILL[name].id not in before]
         print(f"SELECTED: {','.join(chosen)}")
         print(f"INSTALL_SET: {','.join(install_ids)} (includes required 01,02)")
+        # The installer runs once per skill, so it cannot see the whole set; judge the
+        # cross-skill links here and hide its per-skill notes below.
+        for name, other in _sibling(INSTALL_SKILLS).unmet_references(
+            install_names, {skill: SKILLS_DIR / skill for skill in BY_SKILL}, destination
+        ):
+            print(
+                f"NOTE: {name} links to {other}, which is not in this install set; "
+                f"add selection {BY_SKILL[other].id} to include it"
+            )
         personalization_client = args.client
-        profile_args = [sys.executable, str(PERSONALIZATION), "--client", personalization_client, "--home", str(args.home)]
+        home_args = ["--home", str(args.home)] if args.home_explicit else []
+        # The guided flow cannot set auto-update, session-restart or a wiki root, so
+        # it must keep whatever an earlier run of the personalization script granted.
+        profile_args = [sys.executable, str(PERSONALIZATION), "--client", personalization_client, *home_args, "--keep-options"]
         if args.preferences:
             profile_args.extend(("--preferences", args.preferences))
         code, profile_output = run(profile_args)
@@ -916,16 +984,11 @@ def main(argv: list[str] | None = None) -> int:
         inherited = "INHERITS_CODEX:" in profile_output
         if inherited and args.preferences:
             personalization_client = "codex"
-            profile_args = [sys.executable, str(PERSONALIZATION), "--client", personalization_client, "--home", str(args.home), "--preferences", args.preferences]
+            profile_args = [sys.executable, str(PERSONALIZATION), "--client", personalization_client, *home_args, "--keep-options", "--preferences", args.preferences]
             code, profile_output = run(profile_args)
             if code:
                 return code
-        profile_target = {
-            "codex": args.home / ".codex" / "AGENTS.md",
-            "claude": args.home / ".claude" / "CLAUDE.md",
-            "opencode": args.home / ".config" / "opencode" / "AGENTS.md",
-            "copilot": args.home / ".copilot" / "copilot-instructions.md",
-        }[personalization_client]
+        profile_target = instruction_file(personalization_client, args.home, args.environ)
         old_profile = previous.get("profile", {})
         if old_profile.get("target") and Path(str(old_profile["target"])) != profile_target:
             raise ValueError(f"existing setup state belongs to a different personalization target: {old_profile['target']}")
@@ -935,14 +998,14 @@ def main(argv: list[str] | None = None) -> int:
         # conflict from leaving a partial selection installed.
         for name in install_names:
             command = [sys.executable, str(ROOT / "scripts" / "install_skills.py"), "--client", args.client, "--dest", str(destination), "--skill", name]
-            code, _ = run(command)
+            code, _ = run(command, hide=("NOTE: ",))
             if code:
                 return code
         profile_preimage = read_file_preimage(profile_target)
         if args.apply:
             for name in install_names:
                 command = [sys.executable, str(ROOT / "scripts" / "install_skills.py"), "--client", args.client, "--dest", str(destination), "--skill", name, "--apply"]
-                code, _ = run(command)
+                code, _ = run(command, hide=("NOTE: ",))
                 if code:
                     remove_exact_created_links(destination, new_skills)
                     return code
@@ -1047,7 +1110,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ROLLBACK_STATE: {state}")
         print("CAPABILITY_AUDIT_LIMIT: host runtime evidence remains UNKNOWN; run the loaded skill in the active client before recommending route changes.")
         return 0
-    except (OSError, ValueError, json.JSONDecodeError) as exc:
+    except InputRequired as exc:
+        print(f"INPUT_REQUIRED: {exc}", file=sys.stderr)
+        return 2
+    except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 

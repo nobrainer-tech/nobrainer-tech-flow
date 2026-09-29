@@ -391,6 +391,10 @@ def validate(suite_only: bool) -> list[str]:
     except (OSError, json.JSONDecodeError, KeyError, IndexError, TypeError) as exc:
         errors.append(f"{marketplace.relative_to(ROOT)}: invalid plugin version: {exc}")
 
+    other_versions, other_errors = release_version_sources(ROOT)
+    versions.update(other_versions)
+    errors.extend(other_errors)
+
     if len(set(versions.values())) > 1:
         errors.append(f"manifest version mismatch: {versions}")
 
@@ -414,6 +418,33 @@ def validate(suite_only: bool) -> list[str]:
         errors.append(f"{codex_manifest.relative_to(ROOT)}: invalid Codex manifest: {exc}")
 
     return errors
+
+
+def release_version_sources(root: Path) -> tuple[dict[str, str], list[str]]:
+    """Versions kept outside the plugin manifests.
+
+    The skill's VERSION file is what the update check compares with the latest
+    release, and the npm lockfile repeats the package version twice; both have to
+    move with the manifests or users see a false or missing update.
+    """
+
+    versions: dict[str, str] = {}
+    errors: list[str] = []
+    version_file = root / "skills" / "nobrainer-tech-flow" / "VERSION"
+    try:
+        versions["skills/nobrainer-tech-flow/VERSION"] = version_file.read_text(
+            encoding="utf-8"
+        ).strip()
+    except OSError as exc:
+        errors.append(f"skills/nobrainer-tech-flow/VERSION: unreadable: {exc}")
+    lockfile = root / "package-lock.json"
+    try:
+        data = json.loads(lockfile.read_text(encoding="utf-8"))
+        versions["package-lock.json"] = data["version"]
+        versions['package-lock.json packages[""]'] = data["packages"][""]["version"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        errors.append(f"package-lock.json: invalid version fields: {exc}")
+    return versions, errors
 
 
 def main() -> int:

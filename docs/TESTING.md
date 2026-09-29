@@ -27,8 +27,9 @@ checkpoint/end-turn decisions, separate `RUNTIME_RELEASE`, session identity and
 lease gates, SDD boundaries, trigger ownership, browser routing, adapter
 registration and installer races.
 Adapter tests execute every bootstrap mechanism that can run locally: the Claude
-and Cursor SessionStart JSON shapes, OpenCode injection/deduplication, and Pi
-discovery plus post-compaction re-injection. They also parse the portable Agent
+and Cursor SessionStart JSON shapes, OpenCode injection/deduplication (including
+a first message without a text part), and Pi discovery plus per-request
+injection. They also parse the portable Agent
 Plugin, Gemini and Kimi manifests, reject invented Devin/Hermes adapters and
 enforce the exact eighteen-skill inventory, correction hooks and workflow
 diagram contract.
@@ -55,8 +56,13 @@ readback below.
 
 GitHub Actions runs these deterministic layers on Linux and macOS. It checks
 Python, Node and shell syntax plus deterministic adapter contracts, and runs a
-checksum-pinned Gitleaks tree scan on Linux. CI does not claim a client UI or
-model followed a skill.
+checksum-pinned Gitleaks tree scan on Linux. A Windows job runs the structure
+validators, the adapter tests (including the LF pins for the hook scripts and the
+bootstrap) and [`tests/test_windows_smoke.py`](../tests/test_windows_smoke.py):
+the hook wrapper under Git Bash, a copy-mode install, personalization and the UTC
+session title. It does not run the whole suite: some historical evidence tests
+compare text byte for byte and assume LF checkouts. CI does not claim a client UI
+or model followed a skill.
 
 ## 3. Forward behavior evaluation
 

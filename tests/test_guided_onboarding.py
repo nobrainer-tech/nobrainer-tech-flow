@@ -5,6 +5,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -15,11 +16,15 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 ONBOARDING = ROOT / "scripts" / "recommend_flow_setup.py"
+PERSONALIZATION = ROOT / "scripts" / "install_personalization.py"
 SPEC = importlib.util.spec_from_file_location("guided_setup", ONBOARDING)
 assert SPEC and SPEC.loader
 GUIDED = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = GUIDED
 SPEC.loader.exec_module(GUIDED)
+
+
+CONFIG_VARIABLES = ("CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_CONFIG_HOME")
 
 
 class GuidedOnboardingTests(unittest.TestCase):
@@ -30,6 +35,27 @@ class GuidedOnboardingTests(unittest.TestCase):
             text=True,
             capture_output=True,
             check=False,
+            # A test must never wait on, or answer, a prompt.
+            stdin=subprocess.DEVNULL,
+        )
+
+    def run_setup_in(
+        self, home: Path, variables: dict[str, str], *args: str
+    ) -> subprocess.CompletedProcess[str]:
+        """Run with a private home and only the config variables the test names."""
+
+        environment = {
+            key: value for key, value in os.environ.items() if key not in CONFIG_VARIABLES
+        }
+        environment.update({"HOME": str(home), "USERPROFILE": str(home), **variables})
+        return subprocess.run(
+            [sys.executable, str(ONBOARDING), *args],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            stdin=subprocess.DEVNULL,
+            env=environment,
         )
 
     def common(self, destination: Path, home: Path, client: str = "codex") -> tuple[str, ...]:
@@ -225,6 +251,18 @@ class GuidedOnboardingTests(unittest.TestCase):
                 request, None, 302, "Found", {}, "https://127.0.0.1/latest/meta-data"
             )
         )
+
+    def test_github_cli_output_is_decoded_as_utf_8_on_every_platform(self) -> None:
+        completed = subprocess.CompletedProcess(
+            args=["gh"], returncode=0, stdout='{"language":"Python"}', stderr=""
+        )
+        with mock.patch.object(GUIDED.shutil, "which", return_value="/usr/bin/gh"), mock.patch.object(
+            GUIDED.subprocess, "run", return_value=completed
+        ) as runner:
+            GUIDED._github_json("repos/acme/repo")
+        # A Windows code page cannot decode every character GitHub returns.
+        self.assertEqual("utf-8", runner.call_args.kwargs["encoding"])
+        self.assertEqual("replace", runner.call_args.kwargs["errors"])
 
     def test_partial_selection_personalization_readback_and_rollback(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -530,6 +568,206 @@ class GuidedOnboardingTests(unittest.TestCase):
             self.assertEqual(0, claude_rollback.returncode, claude_rollback.stderr)
             self.assertFalse(claude_destination.exists())
             self.assertFalse((home / ".claude" / "CLAUDE.md").exists())
+
+    ANSWERS = (
+        "--work-profile", "software-development",
+        "--goal", "ship and test a web application",
+        "--tools", "Claude Code",
+        "--existing-setup", "none",
+    )
+
+    def test_missing_answers_without_a_terminal_ask_for_input_instead_of_hanging(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            arguments = [
+                sys.executable, str(ONBOARDING), "--repo-url", "https://github.com/example/work-repo",
+                "--offline", "--client", "codex", "--home", str(root / "home"),
+                "--dest", str(root / "skills"), "--goal", "compare sources",
+            ]
+            # An open pipe that is never written to or closed is what an agent
+            # harness may attach; reading it would block forever.
+            process = subprocess.Popen(
+                arguments, cwd=ROOT, text=True, stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            )
+            try:
+                process.wait(timeout=60)
+                stderr = process.stderr.read()
+            finally:
+                if process.poll() is None:
+                    process.kill()
+                    process.wait()
+                process.stdin.close()
+                process.stdout.close()
+                process.stderr.close()
+            self.assertEqual(2, process.returncode)
+            self.assertIn("INPUT_REQUIRED", stderr)
+            self.assertIn("--work-profile", stderr)
+            self.assertIn("--tools", stderr)
+            self.assertNotIn("--goal", stderr)
+            self.assertNotIn("Traceback", stderr)
+            self.assertFalse((root / "skills").exists())
+
+    def test_config_dir_variables_steer_skills_instructions_and_settings(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            home = root / "home"
+            profile = root / "claude-profile"
+            profile.mkdir()
+            (profile / "settings.json").write_text('{"model": "test/model"}', encoding="utf-8")
+            variables = {"CLAUDE_CONFIG_DIR": str(profile)}
+            common = (
+                "--repo-url", "https://github.com/example/work-repo", "--offline",
+                "--client", "claude", *self.ANSWERS, "--selection", "01",
+            )
+
+            preview = self.run_setup_in(home, variables, *common)
+            self.assertEqual(0, preview.returncode, preview.stderr)
+            self.assertIn("configured_main=test/model", preview.stdout)
+            self.assertIn(f"TARGET: {profile / 'CLAUDE.md'}", preview.stdout)
+            self.assertFalse((profile / "skills").exists())
+
+            applied = self.run_setup_in(home, variables, *common, "--apply")
+            self.assertEqual(0, applied.returncode, applied.stderr)
+            self.assertTrue((profile / "skills" / "nobrainer-tech-flow").is_symlink())
+            self.assertIn("nobrainer-tech-flow", (profile / "CLAUDE.md").read_text(encoding="utf-8"))
+            self.assertFalse((home / ".claude").exists())
+
+            rolled_back = self.run_setup_in(
+                home, variables, "--repo-url", "https://github.com/example/work-repo",
+                "--client", "claude", "--rollback", "--apply",
+            )
+            self.assertEqual(0, rolled_back.returncode, rolled_back.stdout + rolled_back.stderr)
+            self.assertFalse((profile / "skills").exists())
+            self.assertFalse((profile / "CLAUDE.md").exists())
+
+    def test_guided_setup_keeps_options_granted_by_an_earlier_personalization_run(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            home = root / "home"
+            instruction = home / ".codex" / "AGENTS.md"
+            earlier = subprocess.run(
+                [sys.executable, str(PERSONALIZATION), "--client", "codex", "--home", str(home),
+                 "--auto-update", "--auto-session-restart", "--apply"],
+                cwd=ROOT, text=True, capture_output=True, check=False, stdin=subprocess.DEVNULL,
+            )
+            self.assertEqual(0, earlier.returncode, earlier.stderr)
+            granted = instruction.read_text(encoding="utf-8")
+
+            applied = self.run_setup(
+                *self.common(root / "skills", home), *self.ANSWERS, "--selection", "01",
+                "--preferences", "Answer in Polish.", "--apply",
+            )
+            self.assertEqual(0, applied.returncode, applied.stderr)
+            self.assertIn("KEPT_OPTIONS: auto-update, session-restart", applied.stdout)
+            content = instruction.read_text(encoding="utf-8")
+            self.assertIn("standing authorization to apply", content)
+            self.assertIn("standing authorization for session rotation", content)
+            self.assertIn("Answer in Polish.", content)
+
+            rolled_back = self.run_setup(*self.common(root / "skills", home), "--rollback", "--apply")
+            self.assertEqual(0, rolled_back.returncode, rolled_back.stdout + rolled_back.stderr)
+            self.assertEqual(granted, instruction.read_text(encoding="utf-8"))
+
+    def test_claude_import_of_a_codex_file_without_the_block_still_gets_instructions(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            home = root / "home"
+            instruction = home / ".claude" / "CLAUDE.md"
+            instruction.parent.mkdir(parents=True)
+            original = "@~/.codex/AGENTS.md\nClaude-only rules.\n"
+            instruction.write_text(original, encoding="utf-8")
+
+            applied = self.run_setup(
+                *self.common(root / "skills", home, "claude"), *self.ANSWERS, "--selection", "01",
+                "--apply",
+            )
+            self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+            self.assertNotIn("inherited from Codex", applied.stdout)
+            content = instruction.read_text(encoding="utf-8")
+            self.assertTrue(content.startswith(original))
+            self.assertIn("NOBRAINER-TECH-FLOW:START", content)
+
+            rolled_back = self.run_setup(
+                *self.common(root / "skills", home, "claude"), "--rollback", "--apply"
+            )
+            self.assertEqual(0, rolled_back.returncode, rolled_back.stdout + rolled_back.stderr)
+            self.assertEqual(original, instruction.read_text(encoding="utf-8"))
+
+    @unittest.skipIf(os.name == "nt", "creating symlinks needs elevated rights on Windows")
+    def test_a_setup_made_before_config_dir_support_can_be_rolled_back_and_redone(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            home = root / "home"
+            profile = root / "claude-profile"
+            variables = {"CLAUDE_CONFIG_DIR": str(profile)}
+            common = (
+                "--repo-url", "https://github.com/example/work-repo", "--offline",
+                "--client", "claude",
+            )
+            # 2.0.0 always wrote under the home directory, whatever CLAUDE_CONFIG_DIR said.
+            earlier = self.run_setup(
+                *common, *self.ANSWERS, "--selection", "01", "--home", str(home), "--apply"
+            )
+            self.assertEqual(0, earlier.returncode, earlier.stdout + earlier.stderr)
+
+            blocked = self.run_setup_in(
+                home, variables, *common, *self.ANSWERS, "--selection", "01", "--apply"
+            )
+            self.assertEqual(2, blocked.returncode)
+            self.assertIn("--rollback --apply", blocked.stderr)
+            self.assertFalse(profile.exists())
+
+            undone = self.run_setup_in(home, variables, *common, "--rollback", "--apply")
+            self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+            self.assertFalse((home / ".claude" / "skills").exists())
+
+            redone = self.run_setup_in(
+                home, variables, *common, *self.ANSWERS, "--selection", "01", "--apply"
+            )
+            self.assertEqual(0, redone.returncode, redone.stdout + redone.stderr)
+            self.assertTrue((profile / "skills" / "nobrainer-tech-flow").is_symlink())
+
+    def test_links_out_of_the_install_set_are_named_once_for_the_whole_set(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            common = (*self.common(root / "skills", root / "home"), *self.ANSWERS)
+
+            partial = self.run_setup(*common, "--selection", "03")
+            complete = self.run_setup(*common, "--selection", "03,11")
+
+            self.assertEqual(0, partial.returncode, partial.stdout + partial.stderr)
+            notes = [line for line in partial.stdout.splitlines() if line.startswith("NOTE:")]
+            # The core skill links to Sessions (ID 11); the per-skill installer runs never
+            # see the whole set, so their misleading "not installed" notes stay hidden.
+            self.assertEqual(
+                [
+                    "NOTE: nobrainer-tech-flow links to nobrainer-sessions, which is not in "
+                    "this install set; add selection 11 to include it"
+                ],
+                notes,
+            )
+            self.assertEqual(0, complete.returncode, complete.stdout + complete.stderr)
+            self.assertNotIn("NOTE:", complete.stdout)
+
+    @unittest.skipIf(os.name == "nt", "creating symlinks needs elevated rights on Windows")
+    def test_a_symlink_loop_in_the_destination_is_a_conflict_not_a_crash(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            destination = root / "skills"
+            destination.mkdir()
+            (destination / "nobrainer-review").symlink_to("nobrainer-review")
+
+            result = self.run_setup(
+                *self.common(destination, root / "home"), *self.ANSWERS
+            )
+
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+            review = next(
+                line for line in result.stdout.splitlines() if line.startswith("04 Code review |")
+            )
+            self.assertIn("Target=CONFLICT", review)
 
     @staticmethod
     def recommendation_ids(output: str) -> tuple[str, ...]:

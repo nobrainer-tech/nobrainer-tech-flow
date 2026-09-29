@@ -21,13 +21,13 @@ Never promote one level from evidence belonging to another.
 Merge is a repository delivery state, not a client-compatibility level; release
 evidence records it separately.
 
-The current source version is **2.0.0**. Its release scope and reproducible
-checks are recorded in the [2.0.0 verification record](releases/v2.0.0.md).
-The previous [1.14.1 record](releases/v1.14.1.md) is historical evidence,
-not a statement about the current source. The package/entrypoint migration
+The current source version is **2.0.1**. Its release scope and reproducible
+checks are recorded in the [2.0.1 verification record](releases/v2.0.1.md).
+The [2.0.0](releases/v2.0.0.md) and [1.14.1](releases/v1.14.1.md) records are
+historical evidence, not statements about the current source. The package/entrypoint migration
 is documented in the [migration guide](MIGRATION_TO_FLOW.md).
 
-For 2.0.0, portable structure, installation, selected setup, personalization,
+For 2.0.x, portable structure, installation, selected setup, personalization,
 update checks and guarded cleanup have repository-level tests. The historical
 client matrix below does not establish fresh 2.0 automatic discovery,
 parallel execution, live Jev/Laya access or marketplace acceptance.
@@ -89,14 +89,14 @@ not mean the external client's parser accepted or loaded the package.
 | Gemini CLI | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: extension manifest and owned context include | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Kimi Code | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: canonical skills path, `nobrainer-tech-flow` session-start field and native-tool boundary | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Devin CLI | `SOURCE_VALIDATED` | no dedicated adapter | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
-| Pi | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: package resources, dedupe, lifecycle reset and post-compaction transform | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
+| Pi | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: package resources and per-request dedupe transform | `CLIENT_LOADED`: resource loader `0.87.1` only, no session (see the current-source readback) | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Hermes Agent | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: root Agent Plugins v1 manifest only; no bootstrap | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Antigravity and other plugin hosts | `SOURCE_VALIDATED` | no host-specific contract | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | Generic Agent Skills consumers | `SOURCE_VALIDATED` | canonical folders only | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 
 Adapter checks apply to the current source. The client/runtime cells retain their
-recorded historical versions and hashes; they do not silently transfer to v1.6.
-Consult the v1.6 evidence for new probes. There is deliberately no blanket “works everywhere”
+recorded historical versions and hashes; they do not silently transfer to the current source.
+Consult the current release record for new probes. There is deliberately no blanket “works everywhere”
 badge: an unknown harness gets portable skill folders, then needs its own
 discovery/bootstrap proof before promotion.
 
@@ -107,8 +107,11 @@ one small `NOBRAINER_BOOTSTRAP_V1` routing context, but they must not copy or
 rewrite skill bodies.
 
 - Claude and Cursor hooks emit exactly one platform-specific JSON field.
-- OpenCode and Pi inject once per relevant context and detect their marker;
-  Pi permits one re-injection after compaction.
+- OpenCode and Pi detect their marker so one request never carries the bootstrap
+  twice. OpenCode prefixes the first user message's text and, when that message
+  has none (after a compaction), adds a synthetic text part. Pi adds it to every
+  model request that lacks it, because the host rebuilds the message list per
+  request.
 - Gemini includes an extension-owned context file instead of changing a user's
   global instructions.
 - Kimi maps native tools but explicitly refuses to treat a hidden subagent as
@@ -122,6 +125,26 @@ rewrite skill bodies.
   explicitly selected until a clean runtime transcript proves more.
 - Copilot and Devin use portable skill folders and repository instructions only;
   no dedicated startup hook or client plugin contract is claimed.
+
+## Current-source readback (2026-09-29)
+
+Run against a checkout of the 2.0.1 source with isolated client configuration and
+no real model request: the Claude Code session ran against a local stand-in API
+endpoint and Codex against a closed network, and both plugin installs used a
+local checkout, not the GitHub source. The rows show what the client loads and
+sends, not how a model behaves.
+
+| Client | Readback | Level |
+|---|---|---|
+| Claude Code `2.1.284` (Linux) | `claude plugin validate` passed. `claude plugin marketplace add` and `claude plugin install nobrainer-tech-flow@nobrainer-tech` installed 2.0.1 with 18 skills. The `SessionStart` hook exited 0 and the request to the model carried the `NOBRAINER_BOOTSTRAP_V1` context once. With `CLAUDE_CONFIG_DIR` set, guided setup installed into that directory, the client listed the installed skills, the instruction block reached the request and `~/.claude` stayed untouched. | `CLIENT_LOADED`; bootstrap delivery observed; routing unverified |
+| Codex `0.158.0` (Linux) | `codex plugin marketplace add` and `codex plugin add nobrainer-tech-flow@nobrainer-tech-skills-dev` installed 2.0.1. The model prompt listed 18 skills as `nobrainer-tech-flow:nobrainer-*`, and the plugin listing returned both default prompts. With 2.0.0 neither plugin name installed. | `CLIENT_LOADED`; routing unverified |
+| Pi `0.87.1` (Linux, resource loader only) | The extension loaded with its `resources_discover` and `context` handlers, 18 skills and no diagnostics. | `CLIENT_LOADED` for the loader; no session |
+| Windows (CI only: GitHub-hosted `windows-latest`, Git Bash, Python 3.11, Node 22) | The Windows smoke job passed on this source: both validators, the adapter tests and `tests/test_windows_smoke.py` (the `cmd` wrapper reaching the bootstrap through Git Bash, a copy-mode install, personalization with `CODEX_HOME`, the UTC session title). | `REPOSITORY_CHECKED` on Windows; no client read back |
+
+The other rows above keep their earlier level: no readback of OpenCode, Cursor,
+Gemini CLI, Kimi Code or Copilot CLI was made for this source. The Windows job
+runs the validators and the modules listed in [Testing](TESTING.md), not the
+whole suite.
 
 ## Clean-session acceptance
 
@@ -246,7 +269,7 @@ valid explicit `$nobrainer-tech-flow` run proves explicit loading, not automatic
 
 The Sessions helper runs explicit argv commands using Python 3.11+ on POSIX.
 It is opt-in and ships with the skill; no daemon or new hook registration is
-required. Windows process-group enforcement is unsupported. The seventeen
+required. Windows process-group enforcement is unsupported. The eighteen
 plain-text skills remain portable; this helper does not narrow their format
 compatibility. See [runtime limits and examples](BOUNDED_RUNNER.md).
 

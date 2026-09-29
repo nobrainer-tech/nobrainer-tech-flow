@@ -4,6 +4,8 @@ from pathlib import Path
 import subprocess
 import sys
 import unittest
+from unittest import mock
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 PATH = Path(__file__).resolve().parents[1] / 'skills/nobrainer-sessions/scripts/session_title.py'
 spec = importlib.util.spec_from_file_location('session_title', PATH)
@@ -11,12 +13,30 @@ titles = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(titles)
 
 
+def has_time_zone_database():
+    try:
+        ZoneInfo('Europe/Warsaw')
+    except ZoneInfoNotFoundError:
+        return False
+    return True
+
+
 class SessionTitleTests(unittest.TestCase):
+    @unittest.skipUnless(has_time_zone_database(), 'named zones need the tzdata database (absent on Windows)')
     def test_actual_start_and_timezone_across_midnight(self):
         result = titles.format_title('Task', '2026-09-05T23:30:00Z', 'Europe/Warsaw')
         self.assertEqual(result['display_title'], 'Task | started 06-09')
         self.assertEqual(titles.format_title('Task', '2026-09-05T23:30:00Z')['display_title'],
                          'Task | started 05-09')
+
+    def test_utc_and_missing_database_never_produce_a_guessed_date(self):
+        with mock.patch.object(titles, 'ZoneInfo', side_effect=ZoneInfoNotFoundError('UTC')):
+            self.assertEqual(titles.format_title('Task', '2026-09-05T23:30:00Z')['display_title'],
+                             'Task | started 05-09')
+            self.assertEqual(titles.format_title('Task', '2026-09-05T23:30:00+02:00', 'UTC')['display_title'],
+                             'Task | started 05-09')
+            with self.assertRaises(ZoneInfoNotFoundError):
+                titles.format_title('Task', '2026-09-05T23:30:00Z', 'Europe/Warsaw')
 
     def test_resume_preserves_date_and_retries_replace_suffix(self):
         original = titles.format_title('Task', '2026-09-01T10:00:00Z')

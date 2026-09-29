@@ -5,3 +5,11 @@ docs/evals/artifacts/*-output.md -text -whitespace
 docs/evals/artifacts/*-judge.md -text -whitespace
 docs/evals/artifacts/*-judge-rubric.md -text -whitespace
 docs/evals/artifacts/*.raw.b64 -text -whitespace
+
+# session-start and the shell half of run-hook.cmd run under a POSIX shell (Git Bash
+# on Windows), where CRLF endings break them; cmd.exe copes with LF for the batch half
+# because the file uses no labels. The bootstrap is injected into the model context
+# verbatim, so keep its bytes the same on every platform.
+hooks/session-start text eol=lf
+hooks/run-hook.cmd text eol=lf
+adapters/bootstrap.md text eol=lf

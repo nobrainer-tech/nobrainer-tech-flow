@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import io
+import re
 import os
 import shutil
 import subprocess
@@ -1212,6 +1213,167 @@ class InstallerTests(unittest.TestCase):
                     self.assertEqual(2, result)
                     self.assertFalse(destination.exists())
                     self.assertIn("curated skill inventory drift", stderr.getvalue())
+
+
+class InstallerRobustnessTests(unittest.TestCase):
+    """Behaviours that broke real installs on Windows, in copy mode and with odd paths."""
+
+    def run_installer(self, *args: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(INSTALLER), *args],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            env=None if env is None else {**os.environ, **env},
+        )
+
+    def load_module(self):
+        spec = importlib.util.spec_from_file_location("install_skills_robustness", INSTALLER)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_copy_mode_rerun_is_idempotent_and_a_modified_copy_still_conflicts(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "skills"
+            args = (
+                "--client", "agents", "--dest", str(destination), "--mode", "copy",
+                "--skill", "nobrainer-tech-flow", "--skill", "nobrainer-auto-fine-tune",
+            )
+            first = self.run_installer(*args, "--apply")
+            second = self.run_installer(*args, "--apply")
+
+            self.assertEqual(0, first.returncode, first.stderr)
+            self.assertEqual(0, second.returncode, second.stderr)
+            self.assertIn("KEEP: nobrainer-tech-flow", second.stdout)
+            self.assertIn("2 unchanged", second.stdout)
+
+            edited = destination / "nobrainer-auto-fine-tune" / "SKILL.md"
+            edited.write_text(edited.read_text(encoding="utf-8") + "\nlocal edit\n", encoding="utf-8")
+            third = self.run_installer(*args, "--apply")
+
+            self.assertEqual(3, third.returncode)
+            self.assertIn("CONFLICT: nobrainer-auto-fine-tune", third.stdout)
+            self.assertTrue(edited.read_text(encoding="utf-8").endswith("local edit\n"))
+
+    def test_destination_that_is_a_file_is_reported_without_a_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            blocker = Path(temp) / "afile"
+            blocker.write_text("not a directory\n", encoding="utf-8")
+            for destination in (blocker, blocker / "nested"):
+                for extra in ((), ("--apply",)):
+                    with self.subTest(destination=destination.name, apply=bool(extra)):
+                        result = self.run_installer(
+                            "--client", "agents", "--dest", str(destination),
+                            "--skill", "nobrainer-build", *extra,
+                        )
+                        self.assertEqual(2, result.returncode, result.stdout)
+                        self.assertIn("not a directory", result.stderr)
+                        self.assertNotIn("Traceback", result.stderr)
+
+    @unittest.skipIf(os.name == "nt", "symlink loops need POSIX symlinks")
+    def test_symlink_loop_at_the_target_is_a_conflict_not_a_crash(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "skills"
+            destination.mkdir()
+            (destination / "nobrainer-build").symlink_to("nobrainer-build")
+            result = self.run_installer(
+                "--client", "agents", "--dest", str(destination), "--skill", "nobrainer-build",
+            )
+            self.assertEqual(3, result.returncode, result.stdout + result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+
+    def test_client_destinations_follow_the_variables_the_clients_read(self) -> None:
+        module = self.load_module()
+        home = Path("home")
+
+        default = module.client_destinations({}, home)
+        custom = module.client_destinations(
+            {"CLAUDE_CONFIG_DIR": "claude-profile", "XDG_CONFIG_HOME": "xdg"}, home
+        )
+        empty = module.client_destinations({"CLAUDE_CONFIG_DIR": "", "XDG_CONFIG_HOME": ""}, home)
+
+        self.assertEqual(home / ".claude" / "skills", default["claude"])
+        self.assertEqual(Path("claude-profile") / "skills", custom["claude"])
+        self.assertEqual(Path("xdg") / "opencode" / "skills", custom["opencode"])
+        self.assertEqual(default, empty)
+        self.assertEqual(home / ".agents" / "skills", custom["codex"])
+        self.assertEqual(custom["codex"], custom["agents"])
+
+    def test_windows_publish_never_touches_ctypes(self) -> None:
+        module = self.load_module()
+        staged, target = Path("staged"), Path("target")  # built before os.name changes
+        with mock.patch.object(module.os, "name", "nt"), mock.patch.object(
+            module.os, "rename"
+        ) as rename, mock.patch.object(
+            module.ctypes, "CDLL", side_effect=AssertionError("ctypes.CDLL(None) raises on Windows")
+        ):
+            module.atomic_rename_no_replace(staged, target)
+        rename.assert_called_once_with(staged, target)
+
+    def test_preview_names_links_to_skills_that_will_be_absent(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "skills"
+            partial = self.run_installer(
+                "--client", "agents", "--dest", str(destination), "--skill", "nobrainer-build",
+            )
+            complete = self.run_installer("--client", "agents", "--dest", str(destination))
+
+            self.assertEqual(0, partial.returncode, partial.stderr)
+            self.assertIn(
+                "NOTE: nobrainer-build links to nobrainer-tech-flow", partial.stdout
+            )
+            self.assertEqual(0, complete.returncode, complete.stderr)
+            self.assertNotIn("NOTE:", complete.stdout)
+
+
+class CrossSkillLinkTests(unittest.TestCase):
+    """A subset install has dead links when a skill links into a skill that is absent."""
+
+    def load_module(self):
+        spec = importlib.util.spec_from_file_location("install_skills_links", INSTALLER)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def catalogue(self, module) -> dict[str, Path]:
+        return {path.parent.name: path.parent for path in module.SKILLS.glob("*/SKILL.md")}
+
+    def test_cross_skill_links_are_the_documented_dependencies(self) -> None:
+        # Adding a dependency is fine, but it must be deliberate: update this map and the
+        # subset example in docs/INSTALL.md together.
+        module = self.load_module()
+        catalogue = self.catalogue(module)
+        actual = {
+            name: sorted(module.linked_skills(name, catalogue))
+            for name in sorted(catalogue)
+            if module.linked_skills(name, catalogue)
+        }
+        self.assertEqual(
+            {
+                "nobrainer-build": ["nobrainer-tech-flow"],
+                "nobrainer-dispatcher": ["nobrainer-tech-flow"],
+                "nobrainer-review": ["nobrainer-tech-flow"],
+                "nobrainer-sessions": ["nobrainer-tech-flow"],
+                "nobrainer-spec-driven-development": ["nobrainer-tech-flow"],
+                "nobrainer-team": ["nobrainer-auto-fine-tune", "nobrainer-tech-flow"],
+                "nobrainer-tech-flow": ["nobrainer-auto-fine-tune", "nobrainer-sessions"],
+            },
+            actual,
+        )
+
+    def test_the_subset_documented_in_install_md_has_no_dead_links(self) -> None:
+        module = self.load_module()
+        text = (ROOT / "docs" / "INSTALL.md").read_text(encoding="utf-8")
+        example = re.search(r"repeating `--skill`:\n\n```bash\n(.*?)```", text, re.DOTALL)
+        self.assertIsNotNone(example, "the explicit-subset example moved")
+        names = re.findall(r"--skill (\S+)", example.group(1))
+        self.assertGreaterEqual(len(names), 2)
+        with tempfile.TemporaryDirectory() as temp:
+            self.assertEqual(
+                [], module.unmet_references(names, self.catalogue(module), Path(temp) / "skills")
+            )
 
 
 if __name__ == "__main__":

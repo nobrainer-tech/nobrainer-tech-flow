@@ -130,15 +130,16 @@ class UpdateCheckTests(unittest.TestCase):
         installed_checker = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(installed_checker)
 
-        self.assertEqual("2.0.0", installed_checker.read_installed_version())
+        shipped = (source_skill / "VERSION").read_text(encoding="utf-8").strip()
+        self.assertEqual(shipped, installed_checker.read_installed_version())
         result = installed_checker.check_update(
             "codex",
             installed_checker.read_installed_version(),
             root=self.root / "state",
             now=self.now,
             fetcher=lambda: (
-                "2.0.0",
-                "https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/tag/2.0.0",
+                shipped,
+                f"https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/tag/{shipped}",
             ),
         )
         self.assertEqual("CURRENT", result["status"])

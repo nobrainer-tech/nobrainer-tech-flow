@@ -20,12 +20,17 @@ BACKUP_PATH_RE = re.compile(
 
 
 def _git(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", *args],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    try:
+        return subprocess.run(
+            ["git", *args],
+            # Git emits UTF-8 names and paths whatever the console code page is.
+            encoding="utf-8",
+            errors="replace",
+            capture_output=True,
+            check=False,
+        )
+    except OSError as exc:
+        raise RuntimeError(f"git is unavailable: {exc}") from None
 
 
 def _identity(variable: str) -> tuple[str, str]:

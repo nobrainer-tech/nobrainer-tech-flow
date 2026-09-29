@@ -35,15 +35,17 @@ after them. The configured project-document byte budget applies to the loaded
 instruction set and defaults to the host's documented value when no override is
 read.
 
-Run the bundled read-only probe with Python 3.11+ before deciding what to change:
+Run the bundled read-only probe with Python 3.11+ before deciding what to change.
+Run it from the project, replacing `<context-skill-dir>` with this skill's
+directory wherever it is installed; the probe inspects the current directory,
+or the one given with `--cwd`:
 
 ```bash
-python3 skills/nobrainer-codex-context/scripts/codex_context.py --check --json
+python3 <context-skill-dir>/scripts/codex_context.py --check --json
 ```
 
-If the skill is installed outside the repository, run the same script from the
-installed skill directory. The probe is an inventory and truncation check; its
-exit status does not prove that a live Codex client followed the instructions.
+The probe is an inventory and truncation check; its exit status does not prove
+that a live Codex client followed the instructions.
 
 When a project needs a durable NoBrainer context block, preserve all existing
 bytes and use exactly these markers in the applicable `AGENTS.md`:

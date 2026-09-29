@@ -2,7 +2,12 @@
 
 set -euo pipefail
 
-script_dir="$(cd "$(dirname "$0")" && pwd)"
+script_path="${BASH_SOURCE[0]:-$0}"
+case "${OSTYPE:-}" in
+  # Windows hosts may pass a backslash path; dirname only splits on slashes.
+  msys* | cygwin* | win32*) script_path="${script_path//\\//}" ;;
+esac
+script_dir="$(cd "$(dirname "${script_path}")" && pwd)"
 plugin_root="$(cd "${script_dir}/.." && pwd)"
 bootstrap_path="${plugin_root}/adapters/bootstrap.md"
 

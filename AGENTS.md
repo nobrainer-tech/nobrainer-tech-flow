@@ -7,9 +7,9 @@ Respect host hierarchy; user instructions override skill guidelines. Apply [deli
 <!-- NOBRAINER-WORKFLOW:START -->
 ## nobrainer-tech-flow
 
-- Use [nobrainer-tech-flow](https://github.com/nobrainer-tech/nobrainer-tech-flow) through \`$nobrainer-tech-flow\`. Preserve the selected MAIN model and effort. Inspect native worker models and capacity, then delegate useful independent units with exact scope and proof; MAIN integrates. Use \`nobrainer-auto-fine-tune\` when measured route calibration would help.
+- Use [nobrainer-tech-flow](https://github.com/nobrainer-tech/nobrainer-tech-flow) through `$nobrainer-tech-flow`. Preserve the selected MAIN model and effort. Inspect native worker models and capacity, then delegate useful independent units with exact scope and proof; MAIN integrates. Use `nobrainer-auto-fine-tune` when measured route calibration would help.
 - Start substantial work from an observable short-term goal grounded in the owner's direction; inspect project layers and the relevant wiki. Check once per active day for a newer stable release. Keep session checkpoints and verify takeover before authorized archival. Load only relevant specialist skills and verify the delivery layer.
-- Product name: nobrainer-tech-flow; repository and skill ID: \`nobrainer-tech-flow\`. No ritual preamble. X: \`#NoBrainerTechFlow\`.
+- Product name: nobrainer-tech-flow; repository and skill ID: `nobrainer-tech-flow`. No ritual preamble. X: `#NoBrainerTechFlow`.
 <!-- NOBRAINER-WORKFLOW:END -->
 
 `CLAUDE.md` must remain a byte-identical copy of this file.
