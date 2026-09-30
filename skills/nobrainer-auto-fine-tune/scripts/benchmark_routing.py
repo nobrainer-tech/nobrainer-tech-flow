@@ -294,15 +294,24 @@ def fetch_setup(key: str, state_dir: Path, *, now: dt.datetime, force: bool = Fa
         return _report(key, cached, entry, "CACHED_TODAY", now)
 
     manifest, notes = None, []
-    old = cache / "manifest.json"
+    old, manifest_url = cache / "manifest.json", base_url + "manifest.json"
     try:
         etag = state.get("manifest", {}).get("etag") if old.is_file() else None
-        code, body, new_etag = fetcher(base_url + "manifest.json", etag)
+        code, body, new_etag = fetcher(manifest_url, etag)
+        if code == 304:
+            try:
+                body = old.read_bytes()
+                validate_manifest(json.loads(body))
+            except (RoutingError, ValueError, OSError):
+                # The cached manifest is unusable, so the 304 proves nothing: ask once without a validator.
+                code, body, new_etag = fetcher(manifest_url, None)
+                if code == 304:
+                    raise RoutingError("host answered 304 to a request without If-None-Match") from None
     except (RoutingError, OSError) as exc:
         notes.append(f"manifest unavailable: {exc}")
     else:
         try:
-            manifest = validate_manifest(json.loads(old.read_bytes() if code == 304 else body))
+            manifest = validate_manifest(json.loads(body))
         except (RoutingError, ValueError, OSError) as exc:
             # Fail closed: a manifest that arrived but is unapproved or not understood blocks every setup,
             # and the refusal is kept so cached, offline, policy and apply runs refuse too.

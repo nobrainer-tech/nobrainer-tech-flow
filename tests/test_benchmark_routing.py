@@ -192,6 +192,18 @@ class FetchTests(Base):
         self.assertEqual(self.fetch(self.server(), force=True)["routing"], "AVAILABLE")
         self.assertEqual(self.cli("policy", "--routes", "openai,anthropic").returncode, 0)
 
+    def test_unreadable_cached_manifest_is_fetched_again_before_any_refusal(self) -> None:
+        self.fetch(self.server())
+        (self.state / "routing-cache" / "manifest.json").write_bytes(b"garbage")
+        server = self.server()
+        result = self.fetch(server, force=True)
+        self.assertEqual((result["routing"], result["integrity"]), ("AVAILABLE", "VERIFIED"))
+        self.assertEqual(server.calls[:2], [(MANIFEST_URL, server.calls[0][1]), (MANIFEST_URL, None)])
+        self.assertIsNotNone(server.calls[0][1])
+        state = json.loads((self.state / "routing-cache" / "state.json").read_text())
+        self.assertNotIn("refused", state)
+        self.assertEqual((self.state / "routing-cache" / "manifest.json").read_bytes(), manifest_for(self.setup_bytes))
+
     def test_tampered_cache_is_never_reported_as_verified(self) -> None:
         self.fetch(self.server())
         cached = self.state / "routing-cache" / f"{KEY}.json"

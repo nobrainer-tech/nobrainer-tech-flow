@@ -83,13 +83,17 @@ host. Report its result as it is:
   - `UNKNOWN`: nothing is cached for this key and the network gave nothing usable.
   - `INTEGRITY_MISMATCH`: the cached copy no longer matches its recorded sha256.
     It is never used; the next successful fetch replaces it.
+  - `CACHE_INVALID`: the cached copy matches its hash but is no longer a valid
+    setup for this key. It is never used; the next successful fetch replaces it.
   - `SHA_MISMATCH`: the host answered "not modified", but the cached copy does
     not match the manifest, and a fresh download did not match either. The
-    cache is not used as a fallback.
+    cache is not used as a fallback for this fetch.
   - `MANIFEST_REFUSED`: the manifest arrived but has no `approve` review, a
-    `routeOrder` this helper does not know, or is not a valid manifest. This
-    fails closed: no setup is fetched and the cached copy is not used. The
-    refusal is recorded (with the manifest version and reason), so cached,
+    `routeOrder` this helper does not know, or is not a valid manifest. (When
+    the host answers "not modified" but the cached manifest is unreadable, the
+    helper first downloads it once more.) This fails closed: no setup is
+    fetched and the cached copy is not used. The refusal is recorded (with
+    the manifest version and reason), so cached,
     `--offline`, `policy` and `apply` runs also refuse until a later fetch gets
     an acceptable manifest. Ask for a nobrainer-tech-flow update if the route
     order changed; a new route arrives as `v2`, not as a change to `v1`.
