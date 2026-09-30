@@ -313,6 +313,8 @@ def fetch_setup(key: str, state_dir: Path, *, now: dt.datetime, force: bool = Fa
                 pass
             state["refused"] = {"reason": str(exc), "manifestVersion": version,
                                 "at": now.isoformat(timespec="seconds")}
+            for stored in state["setups"].values():
+                stored.pop("checkedOn", None)  # no same-day shortcut past a refusal, even if the flag is lost
             _write_atomic(cache / "state.json", _dump(state))
             return refused_report(key, state["refused"])
         if code != 304:

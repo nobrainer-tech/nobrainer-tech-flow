@@ -172,11 +172,20 @@ class FetchTests(Base):
         self.assertEqual(self.fetch(self.server(manifest=bad), force=True)["status"], "MANIFEST_REFUSED")
         state = json.loads((self.state / "routing-cache" / "state.json").read_text())
         self.assertEqual(state["refused"]["manifestVersion"], "2026-10-01.1")
-        for kw in ({"offline": True}, {}):
-            self.assertEqual(self.fetch(self.server(offline=True), **kw)["status"], "MANIFEST_REFUSED")
+        self.assertNotIn("checkedOn", state["setups"][KEY])
+        # Same day, not forced: the rejected manifest, a dropped network and --offline all refuse.
+        for server, kw in ((self.server(manifest=bad), {}), (self.server(offline=True), {}),
+                           (self.server(offline=True), {"offline": True})):
+            self.assertEqual(self.fetch(server, **kw)["status"], "MANIFEST_REFUSED")
+        # The refusal flag alone also blocks the same-day cache, even if checkedOn comes back.
+        state_path = self.state / "routing-cache" / "state.json"
+        state = json.loads(state_path.read_text())
+        state["setups"][KEY]["checkedOn"] = NOW.astimezone().date().isoformat()
+        state_path.write_text(json.dumps(state))
+        self.assertEqual(self.fetch(self.server(offline=True))["status"], "MANIFEST_REFUSED")
         target = Path(self.temp.name) / "AGENTS.md"
         target.write_text("# Rules\n")
-        for command in (["policy"], ["apply", "--file", str(target), "--block", "router"]):
+        for command in (["fetch", "--offline"], ["policy"], ["apply", "--file", str(target), "--block", "router"]):
             run = self.cli(command[0], "--routes", "openai,anthropic", *command[1:])
             self.assertEqual(run.returncode, 3, run.stderr)
             self.assertEqual(json.loads(run.stdout)["status"], "MANIFEST_REFUSED")
