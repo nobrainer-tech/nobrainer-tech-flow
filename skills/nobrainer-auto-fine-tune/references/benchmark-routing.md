@@ -37,7 +37,8 @@ setup, keep the current routing and report `UNKNOWN`.
 | `kimi` | Kimi Code | `kimi/` |
 | `minimax` | MiniMax Token Plan | `minimax/` |
 | `copilot` | GitHub Copilot | `github-copilot/` |
-| `zen` | OpenCode Zen | `opencode-zen/` |
+| `zen` | OpenCode Zen, paid models | `opencode-zen/` (ids not ending in `-free`) |
+| `zenfree` | OpenCode Zen, free models | `opencode-zen/` (ids ending in `-free`) |
 
 A route counts only when this client can actually request at least one model on
 it (`CALLABLE` in the capability audit), ideally `VERIFIED` by an ordinary
@@ -46,6 +47,13 @@ provider is not enough. For example, Codex natively reaches `openai`, Claude
 Code reaches `anthropic` and GitHub Copilot reaches `copilot`. OpenCode, or a
 local router in front of any client, can reach more, but only the providers it
 is actually signed in to.
+
+Count `zenfree` only when this client is the OpenCode app talking to Zen
+directly. Zen's free models refuse every other client, including a local router
+in front of Codex, Claude Code or OpenCode, with HTTP 403 and the message
+"OpenCode's free tier can only be used from within OpenCode". Paid Zen models
+(`zen`) have no such limit. The helper refuses a pick or ledger row whose Zen id
+sits on the wrong one of these two routes.
 
 Set `--fast` only when the owner says time per task matters, and `--budget`
 only for a small budget. Otherwise leave both off.
@@ -147,8 +155,12 @@ Jobs: `coding`, `agentic`, `research`, `planning`, `orchestration`, `bulk`
 (bulk rows are kept for the record but never re-order the fixed bulk pick). A
 row holds only the timestamp, job, model id, route, effort, outcome, duration
 and a quota/limit flag. Pass `--effort` whenever it is known: a row without it
-counts only for a model that appears at a single effort in that job. Never put prompts, code, file contents, paths, task titles or
-secrets in it. The helper refuses any model value that is not an id.
+counts only for a model that appears at a single effort in that job. Never put
+prompts, code, file contents, paths, task titles or secrets in it. A 403 with
+the free-tier message above is not a model failure: record it as `--outcome
+unknown --quota-error` (or not at all), drop `zenfree` from the reachable
+routes, and fetch the setup for the new key. The helper refuses any model value
+that is not an id.
 
 ## 5. Recompute the policy
 

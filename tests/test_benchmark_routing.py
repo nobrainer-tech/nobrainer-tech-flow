@@ -83,6 +83,31 @@ class KeyTests(unittest.TestCase):
             with self.assertRaises(routing.RoutingError):
                 routing.build_key(bad, False, False)
 
+    def test_zenfree_is_the_eighth_route_in_key_order(self) -> None:
+        self.assertEqual(routing.ROUTE_ORDER,
+                         ("openai", "anthropic", "zai", "kimi", "minimax", "copilot", "zen", "zenfree"))
+        self.assertEqual(routing.build_key(["zenfree", "zen", "openai"], False, False), "openai-zen-zenfree.f0.b0")
+        self.assertEqual(routing.build_key(["zenfree"], True, True), "zenfree.f1.b1")
+
+    def test_free_zen_ids_belong_to_zenfree_only(self) -> None:
+        setup = json.loads(FIXTURE.read_text())
+        key = "openai-anthropic-zen-zenfree.f0.b0"
+        paid = dict(setup["candidates"]["agentic"][0], family="Omega Pro", id="opencode-zen/omega-pro", route="zen")
+        free = dict(paid, family="Omega Flash", id="opencode-zen/omega-flash-free", route="zenfree")
+        base = dict(setup, key=key, routes=["openai", "anthropic", "zen", "zenfree"])
+        good = dict(base, candidates=dict(setup["candidates"], agentic=[*setup["candidates"]["agentic"], paid, free]))
+        routing.validate_setup(good, key)
+        for wrong in (dict(paid, route="zenfree"), dict(free, route="zen")):
+            bad = dict(base, candidates=dict(setup["candidates"], agentic=[*setup["candidates"]["agentic"], wrong]))
+            with self.assertRaises(routing.RoutingError):
+                routing.validate_setup(bad, key)
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            routing.record(state, job="coding", model="omega-flash-free", route="zenfree", outcome="pass", now=NOW)
+            for model, route in (("opencode-zen/omega-flash-free", "zen"), ("opencode-zen/omega-pro", "zenfree")):
+                with self.assertRaises(routing.RoutingError):
+                    routing.record(state, job="coding", model=model, route=route, outcome="fail", now=NOW)
+
     def test_fixture_is_a_valid_setup(self) -> None:
         routing.validate_setup(json.loads(FIXTURE.read_text()), KEY)
 
@@ -164,6 +189,11 @@ class FetchTests(Base):
     def cli(self, *args: str) -> subprocess.CompletedProcess:
         return subprocess.run([sys.executable, str(SCRIPT), "--state-dir", str(self.state), *args],
                               capture_output=True, text=True)
+
+    def test_seven_route_manifest_is_refused(self) -> None:
+        older = dict(json.loads(manifest_for(self.setup_bytes)), routeOrder=list(routing.ROUTE_ORDER[:7]))
+        result = self.fetch(self.server(manifest=json.dumps(older).encode()))
+        self.assertEqual((result["routing"], result["status"]), ("UNKNOWN", "MANIFEST_REFUSED"))
 
     def test_refusal_persists_until_an_acceptable_manifest(self) -> None:
         self.fetch(self.server())

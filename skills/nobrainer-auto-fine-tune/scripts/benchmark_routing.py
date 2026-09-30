@@ -35,6 +35,8 @@ ROUTE_PREFIX = {
     "minimax": "minimax/",
     "copilot": "github-copilot/",
     "zen": "opencode-zen/",
+    # Zen's free models answer only the OpenCode app itself, so they are a route of their own.
+    "zenfree": "opencode-zen/",
 }
 ROUTE_ORDER = tuple(ROUTE_PREFIX)
 JOBS = ("coding", "agentic", "research", "planning", "orchestration", "bulk")
@@ -92,6 +94,15 @@ def parse_time(value: Any) -> dt.datetime:
     return parsed
 
 
+def id_route_problem(model: str, route: str) -> str | None:
+    """OpenCode Zen ids ending in -free belong to zenfree, every other Zen id to zen."""
+    if route in ("zen", "zenfree") or model.startswith(ROUTE_PREFIX["zen"]):
+        expected = "zenfree" if model.split("/", 1)[-1].endswith("-free") else "zen"
+        if route != expected:
+            return f"{model} belongs to route {expected}, not {route}"
+    return None
+
+
 def _check_pick(pick: Any, routes: list[str], where: str, nullable: bool = False) -> None:
     if pick is None and nullable:
         return
@@ -101,6 +112,9 @@ def _check_pick(pick: Any, routes: list[str], where: str, nullable: bool = False
         raise RoutingError(f"setup {where} has an invalid id")
     if pick.get("route") not in routes:
         raise RoutingError(f"setup {where} uses a route outside the key")
+    problem = id_route_problem(pick["id"], pick["route"])
+    if problem:
+        raise RoutingError(f"setup {where}: {problem}")
     if pick.get("ifNotAvailable") is not None:
         _check_pick(pick["ifNotAvailable"], routes, f"{where}.ifNotAvailable")
 
@@ -381,6 +395,8 @@ def record(state_dir: Path, *, job: str, model: str, route: str, outcome: str, n
         raise RoutingError("job, route, outcome or effort is not an allowed value")
     if not MODEL_RE.fullmatch(model):
         raise RoutingError("model must be a bare model id or provider/model id")
+    if id_route_problem(model, route):
+        raise RoutingError(id_route_problem(model, route))
     if duration is not None and not 0 <= duration < 1_000_000:
         raise RoutingError("duration must be seconds between 0 and 1000000")
     row = {"ts": now.astimezone(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
