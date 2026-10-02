@@ -43,8 +43,12 @@ writing runs should not spend context on the research record.
 - `BRIEF`: create or compress one short actionable artifact. Choose exactly one
   shape from the reference: `COMMENT`, `BUG`, `ISSUE`, `USER_STORY` or `REQUEST`.
 
-If the user did not name a mode, infer the smallest one that satisfies the
-request. A request to "humanize" means `REWRITE`, not detector evasion or the
+If the user did not name a mode, default to `TECHNICAL` for English technical
+procedures and explanations, including specs and runbooks. For other artifacts,
+infer the smallest mode that satisfies the request. Answer users directly in
+their requested language; keep non-English technical prose clear and natural
+without applying an English dictionary or forcing an intermediate translation.
+Explicit language, format and voice requirements take precedence. A request to "humanize" means `REWRITE`, not detector evasion or the
 injection of fake mistakes.
 
 ## Freeze the content contract

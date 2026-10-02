@@ -1,10 +1,14 @@
 # Plain technical English
 
-Use Writing's `TECHNICAL` mode for English specifications, instructions,
-runbooks and technical explanations. Infer the profile from the artifact:
+Default to Writing's `TECHNICAL` mode for English specifications, instructions,
+runbooks and technical explanations when no other mode is requested. Infer the profile from the artifact:
 `PROCEDURE` for actions, `EXPLANATION` for understanding. A mixed document can
-use both. Keep ordinary replies, marketing and other languages in their
-requested style; do not translate or switch modes merely because a topic is technical.
+use both. Apply plain, precise language to ordinary replies too, without adding
+a procedural template. Keep marketing and other requested voices appropriate
+to their purpose. Write directly in the requested language; non-English output
+uses natural grammar and the same meaning checks, not the English dictionary
+or a mandatory translation pass. A technical product alone does not make an
+artifact technical documentation.
 
 This is an independent writing adaptation informed by
 [ASD-STE100](https://www.asd-ste100.org/about_STE.html) and

@@ -41,8 +41,9 @@ New behavior, risk, external effects or material acceptance changes require
 the SDD change-control path. Preserve blocked criteria while unrelated work
 advances. Never drop a requirement to make the ledger look complete.
 
-Use Writing's `TECHNICAL` mode when a plain English spec, procedure or report
-would help the reader. Preserve the requested language and exact constraints.
+Follow [communication](communication.md). English technical specs, procedures
+and reports default to Writing's `TECHNICAL` mode unless another mode is
+requested. Preserve the requested language and exact constraints.
 A small diagram can explain dependencies; use an interactive artifact only
 when interaction helps a real decision and the host supports it. Do not add
 media, dependencies, paid calls or publication merely to make the output richer.

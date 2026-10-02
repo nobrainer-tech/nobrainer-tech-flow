@@ -7,7 +7,7 @@ description: "Use when the owner says NBFlow, NBF or nobrainer-tech-flow, or ask
 
 Skill: `nobrainer-tech-flow`. `NBFlow` and `NBF` are natural-language
 shortcuts; explicit skill loading remains client-dependent.
-Stages use skill names; never announce entry.
+Use [communication](references/communication.md): plain technical English between agents; natural user-language replies.
 
 For non-trivial work read [routing](references/routing.md). Preserve host model/effort;
 consult [model routing](references/model-routing.md) when selecting them.
@@ -79,7 +79,7 @@ if scope is already clear, proceed immediately. Establish:
 - owner-gated actions;
 - unresolved choices that materially affect the design.
 
-Use `nobrainer-decide` for consequential choices among real alternatives.
+Use `nobrainer-decide` for consequential choices.
 For ideas, read [idea to delivery](references/idea-to-delivery.md).
 Use `nobrainer-spec-driven-development` when requested or architecture, interfaces, migration, rollback, dependencies or resumability justify it.
 

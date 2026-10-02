@@ -43,7 +43,7 @@
 
   <rect x="76" y="56" width="14" height="14" fill="#D94724"/><text x="100" y="70" class="eyebrow">nobrainer-tech-flow</text>
   <text x="76" y="122" class="headline">From task <tspan class="accent">to done.</tspan> One request, clear progress, verified delivery.</text>
-  <text x="76" y="154" class="subtitle">One model is enough. Optional Jev / Laya suggestions stay advisory; failures return to core.</text>
+  <text x="76" y="154" class="subtitle">Agents: plain technical English. User: requested language. Exact meaning and evidence stay intact.</text>
 
   <g filter="url(#soft-shadow)">
     <rect x="76" y="220" width="205" height="116" rx="0" class="node"/>

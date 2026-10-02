@@ -75,6 +75,9 @@ Before the first non-trivial write, resolve the compact contract:
 - `Done clean`: files match expected scope, checks pass, no
   placeholder/future abstraction remains and `git status` has no surprise.
 
+Follow Flow [communication](skills/nobrainer-tech-flow/references/communication.md):
+plain technical English between agents by default, direct replies in the user's
+requested language, with explicit language and format requirements preserved.
 Communication is evidence-budgeted. When permitted, run tools without announcing them; otherwise emit the shortest useful scope or evidence sentence.
 Speak mid-run only for material transition, blocker, safety gate or new evidence;
 never repeat the plan or unchanged state. Final: outcome, decisive proof,

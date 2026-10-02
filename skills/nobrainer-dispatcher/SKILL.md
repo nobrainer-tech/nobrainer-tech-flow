@@ -144,6 +144,10 @@ task waits. A `PARALLEL_GROUP` label alone is not proof.
 
 ## Complete dispatch through Sessions
 
+Use Flow [communication](../nobrainer-tech-flow/references/communication.md)
+for new prose in task contracts and reports. Keep caller schemas, literal values
+and explicit language requirements unchanged.
+
 For each selected work unit, Dispatcher emits the task contract below without
 sending it. Flow or MAIN then invokes `nobrainer-sessions` mode `delegate`
 exactly once. Before Dispatcher records `READY -> SENT`, consume fresh session,

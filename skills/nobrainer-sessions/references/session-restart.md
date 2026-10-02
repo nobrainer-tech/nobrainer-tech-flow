@@ -245,3 +245,12 @@ the helper's transfer decision.
 Never set safety observations to true merely to get a desired action. Optional
 signals: context_pressure, context_capacity_tokens, session_age_seconds, explicit_restart. A required
 unmeasurable budget uses required_budget_unmeasurable=true and blocks work.
+
+
+## Handoff language
+
+Use Flow [communication](../../nobrainer-tech-flow/references/communication.md)
+for new handoff prose: plain technical English by default between agents, with
+explicit language requirements honored. Preserve frozen source text, required
+packet fields, identifiers and evidence exactly. Explain the handoff to the
+owner in the owner's requested language.

@@ -155,7 +155,9 @@ escalation gate. If the host does not expose one field, record
 `UNKNOWN` or `UNSUPPORTED` and keep runtime proof lower;
 never silently substitute another model.
 
-Build the prompt from the template in the protocol. The worker performs exactly
+Use Flow [communication](../nobrainer-tech-flow/references/communication.md)
+for delegation, reports and handoffs; preserve caller formats and language
+overrides. Build the prompt from the template in the protocol. The worker performs exactly
 one work unit, does not select a successor, releases its lease on finish or hard
 stop, sends exactly one final report, and ends its turn. Bind retryable transport
 to message and payload identity, an idempotency key, delivery receipt and ACK;
