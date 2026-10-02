@@ -184,6 +184,9 @@ planning. Loading method context is not task execution; a routing-table line or 
 
 Read [delivery](references/delivery.md) for non-trivial work and before BLOCKED: derive outcome/DoD, resolve authorized steps and continue independent work. `yolo` is a persistence alias only.
 
+Approved plans and autopilot use the
+[approved-plan loop](references/autopilot.md); completion requires whole-goal proof.
+
 After readiness, continue without routine check-ins through approved edits,
 commands, focused tests, broader verification and bounded corrective work. Stop
 for a changed frozen input, scope-changing discovery, unrecoverable blocker or
@@ -194,11 +197,9 @@ contact people, change credentials, migrate data, mutate production or weaken
 safety controls remain explicit gates unless the owner already authorized that
 exact action.
 
-Default to at most two corrective attempts per observed failure, each supported by
-new evidence. Then diagnose or report the blocker; do not restart the same loop.
-Use a smaller owner-supplied budget. Stop adding work once acceptance passes.
-A timeout, partial result, dead session, failed check or exhausted retry is not
-completion.
+Use at most two corrective attempts per observed failure, with new evidence
+for each, or the owner's smaller budget; then diagnose or report the blocker.
+Timeouts, partial results, dead sessions, failed checks and exhausted retries never prove completion.
 
 ## `VERIFY` and `RECEIVE_AUDIT`
 

@@ -29,6 +29,33 @@ Accept when the original failure is reproduced, the correction addresses it,
 the relevant checks pass and the diff stays in scope. A plausible explanation
 or a green unrelated test is insufficient. Do not use a live incident as a demo.
 
+## Carry an approved plan through autopilot
+
+Use a small, approved plan in a disposable project. Give each task a checkable
+result, name the required validation commands, and state any commit or publication
+authority separately. Then ask:
+
+> Use nobrainer-tech-flow in autopilot to execute this approved plan through its
+> full acceptance criteria. Keep the goal and remaining work in the existing plan.
+> Execute the next ready unit, run its relevant checks, fix confirmed defects and
+> continue without asking me to say "continue". Use independent native workers
+> and review when useful and available. Keep unrelated work unchanged. Ask only
+> for a material missing decision or an action that still needs authorization.
+> Finish with the delivered result, actual checks and anything still unverified.
+
+Accept when every required result has inspected evidence, corrections have been
+rechecked, and no required task quietly disappears. If one unit is blocked,
+independent ready work should continue. An exhausted retry or missing approval
+keeps the affected result incomplete; it is not a reason to invent success.
+
+Autopilot guides the active client. It does not install an unattended runner,
+reopen a closed client or create a scheduler. Checkpoints support a later resume;
+automatic continuation needs a supported host mechanism and its own authorization.
+See [delivery](../skills/nobrainer-tech-flow/references/delivery.md) and
+[long-run state](../skills/nobrainer-tech-flow/references/long-run-state.md).
+The [autopilot loop](../skills/nobrainer-tech-flow/references/autopilot.md) defines
+the next-unit decisions and whole-goal completion check.
+
 ## Evaluate the result
 
 Record the client and version, model and effort, source commit, task, files

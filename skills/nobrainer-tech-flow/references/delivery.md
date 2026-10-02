@@ -168,6 +168,10 @@ outcomes and elapsed delivery, never by agent count or messages sent.
 
 ## GDD: goal-driven delivery through milestones
 
+The [approved-plan autopilot loop](autopilot.md) owns select, execute, check,
+review, correct and advance. This section owns the milestone map and its state
+transitions; use both without creating a second tracker.
+
 GDD is this workflow's execution pattern, not a new skill or a claim of inventing
 Goal-Driven Development. SDD owns requirements; the existing task tracker owns
 milestones and current state. For whole-SDD execution, derive milestones from its
