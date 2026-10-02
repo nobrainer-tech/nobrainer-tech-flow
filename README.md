@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>From task to done.</strong><br>
-  One AI workflow for your coding agent, whichever you use,<br>
+  One AI workflow for coding agents,<br>
   instead of 50+ separate tools.
 </p>
 
@@ -45,7 +45,7 @@
 </table>
 
 <p align="center">
-  Works with any compatible coding agent, including
+  Ships adapters for
   <a href="https://github.com/openai/codex">Codex</a>,
   <a href="https://code.claude.com/docs">Claude Code</a>,
   <a href="https://cursor.com/">Cursor</a>,
@@ -54,6 +54,7 @@
   <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a>,
   <a href="https://www.kimi.com/code">Kimi Code</a> and
   <a href="https://pi.dev/">Pi</a>.
+  See the <a href="docs/COMPATIBILITY.md">per-client compatibility evidence</a> for what has been loaded and tested.
 </p>
 
 Tell nobrainer-tech-flow what you need. It clarifies the goal, does the work, and checks the result.
@@ -63,6 +64,11 @@ Tell nobrainer-tech-flow what you need. It clarifies the goal, does the work, an
 ![nobrainer-tech-flow: direct work for clear small tasks; focused clarification, bounded execution and verification when needed](assets/nobrainer-workflow.svg)
 
 Small, clear tasks take the quick path. Larger work is scoped, carried through and verified, and the handoff says what was delivered, what was checked and what is left for you to decide.
+
+For an approved plan, [autopilot](skills/nobrainer-tech-flow/references/autopilot.md)
+works through ready tasks, checks each result, corrects confirmed defects and
+continues to the whole goal. Blocked work stays visible while independent tasks
+advance. [Try a small approved plan](docs/TRY_IT.md#carry-an-approved-plan-through-autopilot).
 
 <details>
 <summary><strong>The workflow in detail</strong></summary>
@@ -109,7 +115,7 @@ flowchart TD
     D -->|yes| E[Direct answer or edit; check the result]
     D -->|no| F[SCOPE + PLAN: outcome, authority, proof; concise TODO]
     F --> S[Short-term goal from long-term direction]
-    S --> G[AUTOPILOT: execute the authorized scope]
+    S --> G[AUTOPILOT: execute the authorized scope; select ready work and check]
     G --> H[Verify; independent REVIEW when useful]
     H -->|verified defect; attempt budget remains| G
     H -->|acceptance met| I[Audit delegated artifacts and stop owned workers]
@@ -171,6 +177,18 @@ flowchart TD
    no authorization and undoes itself with `--undo --apply`. To update, run `git pull` in
    `~/.nobrainer-tech-flow` and the same two commands again, or paste the prompt again. With Python,
    `python3 scripts/install.py` takes the same flags.
+
+   For Claude Code, you can choose a plugin installation from a checkout you have reviewed:
+
+   ```sh
+   claude plugin marketplace add ~/.nobrainer-tech-flow
+   claude plugin install nobrainer-tech-flow@nobrainer-tech
+   ```
+
+   The plugin entry point is `/nobrainer-tech-flow:nobrainer-tech-flow`. See
+   [Claude Code installation](docs/INSTALL.md#claude-code) and the
+   [compatibility evidence](docs/COMPATIBILITY.md#current-source-readback-2026-09-29)
+   for the tested client versions and limits; installing the package does not prove automatic routing.
 2. In a fresh session, give it one small task with a checkable result:
 
 > Use nobrainer-tech-flow. Fix one bug in this project. Reproduce it first, make the
@@ -215,6 +233,9 @@ symbolic links (Windows: Developer Mode). For a subset, a copy install, the shar
 discovery before claiming runtime installation.
 
 </details>
+
+If this workflow helps with a real task, star the repository and follow
+[@nobrainer_tech](https://x.com/nobrainer_tech) for build notes and practical examples.
 
 <details>
 <summary><strong>Full documentation in this README</strong>: skills, compatibility, attribution, contributing</summary>

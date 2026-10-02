@@ -150,6 +150,14 @@ whole suite.
 
 ## Clean-session acceptance
 
+The approved-plan [autopilot loop](../skills/nobrainer-tech-flow/references/autopilot.md)
+is development source after the v2.0.2 tag. It adds explicit select, execute,
+check, review, correct and advance guidance.
+It preserves the active client and its authority boundary. Source validation
+and the deterministic lifecycle checks do not establish fresh automatic
+discovery or unattended continuation in any client; those still need the
+clean-session evidence below. This guidance adds no CLI executor or scheduler.
+
 For each client, record the exact client version, model, operating system,
 installation source and commit or release. Start with no project-specific rule
 that names NoBrainer. Preserve the complete transcript and use these probes:

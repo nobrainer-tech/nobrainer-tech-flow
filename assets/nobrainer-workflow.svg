@@ -111,7 +111,7 @@
   </g>
 
   <path d="M1148 352V392H462V420" class="flow-accent"/>
-  <text x="870" y="384" class="tiny">AUTOPILOT · RUN THE APPROVED SCOPE</text>
+  <text x="870" y="384" class="tiny">AUTOPILOT · READY TASK → EXECUTE → CHECK</text>
   <path d="M585 492H680" class="flow-accent"/>
   <path d="M935 492H1030" class="flow-accent"/>
   <path d="M1285 492H1328" class="flow-accent"/>
@@ -119,6 +119,11 @@
   <g id="review-fix-loop">
     <path d="M812 554V620H462V564" class="flow-dashed"/>
     <text x="598" y="649" class="tiny" style="fill:#7F9BFF">VERIFIED FINDING → BOUNDED FIX → FRESH REVIEW</text>
+  </g>
+
+  <g id="next-ready-loop">
+    <path d="M1158 554V590H462V564" class="flow-dashed"/>
+    <text x="850" y="617" class="tiny" style="fill:#7F9BFF">MORE READY WORK → NEXT TASK</text>
   </g>
 
   <g filter="url(#soft-shadow)">
@@ -146,5 +151,5 @@
     <path d="M178 336V356" class="flow-accent"/>
   </g>
 
-  <text x="76" y="870" class="subtitle">GDD: short goal from long-term direction. Team: useful native workers. Verify before closing.</text>
+  <text x="76" y="870" class="subtitle">Autopilot: check → correct → next ready task. Finish when whole-goal proof passes.</text>
 </svg>
