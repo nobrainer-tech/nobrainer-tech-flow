@@ -73,3 +73,14 @@ Writing adopts independently phrased clarity guidance in
 explicit limits. It does not ship the dictionary, certify conformance or infer
 token/cost savings. The existing contextual anti-slop rules remain in force for
 other modes and languages.
+
+
+### Default communication refinement — 2026-10-02
+
+Owner-requested policy: use plain technical English for operational exchanges
+between agents, while user-facing replies keep the requested language. This is
+a design default, not evidence that English improves every model or reduces
+tokens. The factual contract is shared; a second translation call is not required.
+English technical artifacts select TECHNICAL when no mode is requested. Other
+languages use natural plain language with the same meaning-preservation checks.
+Caller schemas, quoted text and explicit language/voice requests remain binding.

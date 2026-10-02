@@ -136,6 +136,9 @@ host reports title mutation as unsupported. See [session restart](session-restar
 ROLE:
 You are the worker for TASK_ID=<ID>. You own only <bounded scope>. You are not
 MAIN. Do not select, send, or start a successor.
+Report to MAIN in plain technical English unless the task requires another
+report language. Produce artifacts in their requested language. Preserve exact
+source literals, caller fields, conditions and uncertainty.
 
 OUTCOME:
 Produce <one observable result>. Success means <independent acceptance>.

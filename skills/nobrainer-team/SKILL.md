@@ -14,7 +14,10 @@ receive-audit.
 For a bounded native subagent, an inline assignment with exact returned ID,
 inputs, output, write scope, verifier and stop condition is enough. Keep it in
 the current plan; no visible task, persistent registry or queue is required.
-Read [references/team-plan.md](references/team-plan.md) only for a durable team plan.
+Follow Flow [communication](../nobrainer-tech-flow/references/communication.md)
+for assignments and reports; keep the deliverable language separate from the
+agent-report language. Read [references/team-plan.md](references/team-plan.md)
+only for a durable team plan.
 
 ## Start from work, not personas
 

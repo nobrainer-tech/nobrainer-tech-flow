@@ -46,12 +46,13 @@ a spec-only request must not start implementation.
 
 ## Make a technical procedure easier to follow
 
-> Use nb-write in TECHNICAL mode. Rewrite this English runbook as a procedure.
+> Use nb-write. Rewrite this English runbook as a clear procedure.
 > Keep commands and identifiers exact. Preserve prerequisites, permissions,
 > uncertainty and safety conditions. Return the finished text.
 
-Accept when the instructions are easier to follow and no material meaning has
-changed. Test conditions and exceptions, not just sentence length. This mode
+With no other mode selected, English technical artifacts use TECHNICAL by
+default. Accept when the instructions are easier to follow and no material
+meaning has changed. Test conditions and exceptions, not just sentence length. This mode
 uses selected clarity principles informed by ASD-STE100, not a full compliance
 checker. It does not replace qualified review of safety-critical instructions.
 
@@ -81,6 +82,18 @@ See [delivery](../skills/nobrainer-tech-flow/references/delivery.md) and
 [long-run state](../skills/nobrainer-tech-flow/references/long-run-state.md).
 The [autopilot loop](../skills/nobrainer-tech-flow/references/autopilot.md) defines
 the next-unit decisions and whole-goal completion check.
+
+## Keep agent coordination and user language separate
+
+> Use NBFlow. Review this small project without changing files. If useful,
+> delegate one bounded review. Answer me in Polish. Preserve exact commands,
+> error messages and test evidence, and do not claim a check ran unless it did.
+
+Agent assignments and reports default to plain technical English. The final
+answer should be natural Polish with the same findings, constraints and
+uncertainty. Explicitly request another worker-report language to override that
+default. Required schemas and quoted text must remain intact. No translation
+provider or English draft pass is needed.
 
 ## Evaluate the result
 

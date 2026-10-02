@@ -1,5 +1,22 @@
 # nobrainer-tech-flow release notes
 
+## v2.1.1 - 2026-10-02
+
+- Plain technical English is now the default for operational exchanges between
+  agents: assignments, progress, findings, reports and handoffs. Explicit language
+  requests, required schemas and exact source text still take precedence.
+- User replies are written directly in the requested language, with the same
+  facts, conditions, permissions and evidence. No English intermediary or extra
+  translation provider is required.
+- Writing selects TECHNICAL by default for English technical artifacts when no
+  other mode is requested. Ordinary conversation, marketing and creative work
+  keep their purpose and requested voice while using clear language.
+- The eighteen-skill portfolio, models, benchmark settings and installers stay
+  unchanged. This is an instruction default, not a formal ASD-STE100 checker or
+  a measured performance claim.
+
+See the [verification record](docs/releases/v2.1.1.md).
+
 ## v2.1.0 - 2026-10-02
 
 - Start with an idea. SDD makes the agreed scope and acceptance checks explicit;

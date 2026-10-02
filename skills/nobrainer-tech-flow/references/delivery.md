@@ -150,6 +150,10 @@ the existing tracker. This differs from proven pre-send unavailability, which
 permits MAIN fallback. A refusal reduces concurrency; it is not a goal
 blocker. Never bypass a host restriction or substitute visible conversations.
 
+Use [communication](communication.md) for assignments and reports: plain
+technical English between agents by default, with the artifact language explicit
+when different. Preserve required formats and explicit language overrides.
+
 Each assignment names the desired result, input sources, exact write scope,
 dependencies, acceptance evidence and stop conditions. Schedule independent
 implementation, research and verification together only when mutable state does

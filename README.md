@@ -59,7 +59,12 @@
 
 Start with a task or just an idea. nobrainer-tech-flow clarifies what matters, does the work, and checks the result.
 
-In **2.1.0**, Writing also offers [plain technical English](skills/nobrainer-writing/references/plain-technical-english.md):
+In **2.1.1**, agents use plain technical English for operational exchanges by
+default. You receive clear answers directly in your requested language, with
+commands, conditions and evidence kept intact. Explicit language and style
+requests still apply. See the [communication policy](skills/nobrainer-tech-flow/references/communication.md).
+
+Writing defaults to [plain technical English](skills/nobrainer-writing/references/plain-technical-english.md) for English technical artifacts:
 clear steps and consistent terms while keeping exact commands, conditions and uncertainty.
 The mode is informed by ASD-STE100; it does not claim full standard compliance.
 
@@ -132,7 +137,7 @@ flowchart TD
     H -->|verified defect; attempt budget remains| G
     H -->|acceptance met| I[Audit delegated artifacts and stop owned workers]
     H -->|blocked| J[Checkpoint; report one unblock action]
-    E --> K[Deliver evidence and stop]
+    E --> K[Deliver evidence and stop; use the requested language]
     I -->|whole-goal DoD met| K
     I -. accepted milestone; goal incomplete .-> P[Update TODO; select next ready milestone]
     P --> G
@@ -141,7 +146,7 @@ flowchart TD
     G -. useful independent work .-> M[Bounded native subagents; adaptive model and effort]
     G -. configured shadow only .-> Q[Jev remote or Laya local: advisory typed decisions]
     Q -. unavailable or invalid: core fallback .-> G
-    M --> H
+    M -->|Plain technical English reports| H
     F -. first project use .-> R[Inspect layers and relevant wiki]
     R --> G
     M -. recurring workload .-> T[Auto Fine Tune: measured worker route]
