@@ -80,8 +80,8 @@ if scope is already clear, proceed immediately. Establish:
 - unresolved choices that materially affect the design.
 
 Use `nobrainer-decide` for consequential choices among real alternatives.
-Use `nobrainer-spec-driven-development` only when a maintained contract pays for architecture,
-public behavior, migration, rollback, dependent phases or resumability.
+For ideas, read [idea to delivery](references/idea-to-delivery.md).
+Use `nobrainer-spec-driven-development` when requested or architecture, interfaces, migration, rollback, dependencies or resumability justify it.
 
 ## Scope the minimum sufficient change
 

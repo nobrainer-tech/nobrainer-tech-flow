@@ -13,6 +13,13 @@ replace a supplied plan with a new one or stop after planning when execution
 is already authorized. Resolve only a missing decision that changes the work.
 Persist state only under the [detailed-ledger gate](../SKILL.md#show-human-progress).
 
+If the input is an idea, first use [idea to delivery](idea-to-delivery.md).
+For an end-to-end request, carry the resulting SDD acceptance IDs into the
+existing plan; do not require another execution prompt. Keep its reviewed
+scope and approval binding intact. Record evidence against each ID and update
+the spec lifecycle through implementation and verification. Set `ACCEPTED` only
+when every required criterion passes. A blocked criterion stays open.
+
 ## Run the next ready unit
 
 1. **Select.** Choose work with accepted dependencies, available inputs, a free

@@ -49,7 +49,7 @@
     <rect x="76" y="220" width="205" height="116" rx="0" class="node"/>
     <text x="100" y="258" class="tiny">01 · INTENT</text>
     <text x="100" y="289" class="node-title">OWNER REQUEST</text>
-    <text x="100" y="316" class="node-copy">Outcome + constraints</text>
+    <text x="100" y="316" class="node-copy">Idea or task + constraints</text>
 
     <rect x="335" y="220" width="205" height="116" rx="0" class="node"/>
     <text x="359" y="258" class="tiny">ONLY IF UNCLEAR</text>
@@ -59,7 +59,7 @@
     <rect x="594" y="220" width="236" height="116" rx="0" class="node-accent"/>
     <text x="618" y="258" class="tiny">03 · SCOPE THE MINIMUM</text>
     <text x="618" y="289" class="node-title">SCOPE + PLAN</text>
-    <text x="618" y="316" class="node-copy">Outcome · proof · short TODO</text>
+    <text x="618" y="316" class="node-copy">Spec if needed · criteria · proof</text>
 
     <rect x="884" y="220" width="205" height="116" rx="0" class="node"/>
     <text x="908" y="258" class="tiny">04 · AUTHORIZED?</text>

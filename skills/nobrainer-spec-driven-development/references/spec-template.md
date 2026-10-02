@@ -74,7 +74,7 @@ NON_GOALS:
 
 | REQ_ID | Requirement | ACCEPTANCE_ID | Evidence/command | Required gate |
 |---|---|---|---|---|
-| REQ-1 | <must be true> | ACC-1 | <test/verifier/readback> | LOCAL/RUNTIME/OWNER |
+| REQ-1 | <must be true> | AC01 | <test/verifier/readback> | LOCAL/RUNTIME/OWNER |
 
 ## Migration, recovery and ROLLBACK
 

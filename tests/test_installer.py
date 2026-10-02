@@ -1544,7 +1544,7 @@ class CrossSkillLinkTests(unittest.TestCase):
                 "nobrainer-sessions": ["nobrainer-tech-flow"],
                 "nobrainer-spec-driven-development": ["nobrainer-tech-flow"],
                 "nobrainer-team": ["nobrainer-auto-fine-tune", "nobrainer-tech-flow"],
-                "nobrainer-tech-flow": ["nobrainer-auto-fine-tune", "nobrainer-sessions"],
+                "nobrainer-tech-flow": ["nobrainer-auto-fine-tune", "nobrainer-sessions", "nobrainer-spec-driven-development"],
             },
             actual,
         )

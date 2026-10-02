@@ -37,6 +37,9 @@ writing runs should not spend context on the research record.
   the factual contract.
 - `REVIEW`: identify only material prose defects and propose the smallest useful
   correction; do not rewrite merely to express a preference.
+- `TECHNICAL`: make English procedures or explanations easier to follow. Read
+  [plain technical English](references/plain-technical-english.md) for its two
+  profiles and meaning checks. It is not a certified ASD-STE100 checker.
 - `BRIEF`: create or compress one short actionable artifact. Choose exactly one
   shape from the reference: `COMMENT`, `BUG`, `ISSUE`, `USER_STORY` or `REQUEST`.
 
@@ -78,7 +81,7 @@ into an observed fact or an invented acceptance rule. If the desired behavior is
 not specified, keep the decision open or write `UNKNOWN` rather than choosing a
 warning, retry policy, UI state or technical solution.
 
-For `COMPRESS` and `REWRITE`, make a private meaning ledger before changing the
+For `COMPRESS`, `REWRITE` and `TECHNICAL`, make a private meaning ledger before changing the
 text. Track every material claim, number, name, date, URL, quotation,
 attribution, identifier, command, negation, condition, uncertainty marker,
 caveat and call to action. Never add a source, experience, opinion, metric or

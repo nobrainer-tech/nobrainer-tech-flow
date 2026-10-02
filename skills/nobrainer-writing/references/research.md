@@ -55,3 +55,21 @@ ordinary invocation pays only for operational guidance.
 - hard bans on punctuation, sentence length or individual vocabulary;
 - a mandatory before/after report that makes every short answer longer;
 - compression ratios that override facts, caveats, accessibility or action.
+
+
+## Plain technical English adaptation — 2026-10-02
+
+[Karpathy's original post](https://x.com/karpathy/status/2105819303471976479)
+recommends the existing ASD-STE100 method for readable explanations, and choosing
+diagrams or interactive artifacts when they aid understanding. It is a writing
+suggestion, not a measured performance result for Flow.
+
+The [official overview](https://www.asd-ste100.org/about_STE.html) describes a
+controlled language with rules and a dictionary. The
+[official FAQ](https://www.asd-ste100.org/STE_faq.html) distinguishes procedural
+and descriptive text, including passive descriptions when the actor is unknown.
+Writing adopts independently phrased clarity guidance in
+[plain technical English](plain-technical-english.md), with a meaning ledger and
+explicit limits. It does not ship the dictionary, certify conformance or infer
+token/cost savings. The existing contextual anti-slop rules remain in force for
+other modes and languages.

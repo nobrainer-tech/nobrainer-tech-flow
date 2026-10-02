@@ -27,8 +27,9 @@ A Markdown goal does not promise scheduled continuation or automatically press
 START. When START is owner-only, explain that requirement once; never claim it
 was resumed. Within available execution time, continue useful authorized work.
 
-When the owner says "execute the whole SDD", bind one overarching goal to all
-of that SDD's acceptance IDs. Do not substitute a local milestone, plan approval,
+When the owner requests an end-to-end result, including an idea that becomes
+an SDD, bind one overarching goal to all of that SDD's acceptance IDs. An explicit
+"execute the whole SDD" request has the same effect. Do not substitute a local milestone, plan approval,
 or test suite for the whole outcome. Automatically maintain a visible TODO:
 `[x] accepted with evidence`, `[>] executing`, `[ ] remaining`, `[!] blocked`.
 After each accepted stage, update the canonical tracker, show the changed TODO

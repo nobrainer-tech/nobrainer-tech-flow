@@ -818,16 +818,18 @@ class GuidedOnboardingTests(unittest.TestCase):
             common = (*self.common(root / "skills", root / "home"), *self.ANSWERS)
 
             partial = self.run_setup(*common, "--selection", "03")
-            complete = self.run_setup(*common, "--selection", "03,11")
+            complete = self.run_setup(*common, "--selection", "03,11,14")
 
             self.assertEqual(0, partial.returncode, partial.stdout + partial.stderr)
             notes = [line for line in partial.stdout.splitlines() if line.startswith("NOTE:")]
-            # The core skill links to Sessions (ID 11); the per-skill installer runs never
+            # The core links to Sessions (11) and SDD (14); per-skill installer runs never
             # see the whole set, so their misleading "not installed" notes stay hidden.
             self.assertEqual(
                 [
                     "NOTE: nobrainer-tech-flow links to nobrainer-sessions, which is not in "
-                    "this install set; add selection 11 to include it"
+                    "this install set; add selection 11 to include it",
+                    "NOTE: nobrainer-tech-flow links to nobrainer-spec-driven-development, which is not in "
+                    "this install set; add selection 14 to include it"
                 ],
                 notes,
             )
