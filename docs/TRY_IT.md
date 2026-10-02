@@ -29,6 +29,32 @@ Accept when the original failure is reproduced, the correction addresses it,
 the relevant checks pass and the diff stays in scope. A plausible explanation
 or a green unrelated test is insufficient. Do not use a live incident as a demo.
 
+## From an idea to a working result
+
+In a disposable folder, ask:
+
+> Use NBFlow. I have an idea for an offline CLI that turns Markdown meeting
+> notes into an action-item list. Use SDD and deliver it end to end. Use Python
+> standard library only, keep input files unchanged, and make no network calls.
+> Choose routine reversible details. Ask only when a missing choice changes
+> scope or acceptance. Do not initialize Git, publish or send messages.
+
+Accept when the reviewed spec connects each requirement to an observable check,
+the CLI works on the agreed examples, and every required acceptance ID has
+inspected evidence. Assumptions must be visible. A spec alone is not delivery;
+a spec-only request must not start implementation.
+
+## Make a technical procedure easier to follow
+
+> Use nb-write in TECHNICAL mode. Rewrite this English runbook as a procedure.
+> Keep commands and identifiers exact. Preserve prerequisites, permissions,
+> uncertainty and safety conditions. Return the finished text.
+
+Accept when the instructions are easier to follow and no material meaning has
+changed. Test conditions and exceptions, not just sentence length. This mode
+uses selected clarity principles informed by ASD-STE100, not a full compliance
+checker. It does not replace qualified review of safety-critical instructions.
+
 ## Carry an approved plan through autopilot
 
 Use a small, approved plan in a disposable project. Give each task a checkable

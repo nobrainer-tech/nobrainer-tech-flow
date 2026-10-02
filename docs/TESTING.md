@@ -194,3 +194,13 @@ read-only ACK, authoritative conditional transfer, target takeover and exact old
 session archive readback. Include a competing trigger and interrupted create.
 Measure accepted work and total input/output/compaction/recovery usage before
 and after; deterministic decisions do not establish token or quality gains.
+
+
+## 2.1.0 idea intake and plain technical English
+
+The [2.1.0 record](releases/v2.1.0.md) separates instruction review, bounded
+same-session writing exercises, repository tests and public release readback.
+The baseline already followed an explicitly requested SDD/end-to-end path;
+this release does not claim a measured behavioral gain from making it explicit.
+A formal ASD-STE100 audit, clean-session client discovery and comparative model
+cost/speed tests remain outside this evidence.

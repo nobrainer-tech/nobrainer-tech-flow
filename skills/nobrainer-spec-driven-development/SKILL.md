@@ -11,11 +11,12 @@ by `nobrainer-sessions`; implementation belongs to `nobrainer-build` and the
 project's maintained engineering workflow.
 
 Read [references/spec-template.md](references/spec-template.md) before writing a
-new specification.
+new specification. For an idea without a plan, also read
+[idea to delivery](../nobrainer-tech-flow/references/idea-to-delivery.md).
 
 ## Persist only when it pays
 
-Create or update a durable spec when at least one is true:
+Create or update a durable spec when the owner requests SDD or at least one is true:
 
 - architecture, public behavior, data shape, external interface, or security
   boundary changes;
@@ -95,6 +96,13 @@ Verify each `ACCEPTANCE` ID against fresh target-workflow evidence. Local tests
 do not prove deployment, production behavior, buyer usefulness, or external
 readback. Record deferred checks and their owner; do not mark acceptance while a
 required gate is unassessed.
+
+For end-to-end requests, carry all acceptance IDs through the
+[autopilot loop](../nobrainer-tech-flow/references/autopilot.md). The generated
+spec is an intermediate artifact, not completion. Keep its lifecycle current;
+`ACCEPTED` requires every required criterion, including authorized delivery, to
+have inspected evidence. A spec-only request ends with the reviewed spec and
+its actual approval state, without starting implementation.
 
 Acceptance requires: spec revision/hash, requirement-to-evidence ledger, scope
 diff, tests/verifier/build/runtime results, quality review, remaining

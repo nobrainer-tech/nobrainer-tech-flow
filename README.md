@@ -57,7 +57,11 @@
   See the <a href="docs/COMPATIBILITY.md">per-client compatibility evidence</a> for what has been loaded and tested.
 </p>
 
-Tell nobrainer-tech-flow what you need. It clarifies the goal, does the work, and checks the result.
+Start with a task or just an idea. nobrainer-tech-flow clarifies what matters, does the work, and checks the result.
+
+In **2.1.0**, Writing also offers [plain technical English](skills/nobrainer-writing/references/plain-technical-english.md):
+clear steps and consistent terms while keeping exact commands, conditions and uncertainty.
+The mode is informed by ASD-STE100; it does not claim full standard compliance.
 
 ## How it works
 
@@ -65,7 +69,13 @@ Tell nobrainer-tech-flow what you need. It clarifies the goal, does the work, an
 
 Small, clear tasks take the quick path. Larger work is scoped, carried through and verified, and the handoff says what was delivered, what was checked and what is left for you to decide.
 
-For an approved plan, [autopilot](skills/nobrainer-tech-flow/references/autopilot.md)
+For an idea, [SDD](skills/nobrainer-tech-flow/references/idea-to-delivery.md)
+turns the agreed scope into a spec and checkable acceptance criteria. Ask for
+end-to-end delivery, and those criteria stay attached to execution and evidence.
+Routine choices need no extra prompt; material unknowns stay visible.
+[Try idea to delivery](docs/TRY_IT.md#from-an-idea-to-a-working-result).
+
+For a supplied or generated plan, [autopilot](skills/nobrainer-tech-flow/references/autopilot.md)
 works through ready tasks, checks each result, corrects confirmed defects and
 continues to the whole goal. Blocked work stays visible while independent tasks
 advance. [Try a small approved plan](docs/TRY_IT.md#carry-an-approved-plan-through-autopilot).
@@ -108,13 +118,15 @@ legacy package does not automatically become the new package. See the
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#161B23', 'primaryTextColor': '#F3EEE6', 'primaryBorderColor': '#7F9BFF', 'lineColor': '#D94724', 'secondaryColor': '#0F1319', 'tertiaryColor': '#0F1319', 'fontFamily': 'Inter, system-ui, sans-serif'}}}%%
 flowchart TD
-    A[One outcome; check Flow release once today] --> B{Material ambiguity?}
+    A[Task or idea; check Flow release once today] --> B{Material ambiguity?}
     B -->|yes| C[BUDDY: one focused question round]
     B -->|no| D{Small and clear?}
     C --> D
     D -->|yes| E[Direct answer or edit; check the result]
     D -->|no| F[SCOPE + PLAN: outcome, authority, proof; concise TODO]
     F --> S[Short-term goal from long-term direction]
+    F -. SDD requested or justified .-> U[Reviewed spec; acceptance IDs; preserve owner gates]
+    U --> G
     S --> G[AUTOPILOT: execute the authorized scope; select ready work and check]
     G --> H[Verify; independent REVIEW when useful]
     H -->|verified defect; attempt budget remains| G

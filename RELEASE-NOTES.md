@@ -1,5 +1,24 @@
 # nobrainer-tech-flow release notes
 
+## v2.1.0 - 2026-10-02
+
+- Start with an idea. SDD makes the agreed scope and acceptance checks explicit;
+  an end-to-end request carries them through implementation, review and evidence.
+  A spec-only request stays spec-only. Existing authorization covers routine
+  reversible choices, while material product and risk decisions remain visible.
+- Autopilot carries supplied or generated plans through ready work, checks and
+  confirmed corrections. Blocked requirements stay open while independent work
+  advances. This guides the active client; it adds no unattended service.
+- Writing adds a `TECHNICAL` mode for plain English procedures and explanations,
+  informed by ASD-STE100 and Karpathy's suggestion. It preserves commands,
+  permissions, conditions and uncertainty. It is not a full compliance checker
+  and does not claim measured token or cost savings.
+- Includes the source changes since 2.0.2, including the clarified autopilot
+  loop. The portfolio remains eighteen skills. No automatic model benchmark,
+  provider activation or model-setting change is included.
+
+See the [verification record](docs/releases/v2.1.0.md).
+
 ## v2.0.2 - 2026-09-29
 
 - Install without Python: paste the prompt from the README into your agent, or run

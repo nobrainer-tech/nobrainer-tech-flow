@@ -88,12 +88,15 @@ python3 scripts/install_skills.py \
   --skill nobrainer-tech-flow \
   --skill nobrainer-auto-fine-tune \
   --skill nobrainer-sessions \
+  --skill nobrainer-spec-driven-development \
   --skill nobrainer-build \
   --skill nobrainer-review
 ```
 
-The core skill links to `nobrainer-auto-fine-tune` and `nobrainer-sessions`, so a
-subset should keep both (the guided setup below always adds the audit skill).
+The core skill links to `nobrainer-auto-fine-tune`, `nobrainer-sessions` and
+`nobrainer-spec-driven-development`, so a subset should keep all three to make
+those references available. The guided setup always adds the audit skill;
+Sessions and SDD remain explicit selections, not silently added modules.
 The installer prints a `NOTE:` for every selected skill that links to a skill
 which is neither selected nor already installed; the guided setup prints the same
 note once for its whole install set, with the selection ID to add.
