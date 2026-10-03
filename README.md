@@ -59,10 +59,16 @@
 
 Start with a task or just an idea. nobrainer-tech-flow clarifies what matters, does the work, and checks the result.
 
-In **2.1.1**, agents use plain technical English for operational exchanges by
-default. You receive clear answers directly in your requested language, with
-commands, conditions and evidence kept intact. Explicit language and style
-requests still apply. See the [communication policy](skills/nobrainer-tech-flow/references/communication.md).
+In **2.2.0**, simple answers stay text. Small diagrams explain relationships;
+interactive HTML is used when controls help you explore a result. The closeout
+states what was delivered, the inspected proof and any unfinished requirement.
+There is no new module, renderer or service. See the
+[communication policy](skills/nobrainer-tech-flow/references/communication.md)
+and [verification record](docs/releases/v2.2.0.md).
+
+Agents use plain technical English for operational exchanges; you receive
+natural replies in your requested language. Explicit language and format
+requests take precedence, with commands, conditions and evidence kept intact.
 
 Writing defaults to [plain technical English](skills/nobrainer-writing/references/plain-technical-english.md) for English technical artifacts:
 clear steps and consistent terms while keeping exact commands, conditions and uncertainty.
