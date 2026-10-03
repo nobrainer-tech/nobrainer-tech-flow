@@ -204,3 +204,11 @@ The baseline already followed an explicitly requested SDD/end-to-end path;
 this release does not claim a measured behavioral gain from making it explicit.
 A formal ASD-STE100 audit, clean-session client discovery and comparative model
 cost/speed tests remain outside this evidence.
+
+
+## 2.2.0 presentation and closeout
+
+The [2.2.0 record](releases/v2.2.0.md) binds fresh Codex/Claude print runs to
+the exact communication reference and retains synthetic prompts and responses.
+These are explicit-source behavior slices. Host-executed artifact checks do not
+prove automatic discovery or autonomous whole-task execution in either client.
