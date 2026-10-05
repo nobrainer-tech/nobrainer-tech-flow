@@ -74,6 +74,10 @@ Writing defaults to [plain technical English](skills/nobrainer-writing/reference
 clear steps and consistent terms while keeping exact commands, conditions and uncertainty.
 The mode is informed by ASD-STE100; it does not claim full standard compliance.
 
+## Install and use the plugin
+
+Use the [npm command](docs/INSTALL.md#npm-command) to preview and apply setup in your coding client. The [portable plugin ZIP](docs/CHAT_PLUGINS.md) uses the same eighteen skills in supported ChatGPT/Codex and Claude surfaces. Public directory approval remains a separate step.
+
 ## How it works
 
 ![nobrainer-tech-flow: direct work for clear small tasks; focused clarification, bounded execution and verification when needed](assets/nobrainer-workflow.svg)

@@ -9,6 +9,53 @@ Existing `nobrainer-tech-skills` registrations need the reviewed
 [`nobrainer-tech-flow` migration guide](MIGRATION_TO_FLOW.md); do not call an old registration
 upgraded merely because the new source is installed nearby.
 
+## npm command
+
+Node 18+ and Python 3.11+ are prerequisites. Preview the setup first:
+
+```sh
+npx nobrainer-tech-flow@2.2.1 --client codex
+npx nobrainer-tech-flow@2.2.1 --client codex --apply
+npx nobrainer-tech-flow@2.2.1 --client codex --undo --apply
+```
+
+Use claude for Claude Code, opencode or copilot for those clients. Add --home PATH
+for an isolated profile. These commands become available once this version is
+published on npm; a source candidate is not registry availability.
+
+Application copies the release files into the chosen home directory's
+.nobrainer-tech-flow/npm/2.2.1 and verifies the copy. The existing installer then
+links skills to that stable source and writes its managed instructions. This
+avoids links into npx's temporary cache. Unknown files and conflicting installs
+are preserved. Undo uses the same setup record as the Git installer. Retained
+release files remain available for other profiles; they are not disposable test
+artifacts. No postinstall script runs on npm installation.
+
+When switching from an existing Git or npm installation, preview first. If it
+reports a different source, use that installation's recorded undo command before
+applying the new source. The npm command preserves conflicts rather than replacing
+another installation automatically.
+
+For ChatGPT and Claude Chat, follow the [native plugin setup](CHAT_PLUGINS.md)
+rather than the coding-client command.
+
+### Publishing and trusted updates
+
+The first npm publication requires an authenticated package owner. After the
+package exists, configure its Trusted Publisher with GitHub owner
+`nobrainer-tech`, repository `nobrainer-tech-flow`, workflow `npm-publish.yml`,
+no environment name, and permission to run `npm publish`. A publisher configured
+for a different package or repository does not authorize this package.
+
+After the release PR's Validate checks pass and its commit is merged, create the
+matching stable tag. Run the manual Publish npm workflow from that tag. It checks
+the tag against package.json, verifies the packed installation and publishes
+with OIDC provenance. Its bounded registry readback compares the version and
+tarball integrity before reporting delivery. Inspect the registry before retrying
+a run that fails after publication; npm versions cannot be overwritten.
+
+See [npm's trusted publishing documentation](https://docs.npmjs.com/trusted-publishers/).
+
 ## Safe default
 
 ```bash

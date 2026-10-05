@@ -1,6 +1,6 @@
 {
   "name": "nobrainer-tech-flow",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "nobrainer-tech-flow: portable agentic workflows from task to checked result.",
   "type": "module",
   "main": ".opencode/plugins/nobrainer-tech-skills.js",
@@ -22,5 +22,47 @@
       "./skills"
     ]
   },
-  "license": "MIT"
+  "license": "MIT",
+  "bin": {
+    "nobrainer-tech-flow": "bin/nobrainer-tech-flow.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nobrainer-tech/nobrainer-tech-flow.git"
+  },
+  "homepage": "https://nobrainer.tech/flow/",
+  "bugs": {
+    "url": "https://github.com/nobrainer-tech/nobrainer-tech-flow/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    "scripts/",
+    "adapters/",
+    ".opencode/",
+    ".pi/",
+    ".codex-plugin/",
+    ".claude-plugin/",
+    ".agents/plugins/",
+    "plugin.json",
+    "gemini-extension.json",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "CONTRIBUTING.md",
+    "GEMINI.md",
+    "docs/*.md",
+    "docs/releases/*.md",
+    "hooks/",
+    "assets/*.svg",
+    "assets/*.png"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }

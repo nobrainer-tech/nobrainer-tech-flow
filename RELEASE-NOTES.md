@@ -1,5 +1,11 @@
 # nobrainer-tech-flow release notes
 
+## v2.2.1 — 2026-10-05
+
+Install nobrainer-tech-flow through the npm command and load the same eighteen modules as a portable skills plugin. Preview and undo stay explicit; retained source files keep npx cache cleanup from breaking your setup.
+
+See [distribution scope and proof boundaries](docs/releases/v2.2.1.md). npm and directory publication need their own public readback.
+
 ## v2.1.1 - 2026-10-02
 
 - Plain technical English is now the default for operational exchanges between
