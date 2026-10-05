@@ -2474,8 +2474,6 @@ class SuiteTests(unittest.TestCase):
                 self.assertNotIn("NoBrainer Ultra", content)
         codex = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
         self.assertTrue(codex["interface"]["defaultPrompt"][0].startswith("Use `nobrainer-tech-flow`"))
-        self.assertIn("$nobrainer-tech-flow", codex["interface"]["defaultPrompt"][0])
-        self.assertIn("Do not announce workflow entry", codex["interface"]["defaultPrompt"][0])
         manifest_paths = (
             ROOT / "package.json",
             ROOT / "plugin.json",
@@ -2691,19 +2689,21 @@ class SuiteTests(unittest.TestCase):
         )
         self.assertEqual("./hooks/claude-hooks.json", claude["hooks"])
         interface = codex["interface"]
+        self.assertLessEqual(len(interface["shortDescription"]), 30)
         self.assertIn("concise progress", interface["longDescription"])
         self.assertNotIn("execution map", interface["longDescription"].lower())
         self.assertTrue(interface["defaultPrompt"][0].startswith("Use `nobrainer-tech-flow`"))
-        self.assertIn("$nobrainer-tech-flow", interface["defaultPrompt"][0])
-        self.assertIn("Do not announce workflow entry", interface["defaultPrompt"][0])
         self.assertNotIn("Use nb-ultra", interface["defaultPrompt"])
-        self.assertEqual("./assets/nobrainer-tech-logo.svg", interface["composerIcon"])
+        self.assertTrue((ROOT / interface["composerIcon"].removeprefix("./")).is_file())
+        self.assertTrue((ROOT / interface["logo"].removeprefix("./")).is_file())
         self.assertEqual(
-            "https://nobrainer.tech/privacy", interface["privacyPolicyURL"]
+            "https://github.com/nobrainer-tech/nobrainer-tech-flow/blob/main/docs/PRIVACY.md", interface["privacyPolicyURL"]
         )
         self.assertEqual(
-            "https://nobrainer.tech/terms", interface["termsOfServiceURL"]
+            "https://github.com/nobrainer-tech/nobrainer-tech-flow/blob/main/LICENSE", interface["termsOfServiceURL"]
         )
+        portable = json.loads((ROOT / "plugin.json").read_text(encoding="utf-8"))
+        self.assertEqual(interface, portable["extensions"]["com.openai"]["interface"])
 
     def test_version_gate_covers_the_version_file_and_the_lockfile(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

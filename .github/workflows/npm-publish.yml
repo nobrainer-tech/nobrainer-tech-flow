@@ -1,0 +1,100 @@
+name: Publish npm
+
+# First publication and Trusted Publisher setup need an authenticated npm owner.
+# Run manually from the immutable release tag after the Validate checks pass.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'nobrainer-tech/nobrainer-tech-flow' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+
+      - name: Verify tag and version
+        run: |
+          python3 - <<'PY'
+          import json, os, re
+          ref = os.environ['GITHUB_REF']
+          version = json.load(open('package.json'))['version']
+          if not re.fullmatch(r'refs/tags/v[0-9]+\.[0-9]+\.[0-9]+', ref) or ref != 'refs/tags/v' + version:
+              raise SystemExit('Release tag must match the stable package version.')
+          PY
+          git merge-base --is-ancestor HEAD origin/main
+
+      - name: Verify packed distribution
+        run: |
+          python3 scripts/validate_skills.py --suite
+          python3 -m unittest tests.test_npm_distribution -v
+
+      - name: Use pinned npm with OIDC support
+        run: npm install --global npm@11.18.0 --ignore-scripts
+
+      - name: Pack the checked release
+        run: npm pack --json --pack-destination "$RUNNER_TEMP" > "$RUNNER_TEMP/flow-pack.json"
+
+      - name: Publish through the package's Trusted Publisher
+        run: |
+          artifact=$(node -e 'const fs=require("fs"); console.log(JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/flow-pack.json"))[0].filename)')
+          npm publish "$RUNNER_TEMP/$artifact" --access public --provenance --ignore-scripts
+
+      - name: Read back registry version and tarball integrity
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync } from 'node:fs';
+          const local = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/flow-pack.json'))[0];
+          const endpoint = 'https://registry.npmjs.org/' + local.name + '/' + local.version;
+          const deadline = Date.now() + 300000;
+          let last = 'version not yet visible';
+          while (Date.now() < deadline) {
+            try {
+              const remaining = Math.max(1, deadline - Date.now());
+              const response = await fetch(endpoint, { signal: AbortSignal.timeout(Math.min(10000, remaining)) });
+              if (response.ok) {
+                const remote = await response.json();
+                if (remote.name !== local.name || remote.version !== local.version || remote.dist?.integrity !== local.integrity) {
+                  throw new Error('Registry version or tarball integrity differs from the checked artifact.');
+                }
+                console.log('REGISTRY_VERIFIED: ' + remote.name + '@' + remote.version + '; tarball integrity matches.');
+                process.exit(0);
+              }
+              last = 'registry HTTP ' + response.status;
+            } catch (error) {
+              if (String(error.message).includes('differs')) throw error;
+              last = error.message;
+            }
+            const remaining = deadline - Date.now();
+            if (remaining > 0) await new Promise(resolve => setTimeout(resolve, Math.min(5000, remaining)));
+          }
+          throw new Error('Publication needs registry inspection before any retry: ' + last);
+          JS

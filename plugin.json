@@ -2,8 +2,49 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "nobrainer-tech-flow",
   "description": "nobrainer-tech-flow: portable agentic workflows from task to checked result.",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "author": {
-    "name": "NoBrainer Tech"
+    "name": "NoBrainer Tech",
+    "url": "https://nobrainer.tech"
+  },
+  "homepage": "https://nobrainer.tech/flow/",
+  "repository": "https://github.com/nobrainer-tech/nobrainer-tech-flow",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "agent-skills",
+    "research",
+    "writing",
+    "planning",
+    "verification"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "nobrainer-tech-flow",
+        "shortDescription": "From task to done.",
+        "longDescription": "A portable workflow for research, writing, planning and implementation. Clarify the outcome, do the authorized work, share concise progress and report the evidence and open items. Uses the tools and permissions available in your AI client.",
+        "developerName": "NoBrainer Tech",
+        "category": "Developer Tools",
+        "capabilities": [
+          "Interactive",
+          "Read",
+          "Write"
+        ],
+        "defaultPrompt": [
+          "Use `nobrainer-tech-flow` to compare these options with sources and a recommendation.",
+          "Use `nobrainer-tech-flow` to turn my idea into a plan and deliver it with acceptance checks."
+        ],
+        "websiteURL": "https://nobrainer.tech/flow/",
+        "privacyPolicyURL": "https://github.com/nobrainer-tech/nobrainer-tech-flow/blob/main/docs/PRIVACY.md",
+        "termsOfServiceURL": "https://github.com/nobrainer-tech/nobrainer-tech-flow/blob/main/LICENSE",
+        "brandColor": "#2948B8",
+        "composerIcon": "./assets/plugin-logo.png",
+        "logo": "./assets/plugin-logo.png",
+        "screenshots": [],
+        "supportURL": "https://github.com/nobrainer-tech/nobrainer-tech-flow/issues"
+      },
+      "onboardingSkill": "./skills/nobrainer-tech-flow/SKILL.md"
+    }
   }
 }
