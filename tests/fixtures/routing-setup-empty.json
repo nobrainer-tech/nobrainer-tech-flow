@@ -1,0 +1,42 @@
+{
+  "schema": "nobrainer-routing-setup/1",
+  "key": "openai-anthropic.f0.b0",
+  "version": "2026-09-29.1",
+  "aaFetchedAt": "2026-09-29T22:34+02:00",
+  "expiresAt": "2026-10-21T10:00:00Z",
+  "routes": [
+    "openai",
+    "anthropic"
+  ],
+  "fast": false,
+  "budget": false,
+  "empty": true,
+  "main": {
+    "highStakes": null,
+    "everyday": null
+  },
+  "subagents": [],
+  "jobs": {
+    "coding": null,
+    "agentic": null,
+    "research": null,
+    "planning": null,
+    "orchestration": null,
+    "bulk": null
+  },
+  "candidates": {
+    "coding": [],
+    "agentic": [],
+    "research": [],
+    "planning": [],
+    "orchestration": []
+  },
+  "skip": [
+    {
+      "family": "Alpha 2",
+      "reason": "owner",
+      "excludedBy": "time"
+    }
+  ],
+  "blocks": null
+}
