@@ -50,6 +50,37 @@ and provide useful permitted source/text fallback. Source-only requests need no
 render claim. For working visuals, inspect rendering and relevant controls,
 keyboard use and layout before claiming they work.
 
+## Small native-worker packet
+
+Use this packet for ordinary native dispatch under
+[team execution](delivery.md#coordinated-team-execution). Start with fresh context
+by default: send exact source references and relevant context, not the full
+investigation history. The worker must read applicable instructions, the owning
+skill and its required references before execution. Shrinking the packet never
+drops AGENTS and owning-method obligations, authority, literal error text or
+material exclusions. Missing required sources or methods stop that unit; MAIN
+continues independent work.
+
+```text
+TASK: <one ID and observable outcome>
+INPUTS: <exact source/file refs and versions; only relevant context>
+WRITE_SCOPE: <exact paths, or READ_ONLY; shared-resource restrictions>
+DEPENDENCIES: <accepted predecessors, or NONE>
+METHOD: <owning skill and required references>
+MODEL_AND_EFFORT: <owner-approved exact supported values>
+AUTHORITY: <permitted effects and real owner gates>
+ACCEPTANCE: <behavior and proof MAIN will inspect>
+BUDGET_AND_STOP: <declared limit; interruption/uncertainty behavior>
+RETURN: changed paths, inspected inputs, evidence, unresolved checks,
+        actual model/effort if exposed, and writer/runtime release status.
+Do not delegate further or start a successor. End after the assigned unit.
+```
+
+Use a full-history fork only when the unit needs retained context; record that
+reason and keep the complete assignment. Durable or authorized visible work keeps
+the full Sessions/Dispatcher contract, including exact identity, lease, transport
+and recovery. The compact packet grants no visible-session or external authority.
+
 ## Close with the checked result
 
 For non-trivial delivery, state what was delivered, specific proof MAIN inspected

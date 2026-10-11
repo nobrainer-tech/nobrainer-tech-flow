@@ -840,7 +840,12 @@ class SuiteTests(unittest.TestCase):
             "NEXT_ACTION",
         ):
             self.assertIn(term, text)
-        self.assertIn("A single coherent work unit stays in MAIN", text)
+        delivery = " ".join(
+            (SKILLS / "nobrainer-tech-flow" / "references" / "delivery.md")
+            .read_text(encoding="utf-8").split()
+        )
+        self.assertIn("A single bounded native delegate needs no Dispatcher queue", delivery)
+        self.assertIn("MAIN keeps coordination and acceptance", delivery)
         self.assertIn("must not repair a vague plan", text)
         self.assertIn("worker cannot choose, dispatch or start a successor", text)
         self.assertIn("Unknown dependency state is `BLOCKED`", text)
@@ -1259,7 +1264,9 @@ class SuiteTests(unittest.TestCase):
         for term in (
             "Expected files",
             "Done clean",
-            "one primary agent",
+            "Delegate every independent ready unit promptly",
+            "native capacity and quota",
+            "coordinates, integrates, verifies and refills slots",
             "Visible conversations",
             "Use subagents",
             "fetch remote refs",

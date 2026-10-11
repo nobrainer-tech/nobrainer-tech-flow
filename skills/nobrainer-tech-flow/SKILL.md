@@ -42,12 +42,11 @@ Skip ledger, delegation and review; retain startup care. Escalate to the full Fl
 for ambiguity, architecture, public behavior, routing or consequential
 side effects; quick path never bypasses an owner gate.
 
-For substantial work, delegate useful independent ready units through
-[team execution](references/delivery.md#coordinated-team-execution); MAIN
-integrates and verifies. Run [Auto Fine Tune](../nobrainer-auto-fine-tune/SKILL.md)
-as the standard first-setup capability check; run bounded benchmarks later only
-when calibration pays. Unavailable native workers leave the work in MAIN;
-visible conversations require explicit owner request.
+For substantial work, delegate all independent ready units promptly through
+[team execution](references/delivery.md#coordinated-team-execution); MAIN coordinates,
+integrates, verifies and refills slots. Use [Auto Fine Tune](../nobrainer-auto-fine-tune/SKILL.md)
+for first-setup capability checks; benchmark only when calibration pays.
+Unavailable native workers leave work in MAIN; visible conversations require explicit owner request.
 
 Lifecycle: `DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN`.
 

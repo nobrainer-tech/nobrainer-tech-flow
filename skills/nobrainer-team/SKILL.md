@@ -1,19 +1,18 @@
 ---
 name: nobrainer-team
-description: "Use when the owner says nb-team or nobrainer-skill-browser, or after nobrainer-tech-flow has produced an approved non-trivial plan that needs installed-capability inventory, minimum role selection, safe skills.sh lookup, or justified parallel workers; do not use to elicit requirements, invent the plan, schedule work, or create sessions."
+description: "Use when the owner says nb-team or nobrainer-skill-browser, or after nobrainer-tech-flow has produced an approved non-trivial plan that needs installed-capability inventory, bounded worker assignments, safe skills.sh lookup, or native parallel execution; do not use to elicit requirements, invent the plan, schedule work, or create sessions."
 ---
 
 # NoBrainer Team
 
-Compose the smallest capable team for a concrete approved plan. This skill owns
-capability selection and role design. `nobrainer-dispatcher` owns readiness,
-batch ordering and backpressure after the plan is approved. `nobrainer-sessions`
-owns actual visible session identity, transport, checkout isolation, leases and
-receive-audit.
+Compose bounded native assignments for every independent ready unit in the approved
+plan. Team owns capability selection and role design; `nobrainer-dispatcher` owns
+queued readiness and backpressure. `nobrainer-sessions` owns authorized visible
+session identity, transport, checkout isolation, leases and receive-audit.
 
-For a bounded native subagent, an inline assignment with exact returned ID,
-inputs, output, write scope, verifier and stop condition is enough. Keep it in
-the current plan; no visible task, persistent registry or queue is required.
+For ordinary native subagents, use the compact packet and exact returned IDs in
+[nobrainer-tech-flow team execution](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
+Keep assignments in the current plan; no visible task, persistent registry or queue is required.
 Follow Flow [communication](../nobrainer-tech-flow/references/communication.md)
 for assignments and reports; keep the deliverable language separate from the
 agent-report language. Read [references/team-plan.md](references/team-plan.md)
@@ -47,29 +46,19 @@ An unsearched dimension is `UNKNOWN`, not covered. Record irrelevant dimensions
 as `NOT_APPLICABLE` when a coverage audit is requested; ordinary small tasks do
 not need a full matrix. Reuse the existing task plan instead of a second catalog.
 
-## Choose the minimum roster
+## Cover independent ready work
 
-For a simple or serial task use `<repo> | MAIN`. For parallelizable delivery,
-follow Flow [team execution](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution)
-and fill useful ready slots up to the verified host limit. Add a role only when it provides at
-least one measurable benefit:
+For non-trivial work, assign every independent ready unit to a native worker under
+[nobrainer-tech-flow team execution](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
+Fill useful slots up to the verified host limit within task quota. MAIN keeps
+coordination, the critical path, integration and acceptance. A tiny task or tightly
+coupled step may stay in MAIN. Assign roles from actual outputs, never personas
+or unused capacity. Do not dispatch work whose output MAIN cannot review.
 
-- an independent unit can shorten the critical path;
-- a separate checkout or trust boundary prevents write conflict;
-- a warm specialist will be reused across tasks;
-- independent review materially reduces a stated risk;
-- a handoff or resume boundary needs durable ownership.
-
-Dispatch the useful ready workers within the
-host and task budget, when MAIN can audit the combined result. Do not split one tightly coupled edit, dispatch work
-whose output cannot be reviewed, or build a standing swarm because capacity is
-available.
-
-At each accepted milestone, re-evaluate newly ready independent units and
-reuse or dispatch available worker slots promptly while MAIN advances
-integration. Calibrate uncertain model routes through
-[Auto Fine Tune](../nobrainer-auto-fine-tune/SKILL.md); a host advertisement
-is not a successful model invocation or a measured speed advantage.
+Use the canonical contract for completion-driven refill and reasons for retaining
+eligible work in MAIN. [Auto Fine Tune](../nobrainer-auto-fine-tune/SKILL.md)
+calibrates uncertain routes when useful; calibration is not a prerequisite to
+ordinary native dispatch. A host advertisement is not a successful model invocation.
 
 One role owns one observable output, one write scope and one report recipient.
 Shared sequential state has one writer. A worker never selects or starts its
@@ -137,14 +126,15 @@ report a blocker only when the actual capability remains unavailable.
 
 ## Build the team plan
 
-For each role record:
+For ordinary native work, use the compact packet linked above. For a durable
+team plan, record each role's:
 
 - exact role and stable session title;
 - `WORK_UNIT`, `METHOD`, selected skill/tool and source/ref;
 - inputs, dependencies, allowed `WRITE_SCOPE` and isolation;
 - `ACCEPTANCE`, evidence and close gate;
 - report recipient, retry/stop conditions and rollback;
-- why parallelism or specialization earns its coordination cost.
+- bounded outcome, native capacity, budget and parallel safety.
 
 Separate phases from concurrency groups. Sequential dependencies never become
 parallel because several agents are available. MAIN keeps the canonical plan

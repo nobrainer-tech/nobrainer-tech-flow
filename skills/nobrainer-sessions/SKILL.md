@@ -16,9 +16,11 @@ session prepare bounded task prompts, and bring child results back for review.
 Exact identity, write ownership, stop gates and independent receive-audit are
 required; a convenient parent-child topology is not itself a safety contract.
 
-For a single temporary native subagent, use its returned ID, scoped prompt,
-observable completion and artifact review; no durable registry or new visible
-task is required. Use this full protocol for durable or explicitly visible sessions.
+For ordinary native subagents, use the compact packet, returned IDs, observable
+completion and artifact review in nobrainer-tech-flow
+[team execution](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
+No durable registry or new visible task is required. Use this full protocol for
+durable or explicitly visible sessions.
 
 Read [references/protocol.md](references/protocol.md) before setup, dispatch, or
 RECEIVE_AUDIT.
@@ -34,6 +36,8 @@ owner instruction to use another checkout or lifecycle.
 ## Choose the smallest topology
 
 Default to one visible session named `<repo> | MAIN`.
+One visible coordinator can own many bounded native workers; this topology does
+not limit useful native concurrency under nobrainer-tech-flow's team execution contract.
 Delegated work uses native subagents inside the current task. Creating a visible
 conversation (for example with `create_thread`) requires an explicit owner
 request for that conversation or an explicitly authorized MAIN restart.

@@ -26,6 +26,19 @@ review retries, context pressure and goal continuation do not authorize
 report the limitation. Workers never create successor conversations or
 delegate further without express assignment authority.
 
+## Ordinary native assignments
+
+Use nobrainer-tech-flow's [compact native-worker packet](../../nobrainer-tech-flow/references/communication.md#small-native-worker-packet)
+with the exact returned native ID. Keep essential repository instructions, the
+owning method and required references in the inputs; require source readback.
+Fresh context receives that bounded packet. A full-history fork must still bind
+the same scope and authority; inherited history does not expand either.
+
+The registry, leases and transport schema below apply to durable or authorized
+visible work. Follow [team execution](../../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution)
+for completion-driven refill and bounded observations of waiting, suspended or uncertain workers.
+Record each observation against its exact ID in current task state.
+
 ## Session registry row
 
 ```text

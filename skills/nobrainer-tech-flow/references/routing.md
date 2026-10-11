@@ -11,7 +11,7 @@ trigger applies.
 | lifecycle, brief requirements, visible progress and guarded autonomy | `nobrainer-tech-flow` |
 | project-local Codex instruction discovery, byte-budget audit and context readback | `nobrainer-codex-context` |
 | cross-project instruction, skill and task-prompt audit with coverage planning | `nobrainer-skill-doctor` |
-| minimal roles, capability discovery or open-skill evaluation | `nobrainer-team` |
+| capability selection, bounded native assignments or open-skill evaluation | `nobrainer-team` |
 | ready-set calculation, dependency batches, bounded dispatch and backpressure | `nobrainer-dispatcher` |
 | measured, client-specific worker model and concurrency calibration | `nobrainer-auto-fine-tune` |
 | current, niche, uncertain, high-stakes or attributed external facts | `nobrainer-research` |

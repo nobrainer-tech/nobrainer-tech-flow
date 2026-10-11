@@ -12,22 +12,26 @@ implementation, session identity or final acceptance evidence.
 Keep the boundaries explicit:
 
 - `nobrainer-tech-flow` owns intent, the canonical plan and lifecycle;
-- `nobrainer-team` owns the minimum roles and capability sources;
+- `nobrainer-team` owns capability selection and bounded assignments;
 - Dispatcher owns which already-defined work unit may run now;
 - `nobrainer-sessions` owns exact session identity, transport, lease and
   receive-audit;
 - the assigned method owns the work product;
 - `nobrainer-review` owns the independent close gate when required.
 
-A single coherent work unit stays in MAIN and marks Dispatcher `NOT_NEEDED`.
+A single bounded delegate uses native subagents and marks Dispatcher `NOT_NEEDED`; MAIN owns coordination and acceptance.
 Use parallel batches for independent ready work under the
 [team execution contract](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution):
 fill available useful slots up to the verified effective host limit across
 the task tree.
 When the owner explicitly invokes Dispatcher only to inspect such a map,
 Dispatcher owns that scheduler inspection and returns `NOT_NEEDED`; MAIN remains
-the owner of the work unit and its product. Keep control ownership distinct from
-work ownership in every report.
+the coordination and acceptance owner. The assigned worker may own the bounded
+product scope. Keep control ownership distinct from work ownership in every report.
+
+Ordinary native assignments use nobrainer-tech-flow's compact packet and returned native IDs.
+The ledger and Sessions transition below apply to durable queues and authorized
+visible work; one bounded native delegate needs neither a queue nor a new conversation.
 
 ## Preconditions
 
@@ -125,9 +129,10 @@ smallest cycle path; do not break a cycle by guessing an order.
 
 ## Select one bounded batch
 
-From the ready set, prefer work that shortens the measured critical path or
-unblocks the most dependent acceptance work. Use the smallest batch that earns
-its coordination cost. Bound it by:
+From the ready set, dispatch every independent unit that fits available capacity
+and quota. Prioritize critical-path blockers and refill freed slots after auditing
+results under the [team execution contract](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
+Bound each batch by:
 
 - the declared `max_active` and actual session capacity;
 - disjoint write scopes and isolated checkouts for concurrent writers;
@@ -135,9 +140,9 @@ its coordination cost. Bound it by:
 - one integration owner and an explicit integration task after parallel work;
 - the context-switch limit and expected wait.
 
-Do not dispatch speculative future tasks merely because a worker is idle. Keep
-sequential dependencies sequential. If elapsed-time benefit is unmeasurable or
-integration dominates, run the work in MAIN.
+Keep dependent work sequential and exclude speculative work. Unknown speedup
+measurements do not block eligible delegation; shared mutable work remains with
+one writer.
 
 Record why every selected task is safe in parallel and why every deferred ready
 task waits. A `PARALLEL_GROUP` label alone is not proof.
@@ -179,12 +184,16 @@ changed frozen input, exhausted retry, lease conflict or a genuine decision.
 
 ## Reconcile audited results
 
+Reconcile each returned unit promptly under nobrainer-tech-flow's
+[completion, observation and refill rules](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
+Keep a reason and bounded next observation for waiting, suspended or uncertain workers.
+
 Never accept a raw worker report directly. Invoke `nobrainer-sessions`
 `RECEIVE_AUDIT` to bind identity, checkout, diff, tests, verifier, runtime,
 side effects and released lease. Then choose exactly one transition:
 
 - audited success: mark the task `ACCEPTED`, release its dependants and compute
-  one next ready batch;
+  one next ready batch without waiting for unrelated slow workers;
 - isolated correctable defect: mark `CORRECTION_REQUIRED`, route one bounded
   fix through the task's assigned method (`nobrainer-build` for implementation)
   and invalidate affected proof. After the repair, rerun affected tests and any

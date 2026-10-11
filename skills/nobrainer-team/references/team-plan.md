@@ -39,6 +39,11 @@ COORDINATION_COST:
 OWNER_GATES:
 ```
 
+`SESSION_MODE` describes visible topology, not native-worker count. A single
+visible MAIN may coordinate many native workers under
+[team execution](../../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
+Record unknown estimates as `UNKNOWN`; they do not block eligible dispatch.
+
 For each external candidate record exact source/ref, discovered name, inspected
 files, scripts not run, permissions, network/credential behavior, trigger
 overlap, license, temporary-use method and removal/rollback.

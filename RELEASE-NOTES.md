@@ -1,5 +1,26 @@
 # nobrainer-tech-flow release notes
 
+## v2.3.0 - 2026-10-12
+
+Use available native workers for independent work while the main session keeps
+the task coordinated and the result checked. The delegation-first default sends
+every useful independent ready unit promptly, within verified host capacity and
+authorized usage. The main session integrates and verifies artifacts, then
+refills free slots without waiting for unrelated slow workers.
+
+Workers receive a compact task packet with scope, inputs, dependencies, method,
+model and effort, authority, acceptance, budget, stop conditions and return
+requirements. A builder-readiness check resolves implementation gaps before a
+large or risky group of writers starts. Existing ownership, identity and
+permission safeguards remain in place; the portfolio is still eighteen skills.
+
+This is an instruction contract, with no runtime benchmark or measured speed or
+token saving. Native worker availability depends on the client. npm registry
+publication remains pending owner publisher access; the registry currently
+returns 404. The separate native plugin export follows the GitHub release.
+
+See the [release scope and verification record](docs/releases/v2.3.0.md).
+
 ## v2.2.1 — 2026-10-05
 
 Install nobrainer-tech-flow through the npm command and load the same eighteen modules as a portable skills plugin. Preview and undo stay explicit; retained source files keep npx cache cleanup from breaking your setup.

@@ -10,9 +10,8 @@ selection; install chosen items plus required dependencies. Preserve MAIN; mark
 unknown runtime facts `UNKNOWN`. Back up, read back and keep rollback. Load skills
 on demand; never execute linked installers.
 
-Keep updates brief, outcome-first and non-repetitive. Use one primary agent in
-MAIN; delegate independent work only to verified useful native capacity, then
-integrate in MAIN.
+Keep updates brief, outcome-first and non-repetitive. Delegate every independent ready unit to native
+workers within verified capacity and quota; MAIN integrates, verifies and refills freed slots.
 
 `PROBLEM_GATE`: start from the literal failure, local evidence and smallest
 reproducer. Query useful wiki decisions. Use current internet research when the
