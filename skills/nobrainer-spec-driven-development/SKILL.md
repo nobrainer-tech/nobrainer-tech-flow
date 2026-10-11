@@ -68,6 +68,8 @@ requirement must map to at least one `ACCEPTANCE` criterion, and every criterion
 must name reproducible evidence. Resolve or explicitly gate unknowns that can
 change design, scope, safety, or acceptance.
 
+Before a large or risky multi-writer fan-out, run the [builder-readiness check](../nobrainer-tech-flow/references/idea-to-delivery.md).
+
 Record approval identity, UTC time, version and a stable content hash. Freeze
 that revision. A draft, an unbound hash, or approval from the implementer alone
 does not authorize risky work.

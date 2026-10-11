@@ -135,41 +135,83 @@ reviews, tests or generated files.
 
 ## Coordinated team execution
 
-MAIN owns the full outcome, dependencies, integration and acceptance. Before each
-batch, identify independent ready work and available native delegation capacity.
-Target concurrency is the minimum of the effective host/model limit and the
-number of useful independent ready units. A configured ceiling is not proof of
-available runtime slots. Count running reviewers and nested agents too. If
-capacity is unknown, dispatch useful units incrementally until a capacity
-refusal or the task's coordination cost outweighs the gain; never spawn dummy
-probes. Reconcile uncertain spawn
-results by ID before retrying. If a send may have succeeded but returned no ID,
+MAIN owns the full outcome, coordination, critical path, dependencies, integration,
+owner decisions and acceptance. Before executing non-trivial work or entering a
+blocking wait, identify independent ready units and dispatch every useful eligible
+unit promptly to native workers within verified host capacity and authorized usage
+limits. Eligibility requires accepted dependencies, authority, a supported route
+and a free write scope. One visible MAIN coordinator is compatible with many native
+workers. Before a large or risky multi-writer fan-out that is not already
+executable, run the [builder-readiness check](idea-to-delivery.md#builder-readiness-check);
+skip it for already-executable plans and mechanical changes.
+
+When an eligible ready unit stays in MAIN while a useful slot is free, record the
+concrete reason in the current plan: shared mutable state, missing accepted
+dependency, unavailable capability/route, authority gate, usage limit, or a tiny or
+tightly coupled step. A missing measured speedup is not by itself a reason to keep
+eligible work in MAIN.
+
+A single bounded native delegate needs no Dispatcher queue; MAIN keeps coordination
+and acceptance. Use the [small native-worker packet](communication.md#small-native-worker-packet).
+Durable queues retain the [long-run state](long-run-state.md) and full
+Sessions/Dispatcher contract. Visible conversations require an explicit owner
+request or authorized MAIN restart; never substitute them for unavailable native
+workers.
+
+Target concurrency is the minimum of the effective host/model limit, authorized
+usage limits and useful independent ready units. A configured ceiling is not proof
+of available runtime slots. Count running reviewers, existing live workers and any
+permitted descendants too. If capacity is unknown, dispatch ready units
+incrementally within host policy and remaining quota until a capacity refusal;
+never spawn dummy probes. Reconcile uncertain spawn results by ID before retrying.
+If a send may have succeeded but returned no ID,
 reserve its possible capacity and write scope; do not retry or run that unit in
 MAIN until the host proves no worker is executing. Record delivery UNKNOWN in
 the existing tracker. This differs from proven pre-send unavailability, which
 permits MAIN fallback. A refusal reduces concurrency; it is not a goal
-blocker. Never bypass a host restriction or substitute visible conversations.
+blocker. Do not duplicate a unit after an uncertain send or timeout. Never bypass
+a host restriction.
 
 Use [communication](communication.md) for assignments and reports: plain
 technical English between agents by default, with the artifact language explicit
 when different. Preserve required formats and explicit language overrides.
 
-Each assignment names the desired result, input sources, exact write scope,
-dependencies, acceptance evidence and stop conditions. Schedule independent
-implementation, research and verification together only when mutable state does
-not overlap. Use isolated worktrees where appropriate, then integrate explicitly.
-Workers do not recursively delegate unless MAIN grants a reservation under the
-same verified host capacity; when reliable cross-tree accounting is unavailable, use flat
-MAIN-owned delegation. Apply the [model policy](model-routing.md), including its Codex delegated
-preset; preserve explicit owner overrides.
+Each assignment names one bounded outcome, exact inputs/version, write scope,
+dependencies, owning method, authority, acceptance evidence, model/effort, budget
+and stop conditions. Schedule independent implementation, research and verification
+together only when mutable state does not overlap. Keep one owner for every shared
+mutable resource: files, browser/profile, test database, port, migration, generated
+artifact and integration surface. Use isolated worktrees where appropriate, then
+integrate explicitly. No duplicate investigations of the same question; read-only
+reviews may share frozen input when their questions are distinct.
+
+Use flat MAIN-owned delegation by default. Recursive delegation requires express
+assignment authority and a reserved capacity slot under the same verified host
+capacity. A host or owner prohibition remains controlling. Without reliable
+cross-tree accounting, keep delegation flat. Apply the [model policy](model-routing.md),
+including its Codex delegated preset; preserve explicit owner overrides.
 
 Prioritize work that unblocks downstream stages. MAIN advances useful integration
-or unresolved dependencies while workers execute; do not hold a meeting or poll
-unchanged status as a substitute for work. Queue excess units. Review each result
-against its artifact and required checks, release the worker's write ownership,
-then fill the freed slot with ready work. Shared sequential work remains serial.
-Do not split a tiny task merely to reach a number. Measure progress by accepted
-outcomes and elapsed delivery, never by agent count or messages sent.
+or unresolved dependencies while workers execute. Queue excess ready units. On each
+worker completion, MAIN reconciles the exact returned ID, inspects the current
+artifact, assigned scope and required proof, and verifies that the worker has
+stopped writing. Then release only that unit's proven ownership, recompute readiness
+and dispatch newly ready work without waiting for unrelated slow workers. A
+worker's report, exit code or self-score does not accept its artifact.
+
+A waiting, suspended or uncertain worker has a stated reason and a bounded next
+observation in the current tracker. Reserve its scope and possible capacity until
+exact-ID readback reconciles its state. Prefer native completion notifications or
+bounded waits on the same IDs; wait only when no useful independent work remains
+for MAIN or available slots. Do not poll unchanged status as a substitute for work.
+
+Keep quota/cost ceilings, API/test-environment limits, runtime health warnings/hard
+limits, credential boundaries, owner gates and refusal handling. Shared sequential
+work remains serial. No filler units, speculative future work, fixed swarm or
+duplicated full-context prompts. Do not split a tiny task merely to reach a number.
+Measure progress by accepted outcomes and elapsed delivery, never by agent count
+or messages sent. Claims about speed, token use or quality require measured
+evidence; dispatch alone proves none of them.
 
 ## GDD: goal-driven delivery through milestones
 

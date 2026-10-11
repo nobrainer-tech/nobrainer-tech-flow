@@ -34,6 +34,12 @@ Plugin, Gemini and Kimi manifests, reject invented Devin/Hermes adapters and
 enforce the exact eighteen-skill inventory, correction hooks and workflow
 diagram contract.
 
+Static delegation contract checks cover ready-unit dispatch, the compact native
+packet, completion-driven refill and uncertain-send safeguards in the
+[canonical delegation contract](../skills/nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
+These source checks do not prove native worker launches, accepted runtime output,
+or any speed, token or quality gain. Those require a recorded client run.
+
 ```bash
 python3 -m unittest discover -s tests -v
 ```

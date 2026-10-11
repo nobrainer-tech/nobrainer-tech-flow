@@ -5,7 +5,7 @@ description: "Use when setting up nobrainer-tech-flow for the first time, when t
 
 # nobrainer-tech-flow: Orchestration Calibration
 
-Run this skill as the standard first-setup step for nobrainer-tech-flow. Discover the current client's and project's actual capabilities, evaluate whether delegation helps, and record evidence-backed recommendations. Read [capacity and update audit](references/capacity-audit.md) at project setup or when limits are in question. It does not train or fine-tune model weights, choose a replacement for MAIN, create sessions, schedule workers, or run an open-ended optimization loop.
+Run this skill as the standard first-setup step for nobrainer-tech-flow. Discover the current client's and project's actual capabilities, calibrate supported worker routes when useful, and record evidence-backed recommendations. Ordinary delegation follows [team execution](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution); calibration is not a prerequisite to dispatch. Read [capacity and update audit](references/capacity-audit.md) at project setup or when limits are in question. It does not train or fine-tune model weights, choose a replacement for MAIN, create sessions, schedule workers, or run an open-ended optimization loop.
 
 ## Preserve the owner's choice
 
@@ -27,7 +27,7 @@ Keep advertised, configured, callable, and successfully invoked capabilities dis
 
 For a one-off, low-risk task, use the owner's selected MAIN and current known tools; skip benchmarking and state that routing is uncalibrated. For a recurring workflow, material model choice, or task with meaningful quality/latency/cost tradeoffs, define a small bounded comparison before spending resources.
 
-Classify the work by required expertise, context, accuracy, latency, cost sensitivity, confidentiality, dependence between units, and integration effort. Delegate only independent units with measurable acceptance and disjoint write scope. Estimate speed benefit from the critical path and observed concurrency, accounting for setup, review, and integration. Parallelism is useful when it improves time to a checked outcome or provides independent quality evidence; it is not a target by itself.
+Classify the work by required expertise, context, accuracy, latency, cost sensitivity, confidentiality, dependence between units, and integration effort. Calibration follows the delegation-first default for independent units with measurable acceptance and disjoint write scope. A missing benchmark or measured speed gain does not block eligible dispatch. When comparing routes, measure the critical path and observed concurrency, including setup, review and integration; worker count alone proves no benefit.
 
 ## Run a bounded, comparable calibration
 

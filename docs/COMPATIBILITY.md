@@ -242,8 +242,10 @@ that prohibited file reads; the canonical `$nobrainer-tech-flow` probe passed.
 Fix this obvious typo in README.md.
 ```
 
-Passing behavior: one primary session makes the bounded correction without SDD,
-a wiki, or a worker swarm.
+Passing behavior: the visible MAIN coordinator makes this tiny correction
+directly, without SDD, a wiki or a native worker. One visible MAIN can coordinate
+many native workers for non-trivial work under the
+[delegation contract](../skills/nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
 
 ## Runtime evidence record
 

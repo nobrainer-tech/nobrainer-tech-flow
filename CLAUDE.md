@@ -7,7 +7,7 @@ Respect host hierarchy; user instructions override skill guidelines. Apply [deli
 <!-- NOBRAINER-WORKFLOW:START -->
 ## nobrainer-tech-flow
 
-- Use [nobrainer-tech-flow](https://github.com/nobrainer-tech/nobrainer-tech-flow) through `$nobrainer-tech-flow`. Preserve the selected MAIN model and effort. Inspect native worker models and capacity, then delegate useful independent units with exact scope and proof; MAIN integrates. Use `nobrainer-auto-fine-tune` when measured route calibration would help.
+- Use [nobrainer-tech-flow](https://github.com/nobrainer-tech/nobrainer-tech-flow) through `$nobrainer-tech-flow`. Preserve the selected MAIN model and effort. Inspect native worker models and capacity, then delegate every independent ready unit with exact scope and proof; MAIN integrates. Use `nobrainer-auto-fine-tune` when measured route calibration would help.
 - Start substantial work from an observable short-term goal grounded in the owner's direction; inspect project layers and the relevant wiki. Check once per active day for a newer stable release. Keep session checkpoints and verify takeover before authorized archival. Load only relevant specialist skills and verify the delivery layer.
 - Product name: nobrainer-tech-flow; repository and skill ID: `nobrainer-tech-flow`. No ritual preamble. X: `#NoBrainerTechFlow`.
 <!-- NOBRAINER-WORKFLOW:END -->
@@ -57,9 +57,9 @@ For non-trivial work:
 
 `inspect -> clarify once if needed -> scope -> implement -> verify -> review -> report`
 
-Inspect checkout, nearest instructions, dirty state, callers, tests, runtime and relevant durable
-decisions before planning. Prefer one primary agent; add workers
-only for independent bounded work whose latency or isolation benefit exceeds coordination cost.
+Before planning, inspect checkout, nearest instructions, dirty state, callers, tests, runtime
+and durable decisions. Delegate every independent ready unit promptly within
+native capacity and quota; MAIN coordinates, integrates, verifies and refills slots.
 
 ### Minimum sufficient change
 
@@ -127,7 +127,7 @@ Load a specialist only when its boundary is active:
 - Autoimprove owns frozen baseline/candidate/holdout experiments.
 - Writing owns material user-facing prose; tiny clear answers stay direct.
 
-Edits stay in MAIN. Audit delegates. Use subagents. Visible conversations require explicit request or authorized MAIN restart; workers cannot spawn successors.
+MAIN coordinates, integrates and verifies scoped worker edits. Use subagents. Visible conversations require explicit request or authorized MAIN restart; workers cannot spawn successors.
 On Flow entry, date the title from verified creation time, preserve it on resume and assess context. Health benefit can qualify restart without economic payback; verify takeover by ID and never resume a retired writer. See Sessions for ` | started DD-MM` formatting and timezone.
 
 ## Problems and research

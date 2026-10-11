@@ -159,7 +159,7 @@ isolation, review retries and handoff needs alone do not authorize creation.
 Use native subagents for delegated units; if unavailable, continue in MAIN.
 For a persistent delegated queue:
 
-1. `nobrainer-team` proves the minimum roster and bounded work units.
+1. `nobrainer-team` maps every independent ready unit to a bounded native assignment.
 2. If several delegated units form a queue, `nobrainer-dispatcher` computes the
    ready set and bounded batch.
 3. `nobrainer-sessions` alone creates/reuses exact sessions, checks identity and

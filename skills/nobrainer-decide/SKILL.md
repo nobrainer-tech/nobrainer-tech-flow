@@ -31,13 +31,14 @@ occur in a quotation, filename or a request to edit this skill. An implicit
 decision request defaults to STANDARD. A later explicit depth choice overrides
 an earlier one. Depth never changes the selected model, permissions or budget.
 
-Use MAIN by default. Independent native subagents can strengthen HIGH analysis
-when authorized, available and worth their cost; do not require a fixed panel
-size. Preserve the owner's model and effort. Never create visible conversations
-as substitutes. If independent review is unavailable, complete the analysis in
-MAIN and disclose that limitation; self-review is not an independent review.
-The blind attack and fresh review below apply only to actual independent runs;
-otherwise perform their checks once in MAIN without claiming blindness.
+Preserve the owner's model, effort, depth and budget. Delegate independent research,
+comparison or challenge units promptly under nobrainer-tech-flow
+[team execution](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution);
+keep a tiny or tightly coupled step in MAIN. MAIN reconciles findings; do not require a fixed panel
+size. Never create visible conversations as substitutes. If independent review is
+unavailable, complete the analysis in MAIN and disclose that limitation; self-review
+is not an independent review. Blind attacks and fresh review apply only to actual
+independent runs; otherwise perform their checks once in MAIN without claiming blindness.
 
 Set a finite analysis budget appropriate to stakes and the owner's deadline.
 Default to one comparison and one challenge/revision cycle; further research

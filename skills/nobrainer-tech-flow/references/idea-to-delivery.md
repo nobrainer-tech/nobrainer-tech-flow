@@ -29,6 +29,28 @@ product choice or external effect.
    Execute, verify, review where required, correct confirmed defects, and
    continue to the requested delivery layer within existing authorization.
 
+## Builder-readiness check
+
+Before a large or risky multi-writer fan-out, assign one bounded read-only pass to
+a native builder. Use MAIN when native workers are unavailable and disclose that
+limit. Ask what would stop the first assigned unit from being implemented:
+
+- a missing interface or caller;
+- an unavailable tool;
+- a conflicting scope or shared resource;
+- an unresolved product decision;
+- impossible proof for an acceptance criterion.
+
+Return concrete blockers with source references and the affected unit or acceptance
+ID. MAIN resolves routine choices within the request. Only material owner decisions
+go to the existing single clarification round; do not start another requirements
+round or ask the owner to settle routine code choices.
+
+Skip this check for already-executable plans and mechanical changes. End after one
+bounded pass. It does not authorize new scope or consequential effects, replace
+required review, or demand elegance without a concrete implementation defect.
+Keep findings in the current plan; do not create another tracker.
+
 ## Keep the contract and outcome connected
 
 Keep one acceptance ledger. Link it from the spec when the project uses a

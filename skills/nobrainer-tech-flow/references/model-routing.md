@@ -29,8 +29,9 @@ ROUTE_REASON: <risk, complexity, latency or evidence reason>
   Use `STANDARD` for a clear one-unit task or a client without native
   workers. Use `ROUTED` by default for substantial work with useful
   independent units and verified native worker support.
-- `STANDARD` uses the owner- or host-selected model and effort. It remains
-  the complete fallback for small work, unknown worker capacity or one-model hosts.
+- `STANDARD` uses the owner- or host-selected model and effort. It is the fallback
+  for small work, unavailable native workers or one-model hosts. Unknown capacity
+  permits bounded incremental dispatch under the delivery contract.
 - `EXTENDED` keeps that identity while allowing a larger declared
   effort, context, time or cost budget and bounded extra verification. A
   stronger model is an explicit policy change with an exact model and gate; it
@@ -44,6 +45,9 @@ ROUTE_REASON: <risk, complexity, latency or evidence reason>
   the degraded mode. An uncertain send must be reconciled before retry.
 
 ## Routing heuristics
+
+These heuristics choose a worker route; they do not gate eligible dispatch under
+[team execution](delivery.md#coordinated-team-execution).
 
 - For each independent ready unit, choose a smaller or faster worker only when
   the current host advertises it, the assignment accepts it, and the expected

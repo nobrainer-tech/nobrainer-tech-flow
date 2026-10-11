@@ -26,7 +26,7 @@ Popularity, file size and prior existence are not admission criteria.
 | Skill | Distinct owner |
 |---|---|
 | `nobrainer-tech-flow` | One request through brief requirements, concise progress, guarded execution, audit, recovery and learning. |
-| `nobrainer-team` | Minimal roles, installed capability inventory and safe temporary specialist discovery. |
+| `nobrainer-team` | Capability selection and bounded native assignments, installed capability inventory and safe temporary specialist discovery. |
 | `nobrainer-dispatcher` | Ready-set calculation, dependency-aware bounded batches, backpressure and audited result routing. |
 | `nobrainer-research` | Bounded current external research and source-quality/freshness control. |
 | `nobrainer-writing` | High-signal drafting, compression, voice and prose integrity across human-facing text artifacts. |

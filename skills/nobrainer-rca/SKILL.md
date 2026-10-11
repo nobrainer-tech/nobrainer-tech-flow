@@ -36,14 +36,14 @@ or full sensitive payloads in prompts or reports.
 
 ## Calibrate investigation breadth
 
-Default to one primary investigator. Add independent perspectives only when the
-system boundary or evidence warrants them:
+MAIN reconciles incident evidence. Delegate independent bounded questions promptly
+to native investigators under nobrainer-tech-flow
+[team execution](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
+Select relevant questions using the requested breadth:
 
-- `LIGHT`: one deterministic local failure with a short trace and one subsystem.
-- `STANDARD`: three to five bounded perspectives for multiple layers, timing,
-  state, configuration or external dependencies.
-- `HIGH`: five to eight perspectives for production incidents, data/money,
-  intermittent concurrency, security boundaries, or conflicting evidence.
+- `LIGHT`: one deterministic local failure and short trace; a tightly coupled probe may stay in MAIN.
+- `STANDARD`: multiple layers, timing, state, configuration or external dependencies.
+- `HIGH`: production incidents, data/money, intermittent concurrency, security boundaries or conflicting evidence.
 
 Possible perspectives are forward trace, backward data lineage, timeline/logs,
 configuration/state, dependency boundary, cache/concurrency/timing, hypothesis

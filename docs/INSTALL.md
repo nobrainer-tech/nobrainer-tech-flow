@@ -14,9 +14,9 @@ upgraded merely because the new source is installed nearby.
 Node 18+ and Python 3.11+ are prerequisites. Preview the setup first:
 
 ```sh
-npx nobrainer-tech-flow@2.2.1 --client codex
-npx nobrainer-tech-flow@2.2.1 --client codex --apply
-npx nobrainer-tech-flow@2.2.1 --client codex --undo --apply
+npx nobrainer-tech-flow@2.3.0 --client codex
+npx nobrainer-tech-flow@2.3.0 --client codex --apply
+npx nobrainer-tech-flow@2.3.0 --client codex --undo --apply
 ```
 
 Use claude for Claude Code, opencode or copilot for those clients. Add --home PATH
@@ -24,7 +24,7 @@ for an isolated profile. These commands become available once this version is
 published on npm; a source candidate is not registry availability.
 
 Application copies the release files into the chosen home directory's
-.nobrainer-tech-flow/npm/2.2.1 and verifies the copy. The existing installer then
+.nobrainer-tech-flow/npm/2.3.0 and verifies the copy. The existing installer then
 links skills to that stable source and writes its managed instructions. This
 avoids links into npx's temporary cache. Unknown files and conflicting installs
 are preserved. Undo uses the same setup record as the Git installer. Retained

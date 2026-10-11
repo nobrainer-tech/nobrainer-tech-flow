@@ -1538,8 +1538,11 @@ class CrossSkillLinkTests(unittest.TestCase):
         }
         self.assertEqual(
             {
+                "nobrainer-auto-fine-tune": ["nobrainer-tech-flow"],
                 "nobrainer-build": ["nobrainer-tech-flow"],
+                "nobrainer-decide": ["nobrainer-tech-flow"],
                 "nobrainer-dispatcher": ["nobrainer-tech-flow"],
+                "nobrainer-rca": ["nobrainer-tech-flow"],
                 "nobrainer-review": ["nobrainer-tech-flow"],
                 "nobrainer-sessions": ["nobrainer-tech-flow"],
                 "nobrainer-spec-driven-development": ["nobrainer-tech-flow"],

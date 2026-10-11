@@ -59,6 +59,12 @@
 
 Start with a task or just an idea. nobrainer-tech-flow clarifies what matters, does the work, and checks the result.
 
+In **2.3.0**, non-trivial work delegates every useful independent ready unit to
+native workers within verified capacity and authorized usage. MAIN coordinates,
+advances the critical path, integrates and checks the results. Each audited
+completion can release the next ready unit while other workers continue.
+See the [delegation contract](skills/nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
+
 In **2.2.0**, simple answers stay text. Small diagrams explain relationships;
 interactive HTML is used when controls help you explore a result. The closeout
 states what was delivered, the inspected proof and any unfinished requirement.
@@ -109,7 +115,8 @@ next unblock action.
 
 A quick answer stays a quick answer. The model-neutral workflow uses one plan,
 bounded corrective attempts and a Markdown checkpoint for longer work. Native
-goals, telemetry, subagents and client-specific tools are optional.
+goals, telemetry and client-specific tools are optional. Available native workers
+handle independent ready units; unavailable workers leave safe work in MAIN.
 
 **One model is enough.** Optional Jev (remote) and Laya (local) profiles add
 typed suggestions for bounded classification, ranking and evaluation. Setup
@@ -153,10 +160,11 @@ flowchart TD
     P --> G
     J -. independent authorized work remains .-> P
     F -. optional .-> L[Markdown goal for resume]
-    G -. useful independent work .-> M[Bounded native subagents; adaptive model and effort]
+    G -. every independent ready unit within capacity and quota .-> M[Bounded native subagents; owner-approved model and effort]
     G -. configured shadow only .-> Q[Jev remote or Laya local: advisory typed decisions]
     Q -. unavailable or invalid: core fallback .-> G
     M -->|Plain technical English reports| H
+    H -. audited unit; refill ready native slots .-> M
     F -. first project use .-> R[Inspect layers and relevant wiki]
     R --> G
     M -. recurring workload .-> T[Auto Fine Tune: measured worker route]
@@ -288,7 +296,7 @@ models. Historical runtime proof stays tied to the tested release bytes.
 Small task       -> direct result + relevant check
 Larger task      -> clarify if needed + short TODO + execute + verify
 Resumable task   -> same workflow + one Markdown goal/checkpoint
-Independent work -> capable native workers by default when useful; MAIN audits
+Independent work -> dispatch all useful ready native units; MAIN integrates and audits
 ```
 
 Load specialists only when needed. Reuse the project's instructions, tests,
@@ -322,10 +330,11 @@ DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN
 - A durable ledger adds exact identity, dependencies, checkpoints, retries and
   rollback only for cross-session, dependency-rich or consequential work.
 - `AUTOPILOT` continues through routine approved work without repeated check-ins.
-- `nobrainer-team` selects the minimum useful capabilities;
-  `nobrainer-dispatcher` schedules only approved ready work in bounded batches;
-  `nobrainer-sessions` creates or reuses exact visible sessions only when
-  parallelism, isolation, handoff or independent evidence earns the cost.
+- Delegate every independent ready unit to native workers within verified capacity
+  and quota under the [delegation contract](skills/nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
+  MAIN coordinates, integrates, verifies and refills freed slots. Team supplies
+  capabilities; Dispatcher schedules real queues. Visible sessions require an
+  explicit owner request or authorized MAIN restart.
 - Failed review returns to `nobrainer-build`; changed code invalidates old proof.
 - Merge, deploy, publishing, spending, credentials, destructive operations and
   production mutation remain owner gates unless exact authority is already
@@ -345,9 +354,11 @@ allows bounded safe work. An explicitly required hard budget must be enforceable
 prove they stopped. `GOAL_FILE` is optional Markdown recovery state. A native goal
 is used only when available and authorized; the file alone suffices.
 
-Autopilot works in one MAIN session. Native subagents need a scoped assignment,
-observable completion and reviewed output. Use persistent sessions and a
-Dispatcher only when a real handoff or dependent queue needs them.
+Autopilot works with one visible MAIN coordinator and bounded native workers.
+Ordinary native assignments use the compact packet in the delegation contract,
+exact returned IDs, observable completion and reviewed artifacts. Use persistent
+sessions and a Dispatcher only when a real handoff or dependent queue needs them.
+Native delegation does not authorize a new visible conversation.
 
 </details>
 
@@ -364,7 +375,7 @@ recurring boundary:
 | [`nobrainer-auto-fine-tune`](skills/nobrainer-auto-fine-tune/) | `nb-auto-fine-tune` | Read-only capability audit and route calibration: verified host models, effort, context and useful parallelism while MAIN keeps the owner's model |
 | [`nobrainer-codex-context`](skills/nobrainer-codex-context/) | `nb-codex-context` | Project-local Codex context setup: instruction discovery, fallback and byte-budget audit, safe context block reconciliation and runtime readback |
 | [`nobrainer-skill-doctor`](skills/nobrainer-skill-doctor/) | `nb-skill-doctor` | Cross-project audit of skills, project instructions and task prompts: trigger overlap, excessive process, coverage and minimal portfolio repair planning |
-| [`nobrainer-team`](skills/nobrainer-team/) | `nb-team` | Minimal capability roster, installed-skill inventory and safe temporary specialist discovery |
+| [`nobrainer-team`](skills/nobrainer-team/) | `nb-team` | Capability selection and bounded native assignments, installed-skill inventory and safe temporary specialist discovery |
 | [`nobrainer-dispatcher`](skills/nobrainer-dispatcher/) | `nb-dispatcher` | Dependency-aware ready-set scheduling, bounded dispatch, backpressure and audited result routing |
 | [`nobrainer-research`](skills/nobrainer-research/) | `nb-research` | Bounded current research from primary sources with facts separated from inference |
 | [`nobrainer-writing`](skills/nobrainer-writing/) | `nb-write`, `nb-brief` | High-signal drafting, compression and short human-sounding comments, issues and stories that preserve meaning, evidence, voice and action |
@@ -470,9 +481,9 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-Current source version: **2.0.2**. Check the
+Current source version: **2.3.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.0.2 verification record](docs/releases/v2.0.2.md) for
+for distribution and the [2.3.0 verification record](docs/releases/v2.3.0.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier
