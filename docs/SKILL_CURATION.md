@@ -101,6 +101,13 @@ owner. Keep an existing private installation unchanged until that audit and a
 clean-session parity check pass; the public installer must report it as a normal
 conflict rather than delete or silently remap it.
 
+`nobrainer-reddit` is `RETIRED`: the
+[portable-workflow curation](https://github.com/nobrainer-tech/nobrainer-tech-flow/commit/955de2a5cba72f86a9941a15c6ad9aa6b42c76d4)
+removed the Reddit CLI as a client/account integration; no active skill owns its
+functionality or trigger. `install_skills.py` preserves foreign targets at that
+name with `PRESERVED_FOREIGN`. Only exact old links from this checkout remain
+migration candidates. Renamed/absorbed aliases retain blocking conflict checks.
+
 ## Change control
 
 Any addition, merge or retirement updates together:

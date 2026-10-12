@@ -1,5 +1,19 @@
 # nobrainer-tech-flow release notes
 
+## v2.3.1 - 2026-10-13
+
+Keep your own skill under a name Flow retired and still install or update Flow.
+A private `nobrainer-reddit` no longer blocks `install_skills.py`: it is reported
+as `PRESERVED_FOREIGN` and left unchanged. Foreign targets at renamed aliases
+such as `nb-flow` still stop installation, so nothing silently shadows a Flow
+trigger. Exact old links from the same checkout still require explicit migration.
+
+This is an installer-only fix. The eighteen skill contents are unchanged except
+for the entry skill's `VERSION` file. The native plugin 2.3.1 will carry the same
+installer; npm registry publication is still pending.
+
+See the [release scope and verification record](docs/releases/v2.3.1.md).
+
 ## v2.3.0 - 2026-10-12
 
 Use available native workers for independent work while the main session keeps

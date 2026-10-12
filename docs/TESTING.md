@@ -8,7 +8,8 @@ higher one.
 - portable frontmatter, directory/name identity and exact active inventory;
 - relative companion links and retired-name exclusion;
 - public-clean text, manifest parsing and version consistency;
-- installer conflict refusal, idempotence, readback, race-safe atomic restore and
+- installer conflict refusal, foreign retired-name preservation, exact legacy
+  migration, idempotence, readback, race-safe atomic restore and
   preserved migration/rollback recovery claims;
 - secret scanning before publication.
 

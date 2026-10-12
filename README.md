@@ -481,9 +481,9 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-Current source version: **2.3.0**. Check the
+Current source version: **2.3.1**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.3.0 verification record](docs/releases/v2.3.0.md) for
+for distribution and the [2.3.1 verification record](docs/releases/v2.3.1.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier

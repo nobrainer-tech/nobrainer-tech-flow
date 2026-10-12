@@ -80,6 +80,12 @@ handles only a verified old symlink owned by the same checkout; a copied or
 foreign old installation needs separate exact readback and a scoped migration.
 The old path is never deleted merely because the new skill was installed.
 
+The Reddit integration was retired from Flow. `install_skills.py` reports a
+foreign `nobrainer-reddit` file, directory or symlink as `PRESERVED_FOREIGN`,
+leaves it unchanged and continues. Exact old links owned by this checkout still
+require `--migrate-legacy`. Foreign renamed aliases such as `nb-flow` and
+unresolved legacy names still block installation to prevent trigger conflicts.
+
 After an update, read back the source commit and package identity, restart the
 client and confirm that `nobrainer-tech-flow` loads once. A version change or an
 installed file alone does not establish runtime compatibility.

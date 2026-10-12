@@ -323,6 +323,153 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(foreign, legacy.readlink())
             self.assertFalse((destination / "nobrainer-autoimprove").exists())
 
+    def test_foreign_retired_symlink_is_preserved(self) -> None:
+        for dangling in (False, True):
+            for migrate in (False, True):
+                with self.subTest(dangling=dangling, migrate=migrate):
+                    with tempfile.TemporaryDirectory() as temp:
+                        destination = Path(temp) / "skills"
+                        destination.mkdir()
+                        foreign = Path(temp) / "private-reddit"
+                        if not dangling:
+                            foreign.mkdir()
+                            (foreign / "SKILL.md").write_text(
+                                "private Reddit skill\n", encoding="utf-8"
+                            )
+                        target = destination / "nobrainer-reddit"
+                        target.symlink_to(foreign, target_is_directory=True)
+                        original = target.lstat()
+                        args = (
+                            "--client", "claude", "--dest", str(destination),
+                            *(("--migrate-legacy",) if migrate else ()),
+                        )
+
+                        preview = self.run_installer(*args)
+                        self.assertEqual(0, preview.returncode, preview.stderr)
+                        self.assertIn("PRESERVED_FOREIGN: nobrainer-reddit:", preview.stdout)
+                        self.assertNotIn("CONFLICT_ALIAS: nobrainer-reddit", preview.stdout)
+                        self.assertFalse((destination / "nobrainer-tech-flow").exists())
+                        self.assertEqual(foreign, target.readlink())
+
+                        applied = self.run_installer(*args, "--apply")
+                        self.assertEqual(0, applied.returncode, applied.stderr)
+                        self.assertIn("PRESERVED_FOREIGN: nobrainer-reddit:", applied.stdout)
+                        self.assertIn("OK: installed 18 skill(s)", applied.stdout)
+                        self.assertEqual(foreign, target.readlink())
+                        self.assertEqual(original.st_ino, target.lstat().st_ino)
+                        if not dangling:
+                            self.assertEqual(
+                                "private Reddit skill\n",
+                                (foreign / "SKILL.md").read_text(encoding="utf-8"),
+                            )
+
+    def test_foreign_retired_directory_is_preserved(self) -> None:
+        for mode in ("symlink", "copy"):
+            with self.subTest(mode=mode):
+                with tempfile.TemporaryDirectory() as temp:
+                    destination = Path(temp) / "skills"
+                    target = destination / "nobrainer-reddit"
+                    target.mkdir(parents=True)
+                    marker = target / "SKILL.md"
+                    marker.write_bytes(b"private Reddit skill\x00\r\n")
+                    original = target.lstat()
+                    args = (
+                        "--client", "claude", "--dest", str(destination),
+                        "--mode", mode, "--migrate-legacy",
+                    )
+
+                    preview = self.run_installer(*args)
+                    self.assertEqual(0, preview.returncode, preview.stderr)
+                    self.assertIn("PRESERVED_FOREIGN: nobrainer-reddit:", preview.stdout)
+                    self.assertEqual([marker], list(target.iterdir()))
+                    self.assertEqual(b"private Reddit skill\x00\r\n", marker.read_bytes())
+
+                    applied = self.run_installer(*args, "--apply")
+                    self.assertEqual(0, applied.returncode, applied.stderr)
+                    self.assertIn("PRESERVED_FOREIGN: nobrainer-reddit:", applied.stdout)
+                    self.assertIn("OK: installed 18 skill(s)", applied.stdout)
+                    self.assertEqual(original.st_ino, target.lstat().st_ino)
+                    self.assertEqual([marker], list(target.iterdir()))
+                    self.assertEqual(b"private Reddit skill\x00\r\n", marker.read_bytes())
+
+    def test_foreign_retired_file_is_preserved(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "skills"
+            destination.mkdir()
+            target = destination / "nobrainer-reddit"
+            target.write_bytes(b"private skill file\x00\r\n")
+            original = target.lstat()
+            args = ("--client", "claude", "--dest", str(destination))
+
+            preview = self.run_installer(*args)
+            self.assertEqual(0, preview.returncode, preview.stderr)
+            self.assertIn("PRESERVED_FOREIGN: nobrainer-reddit:", preview.stdout)
+            self.assertEqual(b"private skill file\x00\r\n", target.read_bytes())
+
+            applied = self.run_installer(*args, "--apply")
+            self.assertEqual(0, applied.returncode, applied.stderr)
+            self.assertIn("PRESERVED_FOREIGN: nobrainer-reddit:", applied.stdout)
+            self.assertIn("OK: installed 18 skill(s)", applied.stdout)
+            self.assertEqual(original.st_ino, target.lstat().st_ino)
+            self.assertEqual(b"private skill file\x00\r\n", target.read_bytes())
+
+    def test_exact_retired_legacy_link_requires_explicit_migration(self) -> None:
+        for old_source in (ROOT / "nobrainer-reddit", ROOT / "skills" / "nobrainer-reddit"):
+            with self.subTest(old_source=old_source):
+                with tempfile.TemporaryDirectory() as temp:
+                    destination = Path(temp) / "skills"
+                    destination.mkdir()
+                    target = destination / "nobrainer-reddit"
+                    target.symlink_to(old_source, target_is_directory=True)
+                    args = ("--client", "claude", "--dest", str(destination))
+
+                    for flags in ((), ("--apply",)):
+                        refused = self.run_installer(*args, *flags)
+                        self.assertEqual(3, refused.returncode)
+                        self.assertIn("LEGACY_ALIAS: nobrainer-reddit", refused.stdout)
+                        self.assertEqual(old_source, target.readlink())
+                        self.assertFalse((destination / "nobrainer-tech-flow").exists())
+
+                    preview = self.run_installer(*args, "--migrate-legacy")
+                    self.assertEqual(0, preview.returncode, preview.stderr)
+                    self.assertIn("MIGRATE_ALIAS: nobrainer-reddit", preview.stdout)
+                    self.assertEqual(old_source, target.readlink())
+
+                    applied = self.run_installer(*args, "--migrate-legacy", "--apply")
+                    self.assertEqual(0, applied.returncode, applied.stderr)
+                    self.assertIn("MIGRATE_ALIAS: nobrainer-reddit", applied.stdout)
+                    self.assertFalse(target.is_symlink())
+                    self.assertFalse(target.exists())
+                    backups = list(destination.glob(".nobrainer-migration-*/nobrainer-reddit"))
+                    self.assertEqual(1, len(backups))
+                    self.assertEqual(old_source, backups[0].readlink())
+                    self.assertEqual(
+                        ROOT / "skills" / "nobrainer-tech-flow",
+                        (destination / "nobrainer-tech-flow").resolve(),
+                    )
+
+    def test_foreign_flow_alias_still_blocks_installation(self) -> None:
+        for migrate in (False, True):
+            with self.subTest(migrate=migrate):
+                with tempfile.TemporaryDirectory() as temp:
+                    destination = Path(temp) / "skills"
+                    destination.mkdir()
+                    target = destination / "nb-flow"
+                    foreign = Path(temp) / "foreign-flow"
+                    target.symlink_to(foreign, target_is_directory=True)
+                    args = (
+                        "--client", "claude", "--dest", str(destination),
+                        *(("--migrate-legacy",) if migrate else ()),
+                    )
+
+                    for flags in ((), ("--apply",)):
+                        refused = self.run_installer(*args, *flags)
+                        self.assertEqual(3, refused.returncode)
+                        self.assertIn("CONFLICT_ALIAS: nb-flow", refused.stdout)
+                        self.assertNotIn("PRESERVED_FOREIGN: nb-flow", refused.stdout)
+                        self.assertEqual(foreign, target.readlink())
+                        self.assertEqual([target], list(destination.iterdir()))
+
     def test_failed_renamed_migration_restores_legacy_alias(self) -> None:
         spec = importlib.util.spec_from_file_location(
             "skill_installer_legacy_rollback_test", INSTALLER
