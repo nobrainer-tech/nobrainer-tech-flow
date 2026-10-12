@@ -440,7 +440,13 @@ class InstallerTests(unittest.TestCase):
                     self.assertIn("MIGRATE_ALIAS: nobrainer-reddit", applied.stdout)
                     self.assertFalse(target.is_symlink())
                     self.assertFalse(target.exists())
-                    backups = list(destination.glob(".nobrainer-migration-*/nobrainer-reddit"))
+                    # The backup is a dangling link; Python before 3.13 skips those
+                    # in a literal glob part, so check each migration folder instead.
+                    backups = [
+                        entry / "nobrainer-reddit"
+                        for entry in destination.glob(".nobrainer-migration-*")
+                        if (entry / "nobrainer-reddit").is_symlink()
+                    ]
                     self.assertEqual(1, len(backups))
                     self.assertEqual(old_source, backups[0].readlink())
                     self.assertEqual(

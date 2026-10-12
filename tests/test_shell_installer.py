@@ -179,14 +179,21 @@ class ShellInstallerTests(unittest.TestCase):
                 flags = ("--client", "claude", "--home", str(home))
                 message = (
                     "PRESERVED_FOREIGN: nobrainer-reddit: retired from nobrainer-tech-flow; "
-                    f"left unchanged: {target}"
+                    "left unchanged: "
                 )
 
                 for step in ((), ("--apply",), ("--apply",), ("--undo", "--apply")):
                     result = run_sh(*flags, *step, home=home, shell=shell)
                     self.assertEqual(0, result.returncode, result.stdout + result.stderr)
                     if "--undo" not in step:
-                        self.assertIn(message, result.stderr)
+                        lines = [line for line in result.stderr.splitlines() if line.startswith(message)]
+                        self.assertTrue(lines, result.stderr)
+                        for line in lines:
+                            if os.name == "nt":
+                                # Git Bash prints its POSIX view of the Windows path.
+                                self.assertTrue(line.endswith("/.claude/skills/nobrainer-reddit"), line)
+                            else:
+                                self.assertEqual(message + str(target), line)
                         self.assertNotIn("LEGACY: nobrainer-reddit", result.stderr)
                     if not step:
                         self.assertEqual(before, entries(home))
@@ -259,11 +266,16 @@ class ShellInstallerTests(unittest.TestCase):
                     if case in {"skills", "relative-skills"}:
                         linked = ROOT / "skills" / "nobrainer-reddit"
                     if case.startswith("relative-"):
-                        linked = Path(os.path.relpath(linked, skills.resolve()))
+                        start = skills.resolve()
+                        if os.path.splitdrive(linked)[0].lower() != os.path.splitdrive(start)[0].lower():
+                            continue  # A relative link cannot cross Windows drives.
+                        linked = Path(os.path.relpath(linked, start))
                     elif case == "chain":
                         bridge.symlink_to(old_source, target_is_directory=True)
                         linked = bridge
                     elif case in {"parent-link", "link-before-dotdot"}:
+                        if case == "link-before-dotdot" and os.name == "nt":
+                            continue  # Windows collapses ".." before it follows a link.
                         bridge.symlink_to(ROOT if case == "parent-link" else ROOT / "skills", target_is_directory=True)
                         linked = bridge / "nobrainer-reddit" if case == "parent-link" else bridge / ".." / "nobrainer-reddit"
                     elif case == "foreign":
