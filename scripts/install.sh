@@ -14,7 +14,7 @@ set -u
 # With CDPATH set, cd can pick another folder and print its name.
 unset CDPATH
 
-# The eighteen skills, and the names earlier layouts used. Tests keep both lists
+# The eighteen skills, and the names earlier layouts used. Tests keep these lists
 # equal to the ones in scripts/install_skills.py.
 SKILLS='nobrainer-auto-fine-tune nobrainer-autoimprove nobrainer-browser nobrainer-build
 nobrainer-codex-context nobrainer-decide nobrainer-dispatcher nobrainer-rca
@@ -32,6 +32,7 @@ nobrainer-simplifier nobrainer-skill-browser nobrainer-starter nobrainer-style
 nobrainer-team-builder nobrainer-ultra nobrainer-ultracode-workflow nobrainer-wiki-add
 nobrainer-wiki-get nobrainer-wiki-tidy playwright-cli security-review session-handoff
 wiki-add wiki-get wiki-tidy'
+RETIRED='nobrainer-reddit'
 START='<!-- NOBRAINER-TECH-FLOW:START -->'
 END='<!-- NOBRAINER-TECH-FLOW:END -->'
 LEGACY_TEXT='(^|[^[:alnum:]_])nobrainer-ultra([^[:alnum:]_]|$)|^[[:space:]]*#{1,6}[[:space:]]+nobrainer([ .]?tech)?[[:space:]]+flow([^[:alnum:]_]|$)'
@@ -280,6 +281,53 @@ is_our_link() {
 	[ "$_o_resolved" = "$2" ]
 }
 
+# Resolve links before "..", including dangling final links. A trailing slash
+# preserves a pathname's trailing newlines across command substitution.
+resolve_legacy_path() (
+	_r_rest=$1 _r_resolved=
+	shift
+	while [ -n "$_r_rest" ]; do
+		case $_r_rest in
+			*/*) _r_part=${_r_rest%%/*} _r_rest=${_r_rest#*/} ;;
+			*) _r_part=$_r_rest _r_rest= ;;
+		esac
+		case $_r_part in
+			'' | .) continue ;;
+			..) _r_resolved=${_r_resolved%/*}; continue ;;
+		esac
+		_r_path=$_r_resolved/$_r_part
+		if [ -L "$_r_path" ]; then
+			for _r_seen do [ "$_r_seen" != "$_r_path" ] || exit 1; done
+			# Raw readlink output plus a sentinel preserves every trailing byte.
+			_r_link=$(readlink -n "$_r_path" 2>/dev/null && printf '.') || exit 1
+			_r_link=${_r_link%.}
+			if [ "$windows" = 1 ]; then
+				_r_link=$(to_posix "$_r_link" && printf '.') || exit 1
+				_r_link=${_r_link%.}
+				_r_link=${_r_link%?}
+			fi
+			case $_r_link in /*) ;; *) _r_link=$_r_resolved/$_r_link ;; esac
+			_r_resolved=$(resolve_legacy_path "$_r_link" "$@" "$_r_path") || exit 1
+			_r_resolved=${_r_resolved%/}
+		else
+			_r_resolved=$_r_path
+		fi
+	done
+	printf '%s/' "$_r_resolved"
+)
+
+# Match Python's exact old root-level or skills/ link, never just a checkout prefix.
+is_exact_legacy_link() (
+	[ -L "$1" ] || exit 1
+	_e_before=$(ls -din "$1" 2>/dev/null) || exit 1
+	_e_resolved=$(resolve_legacy_path "$1") || exit 1
+	_e_after=$(ls -din "$1" 2>/dev/null) || exit 1
+	[ "$_e_before" = "$_e_after" ] && [ -L "$1" ] || exit 1
+	_e_root=$(resolve_legacy_path "$root/$2") || exit 1
+	_e_skills=$(resolve_legacy_path "$root/skills/$2") || exit 1
+	[ "$_e_resolved" = "$_e_root" ] || [ "$_e_resolved" = "$_e_skills" ]
+)
+
 make_link() {
 	# Git Bash and Cygwin copy the tree for "ln -s" unless told to make a real link.
 	# -n: when another run linked the name first, fail instead of following that link
@@ -519,6 +567,17 @@ CONFLICT: $_p_name: $_p_source -> $_p_target"
 	for _p_name in $LEGACY; do
 		_p_target=$skills_dir/$_p_name
 		if [ -e "$_p_target" ] || [ -L "$_p_target" ]; then
+			case " $RETIRED " in
+				*" $_p_name "*)
+					if [ -L "$_p_target" ]; then
+						command -v readlink >/dev/null 2>&1 && command -v ls >/dev/null 2>&1 ||
+							die 2 "this script needs readlink and ls to inspect retired skill links"
+					fi
+					if ! is_exact_legacy_link "$_p_target" "$_p_name"; then
+						err "PRESERVED_FOREIGN: $_p_name: retired from nobrainer-tech-flow; left unchanged: $_p_target"
+						continue
+					fi ;;
+			esac
 			problems="$problems
 LEGACY: $_p_name: $_p_target"
 		fi

@@ -158,6 +158,141 @@ class ShellInstallerTests(unittest.TestCase):
         legacy = {old for old, new in SKILLS_MODULE.LEGACY_TO_CANONICAL.items() if old != new}
         self.assertEqual(set(SKILLS), names("SKILLS"))
         self.assertEqual(legacy | set(SKILLS_MODULE.UNMAPPED_LEGACY), names("LEGACY"))
+        self.assertEqual(set(SKILLS_MODULE.RETIRED_LEGACY), names("RETIRED"))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_foreign_retired_symlink_survives_preview_apply_repeat_and_undo(self) -> None:
+        for shell in ([SHELL], *other_shells()):
+            with self.subTest(shell=shell), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                skills = home / ".claude" / "skills"
+                skills.mkdir(parents=True)
+                foreign = Path(temp) / "private-reddit"
+                foreign.mkdir()
+                marker = foreign / "SKILL.md"
+                marker.write_bytes(b"private Reddit skill\x00\r\n")
+                target = skills / "nobrainer-reddit"
+                target.symlink_to(foreign, target_is_directory=True)
+                original = target.lstat()
+                original_link = target.readlink()
+                before = entries(home)
+                flags = ("--client", "claude", "--home", str(home))
+                message = (
+                    "PRESERVED_FOREIGN: nobrainer-reddit: retired from nobrainer-tech-flow; "
+                    f"left unchanged: {target}"
+                )
+
+                for step in ((), ("--apply",), ("--apply",), ("--undo", "--apply")):
+                    result = run_sh(*flags, *step, home=home, shell=shell)
+                    self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                    if "--undo" not in step:
+                        self.assertIn(message, result.stderr)
+                        self.assertNotIn("LEGACY: nobrainer-reddit", result.stderr)
+                    if not step:
+                        self.assertEqual(before, entries(home))
+                    self.assertEqual(original_link, target.readlink())
+                    self.assertEqual(original.st_ino, target.lstat().st_ino)
+                    self.assertEqual(b"private Reddit skill\x00\r\n", marker.read_bytes())
+                self.assertEqual([target], list(skills.iterdir()))
+                self.assertFalse((home / ".nobrainer-flow-onboarding-claude.json").exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_foreign_retired_directory_survives_preview_apply_repeat_and_undo(self) -> None:
+        for shell in ([SHELL], *other_shells()):
+            with self.subTest(shell=shell), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                target = home / ".claude" / "skills" / "nobrainer-reddit"
+                target.mkdir(parents=True)
+                marker = target / "SKILL.md"
+                marker.write_bytes(b"private Reddit skill\x00\r\n")
+                original = target.lstat()
+                before = entries(home)
+                flags = ("--client", "claude", "--home", str(home))
+
+                for step in ((), ("--apply",), ("--apply",), ("--undo", "--apply")):
+                    result = run_sh(*flags, *step, home=home, shell=shell)
+                    self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                    if "--undo" not in step:
+                        self.assertIn("PRESERVED_FOREIGN: nobrainer-reddit:", result.stderr)
+                    if not step:
+                        self.assertEqual(before, entries(home))
+                    self.assertEqual(original.st_ino, target.lstat().st_ino)
+                    self.assertEqual([marker], list(target.iterdir()))
+                    self.assertEqual(b"private Reddit skill\x00\r\n", marker.read_bytes())
+                self.assertEqual([target], list(target.parent.iterdir()))
+
+    def test_foreign_renamed_and_unmapped_names_still_block_in_every_shell(self) -> None:
+        for shell in ([SHELL], *other_shells()):
+            for name in ("nb-flow", "nobrainer-fast-audit"):
+                with self.subTest(shell=shell, name=name), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    target = home / ".claude" / "skills" / name
+                    target.mkdir(parents=True)
+                    marker = target / "SKILL.md"
+                    marker.write_bytes(b"private skill\n")
+                    before = entries(home)
+                    for step in ((), ("--apply",)):
+                        result = run_sh("--client", "claude", "--home", str(home), *step, home=home, shell=shell)
+                        self.assertEqual(3, result.returncode, result.stdout + result.stderr)
+                        self.assertIn(f"LEGACY: {name}:", result.stderr)
+                        self.assertNotIn(f"PRESERVED_FOREIGN: {name}", result.stderr)
+                        self.assertEqual(before, entries(home))
+                        self.assertEqual(b"private skill\n", marker.read_bytes())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_retired_exact_link_classification_matches_python_in_every_shell(self) -> None:
+        for shell in ([SHELL], *other_shells()):
+            for case in (
+                "root", "skills", "relative-root", "relative-skills", "chain",
+                "parent-link", "link-before-dotdot", "foreign", "canonical", "loop",
+                "trailing-newline", "chained-trailing-newline",
+            ):
+                with self.subTest(shell=shell, case=case), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    skills = home / ".claude" / "skills"
+                    skills.mkdir(parents=True)
+                    target = skills / "nobrainer-reddit"
+                    bridge = Path(temp) / "bridge"
+                    old_source = ROOT / "nobrainer-reddit"
+                    linked = old_source
+                    exact = case in {"root", "skills", "relative-root", "relative-skills", "chain", "parent-link", "link-before-dotdot"}
+                    if case in {"skills", "relative-skills"}:
+                        linked = ROOT / "skills" / "nobrainer-reddit"
+                    if case.startswith("relative-"):
+                        linked = Path(os.path.relpath(linked, skills.resolve()))
+                    elif case == "chain":
+                        bridge.symlink_to(old_source, target_is_directory=True)
+                        linked = bridge
+                    elif case in {"parent-link", "link-before-dotdot"}:
+                        bridge.symlink_to(ROOT if case == "parent-link" else ROOT / "skills", target_is_directory=True)
+                        linked = bridge / "nobrainer-reddit" if case == "parent-link" else bridge / ".." / "nobrainer-reddit"
+                    elif case == "foreign":
+                        linked = Path(temp) / "private-reddit"
+                    elif case == "canonical":
+                        linked = ROOT / "skills" / "nobrainer-build"
+                    elif case == "loop":
+                        bridge.symlink_to(bridge, target_is_directory=True)
+                        linked = bridge
+                    elif case in {"trailing-newline", "chained-trailing-newline"}:
+                        if os.name == "nt":
+                            continue  # Windows path syntax excludes this Unix filename.
+                        linked = ROOT / "nobrainer-reddit\n"
+                        if case == "chained-trailing-newline":
+                            bridge.symlink_to(linked, target_is_directory=True)
+                            linked = bridge
+                    target.symlink_to(linked, target_is_directory=True)
+                    self.assertEqual(exact, SKILLS_MODULE.is_exact_legacy_link(target, "nobrainer-reddit"))
+                    original = target.lstat()
+                    original_link = target.readlink()
+                    for step in (((), ("--apply",)) if exact else ((),)):
+                        result = run_sh("--client", "claude", "--home", str(home), *step, home=home, shell=shell)
+                        self.assertEqual(3 if exact else 0, result.returncode, result.stdout + result.stderr)
+                        self.assertIn("LEGACY: nobrainer-reddit:" if exact else "PRESERVED_FOREIGN: nobrainer-reddit:", result.stderr)
+                        if exact:
+                            self.assertIn("docs/MIGRATION_TO_FLOW.md", result.stderr)
+                        self.assertEqual(original_link, target.readlink())
+                        self.assertEqual(original.st_ino, target.lstat().st_ino)
+                        self.assertEqual([target], list(skills.iterdir()))
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_the_block_it_writes_is_byte_for_byte_the_python_default(self) -> None:
@@ -874,7 +1009,7 @@ class ShellInstallerTests(unittest.TestCase):
     @unittest.skipIf(os.name == "nt", "the tool sandbox is built from POSIX paths")
     def test_it_runs_with_no_python_on_the_path(self) -> None:
         tools = (
-            "sh uname mktemp rm mkdir ln rmdir cat sed tr grep cut head tail cmp od date cp mv sort chmod git"
+            "sh uname mktemp rm mkdir ln rmdir cat sed tr grep cut head tail cmp od date cp mv sort chmod git ls readlink"
         ).split()
         with tempfile.TemporaryDirectory() as temp:
             sandbox = Path(temp) / "bin"
@@ -889,6 +1024,11 @@ class ShellInstallerTests(unittest.TestCase):
             instructions = home / ".claude" / "CLAUDE.md"
             instructions.parent.mkdir(parents=True)
             instructions.write_bytes(b"# Mine\n")
+            retired = home / ".claude" / "skills" / "nobrainer-reddit"
+            retired.parent.mkdir()
+            retired.symlink_to(Path(temp) / "private-reddit", target_is_directory=True)
+            original_link = retired.readlink()
+            original_inode = retired.lstat().st_ino
             variables = {"PATH": str(sandbox)}
             self.assertIsNone(shutil.which("python3", path=str(sandbox)))
             self.assertIsNone(shutil.which("python", path=str(sandbox)))
@@ -901,6 +1041,9 @@ class ShellInstallerTests(unittest.TestCase):
             self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
             self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
             self.assertEqual(b"# Mine\n", instructions.read_bytes())
+            self.assertIn("PRESERVED_FOREIGN: nobrainer-reddit:", applied.stderr)
+            self.assertEqual(original_link, retired.readlink())
+            self.assertEqual(original_inode, retired.lstat().st_ino)
 
     @unittest.skipIf(os.name == "nt", "the record holds Windows paths there")
     def test_a_record_it_cannot_read_points_to_the_python_undo(self) -> None:

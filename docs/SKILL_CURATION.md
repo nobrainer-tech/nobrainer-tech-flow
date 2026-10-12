@@ -104,9 +104,10 @@ conflict rather than delete or silently remap it.
 `nobrainer-reddit` is `RETIRED`: the
 [portable-workflow curation](https://github.com/nobrainer-tech/nobrainer-tech-flow/commit/955de2a5cba72f86a9941a15c6ad9aa6b42c76d4)
 removed the Reddit CLI as a client/account integration; no active skill owns its
-functionality or trigger. `install_skills.py` preserves foreign targets at that
-name with `PRESERVED_FOREIGN`. Only exact old links from this checkout remain
-migration candidates. Renamed/absorbed aliases retain blocking conflict checks.
+functionality or trigger. `install_skills.py` and `install.sh` preserve foreign
+targets at that name with `PRESERVED_FOREIGN`. Only exact old links from this
+checkout remain migration candidates. Renamed/absorbed aliases retain blocking
+conflict checks.
 
 ## Change control
 

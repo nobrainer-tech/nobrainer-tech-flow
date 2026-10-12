@@ -184,16 +184,15 @@ shared folder.
 
 ## Conflict and migration behavior
 
-`install_skills.py` never overwrites an unknown directory, file or symlink. A
-foreign target at the retired name `nobrainer-reddit` is reported as
+`install_skills.py` and `install.sh` never overwrite an unknown directory, file
+or symlink. A foreign target at the retired name `nobrainer-reddit` is reported as
 `PRESERVED_FOREIGN` and left unchanged without blocking installation. A foreign
 target at a renamed alias such as `nb-flow`, a canonical name or an unresolved
 legacy name such as `nobrainer-fast-audit` still stops installation.
 
-This distinction also applies to the Python/npm setups that call this helper.
-`install.sh` retains its strict legacy-name check; use the Python path when a
-foreign retired target exists. An exact stale link from the same checkout still
-requires explicit migration:
+Both installers use this conflict rule, including the Python/npm setups that
+call `install_skills.py`. An exact stale link from the same checkout still
+blocks installation and requires explicit migration through the Python helper:
 
 ```bash
 python3 scripts/install_skills.py --client codex --migrate-legacy
