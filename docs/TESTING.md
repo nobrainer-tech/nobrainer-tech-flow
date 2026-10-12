@@ -8,7 +8,8 @@ higher one.
 - portable frontmatter, directory/name identity and exact active inventory;
 - relative companion links and retired-name exclusion;
 - public-clean text, manifest parsing and version consistency;
-- installer conflict refusal, idempotence, readback, race-safe atomic restore and
+- installer conflict refusal, foreign retired-name preservation, exact legacy
+  migration, idempotence, readback, race-safe atomic restore and
   preserved migration/rollback recovery claims;
 - secret scanning before publication.
 
@@ -81,13 +82,18 @@ The one-command installer tests run the real scripts against a private home:
 preview writes nothing, apply links every skill and writes one block without any
 standing authorization, a second apply changes nothing, undo puts the instruction
 file back byte for byte (and keeps edits made outside the block since), a foreign
-target is refused before any write, and the variables and `--home` select the same
-place the helpers do. The shell installer's tests also run it in every POSIX shell
-found (dash, bash in POSIX mode, busybox sh, zsh emulating sh), with no Python on
+canonical target is refused before any write, and the variables and `--home`
+select the same place the helpers do. The shell installer's tests also run it in
+every POSIX shell found (dash, bash in POSIX mode, busybox sh, zsh emulating sh), with no Python on
 its `PATH`, and check that its block is byte for byte the Python helper's, that
 either installer undoes what the other did with the same bytes, and that a
-tampered setup record is refused. They catch 30 of 34 mutants of `install.sh`; the
-[2.0.2 record](releases/v2.0.2.md) says why the other four are not caught.
+tampered setup record is refused. Both installers preserve foreign targets at
+retired names through preview, apply, repeat and undo, while exact old links,
+renamed aliases and unresolved legacy names still block. Shell tests compare
+exact-link classification with Python for absolute, relative, chained and looping
+links in every available shell. In the 2.0.2 measurement they caught 30 of 34
+mutants of `install.sh`; the [2.0.2 record](releases/v2.0.2.md) says why the
+other four were not caught.
 
 ## 3. Forward behavior evaluation
 

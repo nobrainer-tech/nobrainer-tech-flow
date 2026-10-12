@@ -96,7 +96,7 @@ CURATED_SKILLS = frozenset(
 
 # Reviewed predecessor names and migration candidates. A legacy symlink is
 # migratable only when its name and target both match this table and this exact
-# checkout; foreign/private targets remain conflicts and are never touched.
+# checkout. Foreign targets are never touched; only retired names may coexist.
 LEGACY_TO_CANONICAL = {
     "nobrainer-ultra": "nobrainer-tech-flow",
     "add-gitleaks": "nobrainer-review",
@@ -149,6 +149,9 @@ LEGACY_TO_CANONICAL = {
     "wiki-get": "nobrainer-wiki",
     "wiki-tidy": "nobrainer-wiki",
 }
+# Reddit integration was removed, not absorbed into a canonical skill. Keep its
+# owned-link migration, but a different source may legitimately use this name.
+RETIRED_LEGACY = frozenset({"nobrainer-reddit"})
 UNMAPPED_LEGACY = frozenset({"nobrainer-fast-audit"})
 
 
@@ -738,9 +741,15 @@ def main() -> int:
         target = destination / legacy_name
         if not target.exists() and not target.is_symlink():
             continue
-        state = "legacy" if is_exact_legacy_link(target, legacy_name) else "conflict"
+        state = (
+            "legacy"
+            if is_exact_legacy_link(target, legacy_name)
+            else "preserved"
+            if legacy_name in RETIRED_LEGACY
+            else "conflict"
+        )
         alias_plan.append((legacy_name, canonical_name, target, state))
-        if state == "conflict" or not args.migrate_legacy:
+        if state == "conflict" or (state == "legacy" and not args.migrate_legacy):
             conflicts.append(target)
 
     unmapped_plan: list[Path] = []
@@ -765,6 +774,12 @@ def main() -> int:
         print(f"{action}: {name}: {source} -> {target}")
 
     for legacy_name, canonical_name, target, state in alias_plan:
+        if state == "preserved":
+            print(
+                f"PRESERVED_FOREIGN: {legacy_name}: retired from nobrainer-tech-flow; "
+                f"left unchanged: {target}"
+            )
+            continue
         action = (
             "MIGRATE_ALIAS"
             if state == "legacy" and args.migrate_legacy

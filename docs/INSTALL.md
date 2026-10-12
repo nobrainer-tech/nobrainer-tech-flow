@@ -14,9 +14,9 @@ upgraded merely because the new source is installed nearby.
 Node 18+ and Python 3.11+ are prerequisites. Preview the setup first:
 
 ```sh
-npx nobrainer-tech-flow@2.3.0 --client codex
-npx nobrainer-tech-flow@2.3.0 --client codex --apply
-npx nobrainer-tech-flow@2.3.0 --client codex --undo --apply
+npx nobrainer-tech-flow@2.3.1 --client codex
+npx nobrainer-tech-flow@2.3.1 --client codex --apply
+npx nobrainer-tech-flow@2.3.1 --client codex --undo --apply
 ```
 
 Use claude for Claude Code, opencode or copilot for those clients. Add --home PATH
@@ -24,7 +24,7 @@ for an isolated profile. These commands become available once this version is
 published on npm; a source candidate is not registry availability.
 
 Application copies the release files into the chosen home directory's
-.nobrainer-tech-flow/npm/2.3.0 and verifies the copy. The existing installer then
+.nobrainer-tech-flow/npm/2.3.1 and verifies the copy. The existing installer then
 links skills to that stable source and writes its managed instructions. This
 avoids links into npx's temporary cache. Unknown files and conflicting installs
 are preserved. Undo uses the same setup record as the Git installer. Retained
@@ -97,8 +97,8 @@ flags). The two share the setup record, so either one undoes what the other did.
 
 - The preview names the source commit, how many skills it would link and where,
   and shows the exact text it would write to the client's global instruction file.
-- A target that is not a link to this checkout is a conflict: nothing is written
-  and the command says which one.
+- A canonical skill target that is not a link to this checkout is a conflict:
+  nothing is written and the command says which one.
 - It never grants a standing authorization. `install.py` keeps earlier
   auto-update, session-restart and wiki-root settings in the block as
   `--keep-options` keeps them; `install.sh` leaves a block that is already there
@@ -184,9 +184,15 @@ shared folder.
 
 ## Conflict and migration behavior
 
-The installer never overwrites an unknown directory, file or symlink. It can
-migrate only an exact stale link created by the same checkout and listed in the
-reviewed migration map:
+`install_skills.py` and `install.sh` never overwrite an unknown directory, file
+or symlink. A foreign target at the retired name `nobrainer-reddit` is reported as
+`PRESERVED_FOREIGN` and left unchanged without blocking installation. A foreign
+target at a renamed alias such as `nb-flow`, a canonical name or an unresolved
+legacy name such as `nobrainer-fast-audit` still stops installation.
+
+Both installers use this conflict rule, including the Python/npm setups that
+call `install_skills.py`. An exact stale link from the same checkout still
+blocks installation and requires explicit migration through the Python helper:
 
 ```bash
 python3 scripts/install_skills.py --client codex --migrate-legacy
@@ -203,7 +209,7 @@ backup. Copy mode builds and verifies the complete tree in a private
 no-replace rename. A failed staged copy remains at the reported private path for
 manual recovery; a concurrently created public target is never overwritten.
 
-If a target belongs to another repository, stop. Compare semantics, inbound
+For a blocking target from another repository, compare semantics, inbound
 references and runtime triggers before retiring it. A similar name is not proof
 of duplication. Back up or preserve an exact Git ref and remove only reviewed
 targets; never delete a whole shared skills directory.
