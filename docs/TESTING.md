@@ -91,8 +91,9 @@ tampered setup record is refused. Both installers preserve foreign targets at
 retired names through preview, apply, repeat and undo, while exact old links,
 renamed aliases and unresolved legacy names still block. Shell tests compare
 exact-link classification with Python for absolute, relative, chained and looping
-links in every available shell. They catch 30 of 34 mutants of `install.sh`; the
-[2.0.2 record](releases/v2.0.2.md) says why the other four are not caught.
+links in every available shell. In the 2.0.2 measurement they caught 30 of 34
+mutants of `install.sh`; the [2.0.2 record](releases/v2.0.2.md) says why the
+other four were not caught.
 
 ## 3. Forward behavior evaluation
 

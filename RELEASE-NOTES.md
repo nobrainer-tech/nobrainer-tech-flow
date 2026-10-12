@@ -3,12 +3,13 @@
 ## v2.3.1 - 2026-10-13
 
 Keep your own skill under a name Flow retired and still install or update Flow.
-A private `nobrainer-reddit` no longer blocks either installer: `install_skills.py`
-(also used by `install.py` and npm) or the no-Python `install.sh`. It is reported
-as `PRESERVED_FOREIGN` and left unchanged through apply, repeat and undo. Foreign
-targets at renamed aliases such as `nb-flow` still stop installation, so nothing
-silently shadows a Flow trigger. Exact old links from the same checkout still
-require explicit migration.
+A private `nobrainer-reddit` no longer blocks `install_skills.py`, the `install.py`
+and npm setups that call it, or the no-Python `install.sh`. It stays unchanged
+through apply, repeat and undo; `install_skills.py` and `install.sh` report it as
+`PRESERVED_FOREIGN`, while `install.py` and npm continue without a separate line.
+Foreign targets at renamed aliases such as `nb-flow` still stop installation, so
+nothing silently shadows a Flow trigger. Exact old links from the same checkout
+still require explicit migration.
 
 This is an installer-only fix. The eighteen skill contents are unchanged except
 for the entry skill's `VERSION` file. The native plugin 2.3.1 will carry the same
