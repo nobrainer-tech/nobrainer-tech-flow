@@ -75,7 +75,7 @@ The mode is informed by ASD-STE100; it does not claim full standard compliance.
 
 ## Install and use the plugin
 
-Use the [setup prompt and guided installer](#install-safely) to preview and apply setup in your coding client, with undo. The [npm command](docs/INSTALL.md#npm-command) works once the package is published on npm. The [portable plugin ZIP](docs/CHAT_PLUGINS.md) uses the same eighteen modules in supported ChatGPT/Codex and Claude surfaces. Public directory approval remains a separate step.
+Use the [setup prompt and guided installer](#install-safely) to preview and apply setup in your coding client, with undo. The [portable plugin ZIP](docs/CHAT_PLUGINS.md) uses the same eighteen modules in supported ChatGPT/Codex and Claude surfaces. Public directory approval remains a separate step.
 
 ## How it works
 
@@ -205,9 +205,6 @@ flowchart TD
    no authorization and undoes itself with `--undo --apply`. To update, run `git pull` in
    `~/.nobrainer-tech-flow` and the same two commands again, or paste the prompt again. With Python,
    `python3 scripts/install.py` takes the same flags.
-
-   The [npm command](docs/INSTALL.md#npm-command) works once the package is published on npm.
-   Preview first, apply with `--apply`, and undo with `--undo --apply`.
 
    For Claude Code, you can choose a plugin installation from a checkout you have reviewed:
 
