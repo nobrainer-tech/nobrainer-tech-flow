@@ -268,7 +268,7 @@ discovery before claiming runtime installation.
 ## After setup
 
 - [Run this as a ready workflow](https://nobrainer.tech/paths/ai-engineering/?utm_source=nobrainer-tech-flow&utm_medium=readme&utm_campaign=flow-bridge). Deliver software from requirement to CI with a ready AI engineering workflow built on nobrainer-tech-flow.
-- [New to AI tools? Start AI Fast Start free](https://nobrainer.tech/edu/ai-basics/?utm_source=nobrainer-tech-flow&utm_medium=readme&utm_campaign=flow-bridge).
+- [New to AI? Start the free course](https://nobrainer.tech/edu/ai-basics/?utm_source=nobrainer-tech-flow&utm_medium=readme&utm_campaign=flow-bridge).
 
 If this workflow helps with a real task, star the repository and follow
 [@nobrainer_tech](https://x.com/nobrainer_tech) for build notes and practical examples.
