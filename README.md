@@ -180,7 +180,7 @@ flowchart TD
 
 ## Install safely
 
-1. Paste this into your coding agent, whichever it is. The same prompt installs and updates, and
+1. Paste the [setup prompt](https://nobrainer.tech/flow/#setup) below into your coding agent, whichever it is. The same prompt installs and updates, and
    the default install works on macOS, Linux and Windows without Python:
 
    ```text
@@ -212,6 +212,9 @@ flowchart TD
    no authorization and undoes itself with `--undo --apply`. To update, run `git pull` in
    `~/.nobrainer-tech-flow` and the same two commands again, or paste the prompt again. With Python,
    `python3 scripts/install.py` takes the same flags.
+
+   The [npm command](docs/INSTALL.md#npm-command) works once the package is published on npm.
+   Preview first, apply with `--apply`, and undo with `--undo --apply`.
 
    For Claude Code, you can choose a plugin installation from a checkout you have reviewed:
 
@@ -268,6 +271,11 @@ symbolic links (Windows: Developer Mode). For a subset, a copy install, the shar
 discovery before claiming runtime installation.
 
 </details>
+
+## After setup
+
+- [Run this as a ready workflow](https://nobrainer.tech/paths/ai-engineering/?utm_source=nobrainer-tech-flow&utm_medium=readme&utm_campaign=flow-bridge). Deliver software from requirement to CI with a ready AI engineering workflow built on nobrainer-tech-flow.
+- [New to AI tools? Start AI Fast Start free](https://nobrainer.tech/edu/ai-basics/?utm_source=nobrainer-tech-flow&utm_medium=readme&utm_campaign=flow-bridge).
 
 If this workflow helps with a real task, star the repository and follow
 [@nobrainer_tech](https://x.com/nobrainer_tech) for build notes and practical examples.
