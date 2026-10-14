@@ -107,7 +107,7 @@ advance. [Try a small approved plan](docs/TRY_IT.md#carry-an-approved-plan-throu
 New AI skills, workflows and add-ons keep arriving. nobrainer-tech-flow curates
 the useful parts into one maintained path from task to a checked finish.
 
-Say **“Use nobrainer-tech-flow”** (or invoke the technical entrypoint `$nobrainer-tech-flow`) to fix code, prepare
+Say **“Use nobrainer-tech-flow”** (or invoke the technical entrypoint by the exact name your client lists for it) to fix code, prepare
 an everyday document, or investigate a problem. Clear tasks go straight to execution;
 meaningful ambiguity gets one focused question round. Done means the agreed
 criteria are met and the result is checked. A real blocker is reported with the
@@ -313,7 +313,7 @@ Use nobrainer-tech-flow through the canonical skill
 outcome. A small reversible edit without a public contract, routing, workflow or
 portfolio change can use its quick path; other changes use the full path and its
 coherence gate.
-In Codex, the technical explicit invocation is `$nobrainer-tech-flow`. Say
+In Codex, type the exact name it lists for the module: `$nobrainer-tech-flow:nobrainer-tech-flow` after the installer, the npm package or a plugin install, and `$nobrainer-tech-flow` for a copy made with `install_skills.py --mode copy`. Say
 `Use NBFlow`, `Use NBF` or `Use nobrainer-tech-flow` in natural language;
 older trigger phrases are migration context only and
 depend on a client's implicit description matching.

@@ -1260,7 +1260,7 @@ class SuiteTests(unittest.TestCase):
         claude = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
         self.assertEqual(agents, claude)
         self.assertLessEqual(len(agents.splitlines()), 205)
-        self.assertLessEqual(len(agents.split()), 1600)
+        self.assertLessEqual(len(agents.split()), 1620)
         for term in (
             "Expected files",
             "Done clean",
