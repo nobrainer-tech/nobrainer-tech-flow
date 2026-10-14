@@ -13,7 +13,7 @@ For developers whose coding agent just said "Done."
 One open source workflow with 18 modules helps your coding agent do the work, check the result and report what was delivered, the proof and anything left unchecked.
 
 **[Add to your coding agent](#install-safely)** · Free, MIT. Previews every change, with undo. Your coding client's usage costs still apply.
-New to AI? [Start the free course](https://nobrainer.tech/edu/ai-basics/?utm_source=nobrainer-tech-flow&utm_medium=readme&utm_campaign=flow-bridge)
+New to AI? [Start the free course](https://nobrainer.tech/edu/ai-basics/?utm_source=github&utm_medium=referral&utm_campaign=funnel-20261013&utm_content=flow-readme-ai-basics)
 
 <p align="center">
   <a href="https://github.com/nobrainer-tech/nobrainer-tech-flow/actions/workflows/validate.yml"><img alt="Validation" src="https://github.com/nobrainer-tech/nobrainer-tech-flow/actions/workflows/validate.yml/badge.svg"></a>
@@ -264,8 +264,8 @@ discovery before claiming runtime installation.
 
 ## After setup
 
-- [Run this as a ready workflow](https://nobrainer.tech/paths/ai-engineering/?utm_source=nobrainer-tech-flow&utm_medium=readme&utm_campaign=flow-bridge). Deliver software from requirement to CI with a ready AI engineering workflow built on nobrainer-tech-flow.
-- [New to AI? Start the free course](https://nobrainer.tech/edu/ai-basics/?utm_source=nobrainer-tech-flow&utm_medium=readme&utm_campaign=flow-bridge).
+- [Run this as a ready workflow](https://nobrainer.tech/paths/ai-engineering/?utm_source=github&utm_medium=referral&utm_campaign=funnel-20261013&utm_content=flow-readme-ai-engineering). Deliver software from requirement to CI with a ready AI engineering workflow built on nobrainer-tech-flow.
+- [New to AI? Start the free course](https://nobrainer.tech/edu/ai-basics/?utm_source=github&utm_medium=referral&utm_campaign=funnel-20261013&utm_content=flow-readme-ai-basics).
 
 If this workflow helps with a real task, star the repository and follow
 [@nobrainer_tech](https://x.com/nobrainer_tech) for build notes and practical examples.
