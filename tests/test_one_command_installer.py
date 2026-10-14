@@ -238,6 +238,34 @@ class OneCommandInstallerTests(unittest.TestCase):
                 self.assertEqual("", result.stderr)
                 self.assertEqual([], self.entries(home))
 
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_undo_names_the_folders_it_will_remove_and_the_ones_it_removed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            # The client ran before, so ~/.codex is there; ~/.agents is not.
+            (home / ".codex").mkdir(parents=True)
+            flags = ("--client", "codex", "--home", str(home))
+            applied = self.run_install(*flags, "--apply")
+            self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+
+            preview = self.run_install(*flags, "--undo")
+
+            self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+            # The folders are named the way they really are, with the links on the way resolved.
+            real = home.resolve()
+            self.assertIn(f"FOLDER: {real / '.agents' / 'skills'}: removed if it is still empty", preview.stdout)
+            self.assertIn(f"FOLDER: {real / '.agents'}: removed if it is still empty", preview.stdout)
+            self.assertNotIn(f"FOLDER: {real / '.codex'}", preview.stdout)
+            self.assertTrue((home / ".agents" / "skills").is_dir())
+
+            undone = self.run_install(*flags, "--undo", "--apply")
+
+            self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+            self.assertIn(f"FOLDER: removed the empty folder {real / '.agents' / 'skills'}", undone.stdout)
+            self.assertIn(f"FOLDER: removed the empty folder {real / '.agents'}", undone.stdout)
+            self.assertNotIn(f"FOLDER: removed the empty folder {real / '.codex'}", undone.stdout)
+            self.assertEqual([".codex"], self.entries(home))
+
     def test_an_older_single_client_record_is_not_taken_for_no_record(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"

@@ -352,6 +352,81 @@ class GuidedOnboardingTests(unittest.TestCase):
             self.assertEqual("Existing user rules.\n", instruction.read_text())
             self.assertFalse(destination.exists())
 
+    def test_rollback_removes_the_empty_folders_the_setup_made_and_no_other(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            destination = root / "outer" / "skills"
+            home = root / "home"
+            common = self.common(destination, home)
+            answers = (
+                "--work-profile", "research",
+                "--goal", "compare current evidence",
+                "--tools", "Codex",
+                "--existing-setup", "none",
+                "--selection", "01",
+            )
+            applied = self.run_setup(*common, *answers, "--apply")
+            self.assertEqual(0, applied.returncode, applied.stderr)
+            state_path = home / ".nobrainer-flow-onboarding-codex.json"
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                sorted(str(path.resolve()) for path in (root / "outer", destination, home, home / ".codex")),
+                state["created_dirs"],
+            )
+            (root / "outer" / "keep.txt").write_text("mine\n", encoding="utf-8")
+
+            preview = self.run_setup(*common, "--rollback")
+
+            self.assertEqual(0, preview.returncode, preview.stderr)
+            for folder in (destination, root / "outer", home, home / ".codex"):
+                self.assertIn(f"ROLLBACK_FOLDER: {folder.resolve()}: removed if it is still empty", preview.stdout)
+            self.assertTrue(destination.is_dir())
+
+            rolled_back = self.run_setup(*common, "--rollback", "--apply")
+
+            self.assertEqual(0, rolled_back.returncode, rolled_back.stderr)
+            for folder in (destination, home / ".codex", home):
+                self.assertIn(f"REMOVED_DIR: {folder.resolve()}", rolled_back.stdout)
+                self.assertFalse(folder.exists(), folder)
+            # The folder that holds a file of its own stays; its removed inner folder is another line.
+            self.assertNotIn(f"REMOVED_DIR: {(root / 'outer').resolve()}\n", rolled_back.stdout)
+            self.assertEqual("mine\n", (root / "outer" / "keep.txt").read_text(encoding="utf-8"))
+
+    def test_rollback_refuses_a_folder_list_the_setup_cannot_have_made(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            destination = root / "skills"
+            home = root / "home"
+            common = self.common(destination, home)
+            applied = self.run_setup(
+                *common,
+                "--work-profile", "research",
+                "--goal", "compare current evidence",
+                "--tools", "Codex",
+                "--existing-setup", "none",
+                "--selection", "01",
+                "--apply",
+            )
+            self.assertEqual(0, applied.returncode, applied.stderr)
+            state_path = home / ".nobrainer-flow-onboarding-codex.json"
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            for label, value in {
+                "a relative path": ["relative"],
+                "a path with ..": [f"{destination}/../home"],
+                "a folder elsewhere": [str(root / "elsewhere")],
+                "text instead of a list": str(destination),
+            }.items():
+                with self.subTest(case=label):
+                    tampered = {**state, "created_dirs": value}
+                    state_path.write_text(json.dumps(tampered, indent=2) + "\n", encoding="utf-8")
+                    before = (state_path.read_bytes(), sorted(path.name for path in destination.iterdir()))
+
+                    refused = self.run_setup(*common, "--rollback", "--apply")
+
+                    self.assertEqual(3, refused.returncode, refused.stdout + refused.stderr)
+                    self.assertIn("rollback state is not credible", refused.stderr)
+                    self.assertEqual(before, (state_path.read_bytes(), sorted(path.name for path in destination.iterdir())))
+
     def test_selected_target_conflict_prevents_partial_install(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
