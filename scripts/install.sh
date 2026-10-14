@@ -786,7 +786,14 @@ install() {
 		fi
 	fi
 
-	say "INSTALLED: $source_line for $label"
+	# New links and a written instruction file are what a client has to be restarted for.
+	changed=0
+	if [ "$link_count" -gt 0 ] || [ "$wrote" = 1 ]; then changed=1; fi
+	if [ "$changed" = 1 ]; then
+		say "INSTALLED: $source_line for $label"
+	else
+		say "UP TO DATE: $source_line is already installed for $label; nothing changed"
+	fi
 	say "SKILLS: $((link_count + kept_count)) linked in $skills_dir ($link_count new)"
 	if [ "$inherit" = 1 ]; then
 		say "INSTRUCTIONS: inherited from the Codex global instructions; nothing written here"
@@ -797,13 +804,18 @@ install() {
 	else
 		say "INSTRUCTIONS: $target already has the managed block; left as it is"
 	fi
+	if [ "$changed" = 0 ] && [ "$record" = 1 ] && [ -n "$new_hash" ] && [ "$new_hash" != "$st_hash" ]; then
+		say "RECORD: updated to the instruction file as it is now, so an undo keeps your edits outside the block"
+	fi
 	if [ -e "$state" ]; then
 		say "UNDO: $(command_for --undo --apply)"
 	else
 		say "UNDO: nothing was changed, so there is nothing to undo"
 	fi
 	variable_note
-	say "NEXT: restart $label, then give it one small task with a checkable result (docs/TRY_IT.md)."
+	if [ "$changed" = 1 ]; then
+		say "NEXT: restart $label, then give it one small task with a checkable result (docs/TRY_IT.md)."
+	fi
 }
 
 # restore_into CURRENT BACKUP OUT: CURRENT with its managed block replaced by the one

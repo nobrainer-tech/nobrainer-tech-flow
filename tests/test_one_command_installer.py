@@ -133,6 +133,7 @@ class OneCommandInstallerTests(unittest.TestCase):
             self.assertIn("INSTALLED:", applied.stdout)
             self.assertIn(f"SKILLS: {SKILL_COUNT} linked in", applied.stdout)
             self.assertIn(f"({SKILL_COUNT} new)", applied.stdout)
+            self.assertIn("NEXT: restart Claude Code", applied.stdout)
             self.assertIn(f"scripts/install.py --client claude --undo --apply --home {home}", applied.stdout)
             for item in GUIDED.ITEMS:
                 link = skills / item.skill
@@ -151,6 +152,9 @@ class OneCommandInstallerTests(unittest.TestCase):
 
             self.assertEqual(0, again.returncode, again.stdout + again.stderr)
             self.assertIn("(0 new)", again.stdout)
+            self.assertIn("UP TO DATE:", again.stdout)
+            self.assertNotIn("INSTALLED:", again.stdout)
+            self.assertNotIn("NEXT: restart", again.stdout)
             self.assertEqual(written, instructions.read_bytes())
 
             preview = self.run_install("--client", "claude", "--home", str(home), "--undo")
