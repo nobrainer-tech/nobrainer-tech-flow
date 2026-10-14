@@ -395,6 +395,7 @@ def undo(ctx: Context) -> int:
         return code
     destination = str(record["destination"]) if record else str(ctx.skills)
     created = list(record.get("created_skills", [])) if record else []
+    directories = list(record.get("created_dirs", [])) if record else []
     profile = (record or {}).get("profile") or {}
     target = profile.get("target")
     backup = profile.get("backup")
@@ -407,6 +408,8 @@ def undo(ctx: Context) -> int:
             )
         elif target:
             print(f"INSTRUCTIONS: {target}: remove the managed block")
+        for folder in sorted(directories, key=lambda item: len(Path(item).parts), reverse=True):
+            print(f"FOLDER: {folder}: removed if it is still empty; the setup created it")
         for line in unique(out.splitlines()):
             if UNDO_NOTE.match(line):
                 print(line)
@@ -426,6 +429,8 @@ def undo(ctx: Context) -> int:
             print(f"INSTRUCTIONS: {target} removed; the setup had created it")
         else:
             print(f"INSTRUCTIONS: managed block removed from {target}; the rest of the file is kept as it is now")
+    for folder in re.findall(r"^REMOVED_DIR: (.+)$", out, re.MULTILINE):
+        print(f"FOLDER: removed the empty folder {folder}")
     for line in unique(out.splitlines()):
         if UNDO_NOTE.match(line):
             print(line)
