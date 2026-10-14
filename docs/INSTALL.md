@@ -14,9 +14,9 @@ upgraded merely because the new source is installed nearby.
 Node 18+ and Python 3.11+ are prerequisites. Preview the setup first:
 
 ```sh
-npx nobrainer-tech-flow@2.3.1 --client codex
-npx nobrainer-tech-flow@2.3.1 --client codex --apply
-npx nobrainer-tech-flow@2.3.1 --client codex --undo --apply
+npx nobrainer-tech-flow@2.3.2 --client codex
+npx nobrainer-tech-flow@2.3.2 --client codex --apply
+npx nobrainer-tech-flow@2.3.2 --client codex --undo --apply
 ```
 
 Use claude for Claude Code, opencode or copilot for those clients. Add --home PATH
@@ -24,7 +24,7 @@ for an isolated profile. These commands become available once this version is
 published on npm; a source candidate is not registry availability.
 
 Application copies the release files into the chosen home directory's
-.nobrainer-tech-flow/npm/2.3.1 and verifies the copy. The existing installer then
+.nobrainer-tech-flow/npm/2.3.2 and verifies the copy. The existing installer then
 links skills to that stable source and writes its managed instructions. This
 avoids links into npx's temporary cache. Unknown files and conflicting installs
 are preserved. Undo uses the same setup record as the Git installer. Retained
@@ -99,10 +99,17 @@ flags). The two share the setup record, so either one undoes what the other did.
   and shows the exact text it would write to the client's global instruction file.
 - A canonical skill target that is not a link to this checkout is a conflict:
   nothing is written and the command says which one.
-- It never grants a standing authorization. `install.py` keeps earlier
-  auto-update, session-restart and wiki-root settings in the block as
-  `--keep-options` keeps them; `install.sh` leaves a block that is already there
-  exactly as it is. Change options with `install_personalization.py`.
+- Running `--apply` again when nothing needs to change prints `UP TO DATE` and no
+  restart hint. `INSTALLED` and the restart hint appear only when a link or the
+  instruction file was written.
+- It never grants a standing authorization. When the block in the instruction file
+  is the text of an earlier version, both scripts replace it with this version's
+  text, keep everything outside the two markers byte for byte and save the file as
+  it was as a `.bak` copy first. `install.py` also keeps earlier auto-update,
+  session-restart and wiki-root settings in the block as `--keep-options` keeps
+  them; `install.sh` leaves a block that carries one of those options, or whose
+  markers do not stand on lines of their own, exactly as it is and says so. Change
+  options with `install_personalization.py`.
 - `--undo` (a preview until `--apply` is added) removes exactly the links the setup
   created and puts the managed block back as it was before the first setup:
   removed, or the block that was there before. The rest of the instruction file
@@ -110,12 +117,29 @@ flags). The two share the setup record, so either one undoes what the other did.
   changed. It stops with the reason if the file changed since the last run. It is
   the guided setup's rollback, so it also reverses a setup made by the guided setup
   below, and the other way round.
+- `--undo` also removes the folders the setup had to create, such as `~/.agents`
+  for Codex or `~/.config/opencode` for a client that never ran, but only when they
+  are empty. A folder that was there before the setup, or holds anything else, stays.
+  A second undo, or an undo where no setup is recorded, prints `NOTHING TO UNDO`
+  with the client and the record it looked for, changes nothing and exits 0. A
+  damaged record is still an error.
 - It needs symbolic links. On Windows turn on Developer Mode or run from an
   elevated shell; the command checks first and says so. Otherwise use
   `install_skills.py --mode copy` (see Windows below).
 - `--home` and the client variables behave as described for the individual
   scripts below. When a variable chose the location, the output says so; keep it
   set when you undo.
+
+The setup record is `.nobrainer-flow-onboarding-<client>.json` (for example
+`.nobrainer-flow-onboarding-codex.json`) in the chosen home, next to the client's
+folders. Only you can read or write it (mode 0600), and it holds paths and hashes,
+never a secret: the skills folder, the links the setup created, the instruction file
+with its backup and the SHA-256 of what was written, and `created_dirs`, the folders
+the setup created. `--undo --apply` deletes it, so keep it until you no longer need
+to undo. `.nobrainer-flow-onboarding.json` without a client name is the older
+single-client record; `install.py` still reads it, and `install.sh` points you to it.
+A new instruction file the setup creates is owner-only (mode 0600) as well. An
+existing file keeps its mode, and its `.bak` copy has the same mode.
 
 The individual scripts remain the way to install a subset, use copies, target
 the shared `agents` folder or another client, and are documented next.
@@ -374,7 +398,8 @@ commands work inside a session as `/plugin marketplace add ...` and
 `/plugin install ...`. A plugin namespaces its skills, so the entry point is
 `/nobrainer-tech-flow:nobrainer-tech-flow`; skills installed with
 `--client claude` keep the plain `/nobrainer-tech-flow`. Either way the model
-can also load the skill by name. The `$nobrainer-tech-flow` form is Codex syntax.
+can also load the skill by name. The `$` forms are Codex syntax; the Codex section
+below says which one to type.
 
 Claude Code lists every skill name but drops the descriptions of the least-used
 skills once the listing passes its budget (1% of the context window by default).
@@ -413,11 +438,18 @@ python3 scripts/install_skills.py --client codex --apply
 
 Restart Codex and test discovery in a fresh task. Repository instructions or the
 native skill trigger provide bootstrap; a file on disk is not routing proof.
-Use nobrainer-tech-flow for user-facing requests, or `$nobrainer-tech-flow` for the
-technical explicit invocation; when the skills come from the plugin, use the
-name the client's skill list shows. Plain `NBFlow`, `NBF` and `nobrainer-tech-flow`
-are natural-language triggers whose recognition depends on the client. Existing
-legacy entries under `~/.codex/skills` are not deleted or rewritten automatically.
+Use nobrainer-tech-flow for user-facing requests. For the technical explicit
+invocation, type the exact name Codex lists for the module, because on Codex
+0.157.1 (macOS) the other form adds no module text to the model input. Codex
+lists the module under the plugin name, so you type
+`$nobrainer-tech-flow:nobrainer-tech-flow`, when a plugin manifest sits above the
+folder a link resolves to: a plugin install, the npm package, or the links the
+installer makes into a git checkout. It lists the plain name, so you type
+`$nobrainer-tech-flow`, for a copy made with `install_skills.py --mode copy`.
+[COMPATIBILITY.md](COMPATIBILITY.md) records what was checked. Plain `NBFlow`,
+`NBF` and `nobrainer-tech-flow` are natural-language triggers whose recognition
+depends on the client. Existing legacy entries under `~/.codex/skills` are not
+deleted or rewritten automatically.
 
 ### Cursor
 
@@ -506,8 +538,10 @@ After every install or upgrade:
 2. list/read back the loaded source and skill count;
 3. start a clean task with no pasted skill body;
 4. issue one explicit canonical request and one semantic non-trivial request;
-   for Codex the canonical form is `$nobrainer-tech-flow` (a plugin install lists
-   the skills under the plugin's name, so use the name the client shows);
+   for Codex type the name the client lists for the module:
+   `$nobrainer-tech-flow:nobrainer-tech-flow` when it lists modules under the
+   plugin name, `$nobrainer-tech-flow` when it lists them plainly (the Codex
+   section above says which installs do which);
 5. confirm nobrainer-tech-flow asks no more than one ordinary requirements round, shows one
    compact Progress checklist and routes a specialist only when needed;
 6. issue a one-step task and confirm it remains direct;

@@ -149,6 +149,32 @@ Gemini CLI, Kimi Code or Copilot CLI was made for this source. The Windows job
 runs the validators and the modules listed in [Testing](TESTING.md), not the
 whole suite.
 
+## Codex module names (2.3.2 readback)
+
+Checked on 2026-10-14 with Codex 0.157.1 on macOS and the 2.3.1 source. The real
+client ran against a local stand-in server with all other network blocked, so no
+model was involved. The table shows the name the client lists and whether a typed
+name made it add the module text to the request, not how a model behaves.
+
+| Install | Listed as | Typed `$nobrainer-tech-flow` | Typed `$nobrainer-tech-flow:nobrainer-tech-flow` |
+|---|---|---|---|
+| `scripts/install.sh` links into a git checkout, which holds the plugin manifests | `nobrainer-tech-flow:nobrainer-tech-flow` | no module text added | module text added |
+| The npm package (from `npm pack`; it ships `.codex-plugin` and `.claude-plugin`), linked by the installer | `nobrainer-tech-flow:nobrainer-tech-flow` | no module text added | module text added |
+| `install_skills.py --mode copy` (real folders, no manifest above them) | `nobrainer-tech-flow` | module text added | no module text added |
+
+Codex names a module `<plugin>:<skill>` when a `.codex-plugin`, `.claude-plugin` or
+`.cursor-plugin` manifest sits above the folder a link resolves to. A checkout that
+keeps only `.kimi-plugin`, the root `plugin.json`, `gemini-extension.json` or
+`.agents/plugins`, or none of them, lists the plain name and takes the plain form.
+A mention linked to the module's `SKILL.md` path added the module text in the first
+row, whichever of the two names its text showed. The Codex 0.158.0 row above, a
+plugin install, lists the skills under the plugin name as well.
+
+Not checked: what a model does with the plain form when the listing is namespaced,
+the terminal and desktop mention pickers, other Codex versions and operating
+systems, and a plugin-channel install on 0.157.1. Level: `CLIENT_LOADED`; routing
+unverified.
+
 ## Clean-session acceptance
 
 The approved-plan [autopilot loop](../skills/nobrainer-tech-flow/references/autopilot.md)
@@ -218,6 +244,11 @@ return to Build and then fresh Review; it may not reuse the old green result.
 $nobrainer-tech-flow Deliver this task with the smallest safe workflow.
 ```
 
+Type the name the client lists for the module. In Codex that is
+`$nobrainer-tech-flow:nobrainer-tech-flow` when the module is listed under the
+plugin name and `$nobrainer-tech-flow` when it is listed plainly (see
+[Codex module names](#codex-module-names-232-readback)).
+
 Passing behavior: the client loads the nobrainer-tech-flow technical
 `nobrainer-tech-flow` body and any
 required relative reference without the user pasting either one.
@@ -276,7 +307,8 @@ appearing on disk do not replace this acceptance test.
 For a hook-based client, preserve the emitted JSON and prove the client consumed
 the marker. For OpenCode or Pi, preserve both adapter logs/readback and the first
 model action. A prompt that pastes the skill body does not prove discovery. A
-valid explicit `$nobrainer-tech-flow` run proves explicit loading, not automatic routing.
+valid explicit run by the name the client lists proves explicit loading, not
+automatic routing.
 
 ## Optional bounded command runtime (1.7.0)
 

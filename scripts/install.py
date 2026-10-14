@@ -297,6 +297,20 @@ def read_record(ctx: Context) -> dict[str, object] | None:
     return None
 
 
+def unrecorded_path(ctx: Context) -> Path | None:
+    """Where this client's setup record would be, when no record exists at all.
+
+    Neither this client's record nor the older single-client one may be there, not even
+    as a link: anything that is there is a record to read, or to refuse.
+    """
+
+    guided = ctx.guided
+    paths = (guided.state_path(ctx.home, None, ctx.client), guided.legacy_state_path(ctx.home, None))
+    if any(path is not None and (path.exists() or path.is_symlink()) for path in paths):
+        return None
+    return paths[0]
+
+
 def install(ctx: Context) -> int:
     to_link, kept = plan_skills(ctx)
     instructions = plan_instructions(ctx)
@@ -319,6 +333,7 @@ def install(ctx: Context) -> int:
     if to_link and not symlinks_available(where):
         print(symlink_help(where), file=sys.stderr)
         raise Refused(2)
+    earlier = read_record(ctx) or {}
     code, out, err = run(guided_command(ctx, *every_skill(ctx), "--apply"))
     if code:
         if os.name == "nt" and re.search(r"WinError 1314|privilege", out + err, re.IGNORECASE):
@@ -327,42 +342,68 @@ def install(ctx: Context) -> int:
     record = read_record(ctx) or {}
     profile = record.get("profile") or {}
     linked = len(ctx.guided.installed_ids(ctx.skills))
-    print(f"INSTALLED: {source_line()} for {ctx.label}")
+    # New links and a written instruction file are what a client has to be restarted for.
+    # The personalization helper prints APPLIED only for a file it wrote.
+    written = re.search(r"^APPLIED: ", out, re.MULTILINE) is not None
+    changed = bool(to_link) or written
+    if changed:
+        print(f"INSTALLED: {source_line()} for {ctx.label}")
+    else:
+        print(f"UP TO DATE: {source_line()} is already installed for {ctx.label}; nothing changed")
     print(f"SKILLS: {linked} linked in {ctx.skills} ({to_link} new)")
     if profile.get("target"):
         backup = profile.get("backup")
-        print(f"INSTRUCTIONS: {profile['target']}" + (f" (backup: {backup})" if backup else ""))
+        if written and re.search(r"^UPDATE: ", out, re.MULTILINE):
+            # A block of an earlier version was replaced. This run's backup holds the file as
+            # it was just before; the recorded one is the file from before the setup.
+            made = re.search(r"^BACKUP: (.+)$", out, re.MULTILINE)
+            print(
+                f"INSTRUCTIONS: {profile['target']}: managed block updated to this version's text; "
+                "the rest of the file is kept as it is" + (f" (backup: {made.group(1)})" if made else "")
+            )
+        elif written:
+            print(f"INSTRUCTIONS: {profile['target']}" + (f" (backup: {backup})" if backup else ""))
+        else:
+            print(f"INSTRUCTIONS: {profile['target']} already has the managed block; left as it is")
     else:
         print("INSTRUCTIONS: inherited from the Codex global instructions; nothing written here")
     for line in unique(out.splitlines()):
         if KEPT.match(line):
             print(line)
+    recorded = (earlier.get("profile") or {}).get("written_sha256")
+    if not changed and earlier and profile.get("written_sha256") not in (None, recorded):
+        print("RECORD: updated to the instruction file as it is now, so an undo keeps your edits outside the block")
     print(f"UNDO: {ctx.command('--undo', '--apply')}")
     note = ctx.variable_note()
     if note:
         print(note)
-    print(
-        f"NEXT: restart {ctx.label}, then give it one small task with a checkable result "
-        "(docs/TRY_IT.md)."
-    )
+    if changed:
+        print(
+            f"NEXT: restart {ctx.label}, then give it one small task with a checkable result "
+            "(docs/TRY_IT.md)."
+        )
     return 0
 
 
 def undo(ctx: Context) -> int:
+    missing = unrecorded_path(ctx)
+    if missing is not None:
+        # A second undo, or an undo before any setup: nothing is recorded, so nothing is
+        # to be reversed, and nothing is written.
+        print(
+            f"NOTHING TO UNDO: no setup is recorded for {ctx.label} (looked for {missing}); "
+            "nothing was changed"
+        )
+        return 0
     record = read_record(ctx)
     code, out, err = run(guided_command(ctx, "--rollback", *(("--apply",) if ctx.apply else ())))
     if code:
         print(translate(out), end="")
         print(translate(err), end="", file=sys.stderr)
-        if "rollback state not found" in err:
-            print(
-                "HINT: undo reverses a setup that this command, scripts/install.sh or the guided "
-                f"setup recorded; none is recorded for {ctx.label}.",
-                file=sys.stderr,
-            )
         return code
     destination = str(record["destination"]) if record else str(ctx.skills)
     created = list(record.get("created_skills", [])) if record else []
+    directories = list(record.get("created_dirs", [])) if record else []
     profile = (record or {}).get("profile") or {}
     target = profile.get("target")
     backup = profile.get("backup")
@@ -375,6 +416,8 @@ def undo(ctx: Context) -> int:
             )
         elif target:
             print(f"INSTRUCTIONS: {target}: remove the managed block")
+        for folder in sorted(directories, key=lambda item: len(Path(item).parts), reverse=True):
+            print(f"FOLDER: {folder}: removed if it is still empty; the setup created it")
         for line in unique(out.splitlines()):
             if UNDO_NOTE.match(line):
                 print(line)
@@ -394,6 +437,8 @@ def undo(ctx: Context) -> int:
             print(f"INSTRUCTIONS: {target} removed; the setup had created it")
         else:
             print(f"INSTRUCTIONS: managed block removed from {target}; the rest of the file is kept as it is now")
+    for folder in re.findall(r"^REMOVED_DIR: (.+)$", out, re.MULTILINE):
+        print(f"FOLDER: removed the empty folder {folder}")
     for line in unique(out.splitlines()):
         if UNDO_NOTE.match(line):
             print(line)

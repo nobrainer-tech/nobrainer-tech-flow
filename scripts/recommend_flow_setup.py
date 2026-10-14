@@ -611,6 +611,86 @@ def remove_exact_created_links(destination: Path, names: list[str]) -> None:
             target.unlink()
 
 
+def physical_path(path: Path) -> Path:
+    """PATH with the links on the way resolved, whether or not all of it exists yet."""
+
+    try:
+        return path.resolve()
+    except (OSError, RuntimeError):
+        return path
+
+
+def missing_directories(*paths: Path) -> list[Path]:
+    """The folders on the way to PATHS that do not exist yet, outermost first.
+
+    A link counts as existing: it is somebody's link, never a folder this setup made.
+    """
+
+    missing: list[Path] = []
+    for path in paths:
+        chain: list[Path] = []
+        for candidate in (path, *path.parents):
+            if candidate.exists() or candidate.is_symlink():
+                break
+            chain.append(candidate)
+        for candidate in reversed(chain):
+            if candidate not in missing:
+                missing.append(candidate)
+    return missing
+
+
+def recorded_directories(state: dict[str, object]) -> list[Path]:
+    """The folders a setup record says the setup created, or ValueError when it cannot be true.
+
+    A folder the setup made lies on the way to its skills folder or to the folder of
+    its instruction file, so any other entry (a relative path, a root, a path with
+    ``..``, a folder elsewhere) means a damaged record, and an undo must not act on it.
+    A path may be spelled with or without the links on the way, so both spellings count.
+    """
+
+    raw = state.get("created_dirs", [])
+    if not isinstance(raw, list) or any(not isinstance(item, str) for item in raw):
+        raise ValueError("created_dirs must list each folder the setup created once")
+    bases = [Path(str(state["destination"]))]
+    profile = state.get("profile")
+    target = profile.get("target") if isinstance(profile, dict) else None
+    if isinstance(target, str) and target:
+        bases.append(Path(target).parent)
+    places = [form for base in bases for form in (base, physical_path(base))]
+    directories: list[Path] = []
+    seen: set[Path] = set()
+    for item in raw:
+        path = Path(item)
+        forms = (path, physical_path(path))
+        if (
+            not path.is_absolute()
+            or ".." in path.parts
+            or path == Path(path.anchor)
+            or not any(form == place or form in place.parents for form in forms for place in places)
+        ):
+            raise ValueError(f"created_dirs names a folder this setup cannot have created: {item}")
+        if forms[1] in seen:
+            raise ValueError("created_dirs must list each folder the setup created once")
+        seen.add(forms[1])
+        directories.append(path)
+    return directories
+
+
+def remove_empty_directories(directories: list[Path]) -> list[Path]:
+    """Remove each of these folders that is still empty, innermost first; return those removed."""
+
+    removed: list[Path] = []
+    for path in sorted(directories, key=lambda item: len(item.parts), reverse=True):
+        try:
+            if path.is_symlink() or not path.is_dir():
+                continue
+            path.rmdir()
+        except OSError:
+            continue
+        removed.append(path)
+    return removed
+
+
 def state_path(home: Path, override: Path | None, client: str) -> Path:
     if override is not None:
         return override.expanduser()
@@ -664,6 +744,10 @@ def read_state_file(path: Path) -> dict[str, object]:
         or any(not isinstance(name, str) or name not in BY_SKILL for name in loaded.get("created_skills", []))
     ):
         raise ValueError(f"refusing to overwrite unrecognized setup state: {path}")
+    try:
+        recorded_directories(loaded)
+    except ValueError as exc:
+        raise ValueError(f"refusing to overwrite unrecognized setup state: {path} ({exc})") from None
     return loaded
 
 
@@ -836,6 +920,11 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     if not isinstance(created, list) or len(created) != len(set(created)) or any(name not in BY_SKILL for name in created):
         print("ERROR: rollback state contains invalid skill ownership entries", file=sys.stderr)
         return 3
+    try:
+        directories = recorded_directories(state)
+    except ValueError as exc:
+        print(f"ERROR: rollback state is not credible: {exc}", file=sys.stderr)
+        return 3
     profile = state.get("profile", {})
     target_path = Path(str(profile.get("target", ""))) if profile else None
     backup = profile.get("backup") if profile else None
@@ -900,6 +989,8 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
             print(f"PRESERVED: changed target {target}")
             return 3
     print(f"ROLLBACK_PLAN: remove={','.join(created) or 'none'}; personalization={target_path or 'none'}; backup={backup or 'none'}")
+    for directory in sorted(directories, key=lambda item: len(item.parts), reverse=True):
+        print(f"ROLLBACK_FOLDER: {directory}: removed if it is still empty; the setup created it")
     if not args.apply:
         print(f"ROLLBACK_DRY_RUN: no files changed; pass --apply to reverse setup from {state_file}")
         return 0
@@ -949,10 +1040,15 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         if target.exists() or target.is_symlink():
             raise OSError(f"skill rollback readback mismatch: {target}")
     state_file.unlink()
-    try:
-        destination.rmdir()
-    except OSError:
-        pass
+    for directory in remove_empty_directories(directories):
+        print(f"REMOVED_DIR: {directory}")
+    if "created_dirs" not in state:
+        # A record from before the folder list still gets its skills folder removed when empty.
+        # One with the list says which folders the setup made, so no other is touched.
+        try:
+            destination.rmdir()
+        except OSError:
+            pass
     print(f"ROLLBACK_READBACK: removed={','.join(removed) or 'none'}; profile=restored")
     return 0
 
@@ -1177,6 +1273,8 @@ def main(argv: list[str] | None = None) -> int:
             )
         if not args.apply:
             return 0
+        # The folders this run may create, so that an undo can remove the ones it made.
+        new_directories = missing_directories(destination, profile_target.parent)
         # Inspect every target before writing any of them. This keeps a later
         # conflict from leaving a partial selection installed.
         for name in install_names:
@@ -1223,6 +1321,17 @@ def main(argv: list[str] | None = None) -> int:
             }
         created = sorted(set(previous.get("created_skills", [])) | {name for name in new_skills if (destination / name).is_symlink()})
         next_state = {"destination": str(destination), "created_skills": created, "profile": profile}
+        # Folders an earlier run made stay in the record. A record from before this field
+        # existed has none: its folders may have been there already, so none is claimed.
+        # Each folder is written the way it really is, links resolved, so that runs from
+        # different installers and spellings of the same path list it once.
+        previous_dirs = {str(physical_path(path)) for path in recorded_directories(previous)} if previous else set()
+        made_dirs = {str(physical_path(path)) for path in new_directories if path.is_dir() and not path.is_symlink()}
+        created_dirs = sorted(previous_dirs | made_dirs)
+        # A record that has no folder list is from an earlier version. It keeps that form until
+        # a run makes a folder, so that its undo follows the rule it was made under.
+        if created_dirs or not previous or "created_dirs" in previous:
+            next_state["created_dirs"] = created_dirs
         try:
             save_state(state, next_state)
         except (OSError, TypeError, ValueError) as exc:

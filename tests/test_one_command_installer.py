@@ -133,6 +133,7 @@ class OneCommandInstallerTests(unittest.TestCase):
             self.assertIn("INSTALLED:", applied.stdout)
             self.assertIn(f"SKILLS: {SKILL_COUNT} linked in", applied.stdout)
             self.assertIn(f"({SKILL_COUNT} new)", applied.stdout)
+            self.assertIn("NEXT: restart Claude Code", applied.stdout)
             self.assertIn(f"scripts/install.py --client claude --undo --apply --home {home}", applied.stdout)
             for item in GUIDED.ITEMS:
                 link = skills / item.skill
@@ -151,6 +152,9 @@ class OneCommandInstallerTests(unittest.TestCase):
 
             self.assertEqual(0, again.returncode, again.stdout + again.stderr)
             self.assertIn("(0 new)", again.stdout)
+            self.assertIn("UP TO DATE:", again.stdout)
+            self.assertNotIn("INSTALLED:", again.stdout)
+            self.assertNotIn("NEXT: restart", again.stdout)
             self.assertEqual(written, instructions.read_bytes())
 
             preview = self.run_install("--client", "claude", "--home", str(home), "--undo")
@@ -220,17 +224,59 @@ class OneCommandInstallerTests(unittest.TestCase):
                     self.assertNotIn("Traceback", result.stderr)
                     self.assertEqual(before, self.entries(home))
 
-    def test_undo_without_a_recorded_setup_says_so(self) -> None:
+    def test_undo_without_a_recorded_setup_is_a_clean_no_op(self) -> None:
+        for flags in (("--undo",), ("--undo", "--apply")):
+            with self.subTest(flags=flags), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+
+                result = self.run_install("--client", "claude", "--home", str(home), *flags)
+
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertIn("NOTHING TO UNDO: no setup is recorded for Claude Code", result.stdout)
+                self.assertIn(str(home / ".nobrainer-flow-onboarding-claude.json"), result.stdout)
+                self.assertEqual("", result.stderr)
+                self.assertEqual([], self.entries(home))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_undo_names_the_folders_it_will_remove_and_the_ones_it_removed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            # The client ran before, so ~/.codex is there; ~/.agents is not.
+            (home / ".codex").mkdir(parents=True)
+            flags = ("--client", "codex", "--home", str(home))
+            applied = self.run_install(*flags, "--apply")
+            self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+
+            preview = self.run_install(*flags, "--undo")
+
+            self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+            # The folders are named the way they really are, with the links on the way resolved.
+            real = home.resolve()
+            self.assertIn(f"FOLDER: {real / '.agents' / 'skills'}: removed if it is still empty", preview.stdout)
+            self.assertIn(f"FOLDER: {real / '.agents'}: removed if it is still empty", preview.stdout)
+            self.assertNotIn(f"FOLDER: {real / '.codex'}", preview.stdout)
+            self.assertTrue((home / ".agents" / "skills").is_dir())
+
+            undone = self.run_install(*flags, "--undo", "--apply")
+
+            self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+            self.assertIn(f"FOLDER: removed the empty folder {real / '.agents' / 'skills'}", undone.stdout)
+            self.assertIn(f"FOLDER: removed the empty folder {real / '.agents'}", undone.stdout)
+            self.assertNotIn(f"FOLDER: removed the empty folder {real / '.codex'}", undone.stdout)
+            self.assertEqual([".codex"], self.entries(home))
+
+    def test_an_older_single_client_record_is_not_taken_for_no_record(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
             home.mkdir()
+            (home / ".nobrainer-flow-onboarding.json").write_text("{}\n", encoding="utf-8")
 
             result = self.run_install("--client", "claude", "--home", str(home), "--undo", "--apply")
 
-            self.assertEqual(3, result.returncode)
-            self.assertIn("rollback state not found", result.stderr)
-            self.assertIn("none is recorded for Claude Code", result.stderr)
-            self.assertEqual([], self.entries(home))
+            self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertNotIn("NOTHING TO UNDO", result.stdout)
+            self.assertEqual([".nobrainer-flow-onboarding.json"], self.entries(home))
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_the_variable_a_client_reads_selects_where_it_installs_when_home_is_not_given(self) -> None:
