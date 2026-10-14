@@ -4,9 +4,11 @@
 # Same flags, locations, conflict rule and setup record as scripts/install.py, so
 # either one can undo what the other did. Every run previews until --apply. The
 # skills are linked to this checkout (never copied), one managed instruction block
-# is added, and no standing authorization is ever granted. One difference: a managed
-# block that is already there is left exactly as it is (install.py rewrites it to the
-# current text and keeps its options).
+# is added, and no standing authorization is ever granted. A managed block that is
+# already there is replaced by this version's text when it differs, and everything
+# outside the two markers stays byte for byte, as install.py does. One difference: a
+# block that carries options (a standing authorization, a wiki root or a preference)
+# is left exactly as it is; install.py rewrites it to the current text and keeps them.
 #
 # POSIX sh: dash, bash, busybox and zsh emulating sh. On Windows run it in Git Bash.
 
@@ -716,6 +718,11 @@ plan_instructions() {
 		die 3 "malformed or duplicated nobrainer-tech-flow managed markers in $target"
 	fi
 	file_status=present
+	# A block of an earlier version is brought up to date, but only one that can be replaced
+	# without losing anything: its markers stand on lines of their own, and it holds no option.
+	if ! block_is_default && block_lines "$target" && ! block_has_options; then
+		file_status=refresh
+	fi
 }
 
 # line_of MARKER FILE: the numbers of the lines that hold MARKER and nothing else.
@@ -733,7 +740,19 @@ block_lines() {
 }
 
 block_is_default() {
-	block_lines "$target" && [ "$(head -n "$block_to" "$target" | tail -n "+$block_from")" = "$(block)" ]
+	block_lines "$target" || return 1
+	_b_text=$(head -n "$block_to" "$target" | tail -n "+$block_from")
+	# As scripts/install_personalization.py compares it: from the start marker to the end
+	# marker, so a carriage return that ends that last line is not part of the block.
+	[ "${_b_text%"$CR"}" = "$(block)" ]
+}
+
+# block_has_options: the block block_lines found in $target carries something the owner
+# chose: a standing authorization, a wiki root or a preference. Only install.py and
+# scripts/install_personalization.py --keep-options carry those over to a new block.
+block_has_options() {
+	head -n "$block_to" "$target" | tail -n "+$block_from" |
+		grep -a -q -F -e 'grants standing authorization' -e '- Relevant project wiki: read ' -e '- Owner-approved setup preference: '
 }
 
 variable_note() {
@@ -758,8 +777,17 @@ preview() {
 		if [ "$file_status" = present ]; then
 			say "PRESENT: the managed block is already there and is left as it is"
 			if ! block_is_default; then
-				say "NOTE: it differs from this version's default block; scripts/install_personalization.py --keep-options updates it and keeps its options"
+				say "NOTE: it differs from this version's default block but holds an option, or its markers do not stand on lines of their own, so it is not replaced here; scripts/install_personalization.py --keep-options updates it and keeps its options"
 			fi
+		elif [ "$file_status" = refresh ]; then
+			block_lines "$target"
+			say "UPDATE: nobrainer-tech-flow personalization block"
+			say "AUTO_UPDATE: CHECK_AND_NOTIFY"
+			say "AUTO_SESSION_RESTART: ASSESS_CHECKPOINT_RECOMMEND"
+			say "PRESERVED: content outside the managed block"
+			say "DIFF:"
+			head -n "$block_to" "$target" | tail -n "+$block_from" | sed 's/^/-/'
+			block | sed 's/^/+/'
 		else
 			say "MISSING: nobrainer-tech-flow personalization block"
 			say "AUTO_UPDATE: CHECK_AND_NOTIFY"
@@ -775,12 +803,14 @@ preview() {
 # Append the block the way scripts/install_personalization.py does: after a line
 # break when the file does not end with one, and without a trailing one. A lone CR
 # (old Mac line breaks) gets a line break too, so that the block starts on a line
-# of its own, which the undo needs.
+# of its own, which the undo needs. A block that is there already is replaced from its
+# start marker to its end marker and nothing else, so every byte around it stays; the
+# file as it was is kept as a backup first.
 write_instructions() {
 	_w_dir=${target%/*}
 	mkdir -p "$_w_dir" || return 1
 	_w_tmp=$(mktemp "$_w_dir/.${target##*/}.XXXXXX") || return 1
-	if [ "$file_status" = append ]; then
+	if [ "$file_status" = append ] || [ "$file_status" = refresh ]; then
 		_w_stamp=$(date -u +%Y%m%dT%H%M%SZ)
 		made_backup=$target.bak.$_w_stamp
 		_w_index=1
@@ -792,6 +822,18 @@ write_instructions() {
 			rm -f "$_w_tmp"
 			return 1
 		fi
+	fi
+	if [ "$file_status" = refresh ]; then
+		block_lines "$target" || { rm -f "$_w_tmp"; return 1; }
+		if {
+			{ [ "$block_from" -eq 1 ] || head -n "$((block_from - 1))" "$target"; } &&
+				printf '%s' "$(block)" &&
+				tail -n "+$block_to" "$target" | tail -c "+$((${#END} + 1))"
+		} >"$_w_tmp" && mv -f "$_w_tmp" "$target"; then return 0; fi
+		rm -f "$_w_tmp"
+		return 1
+	fi
+	if [ "$file_status" = append ]; then
 		case $(tail -c 1 "$_w_tmp" | od -An -to1 | tr -d ' \n') in
 			'' | 012) ;;
 			*) printf '\n' >>"$_w_tmp" ;;
@@ -898,6 +940,8 @@ install() {
 	say "SKILLS: $((link_count + kept_count)) linked in $skills_dir ($link_count new)"
 	if [ "$inherit" = 1 ]; then
 		say "INSTRUCTIONS: inherited from the Codex global instructions; nothing written here"
+	elif [ "$wrote" = 1 ] && [ "$file_status" = refresh ]; then
+		say "INSTRUCTIONS: $target: managed block updated to this version's text; the rest of the file is kept as it is (backup: $made_backup)"
 	elif [ "$wrote" = 1 ] && [ -n "$made_backup" ]; then
 		say "INSTRUCTIONS: $target (backup: $made_backup)"
 	elif [ "$wrote" = 1 ]; then

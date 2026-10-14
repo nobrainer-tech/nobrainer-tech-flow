@@ -46,6 +46,23 @@ SKILLS_MODULE = load("install_skills_for_shell_tests", ROOT / "scripts" / "insta
 PERSONALIZATION_MODULE = load("personalization_for_shell_tests", PERSONALIZATION)
 SKILLS = sorted(SKILLS_MODULE.CURATED_SKILLS)
 
+DEFAULT_BLOCK = PERSONALIZATION_MODULE.build_block(None, False, False, None)
+# The block an earlier version wrote: the same, with one sentence worded differently.
+STALE_BLOCK = DEFAULT_BLOCK.replace(" Keep coordination in MAIN.", " Keep coordination in MAIN, always.")
+
+
+def stale_layouts() -> dict[str, tuple[bytes, bytes, bytes]]:
+    """Bytes before a block of an earlier version, the block, and the bytes after it."""
+
+    stale = STALE_BLOCK.encode()
+    return {
+        "plain text around the block": (b"# Mine\n\n", stale, b"\n\nAfter\n"),
+        "Windows line breaks": (b"# Mine\r\n\r\n", STALE_BLOCK.replace("\n", "\r\n").encode(), b"\r\nAfter\r\n"),
+        "a block that starts the file": (b"", stale, b"\nAfter\n"),
+        "a block that ends the file without a line break": (b"# Mine\n", stale, b""),
+        "a byte order mark, a NUL byte and a lone CR": (b"\xef\xbb\xbf# Mine\x00\r after\r\n", stale, b"\nend"),
+    }
+
 
 def symlinks_work() -> bool:
     # CI sets this so that a runner without link rights fails instead of skipping.
@@ -953,6 +970,151 @@ class ShellInstallerTests(unittest.TestCase):
             self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
             self.assertEqual(before, instructions.read_bytes())
             self.assertFalse((home / ".claude" / "skills").exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_block_of_an_earlier_version_is_replaced_and_every_byte_around_it_stays(self) -> None:
+        self.assertNotEqual(DEFAULT_BLOCK, STALE_BLOCK)
+        every_shell = ("Windows line breaks", "a byte order mark, a NUL byte and a lone CR")
+        for label, (before, stale, after) in stale_layouts().items():
+            original = before + stale + after
+            expected = before + DEFAULT_BLOCK.encode() + after
+            for shell in [[SHELL], *other_shells()] if label in every_shell else [[SHELL]]:
+                with self.subTest(layout=label, shell=shell), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    target = home / ".codex" / "AGENTS.md"
+                    target.parent.mkdir(parents=True)
+                    target.write_bytes(original)
+                    flags = ("--client", "codex", "--home", str(home))
+
+                    applied = run_sh(*flags, "--apply", home=home, shell=shell)
+
+                    self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                    self.assertEqual(expected, target.read_bytes())
+                    self.assertIn("INSTALLED:", applied.stdout)
+                    self.assertIn("managed block updated to this version's text", applied.stdout)
+                    self.assertIn("NEXT: restart Codex", applied.stdout)
+                    backups = [path for path in target.parent.iterdir() if ".bak." in path.name]
+                    self.assertEqual([original], [path.read_bytes() for path in backups])
+                    again = run_sh(*flags, "--apply", home=home, shell=shell)
+                    self.assertEqual(0, again.returncode, again.stdout + again.stderr)
+                    self.assertIn("UP TO DATE:", again.stdout)
+                    self.assertEqual(expected, target.read_bytes())
+            with self.subTest(layout=label, installer="py"), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                target = home / ".codex" / "AGENTS.md"
+                target.parent.mkdir(parents=True)
+                target.write_bytes(original)
+
+                applied = run_py(str(INSTALL_PY), "--client", "codex", "--home", str(home), "--apply", home=home)
+
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                self.assertEqual(expected, target.read_bytes())
+                self.assertIn("managed block updated to this version's text", applied.stdout)
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_the_preview_of_a_replaced_block_shows_what_changes_and_writes_nothing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            target = home / ".codex" / "AGENTS.md"
+            target.parent.mkdir(parents=True)
+            original = b"# Mine\n\n" + STALE_BLOCK.encode() + b"\n\nAfter\n"
+            target.write_bytes(original)
+            before = entries(home)
+
+            preview = run_sh("--client", "codex", "--home", str(home), home=home)
+
+            self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+            lines = preview.stdout.splitlines()
+            self.assertIn("UPDATE: nobrainer-tech-flow personalization block", lines)
+            self.assertIn("PRESERVED: content outside the managed block", lines)
+            self.assertIn("-" + next(line for line in STALE_BLOCK.splitlines() if "always" in line), lines)
+            self.assertIn("+" + next(line for line in DEFAULT_BLOCK.splitlines() if "MAIN. Never" in line), lines)
+            self.assertIn("NO_CHANGES:", preview.stdout)
+            self.assertEqual(original, target.read_bytes())
+            self.assertEqual(before, entries(home))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_undo_after_a_replaced_block_puts_the_profile_back_as_it_was_before_the_setup(self) -> None:
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                target = home / ".codex" / "AGENTS.md"
+                target.parent.mkdir(parents=True)
+                original = b"# Mine\r\n\r\nAlways answer in Polish.\r\n"
+                target.write_bytes(original)
+                flags = ("--client", "codex", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                # The setup of an earlier version: the same file, its block worded as it was then.
+                installed = target.read_bytes()
+                aged = installed.replace(DEFAULT_BLOCK.encode(), STALE_BLOCK.encode())
+                self.assertNotEqual(installed, aged)
+                target.write_bytes(aged)
+                record_path = home / ".nobrainer-flow-onboarding-codex.json"
+                record = json.loads(record_path.read_text(encoding="utf-8"))
+                record["profile"]["written_sha256"] = hashlib.sha256(aged).hexdigest()
+                record_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+
+                refreshed = install_step(installer, *flags, "--apply", home=home)
+
+                self.assertEqual(0, refreshed.returncode, refreshed.stdout + refreshed.stderr)
+                self.assertEqual(installed, target.read_bytes())
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertEqual(original, target.read_bytes())
+                self.assertFalse(record_path.exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_replaced_block_with_no_record_is_undone_to_the_block_it_replaced(self) -> None:
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                target = home / ".codex" / "AGENTS.md"
+                target.parent.mkdir(parents=True)
+                original = b"# Mine\n\n" + STALE_BLOCK.encode() + b"\n\nAfter\n"
+                target.write_bytes(original)
+                flags = ("--client", "codex", "--home", str(home))
+
+                applied = install_step(installer, *flags, "--apply", home=home)
+
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                self.assertEqual(b"# Mine\n\n" + DEFAULT_BLOCK.encode() + b"\n\nAfter\n", target.read_bytes())
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertEqual(original, target.read_bytes())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_block_that_cannot_be_replaced_without_losing_something_is_left_as_it_is(self) -> None:
+        preference = "- Owner-approved setup preference: Answer in Polish.\n"
+        stale_with_grant = PERSONALIZATION_MODULE.build_block(None, True, False, None).replace(
+            " Keep coordination in MAIN.", " Keep coordination in MAIN, always."
+        )
+        cases = {
+            "a preference": STALE_BLOCK.replace("- Use `nobrainer-ak`", preference + "- Use `nobrainer-ak`").encode(),
+            "a standing authorization": stale_with_grant.encode(),
+            "a saved wiki root": PERSONALIZATION_MODULE.build_block(Path("/wiki"), False, False, None).replace(
+                " Keep coordination in MAIN.", " Keep coordination in MAIN, always."
+            ).encode(),
+            "a start marker in the middle of a line": b"# Mine\ntext " + START.encode() + b"\nbody\n<!-- NOBRAINER-TECH-FLOW:END -->\n",
+        }
+        for label, original in cases.items():
+            with self.subTest(case=label), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                target = home / ".codex" / "AGENTS.md"
+                target.parent.mkdir(parents=True)
+                target.write_bytes(original)
+                flags = ("--client", "codex", "--home", str(home))
+
+                preview = run_sh(*flags, home=home)
+                applied = run_sh(*flags, "--apply", home=home)
+
+                self.assertIn("PRESENT: the managed block is already there and is left as it is", preview.stdout)
+                self.assertIn("NOTE: it differs from this version's default block", preview.stdout)
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                self.assertIn("already has the managed block; left as it is", applied.stdout)
+                self.assertEqual(original, target.read_bytes())
+                self.assertEqual([], [path for path in target.parent.iterdir() if ".bak." in path.name])
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_a_claude_file_that_is_only_the_codex_import_keeps_a_single_block(self) -> None:
