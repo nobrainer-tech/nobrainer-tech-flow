@@ -353,7 +353,15 @@ def install(ctx: Context) -> int:
     print(f"SKILLS: {linked} linked in {ctx.skills} ({to_link} new)")
     if profile.get("target"):
         backup = profile.get("backup")
-        if written:
+        if written and re.search(r"^UPDATE: ", out, re.MULTILINE):
+            # A block of an earlier version was replaced. This run's backup holds the file as
+            # it was just before; the recorded one is the file from before the setup.
+            made = re.search(r"^BACKUP: (.+)$", out, re.MULTILINE)
+            print(
+                f"INSTRUCTIONS: {profile['target']}: managed block updated to this version's text; "
+                "the rest of the file is kept as it is" + (f" (backup: {made.group(1)})" if made else "")
+            )
+        elif written:
             print(f"INSTRUCTIONS: {profile['target']}" + (f" (backup: {backup})" if backup else ""))
         else:
             print(f"INSTRUCTIONS: {profile['target']} already has the managed block; left as it is")
