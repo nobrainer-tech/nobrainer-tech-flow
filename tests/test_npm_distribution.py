@@ -87,6 +87,29 @@ class NpmDistributionTests(unittest.TestCase):
         undo = self.install("--undo", "--apply", package=extraction_b / "package")
         self.assertEqual(0, undo.returncode, undo.stdout + undo.stderr)
         self.assertFalse((skills / "nobrainer-tech-flow").exists())
+        # A second undo finds nothing recorded: it succeeds and writes nothing.
+        after_undo = profile_snapshot()
+        for extra in ((), ("--apply",)):
+            second = self.install("--undo", *extra, package=extraction_b / "package")
+            self.assertEqual(0, second.returncode, second.stdout + second.stderr)
+            self.assertIn("NOTHING TO UNDO", second.stdout)
+            self.assertEqual(after_undo, profile_snapshot())
+
+    def test_undo_before_any_install_succeeds_without_retained_release_or_writes(self):
+        for extra in ((), ("--apply",)):
+            result = self.install("--undo", *extra)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertIn("NOTHING TO UNDO", result.stdout)
+            self.assertFalse(self.home.exists())
+
+    def test_undo_with_a_record_but_no_retained_release_still_stops(self):
+        self.home.mkdir()
+        record = self.home / ".nobrainer-flow-onboarding-codex.json"
+        record.write_text("{}\n", encoding="utf-8")
+        result = self.install("--undo", "--apply")
+        self.assertEqual(3, result.returncode, result.stdout + result.stderr)
+        self.assertIn("retained npm release is missing", result.stderr)
+        self.assertEqual("{}\n", record.read_text(encoding="utf-8"))
 
     def test_foreign_client_target_is_preserved(self):
         target = self.home / ".agents/skills/nobrainer-tech-flow"
