@@ -91,7 +91,11 @@ tampered setup record is refused. Both installers preserve foreign targets at
 retired names through preview, apply, repeat and undo, while exact old links,
 renamed aliases and unresolved legacy names still block. Shell tests compare
 exact-link classification with Python for absolute, relative, chained and looping
-links in every available shell. In the 2.0.2 measurement they caught 30 of 34
+links in every available shell. They also check that a second undo is a no-op
+that writes nothing, that undo removes the empty folders the setup created and no
+others, that a repeat apply says `UP TO DATE` without a restart hint, and that
+`install.sh` replaces a block of an earlier version while every byte around it
+stays. In the 2.0.2 measurement they caught 30 of 34
 mutants of `install.sh`; the [2.0.2 record](releases/v2.0.2.md) says why the
 other four were not caught.
 
