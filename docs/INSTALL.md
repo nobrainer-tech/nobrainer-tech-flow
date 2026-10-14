@@ -99,10 +99,17 @@ flags). The two share the setup record, so either one undoes what the other did.
   and shows the exact text it would write to the client's global instruction file.
 - A canonical skill target that is not a link to this checkout is a conflict:
   nothing is written and the command says which one.
-- It never grants a standing authorization. `install.py` keeps earlier
-  auto-update, session-restart and wiki-root settings in the block as
-  `--keep-options` keeps them; `install.sh` leaves a block that is already there
-  exactly as it is. Change options with `install_personalization.py`.
+- Running `--apply` again when nothing needs to change prints `UP TO DATE` and no
+  restart hint. `INSTALLED` and the restart hint appear only when a link or the
+  instruction file was written.
+- It never grants a standing authorization. When the block in the instruction file
+  is the text of an earlier version, both scripts replace it with this version's
+  text, keep everything outside the two markers byte for byte and save the file as
+  it was as a `.bak` copy first. `install.py` also keeps earlier auto-update,
+  session-restart and wiki-root settings in the block as `--keep-options` keeps
+  them; `install.sh` leaves a block that carries one of those options, or whose
+  markers do not stand on lines of their own, exactly as it is and says so. Change
+  options with `install_personalization.py`.
 - `--undo` (a preview until `--apply` is added) removes exactly the links the setup
   created and puts the managed block back as it was before the first setup:
   removed, or the block that was there before. The rest of the instruction file
@@ -110,12 +117,29 @@ flags). The two share the setup record, so either one undoes what the other did.
   changed. It stops with the reason if the file changed since the last run. It is
   the guided setup's rollback, so it also reverses a setup made by the guided setup
   below, and the other way round.
+- `--undo` also removes the folders the setup had to create, such as `~/.agents`
+  for Codex or `~/.config/opencode` for a client that never ran, but only when they
+  are empty. A folder that was there before the setup, or holds anything else, stays.
+  A second undo, or an undo where no setup is recorded, prints `NOTHING TO UNDO`
+  with the client and the record it looked for, changes nothing and exits 0. A
+  damaged record is still an error.
 - It needs symbolic links. On Windows turn on Developer Mode or run from an
   elevated shell; the command checks first and says so. Otherwise use
   `install_skills.py --mode copy` (see Windows below).
 - `--home` and the client variables behave as described for the individual
   scripts below. When a variable chose the location, the output says so; keep it
   set when you undo.
+
+The setup record is `.nobrainer-flow-onboarding-<client>.json` (for example
+`.nobrainer-flow-onboarding-codex.json`) in the chosen home, next to the client's
+folders. Only you can read or write it (mode 0600), and it holds paths and hashes,
+never a secret: the skills folder, the links the setup created, the instruction file
+with its backup and the SHA-256 of what was written, and `created_dirs`, the folders
+the setup created. `--undo --apply` deletes it, so keep it until you no longer need
+to undo. `.nobrainer-flow-onboarding.json` without a client name is the older
+single-client record; `install.py` still reads it, and `install.sh` points you to it.
+A new instruction file the setup creates is owner-only (mode 0600) as well. An
+existing file keeps its mode, and its `.bak` copy has the same mode.
 
 The individual scripts remain the way to install a subset, use copies, target
 the shared `agents` folder or another client, and are documented next.
