@@ -333,6 +333,7 @@ def install(ctx: Context) -> int:
     if to_link and not symlinks_available(where):
         print(symlink_help(where), file=sys.stderr)
         raise Refused(2)
+    earlier = read_record(ctx) or {}
     code, out, err = run(guided_command(ctx, *every_skill(ctx), "--apply"))
     if code:
         if os.name == "nt" and re.search(r"WinError 1314|privilege", out + err, re.IGNORECASE):
@@ -341,24 +342,38 @@ def install(ctx: Context) -> int:
     record = read_record(ctx) or {}
     profile = record.get("profile") or {}
     linked = len(ctx.guided.installed_ids(ctx.skills))
-    print(f"INSTALLED: {source_line()} for {ctx.label}")
+    # New links and a written instruction file are what a client has to be restarted for.
+    # The personalization helper prints APPLIED only for a file it wrote.
+    written = re.search(r"^APPLIED: ", out, re.MULTILINE) is not None
+    changed = bool(to_link) or written
+    if changed:
+        print(f"INSTALLED: {source_line()} for {ctx.label}")
+    else:
+        print(f"UP TO DATE: {source_line()} is already installed for {ctx.label}; nothing changed")
     print(f"SKILLS: {linked} linked in {ctx.skills} ({to_link} new)")
     if profile.get("target"):
         backup = profile.get("backup")
-        print(f"INSTRUCTIONS: {profile['target']}" + (f" (backup: {backup})" if backup else ""))
+        if written:
+            print(f"INSTRUCTIONS: {profile['target']}" + (f" (backup: {backup})" if backup else ""))
+        else:
+            print(f"INSTRUCTIONS: {profile['target']} already has the managed block; left as it is")
     else:
         print("INSTRUCTIONS: inherited from the Codex global instructions; nothing written here")
     for line in unique(out.splitlines()):
         if KEPT.match(line):
             print(line)
+    recorded = (earlier.get("profile") or {}).get("written_sha256")
+    if not changed and earlier and profile.get("written_sha256") not in (None, recorded):
+        print("RECORD: updated to the instruction file as it is now, so an undo keeps your edits outside the block")
     print(f"UNDO: {ctx.command('--undo', '--apply')}")
     note = ctx.variable_note()
     if note:
         print(note)
-    print(
-        f"NEXT: restart {ctx.label}, then give it one small task with a checkable result "
-        "(docs/TRY_IT.md)."
-    )
+    if changed:
+        print(
+            f"NEXT: restart {ctx.label}, then give it one small task with a checkable result "
+            "(docs/TRY_IT.md)."
+        )
     return 0
 
 

@@ -371,6 +371,8 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
                 self.assertIn(f"SKILLS: {len(SKILLS)} linked in", applied.stdout)
                 self.assertIn(f"({len(SKILLS)} new)", applied.stdout)
+                self.assertIn("INSTALLED:", applied.stdout)
+                self.assertIn("NEXT: restart Claude Code", applied.stdout)
                 for name in SKILLS:
                     self.assertTrue((skills / name).is_symlink(), name)
                     self.assertEqual((ROOT / "skills" / name).resolve(), (skills / name).resolve())
@@ -391,6 +393,9 @@ class ShellInstallerTests(unittest.TestCase):
                 again = run_sh(*flags, "--apply", home=home, shell=shell)
                 self.assertEqual(0, again.returncode, again.stdout + again.stderr)
                 self.assertIn("(0 new)", again.stdout)
+                self.assertIn("UP TO DATE:", again.stdout)
+                self.assertNotIn("INSTALLED:", again.stdout)
+                self.assertNotIn("NEXT: restart", again.stdout)
                 self.assertEqual(written, instructions.read_bytes())
 
                 preview = run_sh(*flags, "--undo", home=home, shell=shell)
@@ -405,6 +410,51 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertFalse(skills.exists())
                 self.assertEqual(original, instructions.read_bytes())
                 self.assertFalse((home / ".nobrainer-flow-onboarding-claude.json").exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_repeat_apply_says_nothing_changed_and_asks_for_a_restart_only_after_a_change(self) -> None:
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".claude" / "CLAUDE.md"
+                instructions.parent.mkdir(parents=True)
+                instructions.write_bytes(b"# Mine\n")
+                skills = home / ".claude" / "skills"
+                flags = ("--client", "claude", "--home", str(home), "--apply")
+
+                def apply() -> subprocess.CompletedProcess[str]:
+                    if installer == "sh":
+                        return run_sh(*flags, home=home)
+                    return run_py(str(INSTALL_PY), *flags, home=home)
+
+                def check(result: subprocess.CompletedProcess[str], changed: bool) -> None:
+                    self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                    self.assertEqual(changed, "INSTALLED:" in result.stdout, result.stdout)
+                    self.assertEqual(changed, "NEXT: restart Claude Code" in result.stdout, result.stdout)
+                    self.assertEqual(not changed, "UP TO DATE:" in result.stdout, result.stdout)
+
+                check(apply(), True)
+                nothing = apply()
+                check(nothing, False)
+                self.assertIn("is already installed for Claude Code; nothing changed", nothing.stdout)
+                self.assertIn("(0 new)", nothing.stdout)
+                self.assertIn("left as it is", nothing.stdout)
+                self.assertIn("UNDO:", nothing.stdout)
+                self.assertNotIn("RECORD:", nothing.stdout)
+                # Text added outside the block only updates the record, so undo accepts it.
+                with instructions.open("ab") as handle:
+                    handle.write(b"\n# Added later\n")
+                edited = apply()
+                check(edited, False)
+                self.assertIn("RECORD: updated", edited.stdout)
+                # A link that went missing and a block deleted by hand are written again.
+                (skills / SKILLS[0]).unlink()
+                written = instructions.read_bytes()
+                instructions.write_bytes(written[: written.index(START.encode())])
+                repaired = apply()
+                check(repaired, True)
+                self.assertIn("(1 new)", repaired.stdout)
+                self.assertIn(START.encode(), instructions.read_bytes())
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_either_installer_undoes_what_the_other_did(self) -> None:
