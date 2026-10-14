@@ -297,6 +297,20 @@ def read_record(ctx: Context) -> dict[str, object] | None:
     return None
 
 
+def unrecorded_path(ctx: Context) -> Path | None:
+    """Where this client's setup record would be, when no record exists at all.
+
+    Neither this client's record nor the older single-client one may be there, not even
+    as a link: anything that is there is a record to read, or to refuse.
+    """
+
+    guided = ctx.guided
+    paths = (guided.state_path(ctx.home, None, ctx.client), guided.legacy_state_path(ctx.home, None))
+    if any(path is not None and (path.exists() or path.is_symlink()) for path in paths):
+        return None
+    return paths[0]
+
+
 def install(ctx: Context) -> int:
     to_link, kept = plan_skills(ctx)
     instructions = plan_instructions(ctx)
@@ -349,17 +363,20 @@ def install(ctx: Context) -> int:
 
 
 def undo(ctx: Context) -> int:
+    missing = unrecorded_path(ctx)
+    if missing is not None:
+        # A second undo, or an undo before any setup: nothing is recorded, so nothing is
+        # to be reversed, and nothing is written.
+        print(
+            f"NOTHING TO UNDO: no setup is recorded for {ctx.label} (looked for {missing}); "
+            "nothing was changed"
+        )
+        return 0
     record = read_record(ctx)
     code, out, err = run(guided_command(ctx, "--rollback", *(("--apply",) if ctx.apply else ())))
     if code:
         print(translate(out), end="")
         print(translate(err), end="", file=sys.stderr)
-        if "rollback state not found" in err:
-            print(
-                "HINT: undo reverses a setup that this command, scripts/install.sh or the guided "
-                f"setup recorded; none is recorded for {ctx.label}.",
-                file=sys.stderr,
-            )
         return code
     destination = str(record["destination"]) if record else str(ctx.skills)
     created = list(record.get("created_skills", [])) if record else []

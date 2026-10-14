@@ -842,8 +842,10 @@ undo() {
 			die 3 "only an older setup record exists: $home/.nobrainer-flow-onboarding.json" \
 				"undo it with $(python_undo), which can tell which client it belongs to."
 		fi
-		die 3 "rollback state not found: $state" \
-			"undo reverses a setup that this script, scripts/install.py or the guided setup recorded; none is recorded for $label."
+		# A second undo, or an undo before any setup: nothing is recorded, so nothing is
+		# to be reversed, and nothing is written.
+		say "NOTHING TO UNDO: no setup is recorded for $label (looked for $state); nothing was changed"
+		return 0
 	fi
 	if [ -L "$state" ] || [ ! -f "$state" ]; then die 3 "rollback state must be a regular file: $state"; fi
 	read_state "$state" || die 3 "cannot read the setup record $state" \

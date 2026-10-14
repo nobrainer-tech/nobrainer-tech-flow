@@ -976,17 +976,89 @@ class ShellInstallerTests(unittest.TestCase):
             self.assertIn("PRESERVED: changed target", refused.stdout)
             self.assertTrue((skills / "nobrainer-build").is_symlink())
 
-    def test_undo_without_a_recorded_setup_says_so(self) -> None:
-        with tempfile.TemporaryDirectory() as temp:
-            home = Path(temp) / "home"
-            home.mkdir()
+    def test_undo_without_a_recorded_setup_is_a_clean_no_op_in_every_shell(self) -> None:
+        for shell in ([SHELL], *other_shells()):
+            for step in (("--undo",), ("--undo", "--apply")):
+                with self.subTest(shell=shell, step=step), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    home.mkdir()
 
-            result = run_sh("--client", "claude", "--home", str(home), "--undo", "--apply", home=home)
+                    result = run_sh("--client", "claude", "--home", str(home), *step, home=home, shell=shell)
 
-            self.assertEqual(3, result.returncode)
-            self.assertIn("rollback state not found", result.stderr)
-            self.assertIn("none is recorded for Claude Code", result.stderr)
-            self.assertEqual([], entries(home))
+                    self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                    self.assertIn("NOTHING TO UNDO: no setup is recorded for Claude Code", result.stdout)
+                    self.assertIn(str(home / ".nobrainer-flow-onboarding-claude.json"), result.stdout)
+                    self.assertEqual("", result.stderr)
+                    self.assertEqual([], entries(home))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_second_undo_changes_nothing_and_succeeds_for_either_installer(self) -> None:
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".claude" / "CLAUDE.md"
+                instructions.parent.mkdir(parents=True)
+                original = b"# Mine\n"
+                instructions.write_bytes(original)
+                flags = ("--client", "claude", "--home", str(home))
+
+                def step(*more: str) -> subprocess.CompletedProcess[str]:
+                    if installer == "sh":
+                        return run_sh(*flags, *more, home=home)
+                    return run_py(str(INSTALL_PY), *flags, *more, home=home)
+
+                self.assertEqual(0, step("--apply").returncode)
+                first = step("--undo", "--apply")
+                self.assertEqual(0, first.returncode, first.stdout + first.stderr)
+                self.assertIn("UNDONE:", first.stdout)
+                after_first = (entries(home), instructions.read_bytes())
+
+                for more in (("--undo",), ("--undo", "--apply")):
+                    second = step(*more)
+
+                    self.assertEqual(0, second.returncode, second.stdout + second.stderr)
+                    self.assertIn("NOTHING TO UNDO", second.stdout)
+                    self.assertNotIn("UNDONE:", second.stdout)
+                    self.assertEqual("", second.stderr)
+                    self.assertEqual(after_first, (entries(home), instructions.read_bytes()))
+                self.assertEqual(original, instructions.read_bytes())
+
+    def test_undo_still_fails_when_a_record_is_there_but_cannot_be_used(self) -> None:
+        def garbage(path: Path) -> None:
+            path.write_text("{ this is not a setup record", encoding="utf-8")
+
+        def folder(path: Path) -> None:
+            path.mkdir()
+
+        def dangling_link(path: Path) -> None:
+            path.symlink_to(path.parent / "nowhere")
+
+        cases = {
+            "text that is not JSON": (".nobrainer-flow-onboarding-claude.json", garbage),
+            "a folder in its place": (".nobrainer-flow-onboarding-claude.json", folder),
+            "a dangling link in its place": (".nobrainer-flow-onboarding-claude.json", dangling_link),
+            "an unreadable older record": (".nobrainer-flow-onboarding.json", garbage),
+        }
+        for label, (name, make) in cases.items():
+            if label.startswith("a dangling") and not symlinks_work():
+                continue
+            for installer in ("sh", "py"):
+                with self.subTest(case=label, installer=installer), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    home.mkdir()
+                    make(home / name)
+                    before = entries(home)
+                    flags = ("--client", "claude", "--home", str(home), "--undo", "--apply")
+
+                    if installer == "sh":
+                        result = run_sh(*flags, home=home)
+                    else:
+                        result = run_py(str(INSTALL_PY), *flags, home=home)
+
+                    self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                    self.assertNotIn("NOTHING TO UNDO", result.stdout)
+                    self.assertIn("ERROR", result.stdout + result.stderr)
+                    self.assertEqual(before, entries(home))
 
     def test_a_relative_home_is_resolved_against_the_callers_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

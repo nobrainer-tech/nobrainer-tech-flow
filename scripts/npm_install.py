@@ -42,6 +42,11 @@ def main() -> int:
             print(f"PRESERVED: release storage is different or untrusted: {target}", file=sys.stderr)
             return 3
     elif args.undo:
+        records = (home / f".nobrainer-flow-onboarding-{args.client}.json", home / ".nobrainer-flow-onboarding.json")
+        if not any(path.exists() or path.is_symlink() for path in records):
+            # Nothing is recorded for this client, so nothing links to a release and
+            # there is nothing to reverse; the installer says so and writes nothing.
+            return installer.main()
         print("ERROR: retained npm release is missing; preserve the client and inspect its setup record.", file=sys.stderr)
         return 3
     elif not args.apply:

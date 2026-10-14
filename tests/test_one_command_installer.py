@@ -220,17 +220,31 @@ class OneCommandInstallerTests(unittest.TestCase):
                     self.assertNotIn("Traceback", result.stderr)
                     self.assertEqual(before, self.entries(home))
 
-    def test_undo_without_a_recorded_setup_says_so(self) -> None:
+    def test_undo_without_a_recorded_setup_is_a_clean_no_op(self) -> None:
+        for flags in (("--undo",), ("--undo", "--apply")):
+            with self.subTest(flags=flags), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+
+                result = self.run_install("--client", "claude", "--home", str(home), *flags)
+
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertIn("NOTHING TO UNDO: no setup is recorded for Claude Code", result.stdout)
+                self.assertIn(str(home / ".nobrainer-flow-onboarding-claude.json"), result.stdout)
+                self.assertEqual("", result.stderr)
+                self.assertEqual([], self.entries(home))
+
+    def test_an_older_single_client_record_is_not_taken_for_no_record(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
             home.mkdir()
+            (home / ".nobrainer-flow-onboarding.json").write_text("{}\n", encoding="utf-8")
 
             result = self.run_install("--client", "claude", "--home", str(home), "--undo", "--apply")
 
-            self.assertEqual(3, result.returncode)
-            self.assertIn("rollback state not found", result.stderr)
-            self.assertIn("none is recorded for Claude Code", result.stderr)
-            self.assertEqual([], self.entries(home))
+            self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertNotIn("NOTHING TO UNDO", result.stdout)
+            self.assertEqual([".nobrainer-flow-onboarding.json"], self.entries(home))
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_the_variable_a_client_reads_selects_where_it_installs_when_home_is_not_given(self) -> None:
