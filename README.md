@@ -6,27 +6,18 @@
 
 <h1 align="center">nobrainer-tech-flow</h1>
 
-<p align="center">
-  <strong>From task to done.</strong><br>
-  One AI workflow for coding agents,<br>
-  instead of 50+ separate tools.
-</p>
+For developers whose coding agent just said "Done."
+
+**From task to done. See what was delivered.**
+
+One open source workflow with 18 modules helps your coding agent do the work, check the result and report what was delivered, the proof and anything left unchecked.
+
+**[Add to your coding agent](#install-safely)** · Free, MIT. Previews every change, with undo. Your coding client's usage costs still apply.
+New to AI? [Start the free course](https://nobrainer.tech/edu/ai-basics/?utm_source=github&utm_medium=referral&utm_campaign=funnel-20261013&utm_content=flow-readme-ai-basics)
 
 <p align="center">
   <a href="https://github.com/nobrainer-tech/nobrainer-tech-flow/actions/workflows/validate.yml"><img alt="Validation" src="https://github.com/nobrainer-tech/nobrainer-tech-flow/actions/workflows/validate.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-27d8cf.svg"></a>
-</p>
-
-<p align="center">
-  <a href="https://nobrainer.tech/flow/">Launch page</a>
-  ·
-  <a href="#install-safely">Copy the setup prompt</a>
-  ·
-  <a href="https://nobrainer.tech/flow/compare/">Compare 50+ tools</a>
-  ·
-  <a href="https://nobrainer.tech/flow/deep-dive/">Deep dive</a>
-  ·
-  <a href="https://www.producthunt.com/products/nobrainer-tech-flow">Product Hunt</a>
 </p>
 
 <table>
@@ -43,6 +34,8 @@
     </td>
   </tr>
 </table>
+
+[Launch page](https://nobrainer.tech/flow/) · [Compare 50+ tools](https://nobrainer.tech/flow/compare/) · [Deep dive](https://nobrainer.tech/flow/deep-dive/) · [Product Hunt](https://www.producthunt.com/products/nobrainer-tech-flow)
 
 <p align="center">
   Ships adapters for
@@ -82,7 +75,7 @@ The mode is informed by ASD-STE100; it does not claim full standard compliance.
 
 ## Install and use the plugin
 
-Use the [npm command](docs/INSTALL.md#npm-command) to preview and apply setup in your coding client. The [portable plugin ZIP](docs/CHAT_PLUGINS.md) uses the same eighteen skills in supported ChatGPT/Codex and Claude surfaces. Public directory approval remains a separate step.
+Use the [setup prompt and guided installer](#install-safely) to preview and apply setup in your coding client, with undo. The [portable plugin ZIP](docs/CHAT_PLUGINS.md) uses the same eighteen modules in supported ChatGPT/Codex and Claude surfaces. Public directory approval remains a separate step.
 
 ## How it works
 
@@ -180,7 +173,7 @@ flowchart TD
 
 ## Install safely
 
-1. Paste this into your coding agent, whichever it is. The same prompt installs and updates, and
+1. Paste the [setup prompt](https://nobrainer.tech/flow/#setup) below into your coding agent, whichever it is. The same prompt installs and updates, and
    the default install works on macOS, Linux and Windows without Python:
 
    ```text
@@ -268,6 +261,11 @@ symbolic links (Windows: Developer Mode). For a subset, a copy install, the shar
 discovery before claiming runtime installation.
 
 </details>
+
+## After setup
+
+- [Run this as a ready workflow](https://nobrainer.tech/paths/ai-engineering/?utm_source=github&utm_medium=referral&utm_campaign=funnel-20261013&utm_content=flow-readme-ai-engineering). Deliver software from requirement to CI with a ready AI engineering workflow built on nobrainer-tech-flow.
+- [New to AI? Start the free course](https://nobrainer.tech/edu/ai-basics/?utm_source=github&utm_medium=referral&utm_campaign=funnel-20261013&utm_content=flow-readme-ai-basics).
 
 If this workflow helps with a real task, star the repository and follow
 [@nobrainer_tech](https://x.com/nobrainer_tech) for build notes and practical examples.

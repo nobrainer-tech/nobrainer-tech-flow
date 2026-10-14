@@ -9,6 +9,10 @@ Existing `nobrainer-tech-skills` registrations need the reviewed
 [`nobrainer-tech-flow` migration guide](MIGRATION_TO_FLOW.md); do not call an old registration
 upgraded merely because the new source is installed nearby.
 
+The npm package is not published yet. Until it is, install with the setup prompt
+or the repository script in the README's [Install safely](../README.md#install-safely)
+section.
+
 ## npm command
 
 Node 18+ and Python 3.11+ are prerequisites. Preview the setup first:
