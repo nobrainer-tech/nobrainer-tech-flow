@@ -103,7 +103,7 @@ def build_block(
     return f"""<!-- NOBRAINER-TECH-FLOW:START -->
 ## nobrainer-tech-flow
 
-- Use `nobrainer-tech-flow` (`$nobrainer-tech-flow`) as the task entrypoint when this client supports skill invocation. If unavailable, check the documented installation path and report that limitation honestly.
+- Use the `nobrainer-tech-flow` module as the task entrypoint when this client supports skill invocation, by the exact name this client lists for it. In Codex that is `$nobrainer-tech-flow:nobrainer-tech-flow` when modules are listed under the plugin name, or `$nobrainer-tech-flow` when they are listed plainly. If unavailable, check the documented installation path and report that limitation honestly.
 - On first setup, load `nobrainer-auto-fine-tune` for a read-only capability audit; preserve MAIN model and effort, and mark unverified runtime values `UNKNOWN`.
 - Preserve the user's selected MAIN model and effort. Inspect the host's actual subagent models, capabilities, concurrency and quota; delegate every independent ready unit promptly and refill slots after audited completion. Keep coordination in MAIN. Never assume a model is available or silently substitute one.
 - Split substantial work into bounded tasks with clear outputs, exclusive write scope, dependencies, and verification. Keep integration and acceptance in MAIN; avoid duplicate or filler tasks.

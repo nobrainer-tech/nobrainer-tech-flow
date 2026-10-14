@@ -153,11 +153,13 @@ writer remains, record `CLEAR_MODE`, then prove clear completion. Start a fresh
 turn by reading the same goal file and reconciling repository, checkout, state
 and next safe action; transcript text alone is not recovery evidence.
 
-For Codex, test explicit canonical invocation with `$nobrainer-tech-flow` and test
-plain aliases separately as implicit-routing controls. Bind the transcript to
-the exact installed skill hash and disable same-name user copies in an isolated
-probe; two skills with the same name are not merged. An alias failure must not be
-reported as a source-isolated behavior result.
+For Codex, test explicit invocation with the name the client lists for the module
+(`$nobrainer-tech-flow:nobrainer-tech-flow` when it lists modules under the plugin
+name, `$nobrainer-tech-flow` when it lists them plainly; the other form adds no
+module text) and test plain aliases separately as implicit-routing controls. Bind
+the transcript to the exact installed skill hash and disable same-name user copies
+in an isolated probe; two skills with the same name are not merged. An alias
+failure must not be reported as a source-isolated behavior result.
 
 Model-policy tests prove the portable `STANDARD`, `EXTENDED` and `ROUTED`
 contract, including the no-silent-switch rule. They do not prove that a client

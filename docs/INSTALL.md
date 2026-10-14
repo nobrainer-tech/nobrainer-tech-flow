@@ -374,7 +374,8 @@ commands work inside a session as `/plugin marketplace add ...` and
 `/plugin install ...`. A plugin namespaces its skills, so the entry point is
 `/nobrainer-tech-flow:nobrainer-tech-flow`; skills installed with
 `--client claude` keep the plain `/nobrainer-tech-flow`. Either way the model
-can also load the skill by name. The `$nobrainer-tech-flow` form is Codex syntax.
+can also load the skill by name. The `$` forms are Codex syntax; the Codex section
+below says which one to type.
 
 Claude Code lists every skill name but drops the descriptions of the least-used
 skills once the listing passes its budget (1% of the context window by default).
@@ -413,11 +414,18 @@ python3 scripts/install_skills.py --client codex --apply
 
 Restart Codex and test discovery in a fresh task. Repository instructions or the
 native skill trigger provide bootstrap; a file on disk is not routing proof.
-Use nobrainer-tech-flow for user-facing requests, or `$nobrainer-tech-flow` for the
-technical explicit invocation; when the skills come from the plugin, use the
-name the client's skill list shows. Plain `NBFlow`, `NBF` and `nobrainer-tech-flow`
-are natural-language triggers whose recognition depends on the client. Existing
-legacy entries under `~/.codex/skills` are not deleted or rewritten automatically.
+Use nobrainer-tech-flow for user-facing requests. For the technical explicit
+invocation, type the exact name Codex lists for the module, because on Codex
+0.157.1 (macOS) the other form adds no module text to the model input. Codex
+lists the module under the plugin name, so you type
+`$nobrainer-tech-flow:nobrainer-tech-flow`, when a plugin manifest sits above the
+folder a link resolves to: a plugin install, the npm package, or the links the
+installer makes into a git checkout. It lists the plain name, so you type
+`$nobrainer-tech-flow`, for a copy made with `install_skills.py --mode copy`.
+[COMPATIBILITY.md](COMPATIBILITY.md) records what was checked. Plain `NBFlow`,
+`NBF` and `nobrainer-tech-flow` are natural-language triggers whose recognition
+depends on the client. Existing legacy entries under `~/.codex/skills` are not
+deleted or rewritten automatically.
 
 ### Cursor
 
@@ -506,8 +514,10 @@ After every install or upgrade:
 2. list/read back the loaded source and skill count;
 3. start a clean task with no pasted skill body;
 4. issue one explicit canonical request and one semantic non-trivial request;
-   for Codex the canonical form is `$nobrainer-tech-flow` (a plugin install lists
-   the skills under the plugin's name, so use the name the client shows);
+   for Codex type the name the client lists for the module:
+   `$nobrainer-tech-flow:nobrainer-tech-flow` when it lists modules under the
+   plugin name, `$nobrainer-tech-flow` when it lists them plainly (the Codex
+   section above says which installs do which);
 5. confirm nobrainer-tech-flow asks no more than one ordinary requirements round, shows one
    compact Progress checklist and routes a specialist only when needed;
 6. issue a one-step task and confirm it remains direct;

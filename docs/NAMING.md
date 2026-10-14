@@ -11,9 +11,9 @@ identifiers. It is the canonical naming reference for maintained copy.
 | Assistant conversation label | nobrainer-tech-flow | Do not open with a ritual entry announcement; mention the product or a specific skill only when it helps explain an action, constraint or result. |
 | X hashtag | `#NoBrainerTechFlow` | Use this punctuation-free form when a real hashtag is useful. A hyphen ends an X hashtag, so never publish `#nobrainer-tech-flow` as the tag. |
 | Legacy display name | Former display spellings | Preserve only in historical release evidence and compatibility metadata. Do not use it as the current product name in new prose. |
-| Technical entry skill | `nobrainer-tech-flow` | Use for the skill directory, frontmatter name, installer target and `$nobrainer-tech-flow` entrypoint. |
+| Technical entry skill | `nobrainer-tech-flow` | Use for the skill directory, frontmatter name, installer target and the Codex entrypoint: `$nobrainer-tech-flow:nobrainer-tech-flow` where Codex lists the module under the plugin name, `$nobrainer-tech-flow` where it lists it plainly. |
 | Retired entry name | `nobrainer-ultra` | Recognize only in migration notes for existing installations. Never direct a new user to invoke it. |
-| Active phrases | `NBFlow`, `NBF`, `nobrainer-tech-flow` | Use in natural-language requests. Exact skill loading is `$nobrainer-tech-flow` when the client supports it; do not create alias directories. |
+| Active phrases | `NBFlow`, `NBF`, `nobrainer-tech-flow` | Use in natural-language requests. Exact skill loading is the name the client lists for the module (in Codex `$nobrainer-tech-flow:nobrainer-tech-flow` or `$nobrainer-tech-flow`) when the client supports it; do not create alias directories. |
 | Retired aliases | `nb-ultra`, `nb-flow`, `nb-workflow` | Preserve only in migration records for older installations. |
 | Public package/plugin identity | `nobrainer-tech-flow` | Use in new package manifests, plugin IDs and installation examples. |
 | Legacy package identity | `nobrainer-tech-skills` | Preserve only in migration guidance and old adapter module paths; update existing client registrations explicitly. |

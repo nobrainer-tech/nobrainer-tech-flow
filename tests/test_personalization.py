@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -96,6 +98,22 @@ class PersonalizationInstallerTests(unittest.TestCase):
             self.assertIn("`nobrainer-ak` (`nbak`)", content)
             self.assertNotIn("Use NBAK", content)
             self.assertIn("UNCHANGED", second.stdout)
+
+    def test_the_entrypoint_line_names_both_forms_codex_may_list_the_module_under(self) -> None:
+        # Codex resolves a typed name only as it lists it: with the plugin name in front when a
+        # plugin manifest sits above the linked folder (a git checkout, the npm package), plainly
+        # otherwise. The block and the docs give both, so a user can type the one that works.
+        plugin = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))["name"]
+        skill_text = (ROOT / "skills" / "nobrainer-tech-flow" / "SKILL.md").read_text(encoding="utf-8")
+        skill = re.search(r"^name:\s*(\S+)\s*$", skill_text, re.MULTILINE).group(1)
+        qualified, plain = f"${plugin}:{skill}", f"${skill}"
+        block = MODULE.build_block(None, False, False, None)
+        entry = next(line for line in block.splitlines() if "entrypoint" in line)
+        self.assertIn(qualified, entry)
+        self.assertIn(plain, entry.replace(qualified, ""))
+        for name in ("INSTALL.md", "COMPATIBILITY.md", "NAMING.md", "TESTING.md"):
+            with self.subTest(document=name):
+                self.assertIn(qualified, (ROOT / "docs" / name).read_text(encoding="utf-8"))
 
     def test_wiki_root_is_validated_and_recorded_in_managed_block(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
