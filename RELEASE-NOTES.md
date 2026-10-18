@@ -1,6 +1,6 @@
 # nobrainer-tech-flow release notes
 
-## v2.3.2 - 2026-10-14
+## v2.3.2 - 2026-10-18
 
 Install, update and undo nobrainer-tech-flow without false alarms or leftovers. A
 second undo now says that nothing is recorded to undo and exits cleanly instead of
@@ -30,8 +30,17 @@ its release copy in `~/.nobrainer-tech-flow-npm`, so cleaning a Git clone in
 is missing. Undo also keeps folders that now lie under a link, removes a home made only
 for the record, and stops on a dangling older record.
 
-This is an installer and documentation fix. The eighteen modules are unchanged except
-for the entry module's `VERSION` file. The native plugin 2.3.2 will carry the same
+Five instruction fixes from a review of 2.3.1 also ship. The README leads with the
+Git install while the npm package is unpublished. Flow owns one corrective-attempt
+budget (two attempts per observed failure), and Build and RCA link to it instead of
+saying three. Dispatcher accepts the worker ID a host returns for a hidden native
+worker as the send receipt, so default delegation can be dispatched; visible sessions
+still go through Sessions. Saying "Use NBFlow" turns on session health observation
+only: a restart or archive needs separate owner consent, and the quick path skips
+startup care. Stale status lines, an undefined "team cap" and two lifecycle names are
+corrected, and every approval-gate list includes contacting people.
+
+The module set stays at eighteen. The native plugin 2.3.2 will carry the same
 installer; npm registry publication is still pending.
 
 See the [release scope and verification record](docs/releases/v2.3.2.md).
