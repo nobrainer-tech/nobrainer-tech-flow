@@ -220,3 +220,4 @@ are available. Pass explicit argv, finite `--wall-seconds`, `--max-output-bytes`
 and a fresh `--receipt`; no shell or automatic retries. It controls only its
 child process group, not model context, cost, escaped sessions or other tools.
 A receipt is process evidence, never task acceptance; missing proof is not success.
+To bind a check to the files it ran against, see the [evidence receipt](references/evidence-receipt.md).
