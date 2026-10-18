@@ -235,7 +235,8 @@ milestones and downstream evidence. Completed workers never self-accept.
 
 After each milestone, MAIN verifies evidence, updates the existing TODO and
 selects the next ready work without waiting for a new user prompt. Independent
-milestones may run together under the team cap. Keep one overarching goal open
+milestones may run together up to the target concurrency in
+[coordinated team execution](#coordinated-team-execution). Keep one overarching goal open
 until every required milestone and integrated DoD passes. Do not complete and
 replace the native goal for each milestone. Native goals are optional mirrors;
 Markdown remains the portable record. Host pauses or quotas can suspend execution,

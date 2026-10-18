@@ -598,9 +598,8 @@ ID stay authoritative. Unsupported clients receive an explicit manual handoff.
 
 This belongs to [Sessions](skills/nobrainer-sessions/references/session-restart.md),
 not a separate skill. The optional stdlib [decision helper](skills/nobrainer-sessions/scripts/restart_gate.py)
-can serve a client hook without requiring one. Automatic startup care is development source on top of
-v1.8.1; native transport and all-client savings are not implied. Published tags
-remain unchanged. See [session restart](docs/SESSION_RESTART.md).
+can serve a client hook without requiring one. Automatic startup care has shipped since v1.10.0;
+native transport and all-client savings are not implied. See [session restart](docs/SESSION_RESTART.md).
 
 </details>
 
