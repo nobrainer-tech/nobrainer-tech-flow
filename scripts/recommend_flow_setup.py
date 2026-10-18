@@ -913,6 +913,15 @@ def restore_file_preimage(
     )
 
 
+def print_changed_profile(target: Path) -> None:
+    print(f"PRESERVED: personalization changed since setup: {target}; it is left exactly as it is, managed block included")
+    print(
+        "HINT: to take the managed block out as well, run the setup again with --apply, which records the "
+        "file as it is now, then undo again; your edits outside the block stay. Or delete the lines from "
+        f"{BLOCK_START.decode()} to {BLOCK_END.decode()} yourself."
+    )
+
+
 def rollback(args: argparse.Namespace, state_file: Path) -> int:
     try:
         metadata = state_file.lstat()
@@ -975,12 +984,13 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         return 3
     restored: bytes | None = None
     original: bytes | None = None
+    # An instruction file edited since the setup stays exactly as it is; only the links go.
+    profile_changed = False
     if target_path and target_path.exists():
         current = target_path.read_bytes()
         expected_hash = profile.get("written_sha256")
-        if hashlib.sha256(current).hexdigest() != expected_hash:
-            print(f"PRESERVED: personalization changed since setup: {target_path}")
-            return 3
+        profile_changed = hashlib.sha256(current).hexdigest() != expected_hash
+    if target_path and target_path.exists() and not profile_changed:
         if backup and not Path(str(backup)).is_file():
             print(f"ERROR: personalization backup missing: {backup}", file=sys.stderr)
             return 3
@@ -1000,8 +1010,11 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
             print(f"PRESERVED: changed target {target}")
             return 3
     print(f"ROLLBACK_PLAN: remove={','.join(created) or 'none'}; personalization={target_path or 'none'}; backup={backup or 'none'}")
-    for directory in sorted(directories, key=lambda item: len(item.parts), reverse=True):
-        print(f"ROLLBACK_FOLDER: {directory}: removed if it is still empty; the setup created it")
+    if profile_changed:
+        print_changed_profile(target_path)
+    else:
+        for directory in sorted(directories, key=lambda item: len(item.parts), reverse=True):
+            print(f"ROLLBACK_FOLDER: {directory}: removed if it is still empty; the setup created it")
     if not args.apply:
         print(f"ROLLBACK_DRY_RUN: no files changed; pass --apply to reverse setup from {state_file}")
         return 0
@@ -1050,6 +1063,13 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         target = destination / name
         if target.exists() or target.is_symlink():
             raise OSError(f"skill rollback readback mismatch: {target}")
+    if profile_changed:
+        # The record stays, with no links left in it, so that the block can still be taken
+        # out once the record knows the file as it is now.
+        save_state(state_file, {**state, "created_skills": []})
+        print_changed_profile(target_path)
+        print(f"ROLLBACK_READBACK: removed={','.join(removed) or 'none'}; profile=preserved")
+        return 3
     state_file.unlink()
     removed_dirs, kept_dirs = remove_empty_directories(directories)
     for directory in removed_dirs:

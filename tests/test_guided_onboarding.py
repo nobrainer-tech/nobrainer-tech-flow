@@ -454,7 +454,7 @@ class GuidedOnboardingTests(unittest.TestCase):
             self.assertFalse((destination / "nobrainer-build").exists())
             self.assertFalse((destination / "nobrainer-tech-flow").exists())
 
-    def test_rollback_preserves_user_edits_and_installed_items(self) -> None:
+    def test_rollback_after_an_edit_unlinks_the_skills_and_keeps_the_edited_file(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             destination = root / "skills"
@@ -477,11 +477,13 @@ class GuidedOnboardingTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, result.stderr)
             instruction.write_text(instruction.read_text() + "Owner edit.\n", encoding="utf-8")
 
+            edited = instruction.read_bytes()
             rollback = self.run_setup(*self.common(destination, home), "--rollback", "--apply")
             self.assertEqual(3, rollback.returncode)
             self.assertIn("personalization changed since setup", rollback.stdout)
-            self.assertTrue((destination / "nobrainer-tech-flow").is_symlink())
-            self.assertIn("Owner edit.", instruction.read_text())
+            # The links go; the edited file stays byte for byte, managed block included.
+            self.assertFalse((destination / "nobrainer-tech-flow").exists())
+            self.assertEqual(edited, instruction.read_bytes())
 
     def test_state_save_failure_restores_first_and_repeated_setup_preimages(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

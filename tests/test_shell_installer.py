@@ -838,21 +838,66 @@ class ShellInstallerTests(unittest.TestCase):
             self.assertNotIn(START, content)
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
-    def test_undo_refuses_a_file_or_link_that_changed_since(self) -> None:
+    def test_undo_after_the_file_was_edited_unlinks_the_skills_and_leaves_the_file(self) -> None:
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".claude" / "CLAUDE.md"
+                skills = home / ".claude" / "skills"
+                flags = ("--client", "claude", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                with instructions.open("a", encoding="utf-8") as handle:
+                    handle.write("\nedited after the setup\n")
+                edited = instructions.read_bytes()
+
+                preview = install_step(installer, *flags, "--undo", home=home)
+
+                self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+                self.assertIn("PRESERVED: personalization changed since setup", preview.stdout)
+                self.assertNotIn("remove the managed block", preview.stdout)
+                self.assertTrue((skills / "nobrainer-build").is_symlink())
+                partly = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(3, partly.returncode, partly.stdout + partly.stderr)
+                self.assertIn("PARTLY UNDONE:", partly.stdout)
+                self.assertIn(f"SKILLS: {len(SKILLS)} unlinked", partly.stdout)
+                self.assertIn("PRESERVED: personalization changed since setup", partly.stdout)
+                self.assertIn("HINT: ", partly.stdout)
+                self.assertEqual([], list(skills.iterdir()))
+                self.assertEqual(edited, instructions.read_bytes())
+                record = json.loads((home / ".nobrainer-flow-onboarding-claude.json").read_text(encoding="utf-8"))
+                self.assertEqual([], record["created_skills"])
+
+                # As the hint says: the setup again records the file as it is, then the undo
+                # takes the block out and keeps the edit.
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                content = instructions.read_text(encoding="utf-8") if instructions.exists() else ""
+                self.assertNotIn(START, content)
+                self.assertIn("edited after the setup", content)
+                self.assertFalse(skills.exists())
+                self.assertFalse((home / ".nobrainer-flow-onboarding-claude.json").exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_undo_refuses_a_link_that_changed_since(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
             instructions = home / ".claude" / "CLAUDE.md"
+            skills = home / ".claude" / "skills"
             flags = ("--client", "claude", "--home", str(home))
             self.assertEqual(0, run_sh(*flags, "--apply", home=home).returncode)
-            with instructions.open("a", encoding="utf-8") as handle:
-                handle.write("\nedited after the setup\n")
+            before = instructions.read_bytes()
+            (skills / "nobrainer-review").unlink()
+            (skills / "nobrainer-review").symlink_to(Path(temp), target_is_directory=True)
 
             refused = run_sh(*flags, "--undo", "--apply", home=home)
 
             self.assertEqual(3, refused.returncode)
-            self.assertIn("PRESERVED: personalization changed since setup", refused.stdout)
-            self.assertTrue((home / ".claude" / "skills" / "nobrainer-build").is_symlink())
-            self.assertIn("edited after the setup", instructions.read_text(encoding="utf-8"))
+            self.assertIn("PRESERVED: changed target", refused.stdout)
+            self.assertTrue((skills / "nobrainer-build").is_symlink())
+            self.assertEqual(before, instructions.read_bytes())
 
     def test_a_foreign_skill_or_an_earlier_layout_is_refused_before_anything_is_written(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

@@ -397,11 +397,22 @@ def undo(ctx: Context) -> int:
         return 0
     record = read_record(ctx)
     code, out, err = run(guided_command(ctx, "--rollback", *(("--apply",) if ctx.apply else ())))
+    destination = str(record["destination"]) if record else str(ctx.skills)
+    readback = re.search(r"^ROLLBACK_READBACK: removed=([^;\n]*);", out, re.MULTILINE)
+    if code == 3 and readback and re.search(r"; profile=preserved$", out, re.MULTILINE):
+        # The instruction file changed since the setup: the links are gone, the file stays.
+        removed = [name for name in readback.group(1).split(",") if name not in ("", "none")]
+        print(f"PARTLY UNDONE: nobrainer-tech-flow for {ctx.label}")
+        print(f"SKILLS: {len(removed)} unlinked from {destination}")
+        for line in unique(out.splitlines()):
+            if UNDO_NOTE.match(line):
+                print(line)
+        print(f"NEXT: restart {ctx.label} to drop the skills.")
+        return code
     if code:
         print(translate(out), end="")
         print(translate(err), end="", file=sys.stderr)
         return code
-    destination = str(record["destination"]) if record else str(ctx.skills)
     created = list(record.get("created_skills", [])) if record else []
     directories = list(record.get("created_dirs", [])) if record else []
     profile = (record or {}).get("profile") or {}
@@ -409,6 +420,9 @@ def undo(ctx: Context) -> int:
     backup = profile.get("backup")
     if not ctx.apply:
         print(f"UNDO_PLAN: unlink {len(created)} skills from {destination}")
+        if re.search(r"^PRESERVED: personalization changed since setup", out, re.MULTILINE):
+            # The file stays as it is, and so do the folders; the note below says why.
+            target, directories = None, []
         if target and backup:
             print(
                 f"INSTRUCTIONS: {target}: put the managed block back as it was before the setup "
@@ -426,7 +440,6 @@ def undo(ctx: Context) -> int:
             print(note)
         print(f"NO_CHANGES: preview only; undo with: {ctx.command('--undo', '--apply')}")
         return 0
-    readback = re.search(r"^ROLLBACK_READBACK: removed=([^;\n]*);", out, re.MULTILINE)
     removed = [name for name in readback.group(1).split(",") if name not in ("", "none")] if readback else []
     print(f"UNDONE: nobrainer-tech-flow for {ctx.label}")
     print(f"SKILLS: {len(removed)} unlinked from {destination}")

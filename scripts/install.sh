@@ -1015,6 +1015,11 @@ restore_into() {
 	fi
 }
 
+# What to do about an instruction file that changed after the setup.
+keep_hint() {
+	say "HINT: to take the managed block out as well, run $(command_for --apply), which records the file as it is now, then $(command_for --undo --apply); your edits outside the block stay. Or delete the lines from $START to $END yourself."
+}
+
 undo() {
 	if [ ! -e "$state" ] && [ ! -L "$state" ]; then
 		# A link counts, even a dangling one: it is a damaged record to inspect, not no record.
@@ -1033,6 +1038,7 @@ undo() {
 
 	check_dirs || die 3 "rollback state lists a folder this setup cannot have created" \
 		"inspect the record; the guided undo refuses it as well"
+	_u_keep=
 	if [ -n "$st_target" ]; then
 		# The record may only name a documented instruction file of this home.
 		_u_saved_skills=$skills_dir _u_saved_target=$target _u_saved_label=$label
@@ -1073,11 +1079,10 @@ undo() {
 		if [ -e "$st_target" ]; then
 			sha256 /dev/null >/dev/null || die 2 "this script needs sha256sum, shasum or openssl to check the setup"
 			if [ "$(sha256 "$st_target")" != "$st_hash" ]; then
-				say "PRESERVED: personalization changed since setup: $st_target"
-				exit 3
-			fi
+				# Edited since the setup: the file stays exactly as it is, and only the links go.
+				_u_keep=1
 			# The line-based undo below needs each block on lines of its own.
-			if ! block_lines "$st_target" || { [ -n "$st_backup" ] && grep -q -F -e "$START" "$st_backup" && ! block_lines "$st_backup"; }; then
+			elif ! block_lines "$st_target" || { [ -n "$st_backup" ] && grep -q -F -e "$START" "$st_backup" && ! block_lines "$st_backup"; }; then
 				die 3 "the managed block in $st_target does not stand on lines of its own" \
 					"undo it with $(python_undo)"
 			fi
@@ -1100,12 +1105,15 @@ undo() {
 	for _u_name in $st_created; do _u_count=$((_u_count + 1)); done
 	if [ "$apply" = 0 ]; then
 		say "UNDO_PLAN: unlink $_u_count skills from $st_dest"
-		if [ -n "$st_target" ] && [ -n "$st_backup" ]; then
+		if [ -n "$_u_keep" ]; then
+			say "PRESERVED: personalization changed since setup: $st_target; it is left exactly as it is, managed block included"
+			keep_hint
+		elif [ -n "$st_target" ] && [ -n "$st_backup" ]; then
 			say "INSTRUCTIONS: $st_target: put the managed block back as it was before the setup (from $st_backup); later edits outside the block stay"
 		elif [ -n "$st_target" ]; then
 			say "INSTRUCTIONS: $st_target: remove the managed block"
 		fi
-		if [ -n "$st_dirs" ]; then
+		if [ -n "$st_dirs" ] && [ -z "$_u_keep" ]; then
 			printf '%s' "$st_dirs" | LC_ALL=C sort -r | while IFS= read -r _u_dir; do
 				say "FOLDER: $_u_dir: removed if it is still empty; the setup created it"
 			done
@@ -1123,6 +1131,19 @@ undo() {
 			_u_removed=$((_u_removed + 1))
 		fi
 	done
+	if [ -n "$_u_keep" ]; then
+		# The record stays, with no links left in it, so that the block can still be taken out
+		# once the record knows the file as it is now.
+		skills_dir=$st_dest new_created= new_target=$st_target new_backup=$st_backup new_hash=$st_hash
+		new_dirs=$(printf '%s' "$st_dirs") want_dirs=$st_has_dirs
+		write_state || die 4 "the links are gone, but the setup record $state could not be updated"
+		say "PARTLY UNDONE: nobrainer-tech-flow for $label"
+		say "SKILLS: $_u_removed unlinked from $st_dest"
+		say "PRESERVED: personalization changed since setup: $st_target; it is left exactly as it is, managed block included"
+		keep_hint
+		say "NEXT: restart $label to drop the skills."
+		exit 3
+	fi
 	_u_result=
 	if [ -n "$st_target" ] && [ -e "$st_target" ]; then
 		_u_tmp=$(mktemp "${st_target%/*}/.${st_target##*/}.XXXXXX") || die 4 "cannot write next to $st_target"
