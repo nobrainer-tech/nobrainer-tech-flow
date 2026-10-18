@@ -109,6 +109,11 @@ artifact merely to make the change look substantial.
    Perform a behavior-preserving simplification pass: remove unused indirection,
    duplicate state and needless fallback layers only when references and tests
    prove the simpler path. Do not compress readable code merely to reduce lines.
+   For a behavior-preserving rewrite, prove the tests would notice a change:
+   seed one deliberate fault per changed behavior class in a disposable copy (or
+   revert it at once), confirm a test fails, revert, and confirm a clean diff.
+   Report `TEST_SENSITIVITY: PROVEN | PARTLY_PROVEN | NOT_PROVEN` (all, some or no
+   classes caught); `NOT_PROVEN` leaves the preservation claim `UNVERIFIED`.
    Check `Done clean`: actual files match the expected scope, no unexpected
    status entry remains, and no placeholder or speculative layer survived.
    If a pull request is part of the authorized delivery, bind its reported checks
@@ -153,6 +158,7 @@ ACCEPTANCE_TRACE:
 FAILING_PROOF_BEFORE:
 TARGETED_CHECKS:
 BROADER_CHECKS:
+TEST_SENSITIVITY: PROVEN | PARTLY_PROVEN | NOT_PROVEN | NOT_APPLICABLE
 RUNTIME_EVIDENCE:
 REVIEW:
 SIDE_EFFECTS:
