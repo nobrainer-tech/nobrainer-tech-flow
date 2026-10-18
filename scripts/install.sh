@@ -531,8 +531,8 @@ under_link() {
 }
 
 # The folders a record lists must be ones the setup can have made: each an absolute,
-# plain path listed once, that is, or lies above, the skills folder or the folder of the
-# instruction file. Anything else is a damaged record that an undo must not act on. A path
+# plain path listed once, that is, or lies above, the skills folder, the folder of the
+# instruction file or the folder of the record. Anything else is a damaged record that an undo must not act on. A path
 # may be spelled with or without the links on the way, so both spellings count.
 above() {
 	case "$2/" in "$1"/*) return 0 ;; esac
@@ -545,6 +545,7 @@ check_dirs() {
 	_k_dest=$(physical "$st_dest")
 	_k_tdir= _k_tphys=
 	if [ -n "$st_target" ]; then _k_tdir=${st_target%/*} _k_tphys=$(physical "${st_target%/*}"); fi
+	_k_sdir=${state%/*} _k_sphys=$(physical "${state%/*}")
 	printf '%s' "$st_dirs" | {
 		_k_seen='
 '
@@ -555,6 +556,7 @@ check_dirs() {
 			_k_ok=
 			for _k_form in "$_k_dir" "$_k_real"; do
 				if above "$_k_form" "$st_dest" || above "$_k_form" "$_k_dest"; then _k_ok=1; fi
+				if above "$_k_form" "$_k_sdir" || above "$_k_form" "$_k_sphys"; then _k_ok=1; fi
 				if [ -n "$_k_tdir" ]; then
 					if above "$_k_form" "$_k_tdir" || above "$_k_form" "$_k_tphys"; then _k_ok=1; fi
 				fi
@@ -916,6 +918,11 @@ install() {
 		new_target=$target new_backup=$made_backup new_hash=$(sha256 "$target")
 	fi
 	if [ -n "$created" ] || [ "$wrote" = 1 ] || { [ "$record" = 1 ] && [ "$new_hash" != "$st_hash" ]; }; then
+		# The record's own folder counts: a home that does not exist yet is made for it alone
+		# when a client variable puts the skills and the instructions elsewhere.
+		note_dirs "$home"
+		# A failure here makes write_state fail too, which reverses this run.
+		mkdir -p "$home" 2>/dev/null
 		new_created=$(printf '%s\n' $st_created $created | LC_ALL=C sort -u | tr '\n' ' ')
 		new_created=${new_created# }
 		new_created=${new_created% }

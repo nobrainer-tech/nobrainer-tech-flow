@@ -1319,7 +1319,7 @@ class ShellInstallerTests(unittest.TestCase):
                 preview = run_sh(*flags, "--undo", home=home, shell=shell)
 
                 self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
-                # Git Bash names a folder its own way (/c/Users/..., /tmp/...), so only the part
+                # Git Bash names a folder its own way (a drive or /tmp spelling), so only the part
                 # below the temporary folder is compared; the record above checks the full path.
                 for folder in folders:
                     self.assertIn(f"{Path(temp).name}/home/{folder}: removed if it is still empty", preview.stdout)
@@ -1474,6 +1474,38 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertNotIn("FOLDER: removed", undone.stdout)
                 self.assertEqual(["opencode", "opencode/skills"], entries(elsewhere))
                 self.assertTrue((home / ".config").is_symlink())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_home_made_only_for_the_record_is_taken_away_again(self) -> None:
+        # CLAUDE_CONFIG_DIR puts the skills and the instructions in a folder that exists, and
+        # the home is made only to hold the setup record. The undo takes the home away too.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "missing-home"
+                config = Path(temp) / "claude-config"
+                config.mkdir()
+                variables = {"CLAUDE_CONFIG_DIR": str(config)}
+
+                def step(*more: str) -> subprocess.CompletedProcess[str]:
+                    if installer == "sh":
+                        return run_sh("--client", "claude", *more, home=home, variables=variables)
+                    return subprocess.run(
+                        [sys.executable, str(INSTALL_PY), "--client", "claude", *more],
+                        cwd=ROOT, text=True, encoding="utf-8", errors="replace", capture_output=True,
+                        check=False, stdin=subprocess.DEVNULL, env=environment(home, variables),
+                    )
+
+                applied = step("--apply")
+
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                self.assertEqual([".nobrainer-flow-onboarding-claude.json"], entries(home))
+                record = json.loads((home / ".nobrainer-flow-onboarding-claude.json").read_text(encoding="utf-8"))
+                self.assertIn(str(home.resolve()), record["created_dirs"])
+                undone = step("--undo", "--apply")
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertFalse(home.exists())
+                self.assertEqual([], entries(config))
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_a_home_the_setup_had_to_create_is_taken_away_again(self) -> None:

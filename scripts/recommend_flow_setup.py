@@ -639,11 +639,11 @@ def missing_directories(*paths: Path) -> list[Path]:
     return missing
 
 
-def recorded_directories(state: dict[str, object]) -> list[Path]:
+def recorded_directories(state: dict[str, object], record: Path) -> list[Path]:
     """The folders a setup record says the setup created, or ValueError when it cannot be true.
 
-    A folder the setup made lies on the way to its skills folder or to the folder of
-    its instruction file, so any other entry (a relative path, a root, a path with
+    A folder the setup made lies on the way to its skills folder, to the folder of its
+    instruction file or to the folder of the RECORD itself, so any other entry (a relative path, a root, a path with
     ``..``, a folder elsewhere) means a damaged record, and an undo must not act on it.
     A path may be spelled with or without the links on the way, so both spellings count.
     """
@@ -656,6 +656,7 @@ def recorded_directories(state: dict[str, object]) -> list[Path]:
     target = profile.get("target") if isinstance(profile, dict) else None
     if isinstance(target, str) and target:
         bases.append(Path(target).parent)
+    bases.append(record.parent)
     places = [form for base in bases for form in (base, physical_path(base))]
     directories: list[Path] = []
     seen: set[Path] = set()
@@ -755,7 +756,7 @@ def read_state_file(path: Path) -> dict[str, object]:
     ):
         raise ValueError(f"refusing to overwrite unrecognized setup state: {path}")
     try:
-        recorded_directories(loaded)
+        recorded_directories(loaded, path)
     except ValueError as exc:
         raise ValueError(f"refusing to overwrite unrecognized setup state: {path} ({exc})") from None
     return loaded
@@ -931,7 +932,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         print("ERROR: rollback state contains invalid skill ownership entries", file=sys.stderr)
         return 3
     try:
-        directories = recorded_directories(state)
+        directories = recorded_directories(state, state_file)
     except ValueError as exc:
         print(f"ERROR: rollback state is not credible: {exc}", file=sys.stderr)
         return 3
@@ -1287,7 +1288,9 @@ def main(argv: list[str] | None = None) -> int:
         if not args.apply:
             return 0
         # The folders this run may create, so that an undo can remove the ones it made.
-        new_directories = missing_directories(destination, profile_target.parent)
+        # The record's own folder counts: a home that does not exist yet is made for it alone
+        # when a client variable puts the skills and the instructions elsewhere.
+        new_directories = missing_directories(destination, profile_target.parent, state.parent)
         # Inspect every target before writing any of them. This keeps a later
         # conflict from leaving a partial selection installed.
         for name in install_names:
@@ -1338,7 +1341,9 @@ def main(argv: list[str] | None = None) -> int:
         # existed has none: its folders may have been there already, so none is claimed.
         # Each folder is written the way it really is, links resolved, so that runs from
         # different installers and spellings of the same path list it once.
-        previous_dirs = {str(physical_path(path)) for path in recorded_directories(previous)} if previous else set()
+        previous_dirs = {str(physical_path(path)) for path in recorded_directories(previous, state)} if previous else set()
+        # save_state would make the record's folder below; making it here lets the record list it.
+        state.parent.mkdir(parents=True, exist_ok=True)
         made_dirs = {str(physical_path(path)) for path in new_directories if path.is_dir() and not path.is_symlink()}
         created_dirs = sorted(previous_dirs | made_dirs)
         # A record that has no folder list is from an earlier version. It keeps that form until
