@@ -82,6 +82,15 @@ identity, relative links, references, scripts, supported extensions, secrets,
 private paths and client assumptions. Optional client metadata is not a universal
 requirement.
 
+## Instruction-debt audit
+
+Run after a model or client upgrade, or on owner request. Inputs: the loaded
+instruction files through `scripts/audit.py`, plus an optional owner-supplied
+redacted history JSON through the reviewed read-only
+`python3 scripts/context_candidates.py /absolute/history.json`. Report stale,
+repeated or conflicting rules as candidates with exact file:line. This audit is
+`REPORT_ONLY`: the owner approves each change before any repair.
+
 Accept a finding only with an exact file and line, a reachable trigger/state,
 observable consequence, current guard or test gap, smallest replacement and a
 regression proof. An old model name, a long file or a stylistic preference alone
