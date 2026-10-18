@@ -46,7 +46,8 @@ For substantial work, delegate all independent ready units promptly through
 [team execution](references/delivery.md#coordinated-team-execution); MAIN coordinates,
 integrates, verifies and refills slots. Use [Auto Fine Tune](../nobrainer-auto-fine-tune/SKILL.md)
 for first-setup capability checks; benchmark only when calibration pays.
-Unavailable native workers leave work in MAIN; visible conversations require explicit owner request.
+Unavailable native workers leave work in MAIN; visible conversations require explicit owner request
+or authorized MAIN restart; isolation, reuse or handoff alone never authorize one.
 
 Lifecycle: `DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN`.
 
@@ -175,9 +176,8 @@ planning. Loading method context is not task execution; a routing-table line or 
 - `nobrainer-review` when independent closeout adds material confidence;
 - `nobrainer-team` for capability gaps; native subagents for bounded independent work;
   `nobrainer-dispatcher` for a real queue and `nobrainer-sessions` for durable visible sessions;
-- `nobrainer-auto-fine-tune` at first setup for client/project capability
-  discovery and a scoped personalization proposal; benchmark worker routes
-  only when the expected benefit justifies the probes.
+- `nobrainer-auto-fine-tune` at first setup for capability discovery and a
+  scoped personalization proposal.
 
 ## `AUTOPILOT`: execute the bounded scope
 

@@ -91,9 +91,9 @@ bounded prompt, disjoint scope, observable completion and artifact/test review.
 Do not turn a subtask into a new user-owned visible task unless requested.
 Use `nobrainer-team` to decide missing roles/capabilities, `nobrainer-dispatcher` to
 schedule an approved queue with multiple delegated units, and
-`nobrainer-sessions` to operate explicitly owner-authorized visible sessions.
-Independent work, isolation or reuse alone does not authorize creating one;
-use native subagents, or MAIN when unavailable. Keep a tightly coupled edit in
+`nobrainer-sessions` to operate visible sessions allowed by the
+[canonical rule](../SKILL.md#choose-the-smallest-workflow); otherwise use native
+subagents, or MAIN when unavailable. Keep a tightly coupled edit in
 MAIN. Titles aid humans; IDs and
 readback prove identity.
 

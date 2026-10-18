@@ -153,9 +153,8 @@ Do not invent work to keep a goal active.
 Use one primary MAIN session. A native subagent with a returned ID, bounded task,
 disjoint write scope and observable completion needs no new visible task or
 persistent session registry. Audit its artifact and termination before integration.
-Create a durable visible session only on an explicit owner request for that
-conversation or an explicitly authorized MAIN restart. Visibility, reuse,
-isolation, review retries and handoff needs alone do not authorize creation.
+Create a durable visible session only under the
+[canonical rule](../SKILL.md#choose-the-smallest-workflow).
 Use native subagents for delegated units; if unavailable, continue in MAIN.
 For a persistent delegated queue:
 
