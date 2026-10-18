@@ -62,7 +62,7 @@ block() {
 - At project start, discover whether a relevant wiki exists. If one exists, read its `WIKI.md`, locate relevant `index.md` entries with a targeted search, then read only the relevant pages. Ask before creating a wiki unless project rules or prior authorization already settle it.
 - Assess context and checkpoint at appropriate milestones. Recommend session rotation when it would help; do not restart or archive automatically. When rotation is authorized, use the supported lifecycle, verify exact successor takeover by ID/readback, and archive the old session only after that readback. Do not create recursive visible workers or claim a restart when unsupported.
 - On the first `nobrainer-tech-flow` use each calendar day, check for available updates when this client exposes a supported check and notify the owner; do not apply them automatically. If the client is inactive or cannot check, do not claim a check occurred.
-- Use `nobrainer-ak` (`nbak`) for relevant marketing and sales content creation when available. For general writing use `nobrainer-writing` when available; make technical documentation concrete, source-backed, and technically verified. Preserve facts, use the user's language, and verify at the actual delivery layer.
+- Use `nobrainer-writing` for material writing when available; make technical documentation concrete, source-backed, and technically verified. Preserve facts, use the user's language, and verify at the actual delivery layer.
 <!-- NOBRAINER-TECH-FLOW:END -->
 EOF
 }

@@ -49,6 +49,12 @@ SKILLS = sorted(SKILLS_MODULE.CURATED_SKILLS)
 DEFAULT_BLOCK = PERSONALIZATION_MODULE.build_block(None, False, False, None)
 # The block an earlier version wrote: the same, with one sentence worded differently.
 STALE_BLOCK = DEFAULT_BLOCK.replace(" Keep coordination in MAIN.", " Keep coordination in MAIN, always.")
+# The default block 2.3.1 wrote, which also named the private nobrainer-ak skill.
+BLOCK_2_3_1 = DEFAULT_BLOCK.replace(
+    "- Use `nobrainer-writing` for material writing when available;",
+    "- Use `nobrainer-ak` (`nbak`) for relevant marketing and sales content creation when available. "
+    "For general writing use `nobrainer-writing` when available;",
+)
 
 
 def stale_layouts() -> dict[str, tuple[bytes, bytes, bytes]]:
@@ -1012,6 +1018,29 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertIn("managed block updated to this version's text", applied.stdout)
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_the_block_2_3_1_wrote_is_replaced_by_either_installer_and_undone_byte_for_byte(self) -> None:
+        self.assertNotEqual(DEFAULT_BLOCK, BLOCK_2_3_1)
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".claude" / "CLAUDE.md"
+                instructions.parent.mkdir(parents=True)
+                original = b"# Mine\n\n" + BLOCK_2_3_1.encode() + b"\n\nAfter\n"
+                instructions.write_bytes(original)
+                flags = ("--client", "claude", "--home", str(home))
+
+                applied = install_step(installer, *flags, "--apply", home=home)
+
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                self.assertIn("managed block updated to this version's text", applied.stdout)
+                self.assertEqual(b"# Mine\n\n" + DEFAULT_BLOCK.encode() + b"\n\nAfter\n", instructions.read_bytes())
+                self.assertNotIn(b"nobrainer-ak", instructions.read_bytes())
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertEqual(original, instructions.read_bytes())
+
     def test_the_preview_of_a_replaced_block_shows_what_changes_and_writes_nothing(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
@@ -1091,7 +1120,7 @@ class ShellInstallerTests(unittest.TestCase):
             " Keep coordination in MAIN.", " Keep coordination in MAIN, always."
         )
         cases = {
-            "a preference": STALE_BLOCK.replace("- Use `nobrainer-ak`", preference + "- Use `nobrainer-ak`").encode(),
+            "a preference": STALE_BLOCK.replace("- Use `nobrainer-writing`", preference + "- Use `nobrainer-writing`").encode(),
             "a standing authorization": stale_with_grant.encode(),
             "a saved wiki root": PERSONALIZATION_MODULE.build_block(Path("/wiki"), False, False, None).replace(
                 " Keep coordination in MAIN.", " Keep coordination in MAIN, always."

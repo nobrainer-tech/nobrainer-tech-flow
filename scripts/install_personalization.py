@@ -111,7 +111,7 @@ def build_block(
 {wiki_rule}
 {session_rule}
 {update_rule}
-{preference_rule}- Use `nobrainer-ak` (`nbak`) for relevant marketing and sales content creation when available. For general writing use `nobrainer-writing` when available; make technical documentation concrete, source-backed, and technically verified. Preserve facts, use the user's language, and verify at the actual delivery layer.
+{preference_rule}- Use `nobrainer-writing` for material writing when available; make technical documentation concrete, source-backed, and technically verified. Preserve facts, use the user's language, and verify at the actual delivery layer.
 <!-- NOBRAINER-TECH-FLOW:END -->"""
 
 

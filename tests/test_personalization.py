@@ -95,7 +95,9 @@ class PersonalizationInstallerTests(unittest.TestCase):
             self.assertIn("Assess context and checkpoint", content)
             self.assertIn("do not restart or archive automatically", content)
             self.assertIn("locate relevant `index.md` entries", content)
-            self.assertIn("`nobrainer-ak` (`nbak`)", content)
+            self.assertIn("`nobrainer-writing`", content)
+            # nobrainer-ak is a private skill, not one of the public modules.
+            self.assertNotIn("nobrainer-ak", content)
             self.assertNotIn("Use NBAK", content)
             self.assertIn("UNCHANGED", second.stdout)
 
