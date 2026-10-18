@@ -85,7 +85,7 @@ and recovery. The compact packet grants no visible-session or external authority
 
 For non-trivial delivery, state what was delivered, specific proof MAIN inspected
 and its layer, material failed/unverified requirements, and an owner action only
-when required. This is content guidance, not mandatory headings or a new schema.
+when required. Add `current for <input snapshot/time or UNKNOWN>`. This is content guidance, not mandatory headings or a new schema.
 Reuse acceptance IDs and evidence links; omit empty sections, repeated logs and
 invented follow-up work. Expand when compression would hide a condition.
 
