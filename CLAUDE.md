@@ -56,7 +56,6 @@ setup/upgrade work, ambiguous scope, several proof layers or meaningful recovery
 For non-trivial work:
 
 `DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN`
-(inspect, clarify once if needed, scope, implement, verify, audit and review, report)
 
 Before planning, inspect checkout, nearest instructions, dirty state, callers, tests, runtime
 and durable decisions. Delegate every independent ready unit promptly within

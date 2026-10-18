@@ -18,8 +18,8 @@ Repository work follows the [task worktree lifecycle](references/worktrees.md).
 
 ## Automatic session care
 
-For resumable, long or delegated work, when `nobrainer-sessions` is installed, run Sessions [startup and health](../nobrainer-sessions/references/session-restart.md#automatic-start-and-observation); otherwise stay in MAIN.
-Entry enables observation only: restart or archive needs separately recorded owner consent and verified MAIN takeover.
+For resumable, long or delegated work with `nobrainer-sessions` installed, run Sessions [startup and health](../nobrainer-sessions/references/session-restart.md#automatic-start-and-observation); otherwise stay in MAIN.
+Restart or archive needs separate owner consent and verified takeover.
 
 ## Current instructions
 
@@ -196,9 +196,8 @@ contact people, change credentials, migrate data, mutate production or weaken
 safety controls remain explicit gates unless the owner already authorized that
 exact action.
 
-Corrective-attempt budget (Build and RCA use this one): at most two corrective
-attempts per observed failure, with new evidence for each, or the owner's smaller
-budget; then diagnose with `nobrainer-rca` or report the blocker.
+Corrective-attempt budget (also Build and RCA): two attempts per observed failure,
+each with new evidence, or the owner's smaller budget; then diagnose or report the blocker.
 Timeouts, partial results, dead sessions, failed checks and exhausted retries never prove completion.
 
 ## `VERIFY` and `RECEIVE_AUDIT`

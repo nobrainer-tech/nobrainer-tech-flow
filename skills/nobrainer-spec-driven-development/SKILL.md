@@ -128,4 +128,5 @@ open owner gates, work units authorized, acceptance evidence, scope drift,
 rollback, and one next action. Do not claim implementation acceptance merely
 because the written spec looks complete.
 
-Spec review follows [review convergence](../nobrainer-review/SKILL.md#review-convergence).
+Spec review and correction follow the [delivery contract](../nobrainer-tech-flow/references/delivery.md#keep-review-proportional-to-progress);
+amendments do not reset the review budget.
