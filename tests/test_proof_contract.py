@@ -56,6 +56,10 @@ class ProofContractTests(unittest.TestCase):
             with self.subTest(term=term):
                 self.assertIn(term, text)
 
+    def test_worker_packet_return_starts_with_outcome_as_understood(self) -> None:
+        text = normalized(REFERENCES / "communication.md")
+        self.assertIn("RETURN: outcome as understood,", text)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -154,9 +154,9 @@ eligible work in MAIN.
 A single bounded native delegate needs no Dispatcher queue; MAIN keeps coordination
 and acceptance. Use the [small native-worker packet](communication.md#small-native-worker-packet).
 Durable queues retain the [long-run state](long-run-state.md) and full
-Sessions/Dispatcher contract. Visible conversations require an explicit owner
-request or authorized MAIN restart; never substitute them for unavailable native
-workers.
+Sessions/Dispatcher contract. Visible conversations follow the
+[canonical rule](../SKILL.md#choose-the-smallest-workflow); never substitute
+them for unavailable native workers.
 
 Target concurrency is the minimum of the effective host/model limit, authorized
 usage limits and useful independent ready units. A configured ceiling is not proof

@@ -14,6 +14,7 @@ REPLACED = (
     FLOW / "references" / "long-run-state.md",
     FLOW / "references" / "setup.md",
     FLOW / "references" / "routing.md",
+    FLOW / "references" / "delivery.md",
     ROOT / "skills" / "nobrainer-team" / "SKILL.md",
 )
 

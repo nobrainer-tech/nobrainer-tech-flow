@@ -37,7 +37,7 @@ class DelegationContractTests(unittest.TestCase):
         text = read_contract("delivery.md")
         self.assertIn("A single bounded native delegate needs no Dispatcher queue", text)
         self.assertIn("MAIN keeps coordination and acceptance", text)
-        self.assertIn("explicit owner request or authorized MAIN restart", text)
+        self.assertIn("canonical rule", text)
 
     def test_native_packet_preserves_context_method_authority_and_proof(self) -> None:
         raw = (REFERENCES / "communication.md").read_text(encoding="utf-8")
