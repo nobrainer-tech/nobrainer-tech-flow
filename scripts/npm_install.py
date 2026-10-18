@@ -30,7 +30,9 @@ def main() -> int:
     version = metadata["version"]
     # --home chooses storage and the client profile without changing the caller's HOME.
     home = (args.home or Path.home()).expanduser().resolve()
-    storage = home / ".nobrainer-tech-flow" / "npm"
+    # Beside ~/.nobrainer-tech-flow, not in it: that is where the README suggests a Git
+    # clone, and a git clean there would delete the files live skill links point to.
+    storage = home / ".nobrainer-tech-flow-npm"
     target = storage / version
     records = (home / f".nobrainer-flow-onboarding-{args.client}.json", home / ".nobrainer-flow-onboarding.json")
     if args.undo and not any(path.exists() or path.is_symlink() for path in records):
@@ -49,6 +51,11 @@ def main() -> int:
             return 3
     elif args.undo:
         print("ERROR: retained npm release is missing; preserve the client and inspect its setup record.", file=sys.stderr)
+        earlier = home / ".nobrainer-tech-flow" / "npm"
+        if earlier.is_dir() and not earlier.is_symlink():
+            # Releases before 2.3.2 kept their files inside ~/.nobrainer-tech-flow.
+            print(f"HINT: an earlier release kept its files in {earlier}; undo with the command of the "
+                  "release that made this setup, then apply this one.", file=sys.stderr)
         return 3
     elif not args.apply:
         print("NPM_SOURCE: release files will be copied to a stable profile directory on --apply.")

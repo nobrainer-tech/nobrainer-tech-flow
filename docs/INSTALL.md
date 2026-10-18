@@ -24,7 +24,11 @@ for an isolated profile. These commands become available once this version is
 published on npm; a source candidate is not registry availability.
 
 Application copies the release files into the chosen home directory's
-.nobrainer-tech-flow/npm/2.3.2 and verifies the copy. The existing installer then
+.nobrainer-tech-flow-npm/2.3.2 and verifies the copy. That folder sits beside
+~/.nobrainer-tech-flow, where the Git installation suggests a clone, so cleaning
+the clone cannot delete the files the skill links point to. Releases before 2.3.2
+kept their copy in .nobrainer-tech-flow/npm; undo such a setup with the command of
+the release that made it. The existing installer then
 links skills to that stable source and writes its managed instructions. This
 avoids links into npx's temporary cache. Unknown files and conflicting installs
 are preserved. Undo uses the same setup record as the Git installer. Retained

@@ -64,6 +64,10 @@ class NpmDistributionTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         skills = self.home / ".agents/skills"
         self.assertEqual(18, len(list(skills.glob("*/SKILL.md"))))
+        # The release is kept beside ~/.nobrainer-tech-flow, where a Git clone may live, not in it.
+        retained = (self.home / ".nobrainer-tech-flow-npm" / self.version()).resolve()
+        self.assertEqual(retained / "skills" / "nobrainer-tech-flow", (skills / "nobrainer-tech-flow").resolve())
+        self.assertFalse((self.home / ".nobrainer-tech-flow").exists())
         self.assertTrue((skills / "nobrainer-tech-flow/references/communication.md").is_file())
         shutil.rmtree(self.extract)
         self.assertTrue((skills / "nobrainer-tech-flow/SKILL.md").is_file())
@@ -104,7 +108,7 @@ class NpmDistributionTests(unittest.TestCase):
 
     def test_undo_without_a_record_ignores_whatever_the_retained_storage_holds(self):
         # A partial or modified copy is no reason to refuse when nothing is recorded to undo.
-        partial = self.home / ".nobrainer-tech-flow" / "npm" / self.version()
+        partial = self.home / ".nobrainer-tech-flow-npm" / self.version()
         partial.mkdir(parents=True)
         (partial / "left-over.txt").write_text("partial copy\n", encoding="utf-8")
         for extra in ((), ("--apply",)):
@@ -112,6 +116,15 @@ class NpmDistributionTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, result.stdout + result.stderr)
             self.assertIn("NOTHING TO UNDO", result.stdout)
             self.assertEqual(["left-over.txt"], sorted(path.name for path in partial.iterdir()))
+
+    def test_undo_of_a_setup_from_an_earlier_release_names_where_that_release_kept_its_files(self):
+        (self.home / ".nobrainer-tech-flow" / "npm" / "2.3.1").mkdir(parents=True)
+        record = self.home / ".nobrainer-flow-onboarding-codex.json"
+        record.write_text("{}\n", encoding="utf-8")
+        result = self.install("--undo", "--apply")
+        self.assertEqual(3, result.returncode, result.stdout + result.stderr)
+        self.assertIn("HINT: an earlier release kept its files in", result.stderr)
+        self.assertEqual("{}\n", record.read_text(encoding="utf-8"))
 
     def version(self):
         return json.loads((self.package / "package.json").read_text(encoding="utf-8"))["version"]
