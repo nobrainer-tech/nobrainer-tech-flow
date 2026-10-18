@@ -89,7 +89,7 @@ placeholders with verified paths/commands and remove duplicate lines:
   nothing. Wiki promotion remains separately sourced, classified and governed.
 - A failed review routes back through implementation and fresh verification;
   never reuse invalidated proof.
-- Merge, deploy, publish, spend, delete, credentials and production mutation
+- Merge, deploy, publish, spend, delete, contact people, credentials and production mutation
   remain explicit owner gates unless exact authority is already recorded.
 - Persist only authorized durable sourced learning; never secrets or live task state.
 <!-- NOBRAINER-WORKFLOW:END -->

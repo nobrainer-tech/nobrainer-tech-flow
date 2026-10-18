@@ -129,8 +129,8 @@ untrusted input, dependency installers or another trust boundary, add a bounded
 
 Pause the affected operation on changed frozen inputs, conflicting writer, failed required check,
 unknown destructive effect, missing credentials/toolchain or a scope-changing
-decision. Merge, deploy, publish, spend, delete, migrate data, change credentials,
-mutate production or weaken safety controls only with their explicit authority.
+decision. Merge, deploy, publish, spend, delete, contact people, migrate data, change
+credentials, mutate production or weaken safety controls only with their explicit authority.
 
 A failed check routes to repair; a missing tool or credential routes through
 [delivery obstacle resolution](../nobrainer-tech-flow/references/delivery.md). Check
