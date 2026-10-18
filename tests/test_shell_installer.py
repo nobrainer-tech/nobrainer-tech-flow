@@ -1453,6 +1453,29 @@ class ShellInstallerTests(unittest.TestCase):
                             self.assertEqual(before, (entries(home), record_path.read_bytes()))
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_folder_that_now_lies_under_a_link_is_left_where_the_link_points(self) -> None:
+        # After the setup, ~/.config is swapped for a link to another tree that has folders of
+        # the same names. The undo must not follow the link and remove them.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                flags = ("--client", "opencode", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                (home / ".config").rename(Path(temp) / "moved")
+                elsewhere = Path(temp) / "elsewhere"
+                (elsewhere / "opencode" / "skills").mkdir(parents=True)
+                (home / ".config").symlink_to(elsewhere, target_is_directory=True)
+
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertIn("a folder above it is a link now, so it is left as it is", undone.stdout)
+                self.assertNotIn("FOLDER: removed", undone.stdout)
+                self.assertEqual(["opencode", "opencode/skills"], entries(elsewhere))
+                self.assertTrue((home / ".config").is_symlink())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_a_home_the_setup_had_to_create_is_taken_away_again(self) -> None:
         for installer in ("sh", "py"):
             with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:

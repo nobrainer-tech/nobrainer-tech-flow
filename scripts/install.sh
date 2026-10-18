@@ -518,6 +518,18 @@ note_dirs() {
 	done
 }
 
+# under_link PATH: a folder above PATH is a symbolic link. A record lists each folder with
+# the links on the way resolved, so such a link means the profile was rearranged since
+# the setup, and removing PATH would act on another tree.
+under_link() {
+	_z_up=${1%/*}
+	while [ -n "$_z_up" ]; do
+		[ ! -L "$_z_up" ] || return 0
+		_z_up=${_z_up%/*}
+	done
+	return 1
+}
+
 # The folders a record lists must be ones the setup can have made: each an absolute,
 # plain path listed once, that is, or lies above, the skills folder or the folder of the
 # instruction file. Anything else is a damaged record that an undo must not act on. A path
@@ -1127,7 +1139,12 @@ undo() {
 	_u_gone=
 	if [ -n "$st_dirs" ]; then
 		_u_gone=$(printf '%s' "$st_dirs" | LC_ALL=C sort -r | while IFS= read -r _u_dir; do
-			if [ -d "$_u_dir" ] && [ ! -L "$_u_dir" ] && rmdir "$_u_dir" 2>/dev/null; then printf '%s\n' "$_u_dir"; fi
+			if [ ! -d "$_u_dir" ] || [ -L "$_u_dir" ]; then continue; fi
+			if under_link "$_u_dir"; then
+				printf 'PRESERVED: %s: a folder above it is a link now, so it is left as it is\n' "$_u_dir"
+			elif rmdir "$_u_dir" 2>/dev/null; then
+				printf 'FOLDER: removed the empty folder %s\n' "$_u_dir"
+			fi
 		done)
 	fi
 	# A record from before the folder list still gets its skills folder removed when empty.
@@ -1136,9 +1153,7 @@ undo() {
 	say "UNDONE: nobrainer-tech-flow for $label"
 	say "SKILLS: $_u_removed unlinked from $st_dest"
 	if [ -n "$_u_result" ]; then say "$_u_result"; fi
-	if [ -n "$_u_gone" ]; then
-		printf '%s\n' "$_u_gone" | while IFS= read -r _u_dir; do say "FOLDER: removed the empty folder $_u_dir"; done
-	fi
+	if [ -n "$_u_gone" ]; then say "$_u_gone"; fi
 	say "NEXT: restart $label to drop the skills."
 }
 

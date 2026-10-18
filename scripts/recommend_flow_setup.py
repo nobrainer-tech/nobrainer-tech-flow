@@ -676,19 +676,29 @@ def recorded_directories(state: dict[str, object]) -> list[Path]:
     return directories
 
 
-def remove_empty_directories(directories: list[Path]) -> list[Path]:
-    """Remove each of these folders that is still empty, innermost first; return those removed."""
+def remove_empty_directories(directories: list[Path]) -> tuple[list[Path], list[Path]]:
+    """Remove each of these folders that is still empty, innermost first.
+
+    Returns the folders removed and the folders kept because a folder above them is a
+    link now. The record lists each folder with the links on the way resolved, so such a
+    link means the profile was rearranged since the setup, and removing the folder would
+    act on another tree.
+    """
 
     removed: list[Path] = []
+    kept: list[Path] = []
     for path in sorted(directories, key=lambda item: len(item.parts), reverse=True):
         try:
             if path.is_symlink() or not path.is_dir():
+                continue
+            if any(parent.is_symlink() for parent in path.parents):
+                kept.append(path)
                 continue
             path.rmdir()
         except OSError:
             continue
         removed.append(path)
-    return removed
+    return removed, kept
 
 
 def state_path(home: Path, override: Path | None, client: str) -> Path:
@@ -1040,8 +1050,11 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         if target.exists() or target.is_symlink():
             raise OSError(f"skill rollback readback mismatch: {target}")
     state_file.unlink()
-    for directory in remove_empty_directories(directories):
+    removed_dirs, kept_dirs = remove_empty_directories(directories)
+    for directory in removed_dirs:
         print(f"REMOVED_DIR: {directory}")
+    for directory in kept_dirs:
+        print(f"PRESERVED: {directory}: a folder above it is a link now, so it is left as it is")
     if "created_dirs" not in state:
         # A record from before the folder list still gets its skills folder removed when empty.
         # One with the list says which folders the setup made, so no other is touched.
