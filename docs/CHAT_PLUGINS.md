@@ -1,6 +1,6 @@
 # ChatGPT and Claude plugins
 
-nobrainer-tech-flow is a portable skills plugin. It provides the same eighteen modules for research, writing, planning and implementation. The AI client loads the workflow and uses its available tools and permissions.
+nobrainer-tech-flow is one workflow of 18 modules for research, writing, planning and implementation, packaged as a portable plugin. The AI client loads the workflow and uses its available tools and permissions.
 
 ## Download and install
 
@@ -10,7 +10,7 @@ In Claude, open Customize > Plugins, choose Add > Upload plugin and select the Z
 
 In ChatGPT Work or Codex, install from a supported local/repository marketplace or from the public Plugins directory once the listing is approved. The repository marketplace identifies this source package. A downloadable ZIP is a release artifact, not proof of directory approval. OpenAI's public directory requires a verified developer identity, package scans and platform review before publication.
 
-For npm users, the npm package is also a plugin source. A marketplace can reference source type npm, package nobrainer-tech-flow and an exact published version. The client downloads the package without running npm lifecycle scripts.
+Once the npm package is published (it is not yet), it can also serve as a plugin source. A marketplace can then reference source type npm, package nobrainer-tech-flow and an exact published version. The client downloads the package without running npm lifecycle scripts.
 
 ## Check the installation
 
@@ -26,4 +26,4 @@ If browser, shell, workers or local files are unavailable, the workflow must rep
 - Claude supported surfaces: https://claude.com/docs/plugins/platform-support
 - Claude publication: https://claude.com/docs/directory/publish
 
-The inFakt integration uses an MCP server and OAuth to access an existing account: https://www.infakt.pl/integracje-z-infakt-za-pomoca-api/#asystenci-ai . Flow currently needs skills and the client's existing tools, so this distribution does not add an MCP backend or require account access.
+The inFakt integration uses an MCP server and OAuth to access an existing account: https://www.infakt.pl/integracje-z-infakt-za-pomoca-api/#asystenci-ai . nobrainer-tech-flow currently needs skills and the client's existing tools, so this distribution does not add an MCP backend or require account access.
