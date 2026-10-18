@@ -458,7 +458,10 @@ deleted or rewritten automatically.
 ### Cursor
 
 Use `.cursor-plugin/plugin.json`. Its session hook runs the shared bootstrap
-through `hooks/run-hook.cmd`, which uses Git Bash on Windows. Repository tests
+through `hooks/run-hook.cmd`, which uses Git Bash on Windows: from its install
+folders or beside the `git.exe` on PATH, never a `bash.exe` in the current folder.
+Without Git Bash the hook says so on stderr and exits 1, and the session continues
+without the bootstrap. Repository tests
 cover the manifest and the hook script; Cursor itself has not been read back, so
 confirm one injection and native skill discovery after restart.
 
