@@ -2344,7 +2344,7 @@ class SuiteTests(unittest.TestCase):
         publication = (
             ROOT / "docs" / "releases" / "v1.5.0-publication-readback.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("Astra Ready Flow", readme)
+        self.assertIn("Astra Ready, portable by design", readme)
         self.assertIn("model-neutral", readme)
         self.assertIn("WORKFLOW_READY", compatibility)
         self.assertIn("GPT-6 Astra", compatibility)
