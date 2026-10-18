@@ -1273,9 +1273,10 @@ class ShellInstallerTests(unittest.TestCase):
             "a folder in its place": (".nobrainer-flow-onboarding-claude.json", folder),
             "a dangling link in its place": (".nobrainer-flow-onboarding-claude.json", dangling_link),
             "an unreadable older record": (".nobrainer-flow-onboarding.json", garbage),
+            "a dangling link as the older record": (".nobrainer-flow-onboarding.json", dangling_link),
         }
         for label, (name, make) in cases.items():
-            if label.startswith("a dangling") and not symlinks_work():
+            if "dangling" in label and not symlinks_work():
                 continue
             for installer in ("sh", "py"):
                 with self.subTest(case=label, installer=installer), tempfile.TemporaryDirectory() as temp:

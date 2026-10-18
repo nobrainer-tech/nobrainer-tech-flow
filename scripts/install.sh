@@ -998,7 +998,8 @@ restore_into() {
 
 undo() {
 	if [ ! -e "$state" ] && [ ! -L "$state" ]; then
-		if [ -e "$home/.nobrainer-flow-onboarding.json" ]; then
+		# A link counts, even a dangling one: it is a damaged record to inspect, not no record.
+		if [ -e "$home/.nobrainer-flow-onboarding.json" ] || [ -L "$home/.nobrainer-flow-onboarding.json" ]; then
 			die 3 "only an older setup record exists: $home/.nobrainer-flow-onboarding.json" \
 				"undo it with $(python_undo), which can tell which client it belongs to."
 		fi
