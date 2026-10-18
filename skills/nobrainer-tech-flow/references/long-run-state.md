@@ -132,7 +132,7 @@ proves the same goal file remains durable and no task-owned writer is active.
 Otherwise end the turn or require manual action. Never claim a clear from a
 command submission alone. Creating or rotating a session requires current or standing task authorization
 under the Sessions startup contract; do not infer it from a timeout, compaction
-or continued goal. Explicit Flow invocation activates assessment; stricter host
+or continued goal. Explicit Flow invocation activates assessment only; stricter host
 consent requirements still apply.
 
 `task_complete` closes an outcome only; it does not prove `RUNTIME_RELEASE`.

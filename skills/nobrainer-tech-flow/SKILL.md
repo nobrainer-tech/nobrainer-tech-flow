@@ -18,8 +18,8 @@ Repository work follows the [task worktree lifecycle](references/worktrees.md).
 
 ## Automatic session care
 
-On explicit Flow entry, when `nobrainer-sessions` is installed, run Sessions [startup and health](../nobrainer-sessions/references/session-restart.md#automatic-start-and-observation); otherwise stay in MAIN.
-Verify fresh MAIN takeover before authorized archive; installation grants no consent.
+For resumable, long or delegated work, when `nobrainer-sessions` is installed, run Sessions [startup and health](../nobrainer-sessions/references/session-restart.md#automatic-start-and-observation); otherwise stay in MAIN.
+Entry enables observation only: restart or archive needs separately recorded owner consent and verified MAIN takeover.
 
 ## Current instructions
 
@@ -38,7 +38,7 @@ For a clear low-risk answer, rewrite, calculation or one coherent, reversible ed
 deliver and check directly. Chat-only work needs no repository or tools.
 For file edits inspect instructions, actual files and the nearest deterministic check;
 use checkout, dirty state and `git diff --check` only in a Git repository.
-Skip ledger, delegation and review; retain startup care. Escalate to the full Flow lifecycle
+Skip ledger, delegation, review and startup care. Escalate to the full Flow lifecycle
 for ambiguity, architecture, public behavior, routing or consequential
 side effects; quick path never bypasses an owner gate.
 
