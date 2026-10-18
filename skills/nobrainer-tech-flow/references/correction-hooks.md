@@ -64,7 +64,9 @@ previous action, claim, assumption or process was wrong.
 4. Route repeatable skill or prompt behavior to `nobrainer-autoimprove` with the
    failing scenario as development evidence and a separate holdout. A
    deterministic code defect instead receives a regression test through
-   `nobrainer-build`.
+   `nobrainer-build`. If the failure is deterministic and a native check (test,
+   lint, hook, CI) can catch it, propose that check as the prevention. Write a
+   prose rule only when no mechanism fits.
 5. When persistence is allowed by step 3, capture a durable fact or explicit
    reusable preference in the wiki only when its destination and confidentiality
    permit it. Never write a secret, raw sensitive transcript or an inferred

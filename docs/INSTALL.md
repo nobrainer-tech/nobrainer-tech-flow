@@ -421,6 +421,48 @@ After restart, verify:
 - a simple task remains direct;
 - a non-trivial task starts with nobrainer-tech-flow and a compact Progress checklist.
 
+#### Optional guards
+
+Two opt-in hooks in your Claude Code user `settings.json`, never in the plugin:
+
+- before a shell command, Claude Code asks you first (it never denies) for
+  `rm -r` outside the temporary folders (`$TMPDIR`, `/tmp`, `/var/folders`),
+  `git push --force`, `git reset --hard`, `git clean -f`, `vercel --prod`,
+  `npm publish`, `terraform apply` or `destroy`, `kubectl delete` and
+  `gh release create`;
+- when a turn that edited files or ran commands ends without a line starting
+  with `Proof:` or `Checked:` and without `UNVERIFIED`, the stop is blocked once
+  so the agent adds one. A read-only turn, a second stop and an unreadable
+  transcript are let through.
+
+This is a seatbelt, not a security boundary. It reads the command text, so
+`sh -c`, a variable or an alias gets past it, and a risky phrase inside a quoted
+string (`echo "git reset --hard"`) asks without need.
+
+```bash
+python3 scripts/install.py --client claude --guards            # preview the settings.json diff
+python3 scripts/install.py --client claude --guards --apply    # add them, with a backup
+python3 scripts/install.py --client claude --guards --undo --apply
+```
+
+`python3 scripts/install_guards.py` takes the same `--apply`, `--undo` and
+`--home` flags. The settings file is `$CLAUDE_CONFIG_DIR/settings.json`, or
+`~/.claude/settings.json` when the variable is unset; other hooks in it are
+kept, a second `--apply` changes nothing, and an invalid file is refused
+(exit 3) without being touched. The hooks run `flow_guard.py` through the
+skill link that `--client claude` created, so install the skills first. A
+plugin-only install, other clients, `scripts/install.sh` and Windows are not
+supported in this version (`UNSUPPORTED`, exit 3). Removing the skills leaves
+the hooks in place, where they do nothing; remove them with `--guards --undo
+--apply`. Restart Claude Code after a change.
+
+The hooks follow https://code.claude.com/docs/en/hooks (Claude Code 2.1.302):
+PreToolUse reads `tool_name`, `tool_input.command` and `cwd` and answers
+`hookSpecificOutput.permissionDecision: "ask"` with `permissionDecisionReason`;
+Stop and SubagentStop read `stop_hook_active`, `last_assistant_message`,
+`transcript_path` and `agent_transcript_path` and answer
+`{"decision": "block", "reason": ...}`.
+
 ### Codex
 
 The `.codex-plugin/plugin.json` manifest exposes `./skills/` and declares no
