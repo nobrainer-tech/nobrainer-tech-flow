@@ -20,6 +20,16 @@ name; a copy is listed as `nobrainer-tech-flow`. The setup record
 (`.nobrainer-flow-onboarding-<client>.json`) and the owner-only mode of the files the
 installer writes are now described, and undo deletes the record.
 
+Undo now removes the skill links even after you edited the instruction file; it leaves
+the edited file as it is, exits 3 with `PARTLY UNDONE` and says how to take the block
+out too. The default block no longer tells every user to load the private
+`nobrainer-ak` skill; a 2.3.1 block is replaced on the next apply. The npm command keeps
+its release copy in `~/.nobrainer-tech-flow-npm`, so cleaning a Git clone in
+`~/.nobrainer-tech-flow` cannot delete it. The Windows hook wrapper no longer runs a
+`bash.exe` from the current folder, returns the hook's exit code and says when Git Bash
+is missing. Undo also keeps folders that now lie under a link, removes a home made only
+for the record, and stops on a dangling older record.
+
 This is an installer and documentation fix. The eighteen modules are unchanged except
 for the entry module's `VERSION` file. The native plugin 2.3.2 will carry the same
 installer; npm registry publication is still pending.
