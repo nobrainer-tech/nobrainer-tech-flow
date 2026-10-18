@@ -74,6 +74,10 @@ For every boundary, establish:
 - sensitive output, side effect and failure mode;
 - current guard and evidence that it runs on the real path.
 
+A plaintext `.env` or credential file in a workspace an agent can read counts
+as secret exposure. Prefer fetching secrets from a secret manager at launch,
+scoped to the process that needs them. Never print a secret value.
+
 Prioritize classes that fit the actual boundary: broken access control, confused
 deputy, injection, SSRF, unsafe path handling, secret exposure, insecure
 deserialization, XSS/CSRF, request smuggling, race/idempotence, unsafe defaults,
