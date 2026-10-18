@@ -57,7 +57,10 @@ These heuristics choose a worker route; they do not gate eligible dispatch under
   perspective may catch defects, and a smaller worker may avoid repeating
   MAIN's full context. These are mechanisms to evaluate, not universal
   measured improvements in quality, speed or token use.
-- Use the host-selected/default capable model for ordinary implementation.
+- Use the host-selected/default capable model for ordinary implementation;
+  routine units get the lowest effort that still meets acceptance.
+- Give every worker the same shared assignment prefix with the unit-specific
+  part last; prompt-cache reuse from this is plausible but unmeasured.
 - Request a stronger tier only when ambiguity, security, architecture, failed
   proof or a declared quality bar justifies its added budget.
 - Delegate disjoint research, implementation and review units proactively
@@ -65,7 +68,8 @@ These heuristics choose a worker route; they do not gate eligible dispatch under
   limit, with one exact write owner per file. MAIN integrates results while
   workers run. Pass the frozen policy to each worker; it cannot choose a
   successor, recursively delegate or escalate itself without assignment authority.
-- Escalate only when new evidence changes the cost or acceptance decision.
+- A unit that reaches its `BUDGET` stops and reports partial results.
+  Escalate only when new evidence changes the cost or acceptance decision.
   State the blocker, target tier, expected benefit, added budget and approval
   gate before starting the next attempt.
 
