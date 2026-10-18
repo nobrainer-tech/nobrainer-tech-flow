@@ -94,6 +94,9 @@ class AdapterTests(unittest.TestCase):
         )
         self.assertEqual("./hooks/claude-hooks.json", claude_manifest["hooks"])
         self.assertFalse((ROOT / "hooks" / "hooks.json").exists())
+        # Every plugin user loads this file, so the opt-in guards must never land in it.
+        self.assertEqual({"SessionStart"}, set(claude_hooks["hooks"]))
+        self.assertNotIn("flow_guard", claude_hook_path.read_text())
         claude_entry = claude_hooks["hooks"]["SessionStart"][0]
         cursor_entry = cursor_hooks["hooks"]["sessionStart"][0]
         self.assertEqual("startup|resume|clear|compact|fork", claude_entry["matcher"])

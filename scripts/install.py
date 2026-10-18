@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 GUIDED = ROOT / "scripts" / "recommend_flow_setup.py"
 INSTALL_SKILLS = ROOT / "scripts" / "install_skills.py"
 PERSONALIZATION = ROOT / "scripts" / "install_personalization.py"
+GUARDS = ROOT / "scripts" / "install_guards.py"
 # The guided setup wants a repository link for context; this command reads none.
 REPO_URL = "https://github.com/nobrainer-tech/nobrainer-tech-flow"
 LABELS = {
@@ -104,12 +105,10 @@ def unique(lines: list[str]) -> list[str]:
     return list(dict.fromkeys(lines))
 
 
-def load_guided():
-    """The guided setup owns the client paths, the skill list and the rollback state."""
-
-    spec = importlib.util.spec_from_file_location("_flow_guided_setup", GUIDED)
+def load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
-        raise ValueError(f"cannot load {GUIDED}")
+        raise ValueError(f"cannot load {path}")
     module = importlib.util.module_from_spec(spec)
     # dataclasses resolve string annotations through sys.modules.
     sys.modules[spec.name] = module
@@ -119,6 +118,48 @@ def load_guided():
         sys.modules.pop(spec.name, None)
         raise
     return module
+
+
+def load_guided():
+    """The guided setup owns the client paths, the skill list and the rollback state."""
+
+    return load_module("_flow_guided_setup", GUIDED)
+
+
+def guards(args: argparse.Namespace) -> int:
+    """The optional Claude Code guards; scripts/install_guards.py owns them."""
+
+    if args.client != "claude":
+        print(f"UNSUPPORTED: the Flow guards exist only for Claude Code, not {LABELS[args.client]}.")
+        return 3
+    if os.name == "nt":
+        print("UNSUPPORTED: the Flow guards are POSIX-only in this version.")
+        return 3
+    module = load_module("_flow_install_guards", GUARDS)
+    home = Path(os.path.abspath(args.home.expanduser())) if args.home is not None else None
+    rerun = f"{PYTHON} scripts/install.py --client claude --guards {{flags}}"
+    if home is not None:
+        rerun += f" --home {quote(str(home))}"
+    try:
+        return module.run(args.apply, args.undo, home, rerun)
+    except module.Refused as refused:
+        print(f"REFUSED: {refused}; nothing was changed", file=sys.stderr)
+        return 3
+
+
+def guards_note(ctx: Context) -> str | None:
+    """A reminder that an undo leaves the guards, which then do nothing, in settings.json."""
+
+    if ctx.client != "claude" or os.name == "nt":
+        return None
+    module = load_module("_flow_install_guards", GUARDS)
+    settings, guard = module.locations(ctx.home if ctx.home_args else None)
+    if not module.installed(settings, guard):
+        return None
+    return (
+        f"NOTE: the optional Flow guards stay in {settings}; remove them with "
+        f"{ctx.command('--guards', '--undo', '--apply')}"
+    )
 
 
 def run(command: list[str]) -> tuple[int, str, str]:
@@ -455,6 +496,9 @@ def undo(ctx: Context) -> int:
     for line in unique(out.splitlines()):
         if UNDO_NOTE.match(line):
             print(line)
+    note = guards_note(ctx)
+    if note:
+        print(note)
     print(f"NEXT: restart {ctx.label} to drop the skills.")
     return 0
 
@@ -484,6 +528,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="reverse the setup this command, scripts/install.sh or the guided setup recorded "
         "(add --apply to do it)",
     )
+    parser.add_argument(
+        "--guards",
+        action="store_true",
+        help="Claude Code only: add the optional hooks that ask before risky commands and for a "
+        "proof line, instead of installing the skills; with --undo remove them (docs/INSTALL.md)",
+    )
     return parser.parse_args(argv)
 
 
@@ -497,6 +547,8 @@ def main(argv: list[str] | None = None) -> int:
             pass
     args = parse_args(argv)
     try:
+        if args.guards:
+            return guards(args)
         guided = load_guided()
         # An explicit --home selects the documented defaults under it and ignores the
         # environment, exactly as the helpers do. They run from the checkout, so a
