@@ -423,7 +423,10 @@ def undo(ctx: Context) -> int:
         if re.search(r"^PRESERVED: personalization changed since setup", out, re.MULTILINE):
             # The file stays as it is, and so do the folders; the note below says why.
             target, directories = None, []
-        if target and backup:
+        kept = re.search(r"^INSTRUCTIONS_KEPT: (.+)$", out, re.MULTILINE)
+        if kept:
+            print(f"INSTRUCTIONS: {kept.group(1)}")
+        elif target and backup:
             print(
                 f"INSTRUCTIONS: {target}: put the managed block back as it was before the setup "
                 f"(from {backup}); later edits outside the block stay"
@@ -443,7 +446,10 @@ def undo(ctx: Context) -> int:
     removed = [name for name in readback.group(1).split(",") if name not in ("", "none")] if readback else []
     print(f"UNDONE: nobrainer-tech-flow for {ctx.label}")
     print(f"SKILLS: {len(removed)} unlinked from {destination}")
-    if target:
+    kept = re.search(r"^INSTRUCTIONS_KEPT: (.+)$", out, re.MULTILINE)
+    if kept:
+        print(f"INSTRUCTIONS: {kept.group(1)}")
+    elif target:
         if any(line.startswith("RESTORED: ") for line in out.splitlines()):
             print(f"INSTRUCTIONS: {target} is back as it was before the setup (backup kept: {backup})")
         elif not Path(str(target)).exists():

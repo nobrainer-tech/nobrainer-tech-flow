@@ -918,7 +918,7 @@ def print_changed_profile(target: Path) -> None:
     print(
         "HINT: to take the managed block out as well, run the setup again with --apply, which records the "
         "file as it is now, then undo again; your edits outside the block stay. Or delete the lines from "
-        f"{BLOCK_START.decode()} to {BLOCK_END.decode()} yourself."
+        f"{BLOCK_START.decode()} to {BLOCK_END.decode()} yourself and undo again."
     )
 
 
@@ -968,13 +968,6 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
             if backup_file.parent != target_path.parent or not backup_file.name.startswith(target_path.name + ".bak."):
                 print(f"ERROR: refusing unexpected personalization backup: {backup_file}", file=sys.stderr)
                 return 3
-            try:
-                backup_metadata = backup_file.lstat()
-            except FileNotFoundError:
-                backup_metadata = None
-            if backup_metadata is None or backup_file.is_symlink() or not backup_file.is_file():
-                print(f"ERROR: personalization backup must be a regular file: {backup_file}", file=sys.stderr)
-                return 3
         expected_hash = profile.get("written_sha256")
         if target_path and (not isinstance(expected_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_hash)):
             print("ERROR: invalid personalization readback hash in rollback state", file=sys.stderr)
@@ -984,15 +977,21 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         return 3
     restored: bytes | None = None
     original: bytes | None = None
-    # An instruction file edited since the setup stays exactly as it is; only the links go.
+    # An instruction file edited since the setup stays exactly as it is. With its managed block
+    # taken out by hand the undo is otherwise complete; with the block still there only the
+    # links go. The backup is not needed either way.
     profile_changed = False
+    block_gone = False
     if target_path and target_path.exists():
         current = target_path.read_bytes()
         expected_hash = profile.get("written_sha256")
-        profile_changed = hashlib.sha256(current).hexdigest() != expected_hash
-    if target_path and target_path.exists() and not profile_changed:
-        if backup and not Path(str(backup)).is_file():
-            print(f"ERROR: personalization backup missing: {backup}", file=sys.stderr)
+        if hashlib.sha256(current).hexdigest() != expected_hash:
+            block_gone = BLOCK_START not in current and BLOCK_END not in current
+            profile_changed = not block_gone
+    if target_path and target_path.exists() and not profile_changed and not block_gone:
+        backup_file = Path(str(backup)) if backup else None
+        if backup_file and (backup_file.is_symlink() or not backup_file.is_file()):
+            print(f"ERROR: personalization backup must be a regular file: {backup_file}", file=sys.stderr)
             return 3
         original = Path(str(backup)).read_bytes() if backup else None
         try:
@@ -1013,6 +1012,8 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     if profile_changed:
         print_changed_profile(target_path)
     else:
+        if block_gone:
+            print(f"INSTRUCTIONS_KEPT: {target_path} no longer holds the managed block, so it is left as it is")
         for directory in sorted(directories, key=lambda item: len(item.parts), reverse=True):
             print(f"ROLLBACK_FOLDER: {directory}: removed if it is still empty; the setup created it")
     if not args.apply:
@@ -1083,7 +1084,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
             destination.rmdir()
         except OSError:
             pass
-    print(f"ROLLBACK_READBACK: removed={','.join(removed) or 'none'}; profile=restored")
+    print(f"ROLLBACK_READBACK: removed={','.join(removed) or 'none'}; profile={'kept' if block_gone else 'restored'}")
     return 0
 
 

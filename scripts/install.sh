@@ -1017,7 +1017,7 @@ restore_into() {
 
 # What to do about an instruction file that changed after the setup.
 keep_hint() {
-	say "HINT: to take the managed block out as well, run $(command_for --apply), which records the file as it is now, then $(command_for --undo --apply); your edits outside the block stay. Or delete the lines from $START to $END yourself."
+	say "HINT: to take the managed block out as well, run $(command_for --apply), which records the file as it is now, then $(command_for --undo --apply); your edits outside the block stay. Or delete the lines from $START to $END yourself and undo again."
 }
 
 undo() {
@@ -1038,7 +1038,7 @@ undo() {
 
 	check_dirs || die 3 "rollback state lists a folder this setup cannot have created" \
 		"inspect the record; the guided undo refuses it as well"
-	_u_keep=
+	_u_keep= _u_no_block=
 	if [ -n "$st_target" ]; then
 		# The record may only name a documented instruction file of this home.
 		_u_saved_skills=$skills_dir _u_saved_target=$target _u_saved_label=$label
@@ -1068,9 +1068,6 @@ undo() {
 				*) die 3 "refusing unexpected personalization backup: $st_backup" ;;
 			esac
 			case ${st_backup#"$st_target".bak.} in */*) die 3 "refusing unexpected personalization backup: $st_backup" ;; esac
-			if [ -L "$st_backup" ] || [ ! -f "$st_backup" ]; then
-				die 3 "personalization backup must be a regular file: $st_backup"
-			fi
 			if [ ! -e "$st_target" ]; then
 				say "PRESERVED: personalization target is missing: $st_target"
 				exit 3
@@ -1079,8 +1076,16 @@ undo() {
 		if [ -e "$st_target" ]; then
 			sha256 /dev/null >/dev/null || die 2 "this script needs sha256sum, shasum or openssl to check the setup"
 			if [ "$(sha256 "$st_target")" != "$st_hash" ]; then
-				# Edited since the setup: the file stays exactly as it is, and only the links go.
-				_u_keep=1
+				# Edited since the setup: the file stays exactly as it is. With its managed block
+				# taken out by hand the undo is otherwise complete; with the block still there only
+				# the links go. The backup is not needed either way.
+				if grep -a -q -F -e "$START" "$st_target" || grep -a -q -F -e "$END" "$st_target"; then
+					_u_keep=1
+				else
+					_u_no_block=1
+				fi
+			elif [ -n "$st_backup" ] && { [ -L "$st_backup" ] || [ ! -f "$st_backup" ]; }; then
+				die 3 "personalization backup must be a regular file: $st_backup"
 			# The line-based undo below needs each block on lines of its own.
 			elif ! block_lines "$st_target" || { [ -n "$st_backup" ] && grep -q -F -e "$START" "$st_backup" && ! block_lines "$st_backup"; }; then
 				die 3 "the managed block in $st_target does not stand on lines of its own" \
@@ -1108,6 +1113,8 @@ undo() {
 		if [ -n "$_u_keep" ]; then
 			say "PRESERVED: personalization changed since setup: $st_target; it is left exactly as it is, managed block included"
 			keep_hint
+		elif [ -n "$_u_no_block" ]; then
+			say "INSTRUCTIONS: $st_target no longer holds the managed block, so it is left as it is"
 		elif [ -n "$st_target" ] && [ -n "$st_backup" ]; then
 			say "INSTRUCTIONS: $st_target: put the managed block back as it was before the setup (from $st_backup); later edits outside the block stay"
 		elif [ -n "$st_target" ]; then
@@ -1145,7 +1152,9 @@ undo() {
 		exit 3
 	fi
 	_u_result=
-	if [ -n "$st_target" ] && [ -e "$st_target" ]; then
+	if [ -n "$_u_no_block" ]; then
+		_u_result="INSTRUCTIONS: $st_target no longer holds the managed block, so it is left as it is"
+	elif [ -n "$st_target" ] && [ -e "$st_target" ]; then
 		_u_tmp=$(mktemp "${st_target%/*}/.${st_target##*/}.XXXXXX") || die 4 "cannot write next to $st_target"
 		cp -p "$st_target" "$_u_tmp" && restore_into "$st_target" "$st_backup" "$_u_tmp" ||
 			{ rm -f "$_u_tmp"; die 4 "cannot write next to $st_target"; }

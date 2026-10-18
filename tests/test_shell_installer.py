@@ -881,6 +881,63 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertFalse((home / ".nobrainer-flow-onboarding-claude.json").exists())
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_undo_completes_once_the_block_was_taken_out_by_hand(self) -> None:
+        # The hint of a partial undo offers to delete the block by hand; the next undo then
+        # finishes instead of stopping at the changed file again.
+        for installer in ("sh", "py"):
+            for partly_first in (True, False):
+                with self.subTest(installer=installer, partly_first=partly_first), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    instructions = home / ".codex" / "AGENTS.md"
+                    flags = ("--client", "codex", "--home", str(home))
+                    self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                    instructions.write_bytes(instructions.read_bytes() + b"\nedited after the setup\n")
+                    if partly_first:
+                        partly = install_step(installer, *flags, "--undo", "--apply", home=home)
+                        self.assertEqual(3, partly.returncode, partly.stdout + partly.stderr)
+                        self.assertIn("undo again", partly.stdout)
+                    text = instructions.read_text(encoding="utf-8")
+                    edited = (text[: text.index(START)] + text[text.index("<!-- NOBRAINER-TECH-FLOW:END -->") + 32 :]).encode()
+                    instructions.write_bytes(edited)
+
+                    preview = install_step(installer, *flags, "--undo", home=home)
+
+                    self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+                    self.assertIn("no longer holds the managed block, so it is left as it is", preview.stdout)
+                    undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                    self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                    self.assertIn("UNDONE:", undone.stdout)
+                    self.assertNotIn("PARTLY", undone.stdout)
+                    self.assertNotIn("managed block included", undone.stdout)
+                    self.assertIn("no longer holds the managed block, so it is left as it is", undone.stdout)
+                    self.assertEqual(edited, instructions.read_bytes())
+                    self.assertEqual([".codex", ".codex/AGENTS.md"], entries(home))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_undo_after_an_edit_does_not_need_the_backup(self) -> None:
+        # The backup only serves to put the block back, which an edited file does not get.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".codex" / "AGENTS.md"
+                instructions.parent.mkdir(parents=True)
+                instructions.write_bytes(b"# Mine\n")
+                flags = ("--client", "codex", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                instructions.write_bytes(instructions.read_bytes() + b"\nedited after the setup\n")
+                edited = instructions.read_bytes()
+                for backup in instructions.parent.glob("AGENTS.md.bak.*"):
+                    backup.unlink()
+
+                partly = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(3, partly.returncode, partly.stdout + partly.stderr)
+                self.assertIn("PARTLY UNDONE:", partly.stdout)
+                self.assertEqual([], list((home / ".agents" / "skills").iterdir()))
+                self.assertEqual(edited, instructions.read_bytes())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_undo_refuses_a_link_that_changed_since(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
