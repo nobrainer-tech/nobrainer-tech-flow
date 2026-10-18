@@ -82,7 +82,7 @@ The mode is informed by ASD-STE100; it does not claim full standard compliance.
 
 ## Install and use the plugin
 
-Use the [npm command](docs/INSTALL.md#npm-command) to preview and apply setup in your coding client. The [portable plugin ZIP](docs/CHAT_PLUGINS.md) uses the same eighteen skills in supported ChatGPT/Codex and Claude surfaces. Public directory approval remains a separate step.
+Use the [Git install](#install-safely) to preview and apply setup in your coding client. The [npm command](docs/INSTALL.md#npm-command) is coming soon: the package is not yet published on npm. The [portable plugin ZIP](docs/CHAT_PLUGINS.md) uses the same eighteen skills in supported ChatGPT/Codex and Claude surfaces. Public directory approval remains a separate step.
 
 ## How it works
 
@@ -313,7 +313,7 @@ Use nobrainer-tech-flow through the canonical skill
 outcome. A small reversible edit without a public contract, routing, workflow or
 portfolio change can use its quick path; other changes use the full path and its
 coherence gate.
-In Codex, type the exact name it lists for the module: `$nobrainer-tech-flow:nobrainer-tech-flow` after the installer, the npm package or a plugin install, and `$nobrainer-tech-flow` for a copy made with `install_skills.py --mode copy`. Say
+In Codex, type the exact name it lists for the module: `$nobrainer-tech-flow:nobrainer-tech-flow` after the installer or a plugin install (and after the npm package, once it is published), and `$nobrainer-tech-flow` for a copy made with `install_skills.py --mode copy`. Say
 `Use NBFlow`, `Use NBF` or `Use nobrainer-tech-flow` in natural language;
 older trigger phrases are migration context only and
 depend on a client's implicit description matching.
