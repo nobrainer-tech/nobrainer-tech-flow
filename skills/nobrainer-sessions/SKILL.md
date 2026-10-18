@@ -95,10 +95,11 @@ the host supports it.
 ## Startup care
 
 Flow invokes [automatic start and observation](references/session-restart.md#automatic-start-and-observation)
-on explicit Flow task entry, even without a restart request or detailed ledger.
+on explicit Flow entry for resumable, long or delegated work; the quick path skips it.
 Name the session immediately from verified creation metadata; assess current
 context and full necessary startup inputs. A health restart does not require an
-economic saving, but still requires authority, progress and safe takeover.
+economic saving, but still requires separately recorded owner consent, progress
+and safe takeover.
 
 ## Modes
 

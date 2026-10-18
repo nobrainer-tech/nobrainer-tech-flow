@@ -17,13 +17,11 @@ An explicit request for automatic restarts grants standing consent within that
 scope; do not ask at every rollover. Installing Flow alone does not grant consent.
 Higher-priority host restrictions still apply. Workers never rotate MAIN.
 
-Explicit nobrainer-tech-flow task invocation requests automatic session care under
-the technical Flow entrypoint contract. `NBFlow` and `NBF` request the
-same behavior when recognized. Record
-that request as the policy source
-when host rules permit task-scoped continuation; retain a prior `off` setting.
-A stricter host that requires a separate explicit new-session request still wins.
-Archive authorization is recorded separately and never inferred from naming.
+Explicit nobrainer-tech-flow invocation (or a recognized `NBFlow` or `NBF`) for
+resumable, long or delegated work enables health observation only. Restarting MAIN
+or archiving needs separately recorded owner consent under the policy above; Flow
+entry, naming or installation is never that consent. Retain a prior `off` setting;
+a stricter host rule still wins.
 
 Default an enabled policy to `adaptive`. Review at accepted milestones or an
 observed context-pressure signal; two compactions or `daily` age of 24 hours are
@@ -83,8 +81,8 @@ successor can learn from the previous restart without replaying old logs.
 
 The agent executes this procedure using the current host's supported tools. It
 is not a daemon and does not wake an inactive conversation. Run it at the first
-explicit Flow task invocation in a session, after compaction and before another
-accepted work unit. A resumed session is not a new creation.
+explicit Flow invocation for resumable, long or delegated work, after compaction
+and before another accepted work unit; the Flow quick path skips it. A resumed session is not a new creation.
 
 1. Bind the current session ID and read its creation timestamp and title from the
    native session API or documented session metadata. Never infer creation time
@@ -119,8 +117,9 @@ accepted work unit. A resumed session is not a new creation.
    are conservative policy heuristics, not measured optima. Otherwise economic
    payback can independently qualify. Unknown context/startup sizes do not prove
    reduction: checkpoint and keep units small while gathering available signals.
-5. If qualifying and progress occurred since the previous rotation, follow the
-   transfer sequence below at a safe boundary. Persist the observations/decision
+5. If qualifying, progress occurred since the previous rotation and restart consent
+   is recorded, follow the transfer sequence below at a safe boundary; without
+   consent, checkpoint and recommend the restart once. Persist the observations/decision
    in the existing task file; do not ask the owner to run the helper. An explicit
    immediate restart can skip benefit/progress preferences, never transfer safety.
    Two compactions and session age alone still trigger assessment only. Once a

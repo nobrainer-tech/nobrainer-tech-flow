@@ -30,8 +30,8 @@ the coordination and acceptance owner. The assigned worker may own the bounded
 product scope. Keep control ownership distinct from work ownership in every report.
 
 Ordinary native assignments use nobrainer-tech-flow's compact packet and returned native IDs.
-The ledger and Sessions transition below apply to durable queues and authorized
-visible work; one bounded native delegate needs neither a queue nor a new conversation.
+The ledger and transitions below apply to durable queues; one bounded native
+delegate needs neither a queue nor a new conversation.
 
 ## Preconditions
 
@@ -50,14 +50,17 @@ undefined, return to `nobrainer-tech-flow`; Dispatcher must not repair a vague p
 by improvising worker prompts.
 
 Before assigning any worker, require a completed `nobrainer-team` capability
-and role stage. Use one canonical cross-skill transition:
+and role stage. Use one of two cross-skill transitions:
 
-`Team -> Dispatcher SCHEDULE -> Sessions setup/delegate -> Dispatcher DISPATCH`
+- default: `Team -> Dispatcher SCHEDULE -> native subagent spawn -> Dispatcher DISPATCH`;
+- owner-authorized visible sessions only:
+  `Team -> Dispatcher SCHEDULE -> Sessions setup/delegate -> Dispatcher DISPATCH`
 
-Sessions alone owns identity preflight and prompt transport. Dispatcher selects
-the batch before that call and records `READY -> SENT` only from Sessions'
-successful transport readback. A role name or conversation title is not a
-transport address.
+The send receipt is the host-returned native worker ID, or on the visible path
+Sessions' successful transport readback; there, Sessions alone owns identity
+preflight and prompt transport. Dispatcher selects the batch before the send and
+records `READY -> SENT` only from that receipt. A role name or conversation title
+is not a transport address.
 
 Flow freezes `MODEL_POLICY`; Dispatcher carries it with the work unit
 and never chooses a provider model. Sessions binds the requested model, effort,
@@ -67,9 +70,9 @@ budget and escalation gate when the host exposes them, or records
 ## Modes
 
 - `SCHEDULE`: validate the dependency graph and propose one safe ready batch.
-- `DISPATCH`: consume Sessions' fresh identity, checkout, lease, active-turn and
-  transport readback for the selected batch, then commit one `READY -> SENT`
-  transition per delivered work unit. Sessions alone performs the send.
+- `DISPATCH`: consume the send receipt for the selected batch, then commit one
+  `READY -> SENT` transition per delivered work unit. MAIN or Sessions performs
+  the send; Dispatcher never does.
 - `RECONCILE`: consume independently audited reports, update scheduler state and
   choose one next batch, correction, stop or close action.
 - `RECOVER`: resume from the ledger and current evidence without repeating a
@@ -147,27 +150,28 @@ one writer.
 Record why every selected task is safe in parallel and why every deferred ready
 task waits. A `PARALLEL_GROUP` label alone is not proof.
 
-## Complete dispatch through Sessions
+## Complete dispatch
 
 Use Flow [communication](../nobrainer-tech-flow/references/communication.md)
 for new prose in task contracts and reports. Keep caller schemas, literal values
 and explicit language requirements unchanged.
 
 For each selected work unit, Dispatcher emits the task contract below without
-sending it. Flow or MAIN then invokes `nobrainer-sessions` mode `delegate`
-exactly once. Before Dispatcher records `READY -> SENT`, consume fresh session,
-checkout, lease, active-turn and transport readback from Sessions; unknown
-transport state keeps the task `READY` and stops dispatch. Bind:
+sending it. Flow or MAIN then sends it exactly once: one native subagent spawn,
+or `nobrainer-sessions` mode `delegate` on the visible path. Before Dispatcher
+records `READY -> SENT`, consume the receipt: the returned native worker ID, or
+fresh session, checkout, lease, active-turn and transport readback from Sessions;
+unknown transport state keeps the task `READY` and stops dispatch. Bind:
 
-- exact `TASK_ID`, session and host IDs, checkout, branch/base/HEAD and lease;
+- exact `TASK_ID`, worker or session and host IDs, checkout, branch/base/HEAD and lease;
 - one observable outcome, exclusions, allowed write scope and frozen inputs;
 - frozen `MODEL_POLICY`, exact model/effort/budget and escalation gate;
 - method/skill, dependencies, acceptance, tests, evidence and rollback;
 - report receiver, retry budget, blocker behavior and explicit stop;
 - the rule that the worker cannot choose, dispatch or start a successor.
 
-Sessions sends at most one active work unit to one exact worker. Dispatcher
-records `SENT` only after that transport readback; it never invokes a second
+Each send carries at most one active work unit to one exact worker. Dispatcher
+records `SENT` only after that receipt; it never invokes a second
 transport pass. If transport is unavailable before sending, MAIN may execute
 only after recording `READY -> CLAIMED -> RUNNING` with MAIN ownership in the
 canonical tracker. Remove the unit from the dispatchable set first. Multiple
@@ -178,7 +182,7 @@ unavailability. If a send may have succeeded without a receipt, preserve the
 UNKNOWN delivery observation, reserve capacity and write scope, and reconcile
 before resending or taking over; READY does not authorize a second writer.
 
-After dispatch, Sessions waits or monitors at the declared cadence. Batch routine
+After dispatch, MAIN or Sessions waits or monitors at the declared cadence. Batch routine
 progress. Interrupt the owner only for safety, credentials, irreversible effects,
 changed frozen input, exhausted retry, lease conflict or a genuine decision.
 
@@ -188,8 +192,9 @@ Reconcile each returned unit promptly under nobrainer-tech-flow's
 [completion, observation and refill rules](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
 Keep a reason and bounded next observation for waiting, suspended or uncertain workers.
 
-Never accept a raw worker report directly. Invoke `nobrainer-sessions`
-`RECEIVE_AUDIT` to bind identity, checkout, diff, tests, verifier, runtime,
+Never accept a raw worker report directly. Audit a native worker under Flow's
+`RECEIVE_AUDIT` against its returned ID; a visible session uses `nobrainer-sessions`
+`RECEIVE_AUDIT`. Bind identity, checkout, diff, tests, verifier, runtime,
 side effects and released lease. Then choose exactly one transition:
 
 - audited success: mark the task `ACCEPTED`, release its dependants and compute
@@ -204,7 +209,7 @@ side effects and released lease. Then choose exactly one transition:
 - changed plan/input: move affected not-started `READY` rows to `STOPPED`, keep
   dependants `PENDING` or `BLOCKED`, invalidate the old plan/evidence and return
   to Flow for a new fingerprint. If work is already sent or running, stop new
-  routing and let Sessions request and verify a controlled stop;
+  routing and request and verify a controlled stop through the send path;
 - write collision, active lease or missing evidence: preserve state and stop
   without releasing successors;
 - owner gate: request one exact decision;
@@ -231,7 +236,7 @@ PLAN_REF_AND_FINGERPRINT:
 READY_SET:
 CRITICAL_PATH: <measured chain or UNKNOWN with reason>
 UNBLOCKS: <selected task -> dependent acceptance work, or NONE>
-DISPATCHED_BATCH: <task -> exact session, or NONE>
+DISPATCHED_BATCH: <task -> exact native worker or session ID, or NONE>
 DEFERRED_READY_TASKS_AND_REASON:
 PARALLEL_SAFETY: <task pair -> disjoint scope, checkout and mutable-state proof,
   or NOT_NEEDED>
