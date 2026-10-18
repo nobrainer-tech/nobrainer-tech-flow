@@ -1,7 +1,7 @@
 {
-  "name": "nobrainer-tech-skills-dev",
+  "name": "nobrainer-tech",
   "interface": {
-    "displayName": "nobrainer-tech-flow Dev"
+    "displayName": "nobrainer-tech-flow"
   },
   "plugins": [
     {

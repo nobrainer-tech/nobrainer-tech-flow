@@ -3,8 +3,8 @@
 Version **1.7.1** introduced an earlier display spelling.
 The current display name is **nobrainer-tech-flow**; the repository,
 public package/plugin identity and entry skill are `nobrainer-tech-flow`.
-**From task to done.** Tell it what you need. Flow clarifies the goal, does the
-work, and checks the result.
+**From task to done.** Tell it what you need. nobrainer-tech-flow clarifies the goal,
+does the work, and checks the result.
 
 The canonical public repository identity is
 [`nobrainer-tech/nobrainer-tech-flow`](https://github.com/nobrainer-tech/nobrainer-tech-flow)
@@ -25,12 +25,22 @@ one can cause duplicate routing.
 | Existing package and Claude Code, Codex, Cursor, Kimi, Gemini and portable plugin IDs | `nobrainer-tech-skills` -> `nobrainer-tech-flow` after exact client readback |
 | New public repository/package channel | `nobrainer-tech-flow` |
 | Claude Code marketplace name | `nobrainer-tech` |
-| Local development marketplace name | `nobrainer-tech-skills-dev` |
+| Codex marketplace name | `nobrainer-tech-skills-dev` -> `nobrainer-tech` in 2.4.0 |
 | OpenCode package entry prefix | `nobrainer-tech-skills@git+` -> `nobrainer-tech-flow@git+` at a reviewed immutable ref |
 | OpenCode adapter module | `.opencode/plugins/nobrainer-tech-skills.js` |
 | Pi extension module | `.pi/extensions/nobrainer-tech-skills.js` |
 | Shared bootstrap marker | `NOBRAINER_BOOTSTRAP_V1` |
 | Technical entrypoint and compatibility aliases | `$nobrainer-ultra` -> `$nobrainer-tech-flow`; old triggers are recognized only for migration |
+
+If you added the Codex marketplace under its old name, remove it and add the
+repository again; otherwise the old and new plugin stay enabled side by side:
+
+```sh
+codex plugin remove nobrainer-tech-flow@nobrainer-tech-skills-dev
+codex plugin marketplace remove nobrainer-tech-skills-dev
+codex plugin marketplace add nobrainer-tech/nobrainer-tech-flow   # or your reviewed checkout path
+codex plugin add nobrainer-tech-flow@nobrainer-tech
+```
 
 The previous skill directory list is historical. The reviewed migration renames
 the entry skill and adds the calibration skill; do not overwrite a foreign
