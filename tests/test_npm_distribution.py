@@ -102,6 +102,20 @@ class NpmDistributionTests(unittest.TestCase):
             self.assertIn("NOTHING TO UNDO", result.stdout)
             self.assertFalse(self.home.exists())
 
+    def test_undo_without_a_record_ignores_whatever_the_retained_storage_holds(self):
+        # A partial or modified copy is no reason to refuse when nothing is recorded to undo.
+        partial = self.home / ".nobrainer-tech-flow" / "npm" / self.version()
+        partial.mkdir(parents=True)
+        (partial / "left-over.txt").write_text("partial copy\n", encoding="utf-8")
+        for extra in ((), ("--apply",)):
+            result = self.install("--undo", *extra)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertIn("NOTHING TO UNDO", result.stdout)
+            self.assertEqual(["left-over.txt"], sorted(path.name for path in partial.iterdir()))
+
+    def version(self):
+        return json.loads((self.package / "package.json").read_text(encoding="utf-8"))["version"]
+
     def test_undo_with_a_record_but_no_retained_release_still_stops(self):
         self.home.mkdir()
         record = self.home / ".nobrainer-flow-onboarding-codex.json"

@@ -32,6 +32,12 @@ def main() -> int:
     home = (args.home or Path.home()).expanduser().resolve()
     storage = home / ".nobrainer-tech-flow" / "npm"
     target = storage / version
+    records = (home / f".nobrainer-flow-onboarding-{args.client}.json", home / ".nobrainer-flow-onboarding.json")
+    if args.undo and not any(path.exists() or path.is_symlink() for path in records):
+        # Nothing is recorded for this client, so nothing links to a release and there is
+        # nothing to reverse, whatever the retained storage holds; the installer says so
+        # and writes nothing.
+        return installer.main()
     if any(p.is_symlink() for p in (storage, *storage.parents)):
         print("ERROR: npm release storage must not pass through a symlink.", file=sys.stderr)
         return 3
@@ -42,11 +48,6 @@ def main() -> int:
             print(f"PRESERVED: release storage is different or untrusted: {target}", file=sys.stderr)
             return 3
     elif args.undo:
-        records = (home / f".nobrainer-flow-onboarding-{args.client}.json", home / ".nobrainer-flow-onboarding.json")
-        if not any(path.exists() or path.is_symlink() for path in records):
-            # Nothing is recorded for this client, so nothing links to a release and
-            # there is nothing to reverse; the installer says so and writes nothing.
-            return installer.main()
         print("ERROR: retained npm release is missing; preserve the client and inspect its setup record.", file=sys.stderr)
         return 3
     elif not args.apply:
