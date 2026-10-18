@@ -1221,7 +1221,8 @@ class ShellInstallerTests(unittest.TestCase):
 
                     self.assertEqual(0, result.returncode, result.stdout + result.stderr)
                     self.assertIn("NOTHING TO UNDO: no setup is recorded for Claude Code", result.stdout)
-                    self.assertIn(str(home / ".nobrainer-flow-onboarding-claude.json"), result.stdout)
+                    # Git Bash names the path its own way (/tmp/...), so only its end is compared.
+                    self.assertIn(f"{Path(temp).name}/home/.nobrainer-flow-onboarding-claude.json", result.stdout)
                     self.assertEqual("", result.stderr)
                     self.assertEqual([], entries(home))
 
@@ -1317,15 +1318,17 @@ class ShellInstallerTests(unittest.TestCase):
                 preview = run_sh(*flags, "--undo", home=home, shell=shell)
 
                 self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+                # Git Bash names a folder its own way (/c/Users/..., /tmp/...), so only the part
+                # below the temporary folder is compared; the record above checks the full path.
                 for folder in folders:
-                    self.assertIn(f"FOLDER: {(home / folder).resolve()}: removed if it is still empty", preview.stdout)
+                    self.assertIn(f"{Path(temp).name}/home/{folder}: removed if it is still empty", preview.stdout)
                 self.assertEqual(tree, entries(home))
 
                 undone = run_sh(*flags, "--undo", "--apply", home=home, shell=shell)
 
                 self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
                 for folder in folders:
-                    self.assertIn(f"FOLDER: removed the empty folder {(home / folder).resolve()}", undone.stdout)
+                    self.assertRegex(undone.stdout, f"FOLDER: removed the empty folder .*{Path(temp).name}/home/{re.escape(folder)}\n")
                 self.assertEqual([], entries(home))
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")

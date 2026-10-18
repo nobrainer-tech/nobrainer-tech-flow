@@ -398,7 +398,7 @@ json_field() {
 }
 
 read_state() {
-	st_dest= st_created= st_target= st_backup= st_hash= st_dirs= st_has_dirs= _r_in=
+	st_dest= st_created= st_target= st_backup= st_hash= st_dirs= st_has_dirs= st_bad_dirs= _r_in=
 	while IFS= read -r _r_line || [ -n "$_r_line" ]; do
 		# Python writes the record with CRLF line breaks on Windows.
 		_r_line=${_r_line%"$CR"}
@@ -418,6 +418,8 @@ read_state() {
 					'  ]' | '  ],') _r_in= ;;
 					*)
 						json_field "\": ${_r_line#    }" || return 1
+						# cygpath drops a ".." on Windows, so it is looked for in the path as written.
+						case /$(printf '%s' "$json_value" | tr '\\' /)/ in */../*) st_bad_dirs=1 ;; esac
 						_r_dir=$(to_posix "$json_value")
 						st_dirs="$st_dirs$_r_dir
 " ;;
@@ -526,6 +528,7 @@ above() {
 }
 
 check_dirs() {
+	[ -z "$st_bad_dirs" ] || return 1
 	[ -n "$st_dirs" ] || return 0
 	_k_dest=$(physical "$st_dest")
 	_k_tdir= _k_tphys=
