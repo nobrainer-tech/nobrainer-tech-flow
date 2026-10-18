@@ -136,8 +136,8 @@ A failed check routes to repair; a missing tool or credential routes through
 [delivery obstacle resolution](../nobrainer-tech-flow/references/delivery.md). Check
 permitted alternatives and continue independent work before reporting BLOCKED.
 
-Do not push through three failed fix-like attempts. Preserve the failing proof,
-return to `nobrainer-rca` or revise the design with the owner.
+When the [Flow corrective-attempt budget](../nobrainer-tech-flow/SKILL.md) is spent,
+preserve the failing proof, return to `nobrainer-rca` or revise the design with the owner.
 
 ## Build report
 

@@ -196,8 +196,9 @@ contact people, change credentials, migrate data, mutate production or weaken
 safety controls remain explicit gates unless the owner already authorized that
 exact action.
 
-Use at most two corrective attempts per observed failure, with new evidence
-for each, or the owner's smaller budget; then diagnose or report the blocker.
+Corrective-attempt budget (Build and RCA use this one): at most two corrective
+attempts per observed failure, with new evidence for each, or the owner's smaller
+budget; then diagnose with `nobrainer-rca` or report the blocker.
 Timeouts, partial results, dead sessions, failed checks and exhausted retries never prove completion.
 
 ## `VERIFY` and `RECEIVE_AUDIT`
