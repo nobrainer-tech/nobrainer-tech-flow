@@ -157,11 +157,13 @@ class HookScriptTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "nt", "the batch half of the wrapper only runs on Windows")
     def test_batch_wrapper_never_runs_a_bash_from_the_current_folder(self) -> None:
-        # No Git Bash anywhere it looks, and a bash.exe planted in the current folder: the
-        # wrapper must say that bash is missing instead of running the planted one.
+        # A bash.exe planted in the current folder must never run. Windows can give a child
+        # process its Program Files variables back, so a Git Bash installed there may still be
+        # found; then the hook itself runs and prints its marker. Without one, the wrapper
+        # says that bash is missing. Either way the planted program prints nothing of its own.
         with tempfile.TemporaryDirectory() as raw:
             folder = Path(raw)
-            wrapper = self.wrapper_with_hook(folder, "session-start", "exit 0\n")
+            wrapper = self.wrapper_with_hook(folder, "session-start", "echo hook-ran\n")
             empty = folder / "empty"
             empty.mkdir()
             planted = folder / "cwd"
@@ -176,10 +178,13 @@ class HookScriptTests(unittest.TestCase):
             }
             environment.update({name: str(empty) for name in hidden})
             result = run([str(system32 / "cmd.exe"), "/c", str(wrapper), "session-start"], cwd=planted, env=environment)
-        self.assertEqual(1, result.returncode, result.stdout + result.stderr)
-        self.assertIn("needs Git Bash, which was not found", result.stderr)
-        self.assertEqual("", result.stdout)
-
+        output = result.stdout + result.stderr
+        if result.returncode == 0:
+            self.assertEqual("hook-ran", result.stdout.strip(), output)
+        else:
+            self.assertEqual(1, result.returncode, output)
+            self.assertIn("needs Git Bash, which was not found", result.stderr)
+            self.assertEqual("", result.stdout)
 
 class InstallerTests(unittest.TestCase):
     def test_copy_install_is_idempotent(self) -> None:

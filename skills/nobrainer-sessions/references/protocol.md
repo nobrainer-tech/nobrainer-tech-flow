@@ -135,8 +135,8 @@ exists. If no legal `READY` row remains, wait for `RUNNING`, audit `REPORTED`,
 or finish accepted work. Only blocked unfinished work needs an unblock action;
 `OWNER_DECISION_REQUIRED` requires an actual owner decision.
 
-At explicit Flow task startup and authorized fresh-session transfer, keep
-`TITLE_BASE` stable and give each
+At explicit Flow startup for resumable, long or delegated work (the quick path skips it)
+and at authorized fresh-session transfer, keep `TITLE_BASE` stable and give each
 session the suffix ` | started DD-MM` from its own verified start timestamp. Use
 the task/owner timezone, or recorded UTC when none is known. Remove an existing
 suffix before formatting. Read back supported create/rename operations, but never
