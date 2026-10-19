@@ -5,14 +5,15 @@ The guards are three hooks in the Claude Code user settings.json: a PreToolUse h
 that asks before common risky shell commands, and Stop and SubagentStop hooks that
 ask for a proof line once. Every run is a preview until --apply. The hooks point at
 flow_guard.py through the skill link that scripts/install.py created, so they keep
-working when the checkout is updated. Our entries are found by that command path;
---undo --apply removes those and nothing else.
+working when the checkout is updated. Our entries are the hooks whose command is
+exactly one this script generates; --undo --apply removes those and nothing else.
+The preview names only those hooks and the settings path, never other settings,
+which can hold tokens.
 """
 
 from __future__ import annotations
 
 import argparse
-import difflib
 import importlib.util
 import json
 import os
@@ -68,7 +69,9 @@ def command(guard: Path, mode: str) -> str:
 
 
 def ours(hook: object, guard: Path) -> bool:
-    return isinstance(hook, dict) and str(guard) in str(hook.get("command", ""))
+    # The exact generated text, not a path substring: the path may be shell-quoted, and
+    # another hook that merely mentions the path is not ours.
+    return isinstance(hook, dict) and hook.get("command") in {command(guard, mode) for _, _, mode in EVENTS}
 
 
 def read_settings(path: Path) -> tuple[str | None, dict]:
@@ -128,14 +131,34 @@ def render(settings: dict) -> str:
     return json.dumps(settings, indent=2) + "\n"
 
 
-def diff(path: Path, before: str | None, after: str) -> str:
-    lines = difflib.unified_diff(
-        (before or "").splitlines(keepends=True),
-        after.splitlines(keepends=True),
-        fromfile=f"{path} (now)" if before is not None else "/dev/null",
-        tofile=f"{path} (after)",
-    )
-    return "".join(lines)
+def listed(settings: dict, guard: Path) -> list[str]:
+    """One line per hook of ours in SETTINGS: its event, matcher and command."""
+
+    lines = []
+    for event, groups in settings.get("hooks", {}).items():
+        for group in groups:
+            matcher = f" (matcher {group['matcher']})" if group.get("matcher") else ""
+            lines.extend(f"  {event}{matcher}: {hook['command']}" for hook in group.get("hooks", []) if ours(hook, guard))
+    return lines
+
+
+def backup_copy(target: Path) -> Path:
+    """Copy TARGET to a new backup file; an existing file of that name is never replaced."""
+
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    for counter in range(1000):
+        suffix = f"-{counter}" if counter else ""
+        backup = target.with_name(f"{target.name}.flow-guards-{stamp}{suffix}.bak")
+        try:
+            # Exclusive creation also refuses a symlink planted at the name.
+            handle = backup.open("xb")
+        except FileExistsError:
+            continue
+        with handle, target.open("rb") as source:
+            shutil.copyfileobj(source, handle)
+        shutil.copystat(target, backup)
+        return backup
+    raise RuntimeError(f"no free backup name for {target}")
 
 
 def write(path: Path, before: str | None, after: str) -> Path | None:
@@ -145,8 +168,7 @@ def write(path: Path, before: str | None, after: str) -> Path | None:
     target.parent.mkdir(parents=True, exist_ok=True)
     backup = None
     if before is not None:
-        backup = target.with_name(f"{target.name}.flow-guards-{time.strftime('%Y%m%d-%H%M%S')}.bak")
-        shutil.copy2(target, backup)
+        backup = backup_copy(target)
     descriptor, staged = tempfile.mkstemp(prefix=f".{target.name}.", dir=target.parent)
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
@@ -195,7 +217,10 @@ def run(apply: bool, undo: bool, home: Path | None, rerun: str = "python3 script
         return 0
     after = render(updated)
     if not apply:
-        print(diff(settings_path, before, after), end="")
+        hooks = listed(settings if undo else updated, guard)
+        verb = f"remove {len(hooks)} hooks from" if undo else f"add {len(hooks)} hooks to"
+        print(f"PREVIEW: would {verb} {settings_path}; other settings keep their values:")
+        print("\n".join(hooks))
         if not undo:
             print(DISCLAIMER)
         flags = "--undo --apply" if undo else "--apply"

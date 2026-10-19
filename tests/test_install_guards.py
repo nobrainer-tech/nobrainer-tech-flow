@@ -3,12 +3,12 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
-import re
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -64,15 +64,17 @@ class InstallGuardsTests(unittest.TestCase):
             for event, groups in settings.get("hooks", {}).items()
         }
 
-    def test_preview_prints_the_diff_and_disclaimer_and_writes_nothing(self) -> None:
+    def test_preview_lists_the_hooks_and_disclaimer_and_writes_nothing(self) -> None:
         for existing in (None, OTHER_HOOKS):
             with self.subTest(existing=bool(existing)):
                 before = self.write_settings(existing) if existing else None
                 preview = self.run_script()
                 self.assertEqual(0, preview.returncode, preview.stderr)
-                self.assertIn("+++ ", preview.stdout)
-                self.assertIn('"PreToolUse"', preview.stdout)
+                self.assertIn(str(self.settings), preview.stdout)
+                self.assertIn("PreToolUse", preview.stdout)
                 self.assertIn(f"{self.guard} pre-tool", preview.stdout)
+                self.assertNotIn("my-lint", preview.stdout)
+                self.assertNotIn("Bash(ls:*)", preview.stdout)
                 self.assertIn("not a security boundary", preview.stdout)
                 self.assertIn("sh -c or variables bypass it", preview.stdout)
                 self.assertIn("NO_CHANGES", preview.stdout)
@@ -116,13 +118,70 @@ class InstallGuardsTests(unittest.TestCase):
         self.run_script("--apply")
         preview = self.run_script("--undo")
         self.assertIn("NO_CHANGES", preview.stdout)
-        self.assertRegex(preview.stdout, r'\n-\s+"command": "if \[ -f ' + re.escape(str(self.guard)))
+        self.assertIn(f"if [ -f {self.guard} ]; then python3 {self.guard} stop || true; fi", preview.stdout)
+        self.assertNotIn("my-format", preview.stdout)
         undone = self.run_script("--undo", "--apply")
         self.assertEqual(0, undone.returncode, undone.stderr)
         self.assertIn("REMOVED", undone.stdout)
         self.assertEqual(OTHER_HOOKS, json.loads(self.settings.read_text(encoding="utf-8")))
         again = self.run_script("--undo", "--apply")
         self.assertIn("NOTHING TO UNDO", again.stdout)
+
+    def test_no_mode_prints_other_settings_values(self) -> None:
+        token = "flow-guards-fixture-token-4f2a"
+        settings = {**OTHER_HOOKS, "env": {"ANTHROPIC_AUTH_TOKEN": token}, "apiKeyHelper": "fixture-helper-9c1d"}
+        self.write_settings(settings)
+        for flags in ((), ("--apply",), ("--apply",), ("--undo",), ("--undo", "--apply"), ("--undo", "--apply")):
+            with self.subTest(flags=flags):
+                result = self.run_script(*flags)
+                self.assertEqual(0, result.returncode, result.stderr)
+                for secret in (token, "fixture-helper-9c1d", "my-lint", "my-format"):
+                    self.assertNotIn(secret, result.stdout + result.stderr)
+        self.assertEqual(settings, json.loads(self.settings.read_text(encoding="utf-8")))
+
+    def test_a_quoted_guard_path_is_still_recognised_as_ours(self) -> None:
+        home = self.home.parent / "dev's home"
+        config = home / ".claude"
+        (config / "skills").mkdir(parents=True)
+        (config / "skills" / "nobrainer-tech-flow").symlink_to(SKILL, target_is_directory=True)
+        self.home, self.config, self.settings = home, config, config / "settings.json"
+        self.write_settings(OTHER_HOOKS)
+        self.assertEqual(0, self.run_script("--apply").returncode)
+        again = self.run_script("--apply")
+        self.assertIn("UP TO DATE", again.stdout)
+        settings = json.loads(self.settings.read_text(encoding="utf-8"))
+        mine = {
+            event: sum("flow_guard.py" in hook["command"] for group in groups for hook in group["hooks"])
+            for event, groups in settings["hooks"].items()
+        }
+        self.assertEqual({"PreToolUse": 1, "PostToolUse": 0, "Stop": 1, "SubagentStop": 1}, mine)
+        undone = self.run_script("--undo", "--apply")
+        self.assertIn("REMOVED", undone.stdout)
+        self.assertEqual(OTHER_HOOKS, json.loads(self.settings.read_text(encoding="utf-8")))
+
+    def test_undo_keeps_other_hooks_that_mention_the_guard_path(self) -> None:
+        mention = {"type": "command", "command": f"echo checking {self.guard}"}
+        settings = json.loads(json.dumps(OTHER_HOOKS))
+        settings["hooks"]["Stop"] = [{"hooks": [mention]}]
+        self.write_settings(settings)
+        self.run_script("--apply")
+        self.assertIn("UP TO DATE", self.run_script("--apply").stdout)
+        self.run_script("--undo", "--apply")
+        self.assertEqual(settings, json.loads(self.settings.read_text(encoding="utf-8")))
+
+    def test_backups_never_overwrite_an_existing_file(self) -> None:
+        spec = importlib.util.spec_from_file_location("_guards_backup", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        stamp = "20261019-120000"
+        taken = self.config / f"settings.json.flow-guards-{stamp}.bak"
+        taken.write_text("unrelated", encoding="utf-8")
+        with mock.patch.object(module.time, "strftime", return_value=stamp):
+            for content in ("first", "second"):
+                self.settings.write_text(content, encoding="utf-8")
+                module.write(self.settings, content, content + " after")
+        self.assertEqual("unrelated", taken.read_text(encoding="utf-8"))
+        self.assertEqual(["first", "second", "unrelated"], sorted(path.read_text(encoding="utf-8") for path in self.backups()))
 
     def test_undo_of_a_fresh_install_leaves_no_hooks_key(self) -> None:
         self.run_script("--apply")

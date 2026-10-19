@@ -440,7 +440,7 @@ This is a seatbelt, not a security boundary. It reads the command text, so
 string (`echo "git reset --hard"`) asks without need.
 
 ```bash
-python3 scripts/install.py --client claude --guards            # preview the settings.json diff
+python3 scripts/install.py --client claude --guards            # preview the hooks it would add
 python3 scripts/install.py --client claude --guards --apply    # add them, with a backup
 python3 scripts/install.py --client claude --guards --undo --apply
 ```
