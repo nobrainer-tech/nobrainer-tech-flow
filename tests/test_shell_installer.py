@@ -1633,6 +1633,13 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertEqual(0, refreshed.returncode, refreshed.stdout + refreshed.stderr)
                 self.assertEqual(text, instructions.read_bytes())
                 self.assertEqual(0o444, instructions.stat().st_mode & 0o777)
+                # The undo writes the file the same way: the block goes and the mode stays.
+                undone = install_step(installer, "--client", "codex", "--home", str(home), "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertEqual(b"# Mine\n", instructions.read_bytes())
+                self.assertEqual(0o444, instructions.stat().st_mode & 0o777)
+                self.assertEqual([".codex", ".codex/AGENTS.md"], [name for name in entries(home) if ".bak." not in name])
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_a_folder_named_through_dot_dot_that_was_there_before_survives_the_undo(self) -> None:

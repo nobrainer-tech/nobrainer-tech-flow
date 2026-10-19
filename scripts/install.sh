@@ -838,10 +838,16 @@ preview() {
 	say "NO_CHANGES: preview only; install with: $(command_for --apply)"
 }
 
-# A refreshed copy of a file without owner write permission gets that permission
-# taken away again before it replaces the file.
+# restore_mode READONLY COPY: a copy of a file without owner write permission (READONLY
+# is 1) gets that permission taken away again before it replaces the file.
 restore_mode() {
-	if [ "$_w_readonly" = 1 ]; then chmod u-w "$_w_tmp"; fi
+	if [ "$1" = 1 ]; then chmod u-w "$2"; fi
+}
+
+# read_only FILE: the owner may not write FILE.
+read_only() {
+	case $(ls -ld "$1") in ??-*) return 0 ;; esac
+	return 1
 }
 
 # Append the block the way scripts/install_personalization.py does: after a line
@@ -869,7 +875,8 @@ write_instructions() {
 		# The copy keeps the file's mode. A file without owner write permission is written
 		# through a copy made writable and gets that permission taken away again before the
 		# rename, so the file keeps exactly the mode it had.
-		case $(ls -ld "$target") in ??-*) _w_readonly=1 ;; *) _w_readonly=0 ;; esac
+		_w_readonly=0
+		if read_only "$target"; then _w_readonly=1; fi
 		chmod u+w "$_w_tmp" || { rm -f "$_w_tmp"; return 1; }
 	else
 		_w_readonly=0
@@ -880,7 +887,7 @@ write_instructions() {
 			{ [ "$block_from" -eq 1 ] || head -n "$((block_from - 1))" "$target"; } &&
 				printf '%s' "$(block)" &&
 				tail -n "+$block_to" "$target" | tail -c "+$((${#END} + 1))"
-		} >"$_w_tmp" && restore_mode && mv -f "$_w_tmp" "$target"; then return 0; fi
+		} >"$_w_tmp" && restore_mode "$_w_readonly" "$_w_tmp" && mv -f "$_w_tmp" "$target"; then return 0; fi
 		rm -f "$_w_tmp"
 		return 1
 	fi
@@ -890,7 +897,7 @@ write_instructions() {
 			*) printf '\n' >>"$_w_tmp" ;;
 		esac
 	fi
-	if printf '%s' "$(block)" >>"$_w_tmp" && restore_mode && mv -f "$_w_tmp" "$target"; then return 0; fi
+	if printf '%s' "$(block)" >>"$_w_tmp" && restore_mode "$_w_readonly" "$_w_tmp" && mv -f "$_w_tmp" "$target"; then return 0; fi
 	rm -f "$_w_tmp"
 	return 1
 }
@@ -1202,13 +1209,18 @@ undo() {
 		_u_result="INSTRUCTIONS: $st_target no longer holds the managed block, so it is left as it is"
 	elif [ -n "$st_target" ] && [ -e "$st_target" ]; then
 		_u_tmp=$(mktemp "${st_target%/*}/.${st_target##*/}.XXXXXX") || die 4 "cannot write next to $st_target"
-		cp -p "$st_target" "$_u_tmp" && restore_into "$st_target" "$st_backup" "$_u_tmp" ||
+		# As the setup does: a file without owner write permission is written through a copy
+		# made writable, which gets that permission taken away again before the rename.
+		_u_readonly=0
+		if read_only "$st_target"; then _u_readonly=1; fi
+		cp -p "$st_target" "$_u_tmp" && chmod u+w "$_u_tmp" && restore_into "$st_target" "$st_backup" "$_u_tmp" ||
 			{ rm -f "$_u_tmp"; die 4 "cannot write next to $st_target"; }
 		if [ -z "$st_backup" ] && ! grep -q '[^[:space:]]' "$_u_tmp"; then
 			rm -f "$_u_tmp" "$st_target"
 			_u_result="INSTRUCTIONS: $st_target removed; the setup had created it"
 		else
-			mv -f "$_u_tmp" "$st_target" || { rm -f "$_u_tmp"; die 4 "cannot write $st_target"; }
+			restore_mode "$_u_readonly" "$_u_tmp" && mv -f "$_u_tmp" "$st_target" ||
+				{ rm -f "$_u_tmp"; die 4 "cannot write $st_target"; }
 			if [ -n "$st_backup" ] && cmp -s "$st_target" "$st_backup"; then
 				_u_result="INSTRUCTIONS: $st_target is back as it was before the setup (backup kept: $st_backup)"
 			else
