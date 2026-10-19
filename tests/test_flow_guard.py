@@ -156,7 +156,8 @@ class PreToolTests(unittest.TestCase):
     def test_a_temporary_path_that_links_elsewhere_is_not_exempt(self) -> None:
         with tempfile.TemporaryDirectory() as scratch:
             link = Path(scratch) / "work"
-            link.symlink_to(ROOT, target_is_directory=True)
+            # The suite may run from a copy under the temporary folder, so link outside it.
+            link.symlink_to(Path(os.path.abspath(os.sep)), target_is_directory=True)
             for command in (f"rm -rf {link}/skills", "rm -rf work/skills"):
                 with self.subTest(command=command):
                     payload = {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": scratch}
