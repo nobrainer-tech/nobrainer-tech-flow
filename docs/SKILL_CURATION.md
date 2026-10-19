@@ -109,6 +109,12 @@ targets at that name with `PRESERVED_FOREIGN`. Only exact old links from this
 checkout remain migration candidates. Renamed/absorbed aliases retain blocking
 conflict checks.
 
+`nobrainer-codex-context` is `RETIRED` in 2.5.0 by owner decision (2026-10-20): its
+boundary grew into `nobrainer-context`, which covers every coding agent's project
+instructions, and the old name keeps no alias or trigger. Foreign targets at the
+old name are preserved like `nobrainer-reddit`; an exact old link that a setup
+record lists is removed by the next setup apply or undo.
+
 ## Change control
 
 Any addition, merge or retirement updates together:

@@ -107,6 +107,27 @@ def recorded_setting(client: str, home: Path, destination: object, target: objec
     return None
 
 
+def recorded_skill(name: object) -> bool:
+    """A name a setup record may hold: a current module, or one a release retired."""
+
+    return isinstance(name, str) and (name in BY_SKILL or name in _sibling(INSTALL_SKILLS).RETIRED_LEGACY)
+
+
+def owns_link(target: Path, name: str) -> bool:
+    """True when target is this checkout's link for name; a retired module's link dangles."""
+
+    if name in BY_SKILL:
+        return links_to(target, SKILLS_DIR / name)
+    return _sibling(INSTALL_SKILLS).is_exact_legacy_link(target, name)
+
+
+def recorded_retired_args(record: dict | None) -> list[str]:
+    """install_skills.py flags for retired modules a setup record says this setup linked."""
+
+    names = (record or {}).get("created_skills", [])
+    return [arg for name in names if isinstance(name, str) and name not in BY_SKILL for arg in ("--recorded-retired", name)]
+
+
 def links_to(target: Path, source: Path) -> bool:
     """True when target is a symlink resolving to source; loops and dangling links are not."""
 
@@ -604,10 +625,10 @@ def run(command: list[str], hide: tuple[str, ...] = ()) -> tuple[int, str]:
 
 def remove_exact_created_links(destination: Path, names: list[str]) -> None:
     for name in names:
-        if name not in BY_SKILL:
+        if not recorded_skill(name):
             continue
         target = destination / name
-        if links_to(target, SKILLS_DIR / name):
+        if owns_link(target, name):
             target.unlink()
 
 
@@ -783,7 +804,7 @@ def read_state_file(path: Path) -> dict[str, object]:
         or not isinstance(loaded.get("destination"), str)
         or not isinstance(loaded.get("created_skills"), list)
         or not isinstance(loaded.get("profile"), dict)
-        or any(not isinstance(name, str) or name not in BY_SKILL for name in loaded.get("created_skills", []))
+        or not all(recorded_skill(name) for name in loaded.get("created_skills", []))
     ):
         raise ValueError(f"refusing to overwrite unrecognized setup state: {path}")
     try:
@@ -997,7 +1018,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         return 3
     destination = Path(state["destination"])
     created = state.get("created_skills", [])
-    if not isinstance(created, list) or len(created) != len(set(created)) or any(name not in BY_SKILL for name in created):
+    if not isinstance(created, list) or len(created) != len(set(created)) or not all(recorded_skill(name) for name in created):
         print("ERROR: rollback state contains invalid skill ownership entries", file=sys.stderr)
         return 3
     try:
@@ -1066,7 +1087,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     for name in created:
         target = destination / name
         if target.is_symlink():
-            if not links_to(target, SKILLS_DIR / name):
+            if not owns_link(target, name):
                 print(f"PRESERVED: changed target {target}")
                 return 3
         elif target.exists():
@@ -1086,8 +1107,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     removed: list[str] = []
     for name in created:
         target = destination / name
-        source = SKILLS_DIR / name
-        if links_to(target, source):
+        if owns_link(target, name):
             target.unlink()
             removed.append(name)
         elif target.exists() or target.is_symlink():
@@ -1384,7 +1404,7 @@ def main(argv: list[str] | None = None) -> int:
         # Inspect every target before writing any of them. This keeps a later
         # conflict from leaving a partial selection installed.
         for name in install_names:
-            command = [sys.executable, str(ROOT / "scripts" / "install_skills.py"), "--client", args.client, "--dest", str(destination), "--skill", name]
+            command = [sys.executable, str(ROOT / "scripts" / "install_skills.py"), "--client", args.client, "--dest", str(destination), "--skill", name, *recorded_retired_args(previous)]
             code, _ = run(command, hide=("NOTE: ",))
             if code:
                 return code
@@ -1394,7 +1414,7 @@ def main(argv: list[str] | None = None) -> int:
         profile_preimage = read_file_preimage(profile_target)
         if args.apply:
             for name in install_names:
-                command = [sys.executable, str(ROOT / "scripts" / "install_skills.py"), "--client", args.client, "--dest", str(destination), "--skill", name, "--apply"]
+                command = [sys.executable, str(ROOT / "scripts" / "install_skills.py"), "--client", args.client, "--dest", str(destination), "--skill", name, "--apply", *recorded_retired_args(previous)]
                 code, _ = run(command, hide=("NOTE: ",))
                 if code:
                     remove_exact_created_links(destination, new_skills)
@@ -1428,7 +1448,9 @@ def main(argv: list[str] | None = None) -> int:
                 "backup": recorded_backup,
                 "written_sha256": hashlib.sha256(profile_target.read_bytes()).hexdigest(),
             }
-        created = sorted(set(previous.get("created_skills", [])) | {name for name in new_skills if (destination / name).is_symlink()})
+        # A retired module's link is gone once migrated; then the record drops its name.
+        kept = {name for name in previous.get("created_skills", []) if name in BY_SKILL or owns_link(destination / name, name)}
+        created = sorted(kept | {name for name in new_skills if (destination / name).is_symlink()})
         next_state = {"destination": str(destination), "created_skills": created, "profile": profile}
         # Folders an earlier run made stay in the record as recorded, links already resolved
         # then. Resolving them again would follow a link put in their place since, and hand the

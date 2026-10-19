@@ -69,6 +69,7 @@ LEGACY = {
     "nb-write",
     "nobrainer-autopilot",
     "nobrainer-capture-lesson",
+    "nobrainer-codex-context",
     "nobrainer-continuous-improvement",
     "nobrainer-memory",
     "nobrainer-memory-memsearch",

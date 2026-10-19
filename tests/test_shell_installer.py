@@ -2180,6 +2180,63 @@ class ShellInstallerTests(unittest.TestCase):
             self.assertEqual(original_link, retired.readlink())
             self.assertEqual(original_inode, retired.lstat().st_ino)
 
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_setup_from_before_the_context_rename_updates_and_undoes(self) -> None:
+        # Until 2.4.1 the module was called nobrainer-codex-context. A setup made then
+        # records that name and links it into this checkout, where it no longer exists.
+        old, new = "nobrainer-codex-context", "nobrainer-context"
+        runs = [("sh", shell) for shell in ([SHELL], *other_shells())] + [("py", None)]
+        for installer, shell in runs:
+            with self.subTest(installer=installer, shell=shell), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                flags = ("--client", "claude", "--home", str(home))
+
+                def run(*extra: str) -> subprocess.CompletedProcess[str]:
+                    if installer == "sh":
+                        return run_sh(*flags, *extra, home=home, shell=shell)
+                    return run_py(str(INSTALL_PY), *flags, *extra, home=home)
+
+                self.assertEqual(0, run("--apply").returncode)
+                skills = home / ".claude" / "skills"
+                record = home / ".nobrainer-flow-onboarding-claude.json"
+                (skills / new).unlink()
+                (skills / old).symlink_to(ROOT / "skills" / old, target_is_directory=True)
+                record.write_text(record.read_text(encoding="utf-8").replace(f'"{new}"', f'"{old}"'), encoding="utf-8")
+                pristine = record.read_bytes()
+
+                preview = run("--undo")
+                self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+                self.assertIn("unlink 18 skills", preview.stdout)
+                undone = run("--undo", "--apply")
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertFalse(skills.exists())
+
+                # Updating instead: the setup removes the link its record lists, links the
+                # new name and records it, and undo then removes everything.
+                self.assertEqual(0, run("--apply").returncode)
+                (skills / new).unlink()
+                (skills / old).symlink_to(ROOT / "skills" / old, target_is_directory=True)
+                record.write_bytes(pristine)
+                shown = run()
+                self.assertEqual(0, shown.returncode, shown.stdout + shown.stderr)
+                self.assertTrue((skills / old).is_symlink())
+                if installer == "sh":
+                    self.assertIn(f"REMOVE_RETIRED: {old}", shown.stdout)
+                again = run("--apply")
+                self.assertEqual(0, again.returncode, again.stdout + again.stderr)
+                self.assertFalse((skills / old).is_symlink())
+                self.assertEqual(ROOT / "skills" / new, (skills / new).resolve())
+                saved = json.loads(record.read_text(encoding="utf-8"))["created_skills"]
+                self.assertEqual(SKILLS, saved)
+
+                # A link at the old name that the record does not list is not this setup's.
+                (skills / old).symlink_to(ROOT / "skills" / old, target_is_directory=True)
+                blocked = run("--apply")
+                self.assertEqual(3, blocked.returncode, blocked.stdout + blocked.stderr)
+                self.assertTrue((skills / old).is_symlink())
+                (skills / old).unlink()
+                self.assertEqual(0, run("--undo", "--apply").returncode)
+
     @unittest.skipIf(os.name == "nt", "the record holds Windows paths there")
     def test_a_record_it_cannot_read_points_to_the_python_undo(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

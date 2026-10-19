@@ -28,13 +28,13 @@ deep-audit deep-autoresearch deep-autoreview deep-bugs-finder deep-code-review
 deep-decide deep-rca dispatching-parallel-agents engineering-standards
 karpathy-auto-improver karpathy-llm-wiki llm-wiki nb-add nb-dispatcher nb-flow nb-get
 nb-multi nb-tidy nb-workflow nb-write nobrainer-autopilot nobrainer-capture-lesson
-nobrainer-continuous-improvement nobrainer-fast-audit nobrainer-human-like
+nobrainer-codex-context nobrainer-continuous-improvement nobrainer-fast-audit nobrainer-human-like
 nobrainer-memory nobrainer-memory-memsearch nobrainer-npm-secure nobrainer-reddit
 nobrainer-simplifier nobrainer-skill-browser nobrainer-starter nobrainer-style
 nobrainer-team-builder nobrainer-ultra nobrainer-ultracode-workflow nobrainer-wiki-add
 nobrainer-wiki-get nobrainer-wiki-tidy playwright-cli security-review session-handoff
 wiki-add wiki-get wiki-tidy'
-RETIRED='nobrainer-reddit'
+RETIRED='nobrainer-codex-context nobrainer-reddit'
 START='<!-- NOBRAINER-TECH-FLOW:START -->'
 END='<!-- NOBRAINER-TECH-FLOW:END -->'
 LEGACY_TEXT='(^|[^[:alnum:]_])nobrainer-ultra([^[:alnum:]_]|$)|^[[:space:]]*#{1,6}[[:space:]]+nobrainer([ .]?tech)?[[:space:]]+flow([^[:alnum:]_]|$)'
@@ -285,6 +285,15 @@ is_our_link() {
 	[ "$_o_resolved" = "$2" ]
 }
 
+# A recorded skill link this checkout made: $1 is the link, $2 the skill name. The link of
+# a retired module dangles, so it is compared as written.
+owns_link() {
+	case " $RETIRED " in
+		*" $2 "*) is_exact_legacy_link "$1" "$2" ;;
+		*) is_our_link "$1" "$root/skills/$2" ;;
+	esac
+}
+
 # Resolve links before "..", including dangling final links. A trailing slash
 # preserves a pathname's trailing newlines across command substitution.
 resolve_legacy_path() (
@@ -410,7 +419,8 @@ read_state() {
 					'  ]' | '  ],') _r_in= ;;
 					*)
 						json_field "\": ${_r_line#    }" || return 1
-						case " $(printf '%s' "$SKILLS" | tr '\n' ' ') " in *" $json_value "*) ;; *) return 1 ;; esac
+						# A record from an earlier release may hold a module since retired.
+						case " $(printf '%s' "$SKILLS $RETIRED" | tr '\n' ' ') " in *" $json_value "*) ;; *) return 1 ;; esac
 						case " $st_created " in *" $json_value "*) return 1 ;; esac
 						st_created="$st_created $json_value" ;;
 				esac
@@ -681,7 +691,7 @@ check_record() {
 }
 
 plan_skills() {
-	to_link= link_count=0 kept_count=0 problems=
+	to_link= link_count=0 kept_count=0 problems= to_retire=
 	for _p_name in $SKILLS; do
 		_p_source=$root/skills/$_p_name
 		[ -f "$_p_source/SKILL.md" ] || die 2 "this checkout is incomplete: $_p_source/SKILL.md is missing"
@@ -708,7 +718,13 @@ CONFLICT: $_p_name: $_p_source -> $_p_target"
 					if ! is_exact_legacy_link "$_p_target" "$_p_name"; then
 						err "PRESERVED_FOREIGN: $_p_name: retired from nobrainer-tech-flow; left unchanged: $_p_target"
 						continue
-					fi ;;
+					fi
+					# This setup's record lists the link, as an undo would remove it.
+					case " $st_created " in
+						*" $_p_name "*)
+							to_retire="$to_retire $_p_name"
+							continue ;;
+					esac ;;
 			esac
 			problems="$problems
 LEGACY: $_p_name: $_p_target"
@@ -819,6 +835,9 @@ variable_note() {
 preview() {
 	say "$source_line for $label"
 	say "SKILLS: $link_count to link into $skills_dir ($kept_count already linked)"
+	for _v_name in $to_retire; do
+		say "REMOVE_RETIRED: $_v_name: made by this setup, now renamed: $skills_dir/$_v_name"
+	done
 	if [ "$inherit" = 1 ]; then
 		say "INHERITS_CODEX: $target imports $codex_file; no duplicate block added"
 	else
@@ -914,9 +933,10 @@ write_instructions() {
 }
 
 install() {
+	# The record comes first: it says which retired links this setup made.
+	check_record
 	plan_skills
 	plan_instructions
-	check_record
 	inherit=0
 	if inherits_codex; then inherit=1; fi
 	if [ "$apply" = 0 ]; then
@@ -947,6 +967,12 @@ install() {
 		note_dirs "$skills_dir"
 		mkdir -p "$skills_dir" || die 2 "cannot create $skills_dir"
 	fi
+	for _a_name in $to_retire; do
+		if is_exact_legacy_link "$skills_dir/$_a_name" "$_a_name"; then
+			remove_link "$skills_dir/$_a_name" || die 4 "could not remove the retired link $skills_dir/$_a_name"
+			say "REMOVED_RETIRED: $skills_dir/$_a_name"
+		fi
+	done
 	for _a_name in $to_link; do
 		_a_target=$skills_dir/$_a_name
 		_a_source=$root/skills/$_a_name
@@ -987,7 +1013,15 @@ install() {
 		new_target=$target new_backup=$made_backup new_hash=$(sha256 "$target")
 	fi
 	if [ -n "$created" ] || [ "$wrote" = 1 ] || { [ "$record" = 1 ] && [ "$new_hash" != "$st_hash" ]; }; then
-		new_created=$(printf '%s\n' $st_created $created | LC_ALL=C sort -u | tr '\n' ' ')
+		# A retired module's link is gone once migrated; then the record drops its name.
+		_k_created=
+		for _k_name in $st_created; do
+			case " $RETIRED " in
+				*" $_k_name "*) owns_link "$skills_dir/$_k_name" "$_k_name" || continue ;;
+			esac
+			_k_created="$_k_created $_k_name"
+		done
+		new_created=$(printf '%s\n' $_k_created $created | LC_ALL=C sort -u | tr '\n' ' ')
 		new_created=${new_created# }
 		new_created=${new_created% }
 		# Of the folders this run meant to create, the ones that exist now, with the ones an
@@ -1215,7 +1249,7 @@ undo() {
 	for _u_name in $st_created; do
 		_u_link=$st_dest/$_u_name
 		if [ -L "$_u_link" ]; then
-			if ! is_our_link "$_u_link" "$root/skills/$_u_name"; then
+			if ! owns_link "$_u_link" "$_u_name"; then
 				say "PRESERVED: changed target $_u_link"
 				exit 3
 			fi
@@ -1252,7 +1286,7 @@ undo() {
 	_u_removed=0
 	for _u_name in $st_created; do
 		_u_link=$st_dest/$_u_name
-		if is_our_link "$_u_link" "$root/skills/$_u_name"; then
+		if owns_link "$_u_link" "$_u_name"; then
 			remove_link "$_u_link" || die 4 "could not remove $_u_link"
 			_u_removed=$((_u_removed + 1))
 		fi

@@ -104,6 +104,7 @@ LEGACY_TO_CANONICAL = {
     "agents-restraint": "nobrainer-tech-flow",
     "codex-in-claude-code": "nobrainer-tech-flow",
     "code-autoresearch": "nobrainer-autoimprove",
+    "nobrainer-codex-context": "nobrainer-context",
     "deep-audit": "nobrainer-review",
     "deep-autoreview": "nobrainer-review",
     "deep-autoresearch": "nobrainer-autoimprove",
@@ -149,9 +150,11 @@ LEGACY_TO_CANONICAL = {
     "wiki-get": "nobrainer-wiki",
     "wiki-tidy": "nobrainer-wiki",
 }
-# Reddit integration was removed, not absorbed into a canonical skill. Keep its
-# owned-link migration, but a different source may legitimately use this name.
-RETIRED_LEGACY = frozenset({"nobrainer-reddit"})
+# Names Flow no longer ships: Reddit integration was removed, and
+# nobrainer-codex-context was renamed to nobrainer-context in 2.5.0 without an
+# alias. Keep their owned-link migration, but another source may legitimately
+# use these names, so a foreign target there is preserved, never removed.
+RETIRED_LEGACY = frozenset({"nobrainer-codex-context", "nobrainer-reddit"})
 UNMAPPED_LEGACY = frozenset({"nobrainer-fast-audit"})
 
 
@@ -683,6 +686,16 @@ def parse_args() -> argparse.Namespace:
             "root-level layout and renamed aliases."
         ),
     )
+    parser.add_argument(
+        "--recorded-retired",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help=(
+            "A retired name that the calling setup's record lists as created by it: "
+            "its exact link into this checkout is removed instead of blocking."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -748,6 +761,13 @@ def main() -> int:
             if legacy_name in RETIRED_LEGACY
             else "conflict"
         )
+        if (
+            state == "legacy"
+            and legacy_name in RETIRED_LEGACY
+            and legacy_name in args.recorded_retired
+        ):
+            # The setup record proves the setup made this link; undo would remove it too.
+            state = "recorded"
         alias_plan.append((legacy_name, canonical_name, target, state))
         if state == "conflict" or (state == "legacy" and not args.migrate_legacy):
             conflicts.append(target)
@@ -774,6 +794,9 @@ def main() -> int:
         print(f"{action}: {name}: {source} -> {target}")
 
     for legacy_name, canonical_name, target, state in alias_plan:
+        if state == "recorded":
+            print(f"REMOVE_RETIRED: {legacy_name}: made by this setup; renamed {canonical_name}: {target}")
+            continue
         if state == "preserved":
             print(
                 f"PRESERVED_FOREIGN: {legacy_name}: retired from nobrainer-tech-flow; "
@@ -837,8 +860,17 @@ def main() -> int:
         return 2
     created: list[tuple[Path, EntryFingerprint, TreeManifest | None]] = []
     migrated: list[tuple[Path, Path, str, EntryFingerprint]] = []
+    removed_retired: list[tuple[Path, str]] = []
     copied_manifests: dict[Path, TreeManifest] = {}
     try:
+        for legacy_name, _, target, state in alias_plan:
+            if state != "recorded":
+                continue
+            snapshot = legacy_link_snapshot(target, legacy_name)
+            if snapshot is None:
+                raise RuntimeError(f"retired link changed after preflight: {target}")
+            target.unlink()
+            removed_retired.append((target, snapshot[3] or ""))
         for _, source, target, state in plan:
             if state == "current" and args.mode == "copy":
                 copied_manifests[target] = tree_manifest(source)
@@ -908,6 +940,12 @@ def main() -> int:
                 remove_created_entry(target, fingerprint, manifest)
             except (OSError, RuntimeError) as rollback_exc:
                 rollback_errors.append(f"{target}: {rollback_exc}")
+        for target, linked in reversed(removed_retired):
+            try:
+                if not target.exists() and not target.is_symlink():
+                    os.symlink(linked, target, target_is_directory=True)
+            except OSError as rollback_exc:
+                rollback_errors.append(f"{target} (was a link to {linked}): {rollback_exc}")
         for target, claim, _, expected in reversed(migrated):
             try:
                 restore_claim(target, claim, expected)
@@ -925,6 +963,8 @@ def main() -> int:
             print(f"ERROR: installation rolled back: {exc}", file=sys.stderr)
         return 4
 
+    for target, _ in removed_retired:
+        print(f"REMOVED_RETIRED: {target}")
     changed_backups: list[str] = []
     for _, claim, _, expected in migrated:
         if entry_fingerprint(claim) == expected:

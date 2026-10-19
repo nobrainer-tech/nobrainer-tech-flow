@@ -252,7 +252,8 @@ def plan_skills(ctx: Context) -> tuple[int, int]:
     """Dry-run the skill install: (skills to link, skills already linked)."""
 
     code, out, err = run(
-        [sys.executable, str(INSTALL_SKILLS), "--client", ctx.client, "--dest", str(ctx.skills)]
+        [sys.executable, str(INSTALL_SKILLS), "--client", ctx.client, "--dest", str(ctx.skills),
+         *ctx.guided.recorded_retired_args(read_record(ctx))]
     )
     if code:
         hint = None

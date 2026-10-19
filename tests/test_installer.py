@@ -454,6 +454,46 @@ class InstallerTests(unittest.TestCase):
                         (destination / "nobrainer-tech-flow").resolve(),
                     )
 
+    def test_renamed_context_module_is_retired_without_alias(self) -> None:
+        old = "nobrainer-codex-context"
+        self.assertFalse((ROOT / "skills" / old).exists())
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "skills"
+            foreign = destination / old
+            foreign.mkdir(parents=True)
+            (foreign / "SKILL.md").write_text("my own skill\n", encoding="utf-8")
+            args = ("--client", "claude", "--dest", str(destination), "--skill", "nobrainer-context")
+
+            # A recorded name never removes a target that is not this checkout's link.
+            applied = self.run_installer(*args, "--recorded-retired", old, "--apply")
+            self.assertEqual(0, applied.returncode, applied.stderr)
+            self.assertIn(f"PRESERVED_FOREIGN: {old}:", applied.stdout)
+            self.assertEqual("my own skill\n", (foreign / "SKILL.md").read_text(encoding="utf-8"))
+
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "skills"
+            destination.mkdir()
+            link = destination / old
+            link.symlink_to(ROOT / "skills" / old, target_is_directory=True)
+            args = ("--client", "claude", "--dest", str(destination), "--skill", "nobrainer-context")
+
+            refused = self.run_installer(*args, "--apply")
+            self.assertEqual(3, refused.returncode)
+            self.assertIn(f"LEGACY_ALIAS: {old} -> nobrainer-context", refused.stdout)
+            self.assertTrue(link.is_symlink())
+
+            preview = self.run_installer(*args, "--recorded-retired", old)
+            self.assertEqual(0, preview.returncode, preview.stderr)
+            self.assertIn(f"REMOVE_RETIRED: {old}:", preview.stdout)
+            self.assertTrue(link.is_symlink())
+
+            applied = self.run_installer(*args, "--recorded-retired", old, "--apply")
+            self.assertEqual(0, applied.returncode, applied.stderr)
+            self.assertIn("REMOVED_RETIRED:", applied.stdout)
+            self.assertFalse(link.is_symlink())
+            self.assertEqual([], list(destination.glob(".nobrainer-migration-*")))
+            self.assertEqual(ROOT / "skills" / "nobrainer-context", (destination / "nobrainer-context").resolve())
+
     def test_foreign_flow_alias_still_blocks_installation(self) -> None:
         for migrate in (False, True):
             with self.subTest(migrate=migrate):
