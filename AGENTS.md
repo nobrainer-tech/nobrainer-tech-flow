@@ -23,6 +23,7 @@ Respect host hierarchy; user instructions override skill guidelines. Apply [deli
 - `tests/` — deterministic and behavioral regression gates.
 - `docs/COMPATIBILITY.md` and `docs/TESTING.md` — proof boundaries.
 - `docs/SKILL_CURATION.md` — admission, ownership and retirement decisions.
+- `docs/RELEASING.md`: releases.
 
 ## Portable skill contract
 
