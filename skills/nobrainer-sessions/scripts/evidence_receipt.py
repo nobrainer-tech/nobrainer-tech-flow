@@ -333,7 +333,8 @@ def capture(args) -> int:
         report = assess(value, root)
         write_receipt(parent_fd, receipt.name, encoded)
         print(json.dumps(report, sort_keys=True))
-        return code if code else (0 if report['inputs'] == 'CURRENT' else 1)
+        # A zero exit is success only for evidence that check would also accept.
+        return code if code else (0 if report['inputs'] == 'CURRENT' and report['execution'] == 'completed' else 1)
     finally:
         os.close(parent_fd)
 

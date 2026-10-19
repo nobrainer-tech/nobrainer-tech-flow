@@ -137,7 +137,10 @@ class ReceiptTests(unittest.TestCase):
             receipt = root/'proof.json'
             code = ("import subprocess, sys; subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(4)'], "
                     "start_new_session=True); print('ok')")
-            self.capture(root, receipt, code)
+            captured = self.capture(root, receipt, code)
+            # The command exited 0 with current inputs, but its output was cut short, so
+            # capture must not report success; it returns the check's code for incomplete evidence.
+            self.assertEqual(1, captured.returncode, captured.stderr)
             self.assertTrue(receipt.exists())
             checked = self.invoke('check', '--root', str(root), '--receipt', str(receipt))
             self.assertNotEqual(2, checked.returncode, checked.stderr)

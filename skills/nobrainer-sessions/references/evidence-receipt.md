@@ -34,10 +34,11 @@ before retrying.
 
 ## Exit codes
 
-Capture keeps the command's nonzero result; success with non-current inputs
-returns 1. Check returns 0 only for current inputs and a completed command, 1 for
-stale, unavailable or failed evidence, and 2 for invalid input or an unsupported
-operation.
+Capture keeps the command's nonzero result; a zero exit with non-current
+inputs or an incomplete run (for example output cut short) returns 1. Check
+returns 0 only for current inputs and a completed command, 1 for stale,
+unavailable, failed or incomplete evidence, and 2 for invalid input or an
+unsupported operation.
 
 ## Limits
 
