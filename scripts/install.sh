@@ -1100,8 +1100,15 @@ holds_marker() {
 	cannot_read "$1"
 }
 
-# What to do about an instruction file that changed after the setup.
+# What to do about an instruction file that changed after the setup. Running the setup
+# again keeps the backup the record names, and the undo after it puts the block back from
+# that backup. With the backup gone or unreadable that undo would stop, so only the way by
+# hand is offered.
 keep_hint() {
+	if [ -n "$st_backup" ] && { [ -L "$st_backup" ] || [ ! -f "$st_backup" ] || [ ! -r "$st_backup" ]; }; then
+		say "HINT: to take the managed block out as well, delete the lines from $START to $END yourself and undo again; your edits outside the block stay. Running the setup again would not help: the backup $st_backup it keeps in the record is gone or unreadable."
+		return 0
+	fi
 	say "HINT: to take the managed block out as well, run $(command_for --apply), which records the file as it is now, then $(command_for --undo --apply); your edits outside the block stay. Or delete the lines from $START to $END yourself and undo again."
 }
 

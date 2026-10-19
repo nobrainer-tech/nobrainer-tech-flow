@@ -939,6 +939,45 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertEqual(edited, instructions.read_bytes())
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_the_hint_after_an_edit_never_leads_to_an_undo_that_cannot_run(self) -> None:
+        # The hint offers to record the file as it is now and undo again. That record keeps the
+        # backup it names, so with the backup gone the next undo would stop on it, and the hint
+        # must ask for the block to be taken out by hand instead.
+        for installer in ("sh", "py"):
+            for backup_kept in (True, False):
+                with self.subTest(installer=installer, backup_kept=backup_kept), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    instructions = home / ".codex" / "AGENTS.md"
+                    instructions.parent.mkdir(parents=True)
+                    instructions.write_bytes(b"# Mine\n")
+                    flags = ("--client", "codex", "--home", str(home))
+                    self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                    instructions.write_bytes(instructions.read_bytes() + b"\nedited after the setup\n")
+                    if not backup_kept:
+                        for backup in instructions.parent.glob("AGENTS.md.bak.*"):
+                            backup.unlink()
+
+                    partly = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                    self.assertEqual(3, partly.returncode, partly.stdout + partly.stderr)
+                    hint = "\n".join(line for line in partly.stdout.splitlines() if line.startswith("HINT: "))
+                    self.assertIn("delete the lines from", hint.lower())
+                    if backup_kept:
+                        self.assertIn("records the file as it is now", hint)
+                        self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                    else:
+                        self.assertNotIn("records the file as it is now", hint)
+                        text = instructions.read_bytes()
+                        start, end = text.index(START.encode()), text.index(b"<!-- NOBRAINER-TECH-FLOW:END -->")
+                        instructions.write_bytes(text[:start] + text[end + len(b"<!-- NOBRAINER-TECH-FLOW:END -->"):])
+                    undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                    self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                    self.assertNotIn(START.encode(), instructions.read_bytes())
+                    self.assertIn(b"edited after the setup", instructions.read_bytes())
+                    self.assertFalse((home / ".nobrainer-flow-onboarding-codex.json").exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0), "needs a folder this account cannot search")
     def test_a_record_in_a_home_that_cannot_be_searched_stops_the_undo(self) -> None:
         # The record sits in a home this account can no longer search, while CLAUDE_CONFIG_DIR

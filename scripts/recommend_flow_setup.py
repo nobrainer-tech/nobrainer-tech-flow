@@ -934,12 +934,22 @@ def restore_file_preimage(
     )
 
 
-def print_changed_profile(target: Path) -> None:
+def print_changed_profile(target: Path, backup: object) -> None:
     print(f"PRESERVED: personalization changed since setup: {target}; it is left exactly as it is, managed block included")
+    by_hand = f"delete the lines from {BLOCK_START.decode()} to {BLOCK_END.decode()} yourself and undo again"
+    # Running the setup again keeps the backup the record names, and the undo after it puts
+    # the block back from that backup. With the backup gone or unreadable that undo would stop,
+    # so only the way by hand is offered.
+    backup_file = Path(str(backup)) if backup else None
+    if backup_file and (backup_file.is_symlink() or not backup_file.is_file() or not os.access(backup_file, os.R_OK)):
+        print(
+            f"HINT: to take the managed block out as well, {by_hand}; your edits outside the block stay. "
+            f"Running the setup again would not help: the backup {backup_file} it keeps in the record is gone or unreadable."
+        )
+        return
     print(
         "HINT: to take the managed block out as well, run the setup again with --apply, which records the "
-        "file as it is now, then undo again; your edits outside the block stay. Or delete the lines from "
-        f"{BLOCK_START.decode()} to {BLOCK_END.decode()} yourself and undo again."
+        f"file as it is now, then undo again; your edits outside the block stay. Or {by_hand}."
     )
 
 
@@ -1054,7 +1064,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
             return 3
     print(f"ROLLBACK_PLAN: remove={','.join(created) or 'none'}; personalization={target_path or 'none'}; backup={backup or 'none'}")
     if profile_changed:
-        print_changed_profile(target_path)
+        print_changed_profile(target_path, backup)
     else:
         if block_gone:
             print(f"INSTRUCTIONS_KEPT: {target_path} no longer holds the managed block, so it is left as it is")
@@ -1112,7 +1122,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         # The record stays, with no links left in it, so that the block can still be taken
         # out once the record knows the file as it is now.
         save_state(state_file, {**state, "created_skills": []})
-        print_changed_profile(target_path)
+        print_changed_profile(target_path, backup)
         print(f"ROLLBACK_READBACK: removed={','.join(removed) or 'none'}; profile=preserved")
         return 3
     state_file.unlink()
