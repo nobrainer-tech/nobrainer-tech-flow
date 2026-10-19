@@ -534,9 +534,10 @@ and [Testing](docs/TESTING.md) for acceptance evidence.
 **What's new in 2.4.0:** nobrainer-tech-flow can ask before risky commands and
 shows whether its proof still matches your files. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
-Current source version: **2.4.0**. Check the
+Current source version: **2.4.1**, which fixes undo after a rearranged profile. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.4.0 verification record](docs/releases/v2.4.0.md) for
+for distribution and the [2.4.1](docs/releases/v2.4.1.md) and
+[2.4.0 verification records](docs/releases/v2.4.0.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier
