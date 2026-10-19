@@ -169,7 +169,9 @@ physical() {
 			return
 		fi
 	done
-	_p_head=$(cd -P "$_p_head" 2>/dev/null && pwd -P) || _p_head=$1 _p_tail=
+	# The slash keeps a trailing line break of a folder name across the substitution.
+	_p_head=$(cd -P "$_p_head" 2>/dev/null && printf '%s/' "$PWD") || _p_head=$1/ _p_tail=
+	_p_head=${_p_head%/}
 	printf '%s%s\n' "${_p_head%/}" "$_p_tail"
 }
 
@@ -543,7 +545,9 @@ under_link() {
 # The folders a record lists must be ones the setup can have made: each an absolute,
 # plain path listed once, that is, or lies above, the skills folder, the folder of the
 # instruction file or the folder of the record. Anything else is a damaged record that an undo must not act on. A path
-# may be spelled with or without the links on the way, so both spellings count.
+# may be spelled with or without the links on the way, so both spellings count. Two entries
+# may still lead to one folder: a link put in place of one of them since the setup does that,
+# and the undo leaves an entry behind a link.
 above() {
 	case "$2/" in "$1"/*) return 0 ;; esac
 	return 1
@@ -591,9 +595,9 @@ check_dirs() {
 			fi
 			[ -n "$_k_ok" ] || exit 1
 			case $_k_seen in *"
-$_k_real
+$_k_dir
 "*) exit 1 ;; esac
-			_k_seen="$_k_seen$_k_real
+			_k_seen="$_k_seen$_k_dir
 "
 		done
 	}
@@ -922,6 +926,16 @@ install() {
 	sha256 /dev/null >/dev/null || die 2 "this script needs sha256sum, shasum or openssl to record the setup"
 
 	created= dirs_to_make=
+	# A folder this run makes is recorded as it really is, links resolved. A line break or a
+	# control character in that form would leave a record no undo can read, so such a run
+	# stops before anything is written.
+	note_dirs "$home"
+	if [ "$link_count" -gt 0 ]; then note_dirs "$skills_dir"; fi
+	if [ "$file_status" != present ] && [ "$inherit" = 0 ]; then note_dirs "${target%/*}"; fi
+	printf '%s' "$dirs_to_make" | while IFS= read -r _a_dir; do
+		reject_control "$(physical "$_a_dir")" "the real path of $_a_dir"
+	done || exit 2
+	dirs_to_make=
 	# The record's folder is made before anything else is written: when it cannot be made,
 	# the run stops here instead of leaving links and a block that no record describes. It
 	# counts among the folders the setup made: a home that does not exist yet is made for

@@ -1688,8 +1688,6 @@ class ShellInstallerTests(unittest.TestCase):
             genuine = json.loads(record_path.read_text(encoding="utf-8"))
             elsewhere = home / "elsewhere"
             elsewhere.mkdir()
-            alias = Path(temp) / "alias"
-            alias.symlink_to(home, target_is_directory=True)
             listed = genuine["created_dirs"]
             cases = {
                 "a relative path": ["relative/place"],
@@ -1697,7 +1695,6 @@ class ShellInstallerTests(unittest.TestCase):
                 "the root": ["/"],
                 "a folder beside the setup's own": [str(elsewhere)],
                 "a folder listed twice": [*listed, listed[0]],
-                "a folder listed under two spellings": [*listed, str(alias / Path(listed[0]).relative_to(home.resolve()))],
                 "text instead of a list": str(home / ".codex"),
                 "an entry that is not text": [7],
             }
@@ -1900,6 +1897,77 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
                 self.assertEqual(["skills"], entries(theirs))
                 self.assertTrue((home / ".agents").is_symlink())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_folders_the_setup_made_that_a_link_joined_since_are_still_undone(self) -> None:
+        # After a Codex setup, ~/.agents/skills is moved to ~/.codex/skills and ~/.agents is
+        # replaced by a link to ~/.codex. Two untouched folders of the record now lead to one.
+        # The undo still takes the links away, and leaves the moved tree and the link alone.
+        runs = [("sh", shell) for shell in ([SHELL], *other_shells())] + [("py", None)]
+        for installer, shell in runs:
+            with self.subTest(installer=installer, shell=shell), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                flags = ("--client", "codex", "--home", str(home))
+
+                def step(*more: str) -> subprocess.CompletedProcess[str]:
+                    if shell:
+                        return run_sh(*flags, *more, home=home, shell=shell)
+                    return install_step(installer, *flags, *more, home=home)
+
+                self.assertEqual(0, step("--apply").returncode)
+                (home / ".agents" / "skills").rename(home / ".codex" / "skills")
+                (home / ".agents").rmdir()
+                (home / ".agents").symlink_to(home / ".codex", target_is_directory=True)
+                (home / ".codex" / "config.toml").write_text("mine\n", encoding="utf-8")
+
+                undone = step("--undo", "--apply")
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertIn(f"SKILLS: {len(SKILLS)} unlinked", undone.stdout)
+                self.assertEqual([".agents", ".codex", ".codex/config.toml", ".codex/skills"], entries(home))
+                self.assertEqual(home / ".codex", Path(os.readlink(home / ".agents")))
+                self.assertEqual("mine\n", (home / ".codex" / "config.toml").read_text(encoding="utf-8"))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    @unittest.skipIf(os.name == "nt", "Windows does not allow a line break in a file name")
+    def test_a_folder_whose_real_path_holds_a_line_break_stops_the_setup_before_anything_is_written(self) -> None:
+        # The path as written is plain, but a link on the way leads to a folder whose name holds
+        # a line break. The record lists the folders the setup makes as they really are, so the
+        # setup must refuse before it writes anything, not record a path no undo can read.
+        layouts = {
+            # ~/.claude is a link, and the skills folder would be made behind it.
+            "claude": ("skills", {}, True),
+            # CODEX_HOME names a folder still to be made behind a link.
+            "codex": ("sub", {"CODEX_HOME": "{link}/sub"}, False),
+        }
+        runs = [("sh", shell) for shell in ([SHELL], *other_shells())] + [("py", None)]
+        for (client, (made, variables, at_home)), name, (installer, shell) in itertools.product(
+            layouts.items(), ("real\nname", "real\n"), runs
+        ):
+            with self.subTest(client=client, name=name, installer=installer, shell=shell), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                real = Path(temp) / name
+                real.mkdir()
+                link = home / ".claude" if at_home else Path(temp) / "link"
+                link.symlink_to(real, target_is_directory=True)
+                env = {key: value.format(link=link) for key, value in variables.items()}
+                before = entries(Path(temp))
+                if shell:
+                    result = run_sh("--client", client, "--apply", home=home, variables=env, shell=shell)
+                else:
+                    result = subprocess.run(
+                        [sys.executable, str(INSTALL_PY), "--client", client, "--apply"],
+                        cwd=ROOT, text=True, encoding="utf-8", errors="replace", capture_output=True,
+                        check=False, stdin=subprocess.DEVNULL, env=environment(home, env),
+                    )
+
+                self.assertEqual(2, result.returncode, result.stdout + result.stderr)
+                self.assertIn("control character", result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertEqual(before, entries(Path(temp)))
+                self.assertFalse((real / made).exists())
 
     @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0), "needs a folder this account cannot write")
     def test_a_home_that_cannot_be_made_stops_the_setup_before_anything_is_written(self) -> None:

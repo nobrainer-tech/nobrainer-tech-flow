@@ -651,6 +651,8 @@ def recorded_directories(state: dict[str, object], record: Path) -> list[Path]:
     A path may be spelled with or without the links on the way, so both spellings count. A
     folder the setup made is listed as it really is, and a base spelled with ``..`` reaches
     it on the way without lying below it, so the real form of each folder on that way counts.
+    An entry may be listed once. Two entries may still lead to one folder: a link put in place
+    of one of them since the setup does that, and the undo leaves an entry behind a link.
     """
 
     raw = state.get("created_dirs", [])
@@ -675,9 +677,9 @@ def recorded_directories(state: dict[str, object], record: Path) -> list[Path]:
             or not any(form == place or form in place.parents for form in forms for place in places)
         ):
             raise ValueError(f"created_dirs names a folder this setup cannot have created: {item}")
-        if forms[1] in seen:
+        if path in seen:
             raise ValueError("created_dirs must list each folder the setup created once")
-        seen.add(forms[1])
+        seen.add(path)
         directories.append(path)
     return directories
 
@@ -1366,6 +1368,9 @@ def main(argv: list[str] | None = None) -> int:
         # The record's own folder counts: a home that does not exist yet is made for it alone
         # when a client variable puts the skills and the instructions elsewhere.
         new_directories = missing_directories(destination, profile_target.parent, state.parent)
+        # They are recorded as they really are, links resolved, and a path the record cannot
+        # hold stops the run here, before anything is written.
+        require_utf8(*(physical_path(path) for path in new_directories))
         # Inspect every target before writing any of them. This keeps a later
         # conflict from leaving a partial selection installed.
         for name in install_names:
