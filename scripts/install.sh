@@ -546,8 +546,8 @@ under_link() {
 # plain path listed once, that is, or lies above, the skills folder, the folder of the
 # instruction file or the folder of the record. Anything else is a damaged record that an undo must not act on. A path
 # may be spelled with or without the links on the way, so both spellings count. Two entries
-# may still lead to one folder: a link put in place of one of them since the setup does that,
-# and the undo leaves an entry behind a link.
+# may still lead to one folder: a link put in place of one of them since the setup does that.
+# The undo removes no folder of such a group.
 above() {
 	case "$2/" in "$1"/*) return 0 ;; esac
 	return 1
@@ -1297,9 +1297,23 @@ undo() {
 	rm -f "$state"
 	# The record is gone, so the folder it sat in may be empty now. A folder that was there
 	# before the setup is not listed, and a folder that holds anything stays.
+	# Two entries that lead to one folder cannot both be what the setup made, and the record
+	# cannot say which one is, so no entry of such a group is removed. The groups are found
+	# before any folder goes.
 	_u_gone=
 	if [ -n "$st_dirs" ]; then
+		_u_dupes=$(printf '%s' "$st_dirs" | while IFS= read -r _u_dir; do physical "$_u_dir"; done | LC_ALL=C sort | uniq -d)
+		_u_shared=
+		if [ -n "$_u_dupes" ]; then
+			_u_shared=$(printf '%s' "$st_dirs" | while IFS= read -r _u_dir; do
+				if printf '%s\n' "$_u_dupes" | grep -q -x -F -e "$(physical "$_u_dir")"; then printf '%s\n' "$_u_dir"; fi
+			done)
+		fi
 		_u_gone=$(printf '%s' "$st_dirs" | LC_ALL=C sort -r | while IFS= read -r _u_dir; do
+			if [ -n "$_u_shared" ] && printf '%s\n' "$_u_shared" | grep -q -x -F -e "$_u_dir"; then
+				printf 'PRESERVED: %s: another folder in the record leads to the same folder, so it is left as it is\n' "$_u_dir"
+				continue
+			fi
 			if [ ! -d "$_u_dir" ] || [ -L "$_u_dir" ]; then continue; fi
 			if under_link "$_u_dir"; then
 				printf 'PRESERVED: %s: a folder above it is a link now, so it is left as it is\n' "$_u_dir"

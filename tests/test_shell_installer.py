@@ -1930,6 +1930,41 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertEqual("mine\n", (home / ".codex" / "config.toml").read_text(encoding="utf-8"))
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_two_entries_that_lead_to_one_folder_keep_that_folder(self) -> None:
+        # A record that lists a home that was there before under two spellings, its real path
+        # and a link to it, is accepted, but neither spelling can be trusted as made by the
+        # setup. The undo removes the links and the folders it did make, and keeps the home.
+        runs = [("sh", shell) for shell in ([SHELL], *other_shells())] + [("py", None)]
+        for installer, shell in runs:
+            with self.subTest(installer=installer, shell=shell), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                alias = Path(temp) / "alias"
+                alias.symlink_to(home, target_is_directory=True)
+                flags = ("--client", "codex", "--home", str(home))
+
+                def step(*more: str) -> subprocess.CompletedProcess[str]:
+                    if shell:
+                        return run_sh(*flags, *more, home=home, shell=shell)
+                    return install_step(installer, *flags, *more, home=home)
+
+                self.assertEqual(0, step("--apply").returncode)
+                record_path = home / ".nobrainer-flow-onboarding-codex.json"
+                record = json.loads(record_path.read_text(encoding="utf-8"))
+                record["created_dirs"] = [*record["created_dirs"], str(alias), str(home.resolve())]
+                record_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+
+                undone = step("--undo", "--apply")
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertIn(f"SKILLS: {len(SKILLS)} unlinked", undone.stdout)
+                self.assertTrue(home.is_dir())
+                self.assertEqual([], entries(home))
+                self.assertTrue(alias.is_symlink())
+                for spelling in (alias, home.resolve()):
+                    self.assertIn(f"PRESERVED: {spelling}: another folder in the record leads to the same folder", undone.stdout)
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     @unittest.skipIf(os.name == "nt", "Windows does not allow a line break in a file name")
     def test_a_folder_whose_real_path_holds_a_line_break_stops_the_setup_before_anything_is_written(self) -> None:
         # The path as written is plain, but a link on the way leads to a folder whose name holds
