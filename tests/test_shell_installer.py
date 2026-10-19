@@ -939,6 +939,46 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertEqual(edited, instructions.read_bytes())
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0), "needs a folder this account cannot search")
+    def test_a_record_in_a_home_that_cannot_be_searched_stops_the_undo(self) -> None:
+        # The record sits in a home this account can no longer search, while CLAUDE_CONFIG_DIR
+        # keeps the skills and the instructions reachable. The record cannot be checked, which
+        # is not the same as no record, so the undo stops instead of reporting nothing to undo.
+        for installer in ("sh", "py"):
+            for mode in (0o000, 0o600):
+                with self.subTest(installer=installer, mode=oct(mode)), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    home.mkdir()
+                    config = Path(temp) / "profile"
+                    config.mkdir()
+                    variables = {"CLAUDE_CONFIG_DIR": str(config)}
+
+                    def step(*more: str) -> subprocess.CompletedProcess[str]:
+                        if installer == "sh":
+                            return run_sh("--client", "claude", *more, home=home, variables=variables)
+                        return subprocess.run(
+                            [sys.executable, str(INSTALL_PY), "--client", "claude", *more],
+                            cwd=ROOT, text=True, encoding="utf-8", errors="replace", capture_output=True,
+                            check=False, stdin=subprocess.DEVNULL, env=environment(home, variables),
+                        )
+
+                    self.assertEqual(0, step("--apply").returncode)
+                    record = home / ".nobrainer-flow-onboarding-claude.json"
+                    before = (entries(config), (config / "CLAUDE.md").read_bytes(), record.read_bytes())
+                    home.chmod(mode)
+                    try:
+                        refused = step("--undo", "--apply")
+                    finally:
+                        home.chmod(0o755)
+
+                    self.assertEqual(3, refused.returncode, refused.stdout + refused.stderr)
+                    self.assertNotIn("NOTHING TO UNDO", refused.stdout)
+                    self.assertIn(f"ERROR: cannot check {record}", refused.stderr)
+                    self.assertNotIn("Traceback", refused.stderr)
+                    self.assertEqual(before, (entries(config), (config / "CLAUDE.md").read_bytes(), record.read_bytes()))
+                    self.assertTrue((config / "skills" / SKILLS[0]).is_symlink())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_undo_refuses_a_link_that_changed_since(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"

@@ -301,12 +301,20 @@ def unrecorded_path(ctx: Context) -> Path | None:
     """Where this client's setup record would be, when no record exists at all.
 
     Neither this client's record nor the older single-client one may be there, not even
-    as a link: anything that is there is a record to read, or to refuse.
+    as a link: anything that is there is a record to read, or to refuse. A path that cannot
+    be checked, because a folder on the way cannot be searched, raises OSError: a record may
+    be there, so it is not the same as none.
     """
 
     guided = ctx.guided
     paths = (guided.state_path(ctx.home, None, ctx.client), guided.legacy_state_path(ctx.home, None))
-    if any(path is not None and (path.exists() or path.is_symlink()) for path in paths):
+    for path in paths:
+        if path is None:
+            continue
+        try:
+            path.lstat()
+        except (FileNotFoundError, NotADirectoryError):
+            continue
         return None
     return paths[0]
 
@@ -386,7 +394,12 @@ def install(ctx: Context) -> int:
 
 
 def undo(ctx: Context) -> int:
-    missing = unrecorded_path(ctx)
+    try:
+        missing = unrecorded_path(ctx)
+    except OSError as exc:
+        print(f"ERROR: cannot check {exc.filename}: {exc.strerror}; nothing was changed", file=sys.stderr)
+        print("HINT: give this account access to the folders on that path, then undo again", file=sys.stderr)
+        return 3
     if missing is not None:
         # A second undo, or an undo before any setup: nothing is recorded, so nothing is
         # to be reversed, and nothing is written.

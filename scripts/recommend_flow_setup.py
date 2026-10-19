@@ -964,6 +964,10 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     except FileNotFoundError:
         print(f"ERROR: rollback state not found: {state_file}", file=sys.stderr)
         return 3
+    except OSError as exc:
+        print(f"ERROR: cannot check {state_file}: {exc.strerror}; nothing was changed", file=sys.stderr)
+        print("HINT: give this account access to the folders on that path, then undo again", file=sys.stderr)
+        return 3
     if state_file.is_symlink() or not state_file.is_file():
         print(f"ERROR: rollback state must be a regular file: {state_file}", file=sys.stderr)
         return 3

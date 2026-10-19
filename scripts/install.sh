@@ -1106,6 +1106,14 @@ keep_hint() {
 }
 
 undo() {
+	# A record behind a folder this account cannot search cannot be checked: [ -e ] fails for
+	# it as for a missing one, but a record may be there, so the undo stops.
+	_u_up=$state
+	while [ -n "$_u_up" ] && [ ! -e "$_u_up" ] && [ ! -L "$_u_up" ]; do _u_up=${_u_up%/*}; done
+	if [ -n "$_u_up" ] && [ "$_u_up" != "$state" ] && [ -d "$_u_up" ] && [ ! -x "$_u_up" ]; then
+		die 3 "cannot check $state: Permission denied; nothing was changed" \
+			"give this account access to the folders on that path, then undo again"
+	fi
 	if [ ! -e "$state" ] && [ ! -L "$state" ]; then
 		# A link counts, even a dangling one: it is a damaged record to inspect, not no record.
 		if [ -e "$home/.nobrainer-flow-onboarding.json" ] || [ -L "$home/.nobrainer-flow-onboarding.json" ]; then
