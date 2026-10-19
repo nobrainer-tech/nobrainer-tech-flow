@@ -112,7 +112,8 @@ def risky_rm(command: str, cwd: str | None) -> str | None:
         except ValueError:
             # An open quote means a separator inside it cut the arguments short, or the
             # "rm" is only a word in quoted text. Only a recursive rm is asked about.
-            if any(RECURSIVE.match(word.strip("\"'")) for word in match.group(1).split()):
+            rest = command[match.start(1):].split("\n")[0].split()
+            if any(RECURSIVE.match(word.strip("\"'")) for word in rest):
                 return "rm -r with arguments the guard cannot read deletes files for good"
             continue
         if not any(RECURSIVE.match(word) for word in words):

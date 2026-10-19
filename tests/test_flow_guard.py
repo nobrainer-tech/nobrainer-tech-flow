@@ -168,9 +168,11 @@ class PreToolTests(unittest.TestCase):
         self.assertEqual("", completed.stdout)
 
     def test_a_separator_inside_quotes_does_not_hide_a_later_path(self) -> None:
-        payload = {"tool_name": "Bash", "tool_input": {"command": 'rm -rf /tmp/a "x|y" /home/dev'}, "cwd": "/tmp/work"}
-        completed = run_guard("pre-tool", json.dumps(payload))
-        self.assertEqual("ask", json.loads(completed.stdout)["hookSpecificOutput"]["permissionDecision"])
+        for command in ('rm -rf /tmp/a "x|y" /home/dev', 'rm "a|b" -rf /home/dev', 'rm "a;b" -rf /home/dev'):
+            with self.subTest(command=command):
+                payload = {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": "/tmp/work"}
+                completed = run_guard("pre-tool", json.dumps(payload))
+                self.assertEqual("ask", json.loads(completed.stdout)["hookSpecificOutput"]["permissionDecision"])
 
     def test_a_temporary_path_that_links_elsewhere_is_not_exempt(self) -> None:
         with tempfile.TemporaryDirectory() as scratch:
