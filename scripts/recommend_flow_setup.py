@@ -927,6 +927,21 @@ def print_changed_profile(target: Path) -> None:
     )
 
 
+def read_or_report(path: Path) -> bytes | None:
+    """PATH's bytes, or None after saying why the undo stops before it changes anything.
+
+    A file that cannot be read cannot be told apart from one without the managed block, and
+    taking it for one would remove the links and the record while the block stays.
+    """
+
+    try:
+        return path.read_bytes()
+    except OSError:
+        print(f"ERROR: cannot read {path}, so the undo cannot tell what it holds; nothing was changed", file=sys.stderr)
+        print("HINT: make it readable for this account, then undo again", file=sys.stderr)
+        return None
+
+
 def rollback(args: argparse.Namespace, state_file: Path) -> int:
     try:
         metadata = state_file.lstat()
@@ -988,7 +1003,9 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     profile_changed = False
     block_gone = False
     if target_path and target_path.exists():
-        current = target_path.read_bytes()
+        current = read_or_report(target_path)
+        if current is None:
+            return 3
         expected_hash = profile.get("written_sha256")
         if hashlib.sha256(current).hexdigest() != expected_hash:
             block_gone = BLOCK_START not in current and BLOCK_END not in current
@@ -998,7 +1015,9 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         if backup_file and (backup_file.is_symlink() or not backup_file.is_file()):
             print(f"ERROR: personalization backup must be a regular file: {backup_file}", file=sys.stderr)
             return 3
-        original = Path(str(backup)).read_bytes() if backup else None
+        original = read_or_report(backup_file) if backup_file else None
+        if backup_file and original is None:
+            return 3
         try:
             restored = restored_content(current, original)
         except ValueError:

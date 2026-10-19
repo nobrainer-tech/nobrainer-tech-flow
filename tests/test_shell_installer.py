@@ -1642,6 +1642,36 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertEqual([".codex", ".codex/AGENTS.md"], [name for name in entries(home) if ".bak." not in name])
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0), "needs a file this account cannot read")
+    def test_an_instruction_file_or_backup_the_undo_cannot_read_stops_it_before_anything_changes(self) -> None:
+        # A file that cannot be read cannot be told apart from one without the block. Taking it
+        # for one would remove the links and the record while the block stays in the file.
+        for installer in ("sh", "py"):
+            for unreadable in ("instruction file", "backup"):
+                with self.subTest(installer=installer, unreadable=unreadable), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    instructions = home / ".codex" / "AGENTS.md"
+                    instructions.parent.mkdir(parents=True)
+                    instructions.write_bytes(b"# Mine\n")
+                    flags = ("--client", "codex", "--home", str(home))
+                    self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                    record_path = home / ".nobrainer-flow-onboarding-codex.json"
+                    (backup,) = instructions.parent.glob("AGENTS.md.bak.*")
+                    locked = instructions if unreadable == "instruction file" else backup
+                    before = (entries(home), record_path.read_bytes(), instructions.read_bytes())
+                    locked.chmod(0o000)
+                    try:
+                        refused = install_step(installer, *flags, "--undo", "--apply", home=home)
+                    finally:
+                        locked.chmod(0o644)
+
+                    self.assertEqual(3, refused.returncode, refused.stdout + refused.stderr)
+                    self.assertIn(f"ERROR: cannot read {locked}", refused.stderr)
+                    self.assertNotIn("Traceback", refused.stderr)
+                    self.assertEqual(before, (entries(home), record_path.read_bytes(), instructions.read_bytes()))
+                    self.assertTrue((home / ".agents" / "skills" / SKILLS[0]).is_symlink())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_a_folder_named_through_dot_dot_that_was_there_before_survives_the_undo(self) -> None:
         # CLAUDE_CONFIG_DIR reaches an existing folder through a folder that does not exist
         # yet. Before the setup, "missing/.." does not exist either, but once "missing" is made

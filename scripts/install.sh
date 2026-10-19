@@ -1068,6 +1068,25 @@ restore_into() {
 	fi
 }
 
+# cannot_read FILE: stop the undo before it changes anything. A file that cannot be read
+# cannot be told apart from one without the managed block, and taking it for one would
+# remove the links and the record while the block stays.
+cannot_read() {
+	die 3 "cannot read $1, so the undo cannot tell what it holds; nothing was changed" \
+		"make it readable for this account, then undo again"
+}
+
+# holds_marker FILE: FILE holds either managed marker. grep tells an error (2) from no
+# match (1), and an error stops the undo.
+holds_marker() {
+	grep -a -q -F -e "$START" -e "$END" "$1"
+	case $? in
+		0) return 0 ;;
+		1) return 1 ;;
+	esac
+	cannot_read "$1"
+}
+
 # What to do about an instruction file that changed after the setup.
 keep_hint() {
 	say "HINT: to take the managed block out as well, run $(command_for --apply), which records the file as it is now, then $(command_for --undo --apply); your edits outside the block stay. Or delete the lines from $START to $END yourself and undo again."
@@ -1128,17 +1147,22 @@ undo() {
 		fi
 		if [ -e "$st_target" ]; then
 			sha256 /dev/null >/dev/null || die 2 "this script needs sha256sum, shasum or openssl to check the setup"
-			if [ "$(sha256 "$st_target")" != "$st_hash" ]; then
+			# A file that cannot be read hashes to nothing, which never matches the record.
+			_u_sum=$(sha256 "$st_target" 2>/dev/null)
+			[ "${#_u_sum}" = 64 ] || cannot_read "$st_target"
+			if [ "$_u_sum" != "$st_hash" ]; then
 				# Edited since the setup: the file stays exactly as it is. With its managed block
 				# taken out by hand the undo is otherwise complete; with the block still there only
 				# the links go. The backup is not needed either way.
-				if grep -a -q -F -e "$START" "$st_target" || grep -a -q -F -e "$END" "$st_target"; then
+				if holds_marker "$st_target"; then
 					_u_keep=1
 				else
 					_u_no_block=1
 				fi
 			elif [ -n "$st_backup" ] && { [ -L "$st_backup" ] || [ ! -f "$st_backup" ]; }; then
 				die 3 "personalization backup must be a regular file: $st_backup"
+			elif [ -n "$st_backup" ] && ! cat "$st_backup" >/dev/null 2>&1; then
+				cannot_read "$st_backup"
 			# The line-based undo below needs each block on lines of its own.
 			elif ! block_lines "$st_target" || { [ -n "$st_backup" ] && grep -q -F -e "$START" "$st_backup" && ! block_lines "$st_backup"; }; then
 				die 3 "the managed block in $st_target does not stand on lines of its own" \
