@@ -1,5 +1,15 @@
 # nobrainer-tech-flow release notes
 
+## v2.4.1 - 2026-10-19
+
+Undo works after a rearranged profile. When a link put in place after the setup makes
+two folders the setup created lead to one folder, for example `~/.agents` replaced with a
+link to `~/.codex`, `install.sh`, `install.py` and the guided `--rollback` now remove the
+skill links instead of refusing the record; the link and your folders stay. A setup whose
+folders would resolve, through a link, to a path with a line break now stops with exit 2
+before anything is written, instead of saving a record no undo can read. Fixes #82. See
+the [verification record](docs/releases/v2.4.1.md).
+
 ## v2.4.0 - 2026-10-19
 
 nobrainer-tech-flow can ask before risky commands and shows whether its proof still matches

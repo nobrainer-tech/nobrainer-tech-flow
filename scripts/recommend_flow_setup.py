@@ -651,6 +651,8 @@ def recorded_directories(state: dict[str, object], record: Path) -> list[Path]:
     A path may be spelled with or without the links on the way, so both spellings count. A
     folder the setup made is listed as it really is, and a base spelled with ``..`` reaches
     it on the way without lying below it, so the real form of each folder on that way counts.
+    An entry may be listed once. Two entries may still lead to one folder: a link put in place
+    of one of them since the setup does that. The undo removes no folder of such a group.
     """
 
     raw = state.get("created_dirs", [])
@@ -675,9 +677,9 @@ def recorded_directories(state: dict[str, object], record: Path) -> list[Path]:
             or not any(form == place or form in place.parents for form in forms for place in places)
         ):
             raise ValueError(f"created_dirs names a folder this setup cannot have created: {item}")
-        if forms[1] in seen:
+        if path in seen:
             raise ValueError("created_dirs must list each folder the setup created once")
-        seen.add(forms[1])
+        seen.add(path)
         directories.append(path)
     return directories
 
@@ -698,18 +700,26 @@ def is_link(path: Path) -> bool:
     return bool(attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0))
 
 
-def remove_empty_directories(directories: list[Path]) -> tuple[list[Path], list[Path]]:
+def remove_empty_directories(directories: list[Path]) -> tuple[list[Path], list[Path], list[Path]]:
     """Remove each of these folders that is still empty, innermost first.
 
-    Returns the folders removed and the folders kept because a folder above them is a
-    link now. The record lists each folder with the links on the way resolved, so such a
-    link means the profile was rearranged since the setup, and removing the folder would
-    act on another tree.
+    Returns the folders removed, the folders kept because a folder above them is a link
+    now, and the folders kept because another entry leads to the same folder. The record
+    lists each folder with the links on the way resolved, so such a link means the profile
+    was rearranged since the setup, and removing the folder would act on another tree. Two
+    entries that lead to one folder cannot both be what the setup made, and the record
+    cannot say which one is, so neither is removed.
     """
 
+    real = [physical_path(path) for path in directories]
+    shared = {path for path, form in zip(directories, real) if real.count(form) > 1}
     removed: list[Path] = []
     kept: list[Path] = []
+    kept_shared: list[Path] = []
     for path in sorted(directories, key=lambda item: len(item.parts), reverse=True):
+        if path in shared:
+            kept_shared.append(path)
+            continue
         try:
             if is_link(path) or not path.is_dir():
                 continue
@@ -720,7 +730,7 @@ def remove_empty_directories(directories: list[Path]) -> tuple[list[Path], list[
         except OSError:
             continue
         removed.append(path)
-    return removed, kept
+    return removed, kept, kept_shared
 
 
 def state_path(home: Path, override: Path | None, client: str) -> Path:
@@ -1126,11 +1136,13 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         print(f"ROLLBACK_READBACK: removed={','.join(removed) or 'none'}; profile=preserved")
         return 3
     state_file.unlink()
-    removed_dirs, kept_dirs = remove_empty_directories(directories)
+    removed_dirs, kept_dirs, shared_dirs = remove_empty_directories(directories)
     for directory in removed_dirs:
         print(f"REMOVED_DIR: {directory}")
     for directory in kept_dirs:
         print(f"PRESERVED: {directory}: a folder above it is a link now, so it is left as it is")
+    for directory in shared_dirs:
+        print(f"PRESERVED: {directory}: another folder in the record leads to the same folder, so it is left as it is")
     if "created_dirs" not in state:
         # A record from before the folder list still gets its skills folder removed when empty.
         # One with the list says which folders the setup made, so no other is touched.
@@ -1366,6 +1378,9 @@ def main(argv: list[str] | None = None) -> int:
         # The record's own folder counts: a home that does not exist yet is made for it alone
         # when a client variable puts the skills and the instructions elsewhere.
         new_directories = missing_directories(destination, profile_target.parent, state.parent)
+        # They are recorded as they really are, links resolved, and a path the record cannot
+        # hold stops the run here, before anything is written.
+        require_utf8(*(physical_path(path) for path in new_directories))
         # Inspect every target before writing any of them. This keeps a later
         # conflict from leaving a partial selection installed.
         for name in install_names:
