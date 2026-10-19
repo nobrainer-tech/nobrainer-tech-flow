@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import importlib.util
+import itertools
 import json
 import os
 import re
@@ -1389,11 +1390,37 @@ class ShellInstallerTests(unittest.TestCase):
                     self.assertEqual(after_first, (entries(home), instructions.read_bytes()))
                 self.assertEqual(original, instructions.read_bytes())
 
+    @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0), "needs a mode this account cannot write through")
+    def test_a_failed_record_save_puts_a_read_only_instruction_file_back(self) -> None:
+        # The client folders can be written, the home that holds the record cannot. The run
+        # must undo its own changes, the read-only instruction file included.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".codex" / "AGENTS.md"
+                instructions.parent.mkdir(parents=True)
+                (home / ".agents" / "skills").mkdir(parents=True)
+                instructions.write_bytes(b"# Mine\n")
+                instructions.chmod(0o444)
+                home.chmod(0o555)
+                try:
+                    result = install_step(installer, "--client", "codex", "--home", str(home), "--apply", home=home)
+                finally:
+                    home.chmod(0o755)
+
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertEqual(b"# Mine\n", instructions.read_bytes())
+                self.assertEqual(0o444, instructions.stat().st_mode & 0o777)
+                self.assertEqual([], entries(home / ".agents" / "skills"))
+                self.assertFalse((home / ".nobrainer-flow-onboarding-codex.json").exists())
+
     def test_a_record_with_a_relative_destination_is_refused_and_does_not_hang(self) -> None:
         # A hand-edited record names its skills folder without a leading slash and lists a
         # folder no setup could have made. Both installers must refuse it, not loop on it.
-        for installer in ("sh", "py"):
-            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+        # "skills" exists in the folder the installers run from; "missing-skills" does not.
+        for installer, relative in itertools.product(("sh", "py"), ("skills", "missing-skills")):
+            with self.subTest(installer=installer, destination=relative), tempfile.TemporaryDirectory() as temp:
                 home = Path(temp) / "home"
                 home.mkdir()
                 flags = ("--client", "codex", "--home", str(home))
@@ -1402,10 +1429,10 @@ class ShellInstallerTests(unittest.TestCase):
                 # Edited in place: the shell installer reads only the layout it writes.
                 text = record_path.read_text(encoding="utf-8")
                 record = json.loads(text)
-                text = text.replace(json.dumps(record["destination"]), '"skills"', 1)
+                text = text.replace(json.dumps(record["destination"]), json.dumps(relative), 1)
                 text = text.replace(json.dumps(record["created_dirs"][0]), json.dumps(str(Path(temp) / "elsewhere")), 1)
                 record_path.write_text(text, encoding="utf-8")
-                self.assertEqual("skills", json.loads(text)["destination"])
+                self.assertEqual(relative, json.loads(text)["destination"])
                 command = [SHELL, SCRIPT.as_posix()] if installer == "sh" else [sys.executable, str(INSTALL_PY)]
                 try:
                     result = subprocess.run(
@@ -1546,8 +1573,9 @@ class ShellInstallerTests(unittest.TestCase):
     def test_a_record_from_before_the_folder_list_is_undone_as_it_was_then(self) -> None:
         # Such a record cannot say which folders the setup made, so it claims none and only the
         # skills folder goes, when it is empty. Running the setup again keeps it that way.
-        for installer in ("sh", "py"):
-            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+        # "skills" exists in the folder the installers run from; "missing-skills" does not.
+        for installer, relative in itertools.product(("sh", "py"), ("skills", "missing-skills")):
+            with self.subTest(installer=installer, destination=relative), tempfile.TemporaryDirectory() as temp:
                 home = Path(temp) / "home"
                 home.mkdir()
                 flags = ("--client", "codex", "--home", str(home))
@@ -1727,11 +1755,13 @@ class ShellInstallerTests(unittest.TestCase):
                     applied = step("--apply")
 
                     self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                    # Windows drops "missing/.." from the path before any folder is made.
+                    folders = ["config", "config/skills"] + ([] if os.name == "nt" else ["missing"])
                     made = [name for name in entries(profile) if not name.startswith("config/skills/")]
-                    self.assertEqual(["config", "config/CLAUDE.md", "config/skills", "missing"], made)
+                    self.assertEqual(sorted([*folders, "config/CLAUDE.md"]), made)
                     record = json.loads((home / ".nobrainer-flow-onboarding-claude.json").read_text(encoding="utf-8"))
                     real = profile.resolve()
-                    self.assertEqual(sorted(str(real / name) for name in ("config", "config/skills", "missing")), sorted(record["created_dirs"]))
+                    self.assertEqual(sorted(str(real / name) for name in folders), sorted(record["created_dirs"]))
                     undone = step("--undo", "--apply")
 
                     self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
@@ -1743,8 +1773,9 @@ class ShellInstallerTests(unittest.TestCase):
     def test_a_repeat_apply_never_hands_a_folder_behind_a_new_link_to_the_undo(self) -> None:
         # After the setup, ~/.agents is swapped for a link to a folder that was there before
         # and holds an empty skills folder. Applying again and undoing must leave that folder.
-        for installer in ("sh", "py"):
-            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+        # "skills" exists in the folder the installers run from; "missing-skills" does not.
+        for installer, relative in itertools.product(("sh", "py"), ("skills", "missing-skills")):
+            with self.subTest(installer=installer, destination=relative), tempfile.TemporaryDirectory() as temp:
                 home = Path(temp) / "home"
                 home.mkdir()
                 flags = ("--client", "codex", "--home", str(home))

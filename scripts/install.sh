@@ -452,6 +452,11 @@ read_state() {
 	st_dest=$(to_posix "$st_dest")
 	if [ -n "$st_target" ]; then st_target=$(to_posix "$st_target"); fi
 	if [ -n "$st_backup" ]; then st_backup=$(to_posix "$st_backup"); fi
+	# The setup writes every path in full. A relative one is a damaged record: it would be
+	# read against the current folder, and no folder of it can be dropped on the way up.
+	for _r_path in "$st_dest" "$st_target" "$st_backup"; do
+		case $_r_path in '' | /?*) ;; *) return 1 ;; esac
+	done
 	return 0
 }
 
@@ -995,7 +1000,13 @@ install() {
 		if ! write_state; then
 			for _a_done in $created; do remove_link "$skills_dir/$_a_done"; done
 			if [ "$wrote" = 1 ]; then
-				if [ -n "$made_backup" ]; then cp -p "$made_backup" "$target"; else rm -f "$target"; fi
+				# Through a copy beside it and a rename, so a read-only file comes back as well.
+				if [ -n "$made_backup" ]; then
+					_a_tmp=$(mktemp "${target%/*}/.${target##*/}.XXXXXX") &&
+						{ cp -p "$made_backup" "$_a_tmp" && mv -f "$_a_tmp" "$target" || rm -f "$_a_tmp"; }
+				else
+					rm -f "$target"
+				fi
 			fi
 			die 4 "could not save the setup record $state; the changes of this run were reversed"
 		fi
