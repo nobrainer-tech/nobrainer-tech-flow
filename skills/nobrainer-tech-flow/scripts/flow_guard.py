@@ -27,20 +27,30 @@ from pathlib import Path
 
 # One shell command: the text up to the next separator.
 ARGS = r"[^;&|\n]*?"
+# Global options between a tool and its subcommand, each "-x", "--name=value" or an
+# option and one value word, as in "npm -w pkg publish" or "gh -R owner/repo release".
+# Narrower than ARGS, so "npm run publish" or "gh issue create --title release" pass.
+OPTIONS = r"(?:\s+-[^\s;&|]+(?:\s+[^\s;&|-][^\s;&|]*)?)*"
+END = r"(?=\s|$|[;&|)])"
 RISKY = (
-    (re.compile(rf"\bgit\b{ARGS}\spush\b{ARGS}\s(?:--force\S*|-[a-zA-Z]*f[a-zA-Z]*)(?=\s|$|[;&|])"),
+    # --force-with-lease and a "+branch" refspec ask too: they still rewrite the remote.
+    (re.compile(rf"\bgit\b{ARGS}\spush\b{ARGS}\s(?:--force\S*|-[a-zA-Z]*f[a-zA-Z]*|\+[A-Za-z]\S*){END}"),
      "git push --force rewrites the remote branch"),
     (re.compile(rf"\bgit\b{ARGS}\sreset\b{ARGS}\s--hard\b"), "git reset --hard discards uncommitted work"),
     (re.compile(rf"\bgit\b{ARGS}\sclean\b{ARGS}\s(?:--force\b|-[a-zA-Z]*f)"),
      "git clean -f deletes untracked files"),
     (re.compile(rf"\bvercel\b{ARGS}\s--prod\b"), "vercel --prod deploys to production"),
-    (re.compile(r"\bnpm\s+publish\b"), "npm publish releases a package"),
+    (re.compile(rf"\bnpm\b{OPTIONS}\s+publish{END}"), "npm publish releases a package"),
     (re.compile(rf"\bterraform\b{ARGS}\s(?:apply|destroy)\b"), "terraform apply or destroy changes infrastructure"),
     (re.compile(rf"\bkubectl\b{ARGS}\sdelete\b"), "kubectl delete removes cluster resources"),
-    (re.compile(r"\bgh\s+release\s+create\b"), "gh release create publishes a release"),
+    (re.compile(rf"\bgh\b{OPTIONS}\s+release\s+create{END}"), "gh release create publishes a release"),
 )
-# An rm that is not part of "git rm"; its arguments run to the next separator.
-RM = re.compile(r"(?<![\w./-])rm(?=\s)([^;&|\n)]*)")
+# An rm, also path-qualified as /bin/rm, that is not part of "git rm"; its arguments
+# run to the next separator.
+RM = re.compile(r"(?<![\w./-])(?:[\w.-]*/)*rm(?=\s)([^;&|\n)]*)")
+# A directory change before an rm means the hook's cwd no longer says where a relative
+# target is, so the temporary-folder exemption cannot apply to it.
+CHANGE_DIRECTORY = re.compile(r"(?<![\w./-])(?:cd|pushd|popd)(?=\s|$|[;&|)])")
 RECURSIVE = re.compile(r"^(?:-[a-zA-Z]*[rR][a-zA-Z]*|--recursive)$")
 TEMP_ROOTS = ("/tmp", "/private/tmp", "/var/folders", "/private/var/folders")
 TMPDIR_REFERENCE = re.compile(r"^(?:\$TMPDIR|\$\{TMPDIR\})(?=/|$)")
@@ -85,8 +95,9 @@ def risky_rm(command: str, cwd: str | None) -> str | None:
     roots = temp_roots()
     for match in RM.finditer(command):
         before = command[: match.start()].split()
-        if before and before[-1] == "git":
+        if before and os.path.basename(before[-1]) == "git":
             continue
+        base = None if CHANGE_DIRECTORY.search(command, 0, match.start()) else cwd
         try:
             words = shlex.split(match.group(1))
         except ValueError:
@@ -94,7 +105,7 @@ def risky_rm(command: str, cwd: str | None) -> str | None:
         if not any(RECURSIVE.match(word) for word in words):
             continue
         paths = [word for word in words if not word.startswith("-")]
-        if not paths or not all(inside_temp(path, cwd, roots) for path in paths):
+        if not paths or not all(inside_temp(path, base, roots) for path in paths):
             return "rm -r outside a temporary folder deletes files for good"
     return None
 

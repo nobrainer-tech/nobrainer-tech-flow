@@ -32,11 +32,20 @@ COMMANDS = (
     ("rm -rf ${TMPDIR}/flow", False),
     ("rm -f notes.txt", False),
     ("git rm -r old", False),
+    ("/bin/rm -rf src", True),
+    ("/usr/bin/rm -r build", True),
+    ("/usr/bin/git rm -r old", False),
     ("git push --force", True),
     ("git push -f origin main", True),
     ("git push origin main --force-with-lease", True),
     ("git push -u origin main", False),
     ("git push origin --follow-tags", False),
+    ("git -C dir push --force", True),
+    ("git -c core.askPass=x push -f origin main", True),
+    ("git push --force-with-lease=main:abc123", True),
+    ("git push origin +main", True),
+    ("git push origin feature+fix", False),
+    ('git commit -m "push +1 retry"', False),
     ("git reset --hard HEAD~1", True),
     ("git -C repo reset --hard", True),
     ("git reset --soft HEAD~1", False),
@@ -49,13 +58,24 @@ COMMANDS = (
     ("vercel deploy", False),
     ("npm publish", True),
     ("npm run publish-docs", False),
+    ("npm --registry=https://registry.npmjs.org publish --dry-run", True),
+    ("npm -w pkg publish", True),
+    ("npm --workspace pkg publish --access public", True),
+    ("npm run publish", False),
+    ("npm install publish-it", False),
     ("terraform apply -auto-approve", True),
     ("terraform -chdir=infra destroy", True),
+    ("terraform -chdir=infra apply", True),
     ("terraform plan", False),
     ("kubectl delete pod web-1", True),
+    ("kubectl -n prod delete deployment web", True),
+    ("kubectl --context staging delete pod web-1", True),
     ("kubectl get pods", False),
     ("gh release create v2.4.0", True),
+    ("gh -R owner/repo release create v2.4.0", True),
+    ("gh --repo owner/repo release create v2.4.0", True),
     ("gh release view v2.4.0", False),
+    ("gh issue create --title release", False),
     ("git status; git log --oneline -3", False),
 )
 
@@ -132,6 +152,19 @@ class PreToolTests(unittest.TestCase):
         payload = {"tool_name": "Bash", "tool_input": {"command": "rm -rf build"}, "cwd": "/tmp/work"}
         completed = run_guard("pre-tool", json.dumps(payload))
         self.assertEqual("", completed.stdout)
+
+    def test_a_directory_change_before_rm_drops_the_temporary_cwd_exemption(self) -> None:
+        for command, asks in (
+            ("cd /home/dev/project && rm -rf src", True),
+            ("pushd /home/dev; rm -rf src", True),
+            ("(cd ../.. && rm -rf build)", True),
+            ("cd /tmp/work/sub && rm -rf /tmp/work/sub/build", False),
+            ("rm -rf build && cd /home/dev", False),
+        ):
+            with self.subTest(command=command):
+                payload = {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": "/tmp/work"}
+                completed = run_guard("pre-tool", json.dumps(payload))
+                self.assertEqual(asks, bool(completed.stdout.strip()), completed.stdout)
 
     def test_unreadable_input_is_allowed_with_a_note(self) -> None:
         for stdin in ("not json", "[1, 2]", ""):
