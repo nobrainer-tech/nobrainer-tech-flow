@@ -1,5 +1,48 @@
 # nobrainer-tech-flow release notes
 
+## v2.4.0 - 2026-10-19
+
+nobrainer-tech-flow can ask before risky commands and shows whether its proof still matches
+your files.
+
+Optional Claude Code guards (`scripts/install.py --client claude --guards`, preview first,
+undo with `--undo --apply`) add a PreToolUse hook that asks before `rm -rf` outside
+temporary folders, `git push --force`, `git reset --hard`, `git clean -fd`,
+`vercel --prod`, `npm publish`, `terraform apply` or `destroy`, `kubectl delete` and
+`gh release create`. A Stop hook blocks once when a turn that changed files or ran
+commands ends with no `Proof:` or `Checked:` line and no `UNVERIFIED`. The guards are
+off by default, exist for Claude Code only and are written to your user settings; the
+plugin hooks stay SessionStart only. They read command text, so they are a seatbelt,
+not a security boundary.
+
+An optional evidence receipt (`skills/nobrainer-sessions/scripts/evidence_receipt.py`)
+records a declared set of input files before and after one command, then reports
+`CURRENT`, `STALE`, `CHANGED_DURING_RUN` or `UNAVAILABLE`. The closeout now names the
+input snapshot or time the proof is current for, or `UNKNOWN`, and a worker's `RETURN`
+line starts with the outcome as the worker understood it, so a misread surfaces first.
+
+The proof contract is stricter. Build reports `TEST_SENSITIVITY` (`PROVEN`,
+`PARTLY_PROVEN`, `NOT_PROVEN` or `NOT_APPLICABLE`) for a behavior-preserving rewrite, and
+Review keeps a "no behavior change" claim open when it is missing or `NOT_PROVEN`; it
+also does not accept `STALE` or `CHANGED_DURING_RUN` evidence as proof of the current
+artifact. Model routing gives routine units the lowest effort that meets acceptance, a
+shared assignment prefix and a stop at the unit budget. A plaintext credential file an
+agent can read counts as secret exposure. A deterministic failure should get a native
+check before a prose rule.
+
+Skill doctor gains a report-only instruction-debt audit (`context_candidates.py`) for
+stale, repeated or conflicting rules after a model or client upgrade, and the
+visible-session rule now lives in one place that other modules link to.
+
+The README first screen leads with the verified Claude Code and Codex plugin installs.
+The Codex marketplace is renamed `nobrainer-tech-skills-dev` to `nobrainer-tech`, the
+same as the Claude one; the [migration guide](docs/MIGRATION_TO_FLOW.md) has the
+commands for the old name. Manifests describe one workflow of 18 modules. The npm package
+is still not published on npm; use the Git install or a plugin.
+
+No benchmark was run and no model is imposed. See the
+[release scope and verification record](docs/releases/v2.4.0.md).
+
 ## v2.3.2 - 2026-10-18
 
 Install, update and undo nobrainer-tech-flow without false alarms or leftovers. A

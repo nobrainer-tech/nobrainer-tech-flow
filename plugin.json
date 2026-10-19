@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "nobrainer-tech-flow",
   "description": "From task to done. nobrainer-tech-flow is one workflow of 18 modules for AI coding agents: it scopes the task, delegates ready work, checks the result and hands over the evidence, including what was not checked.",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "author": {
     "name": "NoBrainer Tech",
     "url": "https://nobrainer.tech"
