@@ -10,7 +10,9 @@ Owner request 2026-10-18; benchmark routing (#70) and ModelMood stay on HOLD.
   threads; Windows smoke; review findings (npm-first README, retry limit,
   native dispatch, private `nbak` line, npm storage root, undo after an edited
   instruction file, run-hook.cmd, restart consent, quick-path startup care).
-- [ ] 2.4.0: mechanical enforcement (optional hooks, lesson -> check), evidence
+- [x] 2.4.0 metadata and notes prepared 2026-10-19 (version fields, RELEASE-NOTES,
+  docs/releases/v2.4.0.md); full test run, push and PR stay with MAIN.
+- [>] 2.4.0 content: mechanical enforcement (optional hooks, lesson -> check), evidence
   receipt salvage, test-sensitivity verdict, instruction-debt audit, retro,
   cost limits, agent-readable secrets; dedupe repeated rules.
 - [ ] Distribution: npm Trusted Publisher (owner access), Claude plugin

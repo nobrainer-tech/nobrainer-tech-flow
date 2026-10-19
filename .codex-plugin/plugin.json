@@ -1,7 +1,7 @@
 {
   "name": "nobrainer-tech-flow",
-  "description": "nobrainer-tech-flow: portable agentic workflows from task to checked result.",
-  "version": "2.3.2",
+  "description": "From task to done. nobrainer-tech-flow is one workflow of 18 modules for AI coding agents: it scopes the task, delegates ready work, checks the result and hands over the evidence, including what was not checked.",
+  "version": "2.4.0",
   "author": {
     "name": "NoBrainer Tech",
     "url": "https://nobrainer.tech"
@@ -10,17 +10,19 @@
   "repository": "https://github.com/nobrainer-tech/nobrainer-tech-flow",
   "license": "MIT",
   "keywords": [
-    "skills",
+    "agent-skills",
     "agentic-workflows",
-    "multi-session",
-    "sdd",
-    "verification"
+    "claude-code",
+    "codex",
+    "verification",
+    "spec-driven-development",
+    "multi-agent"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "nobrainer-tech-flow",
     "shortDescription": "From task to done.",
-    "longDescription": "A portable workflow for research, writing, planning and implementation. Clarify the outcome, do the authorized work, share concise progress and report the evidence and open items. Uses the tools and permissions available in your AI client.",
+    "longDescription": "nobrainer-tech-flow is one workflow of 18 modules for coding, research, writing and planning. It clarifies the outcome, delegates independent ready work to native workers, shares concise progress, checks the result and hands over what was delivered, the evidence and what was not checked. It uses the tools and permissions your client already grants.",
     "developerName": "NoBrainer Tech",
     "category": "Developer Tools",
     "capabilities": [
@@ -29,8 +31,9 @@
       "Write"
     ],
     "defaultPrompt": [
-      "Use `nobrainer-tech-flow` to compare these options with sources and a recommendation.",
-      "Use `nobrainer-tech-flow` to turn my idea into a plan and deliver it with acceptance checks."
+      "Use `nobrainer-tech-flow` to fix this bug: reproduce it, make the smallest fix, run the check and say what is unverified.",
+      "Use `nobrainer-tech-flow` to turn my idea into a plan with acceptance checks, then deliver and verify it.",
+      "Use `nobrainer-tech-flow` to compare these options with sources and give one recommendation."
     ],
     "websiteURL": "https://nobrainer.tech/flow/",
     "privacyPolicyURL": "https://github.com/nobrainer-tech/nobrainer-tech-flow/blob/main/docs/PRIVACY.md",

@@ -7,24 +7,30 @@
 <h1 align="center">nobrainer-tech-flow</h1>
 
 <p align="center">
-  <strong>From task to done.</strong><br>
-  One AI workflow for coding agents,<br>
-  instead of 50+ separate tools.
+  <em>For developers whose coding agent just said "Done."</em>
+</p>
+
+<p align="center">
+  <strong>From task to done. See what was delivered.</strong><br>
+  One workflow with 18 modules that lets your coding agent do the work,<br>
+  check it and hand over the evidence. Every release has
+  <a href="https://nobrainer.tech/flow/changelog/?nb_from=github-readme">public verification notes</a>.
 </p>
 
 <p align="center">
   <a href="https://github.com/nobrainer-tech/nobrainer-tech-flow/actions/workflows/validate.yml"><img alt="Validation" src="https://github.com/nobrainer-tech/nobrainer-tech-flow/actions/workflows/validate.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-27d8cf.svg"></a>
+  <a href="https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/nobrainer-tech/nobrainer-tech-flow"></a>
 </p>
 
 <p align="center">
-  <a href="https://nobrainer.tech/flow/">Launch page</a>
+  <a href="#install-safely"><strong>Add to your coding agent</strong></a>
   ·
-  <a href="#install-safely">Copy the setup prompt</a>
+  <a href="https://nobrainer.tech/flow/?nb_from=github-readme">Launch page</a>
   ·
-  <a href="https://nobrainer.tech/flow/compare/">Compare 50+ tools</a>
+  <a href="https://nobrainer.tech/flow/compare/?nb_from=github-readme">Compare 50+ tools</a>
   ·
-  <a href="https://nobrainer.tech/flow/deep-dive/">Deep dive</a>
+  <a href="https://nobrainer.tech/flow/deep-dive/?nb_from=github-readme">Deep dive</a>
   ·
   <a href="https://www.producthunt.com/products/nobrainer-tech-flow">Product Hunt</a>
 </p>
@@ -43,6 +49,21 @@
     </td>
   </tr>
 </table>
+
+- **A handoff you can check.** Each finished task lists what was delivered,
+  which checks ran and what was not checked. An optional evidence receipt marks
+  a check `STALE` once its input files change, and a behavior-preserving rewrite
+  reports `PROVEN`, `PARTLY_PROVEN` or `NOT_PROVEN` for whether the tests would
+  catch a change.
+- **A pause before risky commands.** With the Git install, optional Claude Code
+  guards ask before `git push --force`, `git reset --hard`, a recursive delete
+  outside temporary folders, a production deploy or a publish. A turn that
+  changed files and ends without a proof line or an explicit `UNVERIFIED` is
+  sent back once. Opt-in, with preview and undo.
+- **Parallel work, checked in one place.** Independent ready parts go to native
+  workers; the main session checks each one.
+
+Free, MIT. The Git install previews every change and has undo. Your coding client's usage costs still apply.
 
 <p align="center">
   Ships adapters for
@@ -82,7 +103,13 @@ The mode is informed by ASD-STE100; it does not claim full standard compliance.
 
 ## Install and use the plugin
 
-Use the [Git install](#install-safely) to preview and apply setup in your coding client. The [npm command](docs/INSTALL.md#npm-command) is coming soon: the package is not yet published on npm. The [portable plugin ZIP](docs/CHAT_PLUGINS.md) uses the same eighteen skills in supported ChatGPT/Codex and Claude surfaces. Public directory approval remains a separate step.
+Claude Code and Codex add nobrainer-tech-flow as a plugin straight from this
+repository. Any coding agent can use the Git install, which previews every
+change and has undo. Both are under [Install safely](#install-safely). The
+[npm command](docs/INSTALL.md#npm-command) is coming soon: the package is not
+yet published on npm. The [portable plugin ZIP](docs/CHAT_PLUGINS.md) brings the
+same 18 modules to supported ChatGPT/Codex and Claude surfaces. Public directory
+approval remains a separate step.
 
 ## How it works
 
@@ -133,14 +160,14 @@ New source links, public package/plugin IDs and checkout paths use
 `nobrainer-tech-flow`. Existing installations with the previous
 `nobrainer-tech-skills` ID need the reviewed migration path; an installed
 legacy package does not automatically become the new package. See the
-[Flow migration guide](docs/MIGRATION_TO_FLOW.md) and [naming map](docs/NAMING.md).
+[migration guide](docs/MIGRATION_TO_FLOW.md) and [naming map](docs/NAMING.md).
 
 ### GitHub flow chart
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#161B23', 'primaryTextColor': '#F3EEE6', 'primaryBorderColor': '#7F9BFF', 'lineColor': '#D94724', 'secondaryColor': '#0F1319', 'tertiaryColor': '#0F1319', 'fontFamily': 'Inter, system-ui, sans-serif'}}}%%
 flowchart TD
-    A[Task or idea; check Flow release once today] --> B{Material ambiguity?}
+    A[Task or idea; check nobrainer-tech-flow release once today] --> B{Material ambiguity?}
     B -->|yes| C[BUDDY: one focused question round]
     B -->|no| D{Small and clear?}
     C --> D
@@ -171,7 +198,7 @@ flowchart TD
     T --> M
     L -. context pressure; transfer supported .-> N[Fresh session: same task + started DD-MM]
     N -->|takeover verified; archive old if authorized| G
-    G -. Flow entry and milestones .-> O[Date at startup; assess context health]
+    G -. entry and milestones .-> O[Date at startup; assess context health]
     O -. safe transfer qualifies .-> N
     L -. unavailable native goals or telemetry .-> G
 ```
@@ -180,51 +207,67 @@ flowchart TD
 
 ## Install safely
 
-1. Paste this into your coding agent, whichever it is. The same prompt installs and updates, and
-   the default install works on macOS, Linux and Windows without Python:
+**Claude Code** (plugin):
 
-   ```text
-   Install nobrainer-tech-flow from https://github.com/nobrainer-tech/nobrainer-tech-flow
-   for the coding agent you are, or update it if it is already installed.
+```sh
+claude plugin marketplace add nobrainer-tech/nobrainer-tech-flow
+claude plugin install nobrainer-tech-flow@nobrainer-tech
+```
 
-   1. Keep a copy in ~/.nobrainer-tech-flow: clone the repository there, or run
-      git pull there if it already exists. Do not delete that folder later; the
-      skills link to it.
-   2. Read the install section of its README and follow the method it gives for
-      your client and operating system (docs/INSTALL.md has the details).
-   3. Preview first and show me what will change. Apply only after I agree, and
-      do not edit my files beyond what that method does.
-   4. Tell me the undo command, and whether I need to restart you.
-   ```
+Start with `/nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer-tech-flow".
+The plugin also adds a small `SessionStart` hook that loads a short bootstrap.
 
-   Or run it yourself in a terminal (on Windows, in Git Bash):
+**Codex** (plugin):
 
-   ```sh
-   git clone https://github.com/nobrainer-tech/nobrainer-tech-flow ~/.nobrainer-tech-flow
-   sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude           # preview: changes nothing
-   sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude --apply   # link the skills, add the block
-   ```
+```sh
+codex plugin marketplace add nobrainer-tech/nobrainer-tech-flow
+codex plugin add nobrainer-tech-flow@nobrainer-tech
+```
 
-   `--client` is `claude`, `codex`, `opencode` or `copilot`. Cursor, Gemini CLI, Pi and Kimi Code
-   take Flow as a plugin or extension instead: see their sections in
-   [docs/INSTALL.md](docs/INSTALL.md#client-channels). The script links all eighteen skills and adds
-   one instruction block, shows the exact text first, refuses anything that is not its own, grants
-   no authorization and undoes itself with `--undo --apply`. To update, run `git pull` in
-   `~/.nobrainer-tech-flow` and the same two commands again, or paste the prompt again. With Python,
-   `python3 scripts/install.py` takes the same flags.
+Start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer-tech-flow".
 
-   For Claude Code, you can choose a plugin installation from a checkout you have reviewed:
+A marketplace added from GitHub follows the default branch. To pin a reviewed
+commit, see [client channels](docs/INSTALL.md#client-channels). The
+[compatibility evidence](docs/COMPATIBILITY.md) lists the tested client versions
+and limits; installing the package does not prove automatic routing.
 
-   ```sh
-   claude plugin marketplace add ~/.nobrainer-tech-flow
-   claude plugin install nobrainer-tech-flow@nobrainer-tech
-   ```
+**Any coding agent** (Git install with preview and undo; macOS, Linux and
+Windows, no Python needed): paste this setup prompt into your coding agent. The
+same prompt installs and updates:
 
-   The plugin entry point is `/nobrainer-tech-flow:nobrainer-tech-flow`. See
-   [Claude Code installation](docs/INSTALL.md#claude-code) and the
-   [compatibility evidence](docs/COMPATIBILITY.md#current-source-readback-2026-09-29)
-   for the tested client versions and limits; installing the package does not prove automatic routing.
-2. In a fresh session, give it one small task with a checkable result:
+```text
+Install nobrainer-tech-flow from https://github.com/nobrainer-tech/nobrainer-tech-flow
+for the coding agent you are, or update it if it is already installed.
+
+1. Keep a copy in ~/.nobrainer-tech-flow: clone the repository there, or run
+   git pull there if it already exists. Do not delete that folder later; the
+   skills link to it.
+2. Read the install section of its README and follow the method it gives for
+   your client and operating system (docs/INSTALL.md has the details).
+3. Preview first and show me what will change. Apply only after I agree, and
+   do not edit my files beyond what that method does.
+4. Tell me the undo command, and whether I need to restart you.
+```
+
+Or run it yourself in a terminal (on Windows, in Git Bash):
+
+```sh
+git clone https://github.com/nobrainer-tech/nobrainer-tech-flow ~/.nobrainer-tech-flow
+sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude           # preview: changes nothing
+sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude --apply   # link the skills, add the block
+```
+
+`--client` is `claude`, `codex`, `opencode` or `copilot`. Cursor, Gemini CLI, Pi and Kimi Code
+use a plugin or extension instead: see their sections in
+[docs/INSTALL.md](docs/INSTALL.md#client-channels). The script links all eighteen skills and adds
+one instruction block, shows the exact text first, refuses anything that is not its own, grants
+no authorization and undoes itself with `--undo --apply`. To update, run `git pull` in
+`~/.nobrainer-tech-flow` and the same two commands again, or paste the prompt again. With Python,
+`python3 scripts/install.py` takes the same flags.
+
+**npm:** coming soon. The package is not published yet.
+
+**Next step:** in a fresh session, give it one small task with a checkable result:
 
 > Use nobrainer-tech-flow. Fix one bug in this project. Reproduce it first, make the
 > smallest correction and run the relevant check. Tell me what changed and
@@ -269,6 +312,13 @@ discovery before claiming runtime installation.
 
 </details>
 
+## After setup
+
+- [Run this as a ready workflow](https://nobrainer.tech/paths/ai-engineering/?nb_from=github-readme).
+  Deliver software from requirement to CI with a ready AI engineering workflow
+  built on nobrainer-tech-flow.
+- [New to AI? Start the free course](https://nobrainer.tech/edu/ai-basics/?nb_from=github-readme).
+
 If this workflow helps with a real task, star the repository and follow
 [@nobrainer_tech](https://x.com/nobrainer_tech) for build notes and practical examples.
 
@@ -276,7 +326,7 @@ If this workflow helps with a real task, star the repository and follow
 <summary><strong>Full documentation in this README</strong>: skills, compatibility, attribution, contributing</summary>
 
 <details>
-<summary><strong>Astra Ready Flow, portable by design</strong></summary>
+<summary><strong>Astra Ready, portable by design</strong></summary>
 
 Since version **1.6**, ordinary work has no client-specific prerequisites.
 OpenAI [introduced GPT-6 Astra](https://openai.com/index/gpt-6-astra/) on
@@ -481,9 +531,12 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-Current source version: **2.3.2**. Check the
+**What's new in 2.4.0:** nobrainer-tech-flow can ask before risky commands and
+shows whether its proof still matches your files. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+
+Current source version: **2.4.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.3.2 verification record](docs/releases/v2.3.2.md) for
+for distribution and the [2.4.0 verification record](docs/releases/v2.4.0.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier
@@ -584,7 +637,7 @@ or browse ready-to-use workflow products on
 <details>
 <summary><strong>Adaptive session restart</strong></summary>
 
-On explicit nobrainer-tech-flow task invocation, Flow immediately names the conversation
+On explicit task invocation, nobrainer-tech-flow immediately names the conversation
 `<task title> | started DD-MM` using its verified creation date and preserves it
 on resume. It assesses context before work, after compaction and at accepted
 milestones. Adaptive care uses recorded task authority and respects `off` and
@@ -592,7 +645,7 @@ stricter host rules; installing the package alone enables no session mutation.
 
 A pressured session with a materially smaller full startup can rotate even when
 token payback is unknown. Age and compaction count alone do not force rotation.
-Flow preserves progress in the task file, verifies successor takeover and archives
+nobrainer-tech-flow preserves progress in the task file, verifies successor takeover and archives
 the source only when authorized. The full timestamp, timezone and exact session
 ID stay authoritative. Unsupported clients receive an explicit manual handoff.
 

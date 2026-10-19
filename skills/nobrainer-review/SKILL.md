@@ -75,7 +75,9 @@ changed behavior:
 
 An exit code, generated file, mocked test or worker report is evidence at its
 own layer. It does not prove runtime, production or user usefulness unless that
-layer was exercised.
+layer was exercised. A missing or `NOT_PROVEN` `TEST_SENSITIVITY` keeps a "no
+behavior change" claim open. `STALE` or `CHANGED_DURING_RUN` evidence does not
+prove the current artifact.
 
 ## Pass 2: adversarial defect search
 

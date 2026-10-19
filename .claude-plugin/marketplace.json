@@ -1,14 +1,14 @@
 {
   "name": "nobrainer-tech",
-  "description": "nobrainer-tech-flow portable agentic workflows",
+  "description": "nobrainer-tech-flow: one workflow of 18 modules for AI coding agents.",
   "owner": {
     "name": "NoBrainer Tech"
   },
   "plugins": [
     {
       "name": "nobrainer-tech-flow",
-      "description": "nobrainer-tech-flow: portable agentic workflows from task to checked result.",
-      "version": "2.3.2",
+      "description": "From task to done. nobrainer-tech-flow is one workflow of 18 modules for AI coding agents: it scopes the task, delegates ready work, checks the result and hands over the evidence, including what was not checked.",
+      "version": "2.4.0",
       "source": "./",
       "author": {
         "name": "NoBrainer Tech"

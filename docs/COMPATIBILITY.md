@@ -144,6 +144,14 @@ sends, not how a model behaves.
 | Pi `0.87.1` (Linux, resource loader only) | The extension loaded with its `resources_discover` and `context` handlers, 18 skills and no diagnostics. | `CLIENT_LOADED` for the loader; no session |
 | Windows (CI only: GitHub-hosted `windows-latest`, Git Bash, Python 3.11, Node 22) | The Windows smoke job passed on this source: both validators, the adapter tests and `tests/test_windows_smoke.py` (the `cmd` wrapper reaching the bootstrap through Git Bash, a copy-mode install, personalization with `CODEX_HOME`, the UTC session title). | `REPOSITORY_CHECKED` on Windows; no client read back |
 
+The Codex row used the marketplace's earlier name, `nobrainer-tech-skills-dev`.
+Since 2.4.0 it is `nobrainer-tech`: on 2026-10-18, Codex `0.163.0` (macOS) with
+an empty `CODEX_HOME` added the 2.4.0 source checkout as a local marketplace
+`nobrainer-tech` and installed `nobrainer-tech-flow@nobrainer-tech` with 18
+skills (`CLIENT_LOADED`; routing unverified). An old `nobrainer-tech-skills-dev`
+install stays enabled next to the new one until it is removed; see the
+[migration guide](MIGRATION_TO_FLOW.md#existing-installation-identities).
+
 The other rows above keep their earlier level: no readback of OpenCode, Cursor,
 Gemini CLI, Kimi Code or Copilot CLI was made for this source. The Windows job
 runs the validators and the modules listed in [Testing](TESTING.md), not the

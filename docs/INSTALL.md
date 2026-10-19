@@ -14,9 +14,9 @@ upgraded merely because the new source is installed nearby.
 Node 18+ and Python 3.11+ are prerequisites. Preview the setup first:
 
 ```sh
-npx nobrainer-tech-flow@2.3.2 --client codex
-npx nobrainer-tech-flow@2.3.2 --client codex --apply
-npx nobrainer-tech-flow@2.3.2 --client codex --undo --apply
+npx nobrainer-tech-flow@2.4.0 --client codex
+npx nobrainer-tech-flow@2.4.0 --client codex --apply
+npx nobrainer-tech-flow@2.4.0 --client codex --undo --apply
 ```
 
 Use claude for Claude Code, opencode or copilot for those clients. Add --home PATH
@@ -24,7 +24,7 @@ for an isolated profile. These commands become available once this version is
 published on npm; a source candidate is not registry availability.
 
 Application copies the release files into the chosen home directory's
-.nobrainer-tech-flow-npm/2.3.2 and verifies the copy. That folder sits beside
+.nobrainer-tech-flow-npm/2.4.0 and verifies the copy. That folder sits beside
 ~/.nobrainer-tech-flow, where the Git installation suggests a clone, so cleaning
 the clone cannot delete the files the skill links point to. Releases before 2.3.2
 kept their copy in .nobrainer-tech-flow/npm; undo such a setup with the command of
@@ -421,6 +421,56 @@ After restart, verify:
 - a simple task remains direct;
 - a non-trivial task starts with nobrainer-tech-flow and a compact Progress checklist.
 
+#### Optional guards
+
+Two opt-in hooks in your Claude Code user `settings.json`, never in the plugin:
+
+- before a shell command, Claude Code asks you first (it never denies) for
+  `rm -r` (also `/bin/rm`) outside the temporary folders (`$TMPDIR`, `/tmp`,
+  `/var/folders`), `git push --force` (also `-f`, `--force-with-lease` or a
+  `+branch` refspec), `git reset --hard`, `git clean -f`, `vercel --prod`,
+  `npm publish`, `terraform apply` or `destroy`, `kubectl delete` and
+  `gh release create`, also with global options before the subcommand
+  (`npm -w pkg publish`, `gh -R owner/repo release create`). A relative `rm`
+  target counts as temporary only when the working folder is temporary and the
+  command does not `cd` or `pushd` first, and a path counts by where its links
+  lead. An `rm -r` whose arguments it cannot read, and a command line over 2,000
+  characters that names one of these tools, are asked about as well;
+- when a turn that edited files or ran commands ends without a line starting
+  with `Proof:` or `Checked:` and without `UNVERIFIED`, the stop is blocked once
+  so the agent adds one. A read-only turn, a second stop and an unreadable
+  transcript are let through.
+
+This is a seatbelt, not a security boundary. It reads the command text, so
+`sh -c`, a variable or an alias gets past it, and a risky phrase inside a quoted
+string (`echo "git reset --hard"`) asks without need.
+
+```bash
+python3 scripts/install.py --client claude --guards            # preview the hooks it would add
+python3 scripts/install.py --client claude --guards --apply    # add them, with a backup
+python3 scripts/install.py --client claude --guards --undo --apply
+```
+
+`python3 scripts/install_guards.py` takes the same `--apply`, `--undo` and
+`--home` flags. The settings file is `$CLAUDE_CONFIG_DIR/settings.json`, or
+`~/.claude/settings.json` when the variable is unset. The preview lists only the
+hooks it would add or remove, never other settings; other hooks are kept, each
+change writes a new backup, readable only by you, without overwriting an older one, a second `--apply`
+changes nothing, and an invalid file is refused
+(exit 3) without being touched. The hooks run `flow_guard.py` through the
+skill link that `--client claude` created, so install the skills first. A
+plugin-only install, other clients, `scripts/install.sh` and Windows are not
+supported in this version (`UNSUPPORTED`, exit 3). Removing the skills leaves
+the hooks in place, where they do nothing; remove them with `--guards --undo
+--apply`. Restart Claude Code after a change.
+
+The hooks follow https://code.claude.com/docs/en/hooks (Claude Code 2.1.302):
+PreToolUse reads `tool_name`, `tool_input.command` and `cwd` and answers
+`hookSpecificOutput.permissionDecision: "ask"` with `permissionDecisionReason`;
+Stop and SubagentStop read `stop_hook_active`, `last_assistant_message`,
+`transcript_path` and `agent_transcript_path` and answer
+`{"decision": "block", "reason": ...}`.
+
 ### Codex
 
 The `.codex-plugin/plugin.json` manifest exposes `./skills/` and declares no
@@ -430,7 +480,7 @@ plugin channel needs a reviewed checkout:
 
 ```bash
 codex plugin marketplace add /path/to/reviewed/nobrainer-tech-flow
-codex plugin add nobrainer-tech-flow@nobrainer-tech-skills-dev
+codex plugin add nobrainer-tech-flow@nobrainer-tech
 ```
 
 The installer's `codex` destination is the shared `~/.agents/skills` path:

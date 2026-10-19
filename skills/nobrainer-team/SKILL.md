@@ -147,9 +147,9 @@ Use native subagents directly for independent units with no persistent queue;
 audit output, completion and released write ownership before integration.
 After a durable team plan passes, invoke `nobrainer-dispatcher` when a dependent
 queue or controlled batch needs scheduling, then invoke `nobrainer-sessions` to
-create or reuse exact visible sessions only when the owner has explicitly
-requested that conversation or authorized a MAIN restart. Transport and
-isolation do not create that authority. A single bounded delegate may go
+create or reuse exact visible sessions only under the
+[Flow visible-session rule](../nobrainer-tech-flow/SKILL.md#choose-the-smallest-workflow).
+A single bounded delegate may go
 directly to a native subagent. If
 transport is proven unavailable before sending, claim the unit for MAIN before
 executing sequentially. Uncertain delivery reserves capacity and write scope
