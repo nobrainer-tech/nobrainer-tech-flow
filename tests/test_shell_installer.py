@@ -1607,6 +1607,63 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertTrue((home / ".config").is_symlink())
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_repeat_apply_never_hands_a_folder_behind_a_new_link_to_the_undo(self) -> None:
+        # After the setup, ~/.agents is swapped for a link to a folder that was there before
+        # and holds an empty skills folder. Applying again and undoing must leave that folder.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                flags = ("--client", "codex", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                record_path = home / ".nobrainer-flow-onboarding-codex.json"
+                first = json.loads(record_path.read_text(encoding="utf-8"))["created_dirs"]
+                theirs = Path(temp) / "theirs"
+                (theirs / "skills").mkdir(parents=True)
+                shutil.rmtree(home / ".agents")
+                (home / ".agents").symlink_to(theirs, target_is_directory=True)
+
+                again = install_step(installer, *flags, "--apply", home=home)
+
+                self.assertEqual(0, again.returncode, again.stdout + again.stderr)
+                self.assertEqual(first, json.loads(record_path.read_text(encoding="utf-8"))["created_dirs"])
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertEqual(["skills"], entries(theirs))
+                self.assertTrue((home / ".agents").is_symlink())
+
+    @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0), "needs a folder this account cannot write")
+    def test_a_home_that_cannot_be_made_stops_the_setup_before_anything_is_written(self) -> None:
+        # CLAUDE_CONFIG_DIR is writable, but the home for the record lies under a folder that
+        # is not. Nothing may be written that no record describes.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                locked = Path(temp) / "locked"
+                locked.mkdir()
+                home = locked / "home"
+                config = Path(temp) / "claude-config"
+                config.mkdir()
+                variables = {"CLAUDE_CONFIG_DIR": str(config)}
+                locked.chmod(0o555)
+                try:
+                    if installer == "sh":
+                        result = run_sh("--client", "claude", "--apply", home=home, variables=variables)
+                    else:
+                        result = subprocess.run(
+                            [sys.executable, str(INSTALL_PY), "--client", "claude", "--apply"],
+                            cwd=ROOT, text=True, encoding="utf-8", errors="replace", capture_output=True,
+                            check=False, stdin=subprocess.DEVNULL, env=environment(home, variables),
+                        )
+                finally:
+                    locked.chmod(0o755)
+
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertEqual([], entries(config))
+                self.assertFalse(home.exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_a_home_made_only_for_the_record_is_taken_away_again(self) -> None:
         # CLAUDE_CONFIG_DIR puts the skills and the instructions in a folder that exists, and
         # the home is made only to hold the setup record. The undo takes the home away too.

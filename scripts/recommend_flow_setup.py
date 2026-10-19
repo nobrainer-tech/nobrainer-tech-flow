@@ -1319,6 +1319,9 @@ def main(argv: list[str] | None = None) -> int:
             code, _ = run(command, hide=("NOTE: ",))
             if code:
                 return code
+        # The record's folder is made before anything else is written: when it cannot be made,
+        # the run stops here instead of leaving links and a block that no record describes.
+        state.parent.mkdir(parents=True, exist_ok=True)
         profile_preimage = read_file_preimage(profile_target)
         if args.apply:
             for name in install_names:
@@ -1358,13 +1361,13 @@ def main(argv: list[str] | None = None) -> int:
             }
         created = sorted(set(previous.get("created_skills", [])) | {name for name in new_skills if (destination / name).is_symlink()})
         next_state = {"destination": str(destination), "created_skills": created, "profile": profile}
-        # Folders an earlier run made stay in the record. A record from before this field
-        # existed has none: its folders may have been there already, so none is claimed.
-        # Each folder is written the way it really is, links resolved, so that runs from
-        # different installers and spellings of the same path list it once.
-        previous_dirs = {str(physical_path(path)) for path in recorded_directories(previous, state)} if previous else set()
-        # save_state would make the record's folder below; making it here lets the record list it.
-        state.parent.mkdir(parents=True, exist_ok=True)
+        # Folders an earlier run made stay in the record as recorded, links already resolved
+        # then. Resolving them again would follow a link put in their place since, and hand the
+        # folder it points to over to the undo. A record from before this field existed has
+        # none: its folders may have been there already, so none is claimed. A folder this run
+        # made is written the way it really is, links resolved, so that runs from different
+        # installers and spellings of the same path list it once.
+        previous_dirs = {str(path) for path in recorded_directories(previous, state)} if previous else set()
         made_dirs = {str(physical_path(path)) for path in new_directories if path.is_dir() and not path.is_symlink()}
         created_dirs = sorted(previous_dirs | made_dirs)
         # A record that has no folder list is from an earlier version. It keeps that form until

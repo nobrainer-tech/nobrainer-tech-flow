@@ -874,6 +874,13 @@ install() {
 	sha256 /dev/null >/dev/null || die 2 "this script needs sha256sum, shasum or openssl to record the setup"
 
 	created= dirs_to_make=
+	# The record's folder is made before anything else is written: when it cannot be made,
+	# the run stops here instead of leaving links and a block that no record describes. It
+	# counts among the folders the setup made: a home that does not exist yet is made for
+	# the record alone when a client variable puts the skills and the instructions elsewhere.
+	note_dirs "$home"
+	made_home=$dirs_to_make
+	mkdir -p "$home" || die 2 "cannot create $home, where the setup record goes"
 	if [ "$link_count" -gt 0 ]; then
 		note_dirs "$skills_dir"
 		mkdir -p "$skills_dir" || die 2 "cannot create $skills_dir"
@@ -918,11 +925,6 @@ install() {
 		new_target=$target new_backup=$made_backup new_hash=$(sha256 "$target")
 	fi
 	if [ -n "$created" ] || [ "$wrote" = 1 ] || { [ "$record" = 1 ] && [ "$new_hash" != "$st_hash" ]; }; then
-		# The record's own folder counts: a home that does not exist yet is made for it alone
-		# when a client variable puts the skills and the instructions elsewhere.
-		note_dirs "$home"
-		# A failure here makes write_state fail too, which reverses this run.
-		mkdir -p "$home" 2>/dev/null
 		new_created=$(printf '%s\n' $st_created $created | LC_ALL=C sort -u | tr '\n' ' ')
 		new_created=${new_created# }
 		new_created=${new_created% }
@@ -932,11 +934,16 @@ install() {
 		made_dirs=$(printf '%s' "$dirs_to_make" | while IFS= read -r _a_dir; do
 			if [ -n "$_a_dir" ] && [ -d "$_a_dir" ] && [ ! -L "$_a_dir" ]; then printf '%s\n' "$_a_dir"; fi
 		done)
-		# Each folder is written the way it really is, links resolved, so that runs from
-		# different installers and spellings of the same path list it once.
-		new_dirs=$(printf '%s\n%s\n' "$st_dirs" "$made_dirs" | while IFS= read -r _a_dir; do
-			if [ -n "$_a_dir" ]; then physical "$_a_dir"; fi
-		done | LC_ALL=C sort -u)
+		# A folder this run made is written the way it really is, links resolved, so that runs
+		# from different installers and spellings of the same path list it once. The folders an
+		# earlier run recorded stay as recorded: resolving them again would follow a link put in
+		# their place since, and hand the folder it points to over to the undo.
+		new_dirs=$({
+			printf '%s' "$st_dirs"
+			printf '%s\n' "$made_dirs" | while IFS= read -r _a_dir; do
+				if [ -n "$_a_dir" ]; then physical "$_a_dir"; fi
+			done
+		} | grep -v '^$' | LC_ALL=C sort -u)
 		# The record lists the folders this setup made, an empty list included, so that an undo
 		# knows to touch no other. A record from before the list keeps its form until a run
 		# makes a folder, and its undo keeps the rule it was made under.
@@ -949,6 +956,11 @@ install() {
 			fi
 			die 4 "could not save the setup record $state; the changes of this run were reversed"
 		fi
+	fi
+
+	# A home made for a record that was not needed goes again.
+	if [ ! -e "$state" ] && [ -n "$made_home" ]; then
+		printf '%s' "$made_home" | while IFS= read -r _a_dir; do rmdir "$_a_dir" 2>/dev/null; done
 	fi
 
 	# New links and a written instruction file are what a client has to be restarted for.
