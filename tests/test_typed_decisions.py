@@ -1,4 +1,5 @@
 import importlib.util
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -36,6 +37,24 @@ class TypedDecisionTests(unittest.TestCase):
             self.assertEqual(result["model"], "jev-latest")
             self.assertEqual(result["reason"], expected)
             self.assertNotIn("synthetic secret", str(result))
+
+    def test_key_is_read_only_from_the_named_variable(self):
+        from unittest.mock import patch
+        seen = []
+
+        def fake_run(command, input, **kwargs):
+            seen.append((json.loads(input)["key"], kwargs["env"]))
+            return subprocess.CompletedProcess(command, 0, stdout=json.dumps({"error": "MISSING_TYPESAFE_API_KEY"}))
+
+        environment = {"TYPESAFE_API_KEY": "synthetic-default", "MY_TS_KEY": "synthetic-named", "PATH": "/bin"}
+        with patch.dict(runtime.os.environ, environment, clear=True), patch.object(runtime.subprocess, "run", fake_run):
+            runtime.invoke("jev", "jev-latest", REQUEST, 1)
+            runtime.invoke("jev", "jev-latest", REQUEST, 1, key_env="MY_TS_KEY")
+            runtime.invoke("laya", "model", REQUEST, 1, key_env="MY_TS_KEY")
+        self.assertEqual([None, "synthetic-named", None], [key for key, _ in seen])
+        for _, env in seen:
+            self.assertEqual({"PATH": "/bin"}, env)
+        self.assertEqual("MISSING_TYPESAFE_API_KEY", runtime.worker("jev", "jev-latest", REQUEST)["error"])
 
     def test_off_and_unapproved_never_touch_provider(self):
         def forbidden(*args):

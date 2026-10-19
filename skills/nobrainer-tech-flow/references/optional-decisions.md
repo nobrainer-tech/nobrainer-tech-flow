@@ -30,8 +30,10 @@ Jev/Laya records that preference in off mode until data/cost authority is known.
 `set` is an explicit configuration change. `show` never writes or uses a provider.
 Malformed config leaves its bytes intact, reports core fallback and does not
 re-open consent. `off` disables calls even with provider settings present.
-The configuration schema accepts no credential fields. Put the TypeSafe key in
-the invoking process's `TYPESAFE_API_KEY`; do not print it or put it in argv.
+The configuration schema accepts no credential fields. The helper reads no key
+from the machine unless you name the environment variable that holds it with
+`--key-env` (for example `--key-env TYPESAFE_API_KEY`); do not print the key or
+put its value in argv.
 
 ## Use bounded suggestions
 
@@ -53,7 +55,7 @@ a model. Example synthetic request:
 ```
 
 ```sh
-python3 <flow-skill-dir>/scripts/typed_decisions.py --request requests.json --approved-data
+python3 <flow-skill-dir>/scripts/typed_decisions.py --request requests.json --approved-data --key-env TYPESAFE_API_KEY
 ```
 
 `--approved-data` records existing scope authorization, not permission invented
