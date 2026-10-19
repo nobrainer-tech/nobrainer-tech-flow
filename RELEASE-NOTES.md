@@ -6,10 +6,12 @@ nobrainer-tech-flow can ask before risky commands and shows whether its proof st
 your files.
 
 Optional Claude Code guards (`scripts/install.py --client claude --guards`, preview first,
-undo with `--undo --apply`) add a PreToolUse hook that asks before `rm -rf` outside
-temporary folders, `git push --force`, `git reset --hard`, `git clean -fd`,
-`vercel --prod`, `npm publish`, `terraform apply` or `destroy`, `kubectl delete` and
-`gh release create`. A Stop hook blocks once when a turn that changed files or ran
+undo with `--undo --apply`) add a PreToolUse hook that asks before `rm -r` outside
+temporary folders, `git push --force` (also `-f`, `--force-with-lease` or a `+branch`
+refspec), `git reset --hard`, `git clean -f`, `vercel --prod`, `npm publish`,
+`terraform apply` or `destroy`, `kubectl delete` and `gh release create`, also with
+global options before the subcommand. The preview names only the hooks it changes,
+never other settings. A Stop hook blocks once when a turn that changed files or ran
 commands ends with no `Proof:` or `Checked:` line and no `UNVERIFIED`. The guards are
 off by default, exist for Claude Code only and are written to your user settings; the
 plugin hooks stay SessionStart only. They read command text, so they are a seatbelt,

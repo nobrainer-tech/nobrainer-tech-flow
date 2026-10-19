@@ -426,10 +426,14 @@ After restart, verify:
 Two opt-in hooks in your Claude Code user `settings.json`, never in the plugin:
 
 - before a shell command, Claude Code asks you first (it never denies) for
-  `rm -r` outside the temporary folders (`$TMPDIR`, `/tmp`, `/var/folders`),
-  `git push --force`, `git reset --hard`, `git clean -f`, `vercel --prod`,
+  `rm -r` (also `/bin/rm`) outside the temporary folders (`$TMPDIR`, `/tmp`,
+  `/var/folders`), `git push --force` (also `-f`, `--force-with-lease` or a
+  `+branch` refspec), `git reset --hard`, `git clean -f`, `vercel --prod`,
   `npm publish`, `terraform apply` or `destroy`, `kubectl delete` and
-  `gh release create`;
+  `gh release create`, also with global options before the subcommand
+  (`npm -w pkg publish`, `gh -R owner/repo release create`). A relative `rm`
+  target counts as temporary only when the working folder is temporary and the
+  command does not `cd` or `pushd` first;
 - when a turn that edited files or ran commands ends without a line starting
   with `Proof:` or `Checked:` and without `UNVERIFIED`, the stop is blocked once
   so the agent adds one. A read-only turn, a second stop and an unreadable
@@ -447,8 +451,10 @@ python3 scripts/install.py --client claude --guards --undo --apply
 
 `python3 scripts/install_guards.py` takes the same `--apply`, `--undo` and
 `--home` flags. The settings file is `$CLAUDE_CONFIG_DIR/settings.json`, or
-`~/.claude/settings.json` when the variable is unset; other hooks in it are
-kept, a second `--apply` changes nothing, and an invalid file is refused
+`~/.claude/settings.json` when the variable is unset. The preview lists only the
+hooks it would add or remove, never other settings; other hooks are kept, each
+change writes a new backup without overwriting an older one, a second `--apply`
+changes nothing, and an invalid file is refused
 (exit 3) without being touched. The hooks run `flow_guard.py` through the
 skill link that `--client claude` created, so install the skills first. A
 plugin-only install, other clients, `scripts/install.sh` and Windows are not
