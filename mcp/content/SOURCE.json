@@ -1,0 +1,30 @@
+{
+  "repo": "https://github.com/nobrainer-tech/nobrainer-tech-flow",
+  "tag": "v2.4.1",
+  "commit": "7a40f57641e922aad9c2071ddf1fc02db0ee4913",
+  "files": {
+    "skills/nobrainer-auto-fine-tune/SKILL.md": "b4dbd38cc5ceb520224c0ed526da0efcee5a6a8b2faa5bbb07c8fd8be812b092",
+    "skills/nobrainer-autoimprove/SKILL.md": "621274a98df6e5636a46d0bf18ddf1b37d9f4824bbaf1efaf4c67b88cd6bae01",
+    "skills/nobrainer-browser/SKILL.md": "b42b4dcf5c205844bf10afc53d68c6718295fcb64987c4519057af15210fa4a9",
+    "skills/nobrainer-build/SKILL.md": "ea13a12d5ebc6139c59d0435b5a089d4862857823507f71f7b3d4b2ebfc36eeb",
+    "skills/nobrainer-codex-context/SKILL.md": "49a20f68f18c2ae4418977799733b9527eac19df08ceb011dfcf18689f80b610",
+    "skills/nobrainer-decide/SKILL.md": "e223049be70eb2c01e9447c15590b57147f71d0a8f0e52bddca13fad6f6ed93d",
+    "skills/nobrainer-dispatcher/SKILL.md": "7d006852f4201dd2cf0accdfad21dcdaad29e37801ba721b3dc94a178005afee",
+    "skills/nobrainer-rca/SKILL.md": "8c9b0e763d8ffa865fb34f32591d92e67d8bf16f599c863f0d89ed539bc53586",
+    "skills/nobrainer-research/SKILL.md": "ce63020803b1ab917596115022ed2a256549af4ad98f16fceae224321e293215",
+    "skills/nobrainer-review/SKILL.md": "82d14fdb4f43e226b64a61ddc4699e6a853285783dec2a6729be272756cb27ae",
+    "skills/nobrainer-security/SKILL.md": "ee0375400fe3347987013cfe67a68a930ea6800b0818462bb24070d0c29720f6",
+    "skills/nobrainer-sessions/SKILL.md": "bb3079d2fd6409f7178302b4b3d523e5ac49e79cf68ffdf9ce2b1b5db3b55463",
+    "skills/nobrainer-skill-doctor/SKILL.md": "99149729ac3042c3ab3607bf9f86c9aa97c4cb1cff2eb074b36ab2ce2bd3c70f",
+    "skills/nobrainer-spec-driven-development/SKILL.md": "24d9f3cbd2fb1bfb97d2cce014ef9b70f859635515bea3eeaa95497511d1f97e",
+    "skills/nobrainer-team/SKILL.md": "6c11b0300f5ae012491da2dd5c0dcb7a6d497c2067f6205137792a5ae1bbbf0a",
+    "skills/nobrainer-tech-flow/SKILL.md": "b80b3a6c14e05e04a47cc5b11db007929a66ed29b241f09bcdcf0445ee138ea8",
+    "skills/nobrainer-tech-flow/references/autopilot.md": "c2c7edf88d9f051b8e124077674394965bb7c4c85086b5cd27779b3f65a9f4a7",
+    "skills/nobrainer-tech-flow/references/communication.md": "3e6e3e24e98ced558de40e8e9debd7974c5f21a2f3157921e7b2ba4fdc311336",
+    "skills/nobrainer-tech-flow/references/correction-hooks.md": "75d5215e3072a88938f0b92ea24e348f95adb1608d75dbe9f2d51bf8d0273aa6",
+    "skills/nobrainer-tech-flow/references/delivery.md": "573be3a0f17dc56e004bd6b736eb8b2f89ba990b0393537b5df9482d5e642dc7",
+    "skills/nobrainer-tech-flow/references/long-run-state.md": "4a8d431ab0be34519360c3f47782f4a9df73ce94faa26a174c656849a3b75ffe",
+    "skills/nobrainer-wiki/SKILL.md": "efb3af5c3f50d108213d05ad8083f552ceefc9c8bd187d611bf303fe9f665b02",
+    "skills/nobrainer-writing/SKILL.md": "ba62c3dc20319b46b819757c4ed17984b283c3c658c17804c7193fe4b8d05662"
+  }
+}
