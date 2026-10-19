@@ -423,7 +423,7 @@ recurring boundary:
 |---|---|---|
 | [`nobrainer-tech-flow`](skills/nobrainer-tech-flow/) | `NBFlow`, `NBF` | Technical entrypoint for end-to-end setup and delivery: one requirements gate, concise progress, bounded execution, recovery, audit and learning |
 | [`nobrainer-auto-fine-tune`](skills/nobrainer-auto-fine-tune/) | `nb-auto-fine-tune` | Read-only capability audit and route calibration: verified host models, effort, context and useful parallelism while MAIN keeps the owner's model |
-| [`nobrainer-codex-context`](skills/nobrainer-codex-context/) | `nb-codex-context` | Project-local Codex context setup: instruction discovery, fallback and byte-budget audit, safe context block reconciliation and runtime readback |
+| [`nobrainer-context`](skills/nobrainer-context/) | `nb-context` | One set of project instructions for every coding agent: what Codex, Claude Code, Gemini CLI, Cursor, Copilot and OpenCode load, size limits, duplicates and contradictions, one source of truth with pointers after approval, and readback |
 | [`nobrainer-skill-doctor`](skills/nobrainer-skill-doctor/) | `nb-skill-doctor` | Cross-project audit of skills, project instructions and task prompts: trigger overlap, excessive process, coverage and minimal portfolio repair planning |
 | [`nobrainer-team`](skills/nobrainer-team/) | `nb-team` | Capability selection and bounded native assignments, installed-skill inventory and safe temporary specialist discovery |
 | [`nobrainer-dispatcher`](skills/nobrainer-dispatcher/) | `nb-dispatcher` | Dependency-aware ready-set scheduling, bounded dispatch, backpressure and audited result routing |

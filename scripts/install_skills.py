@@ -73,7 +73,7 @@ except ValueError:
 
 CURATED_SKILLS = frozenset(
     {
-        "nobrainer-codex-context",
+        "nobrainer-context",
         "nobrainer-skill-doctor",
         "nobrainer-autoimprove",
         "nobrainer-auto-fine-tune",

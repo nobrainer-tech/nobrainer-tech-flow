@@ -9,7 +9,7 @@ trigger applies.
 | Need | Primary method |
 |---|---|
 | lifecycle, brief requirements, visible progress and guarded autonomy | `nobrainer-tech-flow` |
-| project-local Codex instruction discovery, byte-budget audit and context readback | `nobrainer-codex-context` |
+| one project's instruction files across coding agents: what loads, size, duplicates, contradictions, one source of truth | `nobrainer-context` |
 | cross-project instruction, skill and task-prompt audit with coverage planning | `nobrainer-skill-doctor` |
 | capability selection, bounded native assignments or open-skill evaluation | `nobrainer-team` |
 | ready-set calculation, dependency batches, bounded dispatch and backpressure | `nobrainer-dispatcher` |

@@ -53,7 +53,7 @@ class SkillDoctorContractTests(unittest.TestCase):
             "behavior",
             "PARTIAL",
             "nobrainer-review",
-            "nobrainer-codex-context",
+            "nobrainer-context",
             "nobrainer-build",
             "nobrainer-team",
         ):

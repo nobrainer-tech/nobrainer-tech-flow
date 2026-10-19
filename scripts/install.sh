@@ -19,7 +19,7 @@ unset CDPATH
 # The eighteen skills, and the names earlier layouts used. Tests keep these lists
 # equal to the ones in scripts/install_skills.py.
 SKILLS='nobrainer-auto-fine-tune nobrainer-autoimprove nobrainer-browser nobrainer-build
-nobrainer-codex-context nobrainer-decide nobrainer-dispatcher nobrainer-rca
+nobrainer-context nobrainer-decide nobrainer-dispatcher nobrainer-rca
 nobrainer-research nobrainer-review nobrainer-security nobrainer-sessions
 nobrainer-skill-doctor nobrainer-spec-driven-development nobrainer-team
 nobrainer-tech-flow nobrainer-wiki nobrainer-writing'

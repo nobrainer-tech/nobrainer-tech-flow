@@ -144,7 +144,7 @@ ITEMS = (
     Item("14", "nobrainer-spec-driven-development", "Specifications", ("software-development", "product"), "define durable contracts for architectural changes"),
     Item("15", "nobrainer-rca", "Root-cause analysis", ("software-development", "operations"), "diagnose repeated or causally unclear failures"),
     Item("16", "nobrainer-team", "Capability-to-role design", ("software-development", "operations"), "assign available capabilities to bounded work"),
-    Item("17", "nobrainer-codex-context", "Project context", ("software-development", "operations"), "inspect and maintain project instructions and context"),
+    Item("17", "nobrainer-context", "Project instructions", ("software-development", "operations"), "one tidy set of project instructions for every coding agent"),
     Item("18", "nobrainer-wiki", "Durable knowledge", ("research", "product", "operations"), "query and maintain a sourced project knowledge base"),
 )
 BY_ID = {item.id: item for item in ITEMS}

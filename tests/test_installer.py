@@ -1296,7 +1296,7 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(source, installed)
             self.assertEqual(
                 {
-                    "nobrainer-codex-context",
+                    "nobrainer-context",
                     "nobrainer-skill-doctor",
                     "nobrainer-autoimprove",
                     "nobrainer-auto-fine-tune",
@@ -1693,6 +1693,7 @@ class CrossSkillLinkTests(unittest.TestCase):
             {
                 "nobrainer-auto-fine-tune": ["nobrainer-tech-flow"],
                 "nobrainer-build": ["nobrainer-tech-flow"],
+                "nobrainer-context": ["nobrainer-tech-flow"],
                 "nobrainer-decide": ["nobrainer-tech-flow"],
                 "nobrainer-dispatcher": ["nobrainer-tech-flow"],
                 "nobrainer-rca": ["nobrainer-tech-flow"],
