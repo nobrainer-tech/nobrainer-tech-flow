@@ -1769,6 +1769,31 @@ class ShellInstallerTests(unittest.TestCase):
                     self.assertEqual([], entries(profile))
                     self.assertEqual([], entries(home))
 
+    @unittest.skipUnless(os.name == "nt", "directory junctions exist only on Windows")
+    def test_the_undo_leaves_a_junction_put_in_place_of_a_folder_it_made(self) -> None:
+        # After the setup, ~/.agents is replaced by a junction to a folder that holds an empty
+        # skills folder. Removing the junction would disconnect that folder from whatever uses it.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                flags = ("--client", "codex", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                theirs = Path(temp) / "theirs"
+                (theirs / "skills").mkdir(parents=True)
+                shutil.rmtree(home / ".agents")
+                junction = subprocess.run(
+                    ["cmd", "/c", "mklink", "/J", str(home / ".agents"), str(theirs)],
+                    text=True, capture_output=True, check=False,
+                )
+                self.assertEqual(0, junction.returncode, junction.stdout + junction.stderr)
+
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertTrue((home / ".agents").exists())
+                self.assertEqual(["skills"], entries(theirs))
+
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_a_repeat_apply_never_hands_a_folder_behind_a_new_link_to_the_undo(self) -> None:
         # After the setup, ~/.agents is swapped for a link to a folder that was there before

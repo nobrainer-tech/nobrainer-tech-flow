@@ -682,6 +682,22 @@ def recorded_directories(state: dict[str, object], record: Path) -> list[Path]:
     return directories
 
 
+def is_link(path: Path) -> bool:
+    """A symbolic link, or on Windows any reparse point such as a directory junction.
+
+    ``is_symlink`` misses a junction before Python 3.12, and removing one with ``rmdir``
+    disconnects whatever uses the folder it points to, even when that folder is not empty.
+    """
+
+    if path.is_symlink():
+        return True
+    try:
+        attributes = getattr(os.lstat(path), "st_file_attributes", 0)
+    except OSError:
+        return False
+    return bool(attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0))
+
+
 def remove_empty_directories(directories: list[Path]) -> tuple[list[Path], list[Path]]:
     """Remove each of these folders that is still empty, innermost first.
 
@@ -695,9 +711,9 @@ def remove_empty_directories(directories: list[Path]) -> tuple[list[Path], list[
     kept: list[Path] = []
     for path in sorted(directories, key=lambda item: len(item.parts), reverse=True):
         try:
-            if path.is_symlink() or not path.is_dir():
+            if is_link(path) or not path.is_dir():
                 continue
-            if any(parent.is_symlink() for parent in path.parents):
+            if any(is_link(parent) for parent in path.parents):
                 kept.append(path)
                 continue
             path.rmdir()
