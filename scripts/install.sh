@@ -933,10 +933,13 @@ write_instructions() {
 }
 
 install() {
-	# The record comes first: it says which retired links this setup made.
-	check_record
+	# plan_skills needs the retired links the record lists; check_record judges the record
+	# after the skills, as before, so a record that cannot be read only lists none here.
+	st_created=
+	if [ -f "$state" ] && [ ! -L "$state" ]; then read_state "$state" || st_created=; fi
 	plan_skills
 	plan_instructions
+	check_record
 	inherit=0
 	if inherits_codex; then inherit=1; fi
 	if [ "$apply" = 0 ]; then
@@ -1012,7 +1015,7 @@ install() {
 	elif [ "$wrote" = 1 ]; then
 		new_target=$target new_backup=$made_backup new_hash=$(sha256 "$target")
 	fi
-	if [ -n "$created" ] || [ "$wrote" = 1 ] || { [ "$record" = 1 ] && [ "$new_hash" != "$st_hash" ]; }; then
+	if [ -n "$created" ] || [ -n "$to_retire" ] || [ "$wrote" = 1 ] || { [ "$record" = 1 ] && [ "$new_hash" != "$st_hash" ]; }; then
 		# A retired module's link is gone once migrated; then the record drops its name.
 		_k_created=
 		for _k_name in $st_created; do

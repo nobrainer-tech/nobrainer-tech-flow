@@ -216,7 +216,7 @@ shared folder.
 or symlink. A foreign target at a retired name such as `nobrainer-reddit` is
 reported as `PRESERVED_FOREIGN` and left unchanged without blocking installation.
 An exact old link into this checkout at a retired name that a setup record lists
-is removed by the next `install.sh`, `install.py` or npm apply (see the
+is removed by the next `install.sh` or `install.py` apply (see the
 [migration guide](MIGRATION_TO_FLOW.md) for the 2.5.0 rename). A foreign
 target at a renamed alias such as `nb-flow`, a canonical name or an unresolved
 legacy name such as `nobrainer-fast-audit` still stops installation.
