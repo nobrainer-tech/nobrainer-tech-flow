@@ -110,8 +110,11 @@ def risky_rm(command: str, cwd: str | None) -> str | None:
         try:
             words = shlex.split(match.group(1))
         except ValueError:
-            # An open quote means a separator inside it cut the arguments short.
-            return "rm -r with arguments the guard cannot read deletes files for good"
+            # An open quote means a separator inside it cut the arguments short, or the
+            # "rm" is only a word in quoted text. Only a recursive rm is asked about.
+            if any(RECURSIVE.match(word.strip("\"'")) for word in match.group(1).split()):
+                return "rm -r with arguments the guard cannot read deletes files for good"
+            continue
         if not any(RECURSIVE.match(word) for word in words):
             continue
         paths = [word for word in words if not word.startswith("-")]
@@ -128,6 +131,8 @@ def pre_tool(payload: dict) -> dict | None:
     if not isinstance(command, str):
         return None
     cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else None
+    # A backslash line continuation is one command, so join it before splitting.
+    command = command.replace("\\\n", " ")
     reasons = []
     for segment in SEPARATOR.split(command):
         if len(segment) > LONGEST_SEGMENT and RISKY_TOOL.search(segment):

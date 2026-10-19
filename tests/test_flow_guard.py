@@ -84,6 +84,13 @@ COMMANDS = (
     ("'rm' -rf src", True),
     ('rm -rf /tmp/a "x|y" /home/dev', True),
     ("git status 2>&1 && git push --force", True),
+    ('git commit -m "Drop the rm step from setup"', False),
+    ('grep -rn "rm " scripts/', False),
+    ('gh pr create --body "we rm the cache now"', False),
+    ("git push \\\n--force", True),
+    ("git push origin main \\\n  --force", True),
+    ("terraform \\\napply", True),
+    ("rm \\\n-rf src", True),
 )
 
 
