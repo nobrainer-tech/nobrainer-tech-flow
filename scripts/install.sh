@@ -506,12 +506,17 @@ write_state() {
 }
 
 # note_dirs PATH: add to dirs_to_make the folders on the way to PATH that do not exist yet,
-# one per line. A link counts as existing: it is never a folder this script made.
+# one per line. A link counts as existing: it is never a folder this script made. So does
+# a spelling with ".." that resolves to an existing folder: profile/missing/.. does not
+# exist before missing is made, but it is profile, which was there already. The folders
+# above such a spelling are still checked, as missing is.
 note_dirs() {
 	_n_path=$1
-	while [ -n "$_n_path" ] && [ ! -e "$_n_path" ] && [ ! -L "$_n_path" ]; do
-		dirs_to_make="$dirs_to_make$_n_path
+	while [ -n "$_n_path" ]; do
+		if [ ! -e "$_n_path" ] && [ ! -L "$_n_path" ] && [ ! -e "$(clean abs "$(physical "$_n_path")")" ]; then
+			dirs_to_make="$dirs_to_make$_n_path
 "
+		fi
 		_n_next=${_n_path%/*}
 		[ "$_n_next" != "$_n_path" ] || break
 		_n_path=$_n_next
@@ -539,6 +544,18 @@ above() {
 	return 1
 }
 
+# on_way DIR BASE: DIR is the real form of a folder on the way to BASE as written. A folder
+# the setup made is listed as it really is, and a BASE spelled with ".." reaches it on the
+# way without lying below it.
+on_way() {
+	_y_up=$2
+	while [ -n "$_y_up" ]; do
+		[ "$(clean abs "$(physical "$_y_up")")" != "$1" ] || return 0
+		_y_up=${_y_up%/*}
+	done
+	return 1
+}
+
 check_dirs() {
 	[ -z "$st_bad_dirs" ] || return 1
 	[ -n "$st_dirs" ] || return 0
@@ -561,6 +578,10 @@ check_dirs() {
 					if above "$_k_form" "$_k_tdir" || above "$_k_form" "$_k_tphys"; then _k_ok=1; fi
 				fi
 			done
+			if [ -z "$_k_ok" ]; then
+				if on_way "$_k_real" "$st_dest" || on_way "$_k_real" "$_k_sdir"; then _k_ok=1; fi
+				if [ -n "$_k_tdir" ] && on_way "$_k_real" "$_k_tdir"; then _k_ok=1; fi
+			fi
 			[ -n "$_k_ok" ] || exit 1
 			case $_k_seen in *"
 $_k_real

@@ -623,15 +623,18 @@ def physical_path(path: Path) -> Path:
 def missing_directories(*paths: Path) -> list[Path]:
     """The folders on the way to PATHS that do not exist yet, outermost first.
 
-    A link counts as existing: it is somebody's link, never a folder this setup made.
+    A link counts as existing: it is somebody's link, never a folder this setup made. So
+    does a spelling with ``..`` that resolves to an existing folder: ``profile/missing/..``
+    does not exist before ``missing`` is made, but it is ``profile``, which was there
+    already. The folders above such a spelling are still checked, as ``missing`` is.
     """
 
     missing: list[Path] = []
     for path in paths:
         chain: list[Path] = []
         for candidate in (path, *path.parents):
-            if candidate.exists() or candidate.is_symlink():
-                break
+            if candidate.exists() or candidate.is_symlink() or physical_path(candidate).exists():
+                continue
             chain.append(candidate)
         for candidate in reversed(chain):
             if candidate not in missing:
@@ -645,7 +648,9 @@ def recorded_directories(state: dict[str, object], record: Path) -> list[Path]:
     A folder the setup made lies on the way to its skills folder, to the folder of its
     instruction file or to the folder of the RECORD itself, so any other entry (a relative path, a root, a path with
     ``..``, a folder elsewhere) means a damaged record, and an undo must not act on it.
-    A path may be spelled with or without the links on the way, so both spellings count.
+    A path may be spelled with or without the links on the way, so both spellings count. A
+    folder the setup made is listed as it really is, and a base spelled with ``..`` reaches
+    it on the way without lying below it, so the real form of each folder on that way counts.
     """
 
     raw = state.get("created_dirs", [])
@@ -657,7 +662,7 @@ def recorded_directories(state: dict[str, object], record: Path) -> list[Path]:
     if isinstance(target, str) and target:
         bases.append(Path(target).parent)
     bases.append(record.parent)
-    places = [form for base in bases for form in (base, physical_path(base))]
+    places = [form for base in bases for step in (base, *base.parents) for form in (step, physical_path(step))]
     directories: list[Path] = []
     seen: set[Path] = set()
     for item in raw:

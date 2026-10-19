@@ -1635,6 +1635,44 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertEqual(0o444, instructions.stat().st_mode & 0o777)
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_folder_named_through_dot_dot_that_was_there_before_survives_the_undo(self) -> None:
+        # CLAUDE_CONFIG_DIR reaches an existing folder through a folder that does not exist
+        # yet. Before the setup, "missing/.." does not exist either, but once "missing" is made
+        # it is the existing folder, and the undo must not take that one away.
+        for installer in ("sh", "py"):
+            for alias in ("missing/../config", "missing/../../profile/config"):
+                with self.subTest(installer=installer, alias=alias), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    home.mkdir()
+                    profile = Path(temp) / "profile"
+                    profile.mkdir()
+                    variables = {"CLAUDE_CONFIG_DIR": f"{profile}/{alias}"}
+
+                    def step(*more: str) -> subprocess.CompletedProcess[str]:
+                        if installer == "sh":
+                            return run_sh("--client", "claude", *more, home=home, variables=variables)
+                        return subprocess.run(
+                            [sys.executable, str(INSTALL_PY), "--client", "claude", *more],
+                            cwd=ROOT, text=True, encoding="utf-8", errors="replace", capture_output=True,
+                            check=False, stdin=subprocess.DEVNULL, env=environment(home, variables),
+                        )
+
+                    applied = step("--apply")
+
+                    self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                    made = [name for name in entries(profile) if not name.startswith("config/skills/")]
+                    self.assertEqual(["config", "config/CLAUDE.md", "config/skills", "missing"], made)
+                    record = json.loads((home / ".nobrainer-flow-onboarding-claude.json").read_text(encoding="utf-8"))
+                    real = profile.resolve()
+                    self.assertEqual(sorted(str(real / name) for name in ("config", "config/skills", "missing")), sorted(record["created_dirs"]))
+                    undone = step("--undo", "--apply")
+
+                    self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                    self.assertTrue(profile.is_dir())
+                    self.assertEqual([], entries(profile))
+                    self.assertEqual([], entries(home))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_a_repeat_apply_never_hands_a_folder_behind_a_new_link_to_the_undo(self) -> None:
         # After the setup, ~/.agents is swapped for a link to a folder that was there before
         # and holds an empty skills folder. Applying again and undoing must leave that folder.
