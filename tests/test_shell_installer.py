@@ -1926,7 +1926,10 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
                 self.assertIn(f"SKILLS: {len(SKILLS)} unlinked", undone.stdout)
                 self.assertEqual([".agents", ".codex", ".codex/config.toml", ".codex/skills"], entries(home))
-                self.assertEqual(home / ".codex", Path(os.readlink(home / ".agents")))
+                # The link still leads to ~/.codex. readlink on Windows adds a \\?\ prefix, so the
+                # resolved paths are compared.
+                self.assertTrue((home / ".agents").is_symlink())
+                self.assertEqual((home / ".codex").resolve(), (home / ".agents").resolve())
                 self.assertEqual("mine\n", (home / ".codex" / "config.toml").read_text(encoding="utf-8"))
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
@@ -1961,8 +1964,15 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertTrue(home.is_dir())
                 self.assertEqual([], entries(home))
                 self.assertTrue(alias.is_symlink())
-                for spelling in (alias, home.resolve()):
-                    self.assertIn(f"PRESERVED: {spelling}: another folder in the record leads to the same folder", undone.stdout)
+                # Both spellings are kept and named. Git Bash prints its POSIX view of the
+                # Windows path (/tmp/... or /c/...), so each line is matched by its end.
+                kept = [line for line in undone.stdout.splitlines() if "another folder in the record leads to the same folder" in line]
+                self.assertEqual(2, len(kept), undone.stdout)
+                for name in ("alias", "home"):
+                    self.assertTrue(
+                        any(re.match(rf"PRESERVED: .*{re.escape(Path(temp).name)}[\\/]{name}: ", line) for line in kept),
+                        undone.stdout,
+                    )
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     @unittest.skipIf(os.name == "nt", "Windows does not allow a line break in a file name")
