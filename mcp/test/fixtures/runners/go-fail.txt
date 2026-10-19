@@ -1,0 +1,9 @@
+=== RUN   TestA
+--- PASS: TestA (0.00s)
+=== RUN   TestB
+--- FAIL: TestB (0.00s)
+    b_test.go:12: got 1, want 2
+FAIL
+FAIL	example.com/app/api	0.005s
+ok  	example.com/app/db	0.101s
+FAIL

@@ -1,0 +1,9 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.3.2, pluggy-1.5.0
+rootdir: /work/app
+collected 12 items
+
+tests/test_api.py ........                                               [ 66%]
+tests/test_models.py ....                                                [100%]
+
+============================== 12 passed in 0.84s ==============================

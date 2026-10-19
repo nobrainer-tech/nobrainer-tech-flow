@@ -1,0 +1,7 @@
+..FF*
+
+Finished in 0.02 seconds (files took 0.1 seconds to load)
+5 examples, 2 failures, 1 pending
+
+Failed examples:
+rspec ./spec/cart_spec.rb:10 # Cart totals

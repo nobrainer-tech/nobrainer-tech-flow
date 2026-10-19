@@ -1,0 +1,6 @@
+ RUN  v2.1.1 /work/app
+
+ Test Files  2 passed (2)
+      Tests  7 passed (7)
+   Start at  10:12:01
+   Duration  1.02s (transform 40ms, setup 0ms, collect 90ms, tests 20ms)

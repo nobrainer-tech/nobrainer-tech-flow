@@ -1,0 +1,8 @@
+PHPUnit 10.5.0 by Sebastian Bergmann and contributors.
+
+..FE.                                                               5 / 5 (100%)
+
+Time: 00:00.015, Memory: 6.00 MB
+
+FAILURES!
+Tests: 5, Assertions: 8, Failures: 1, Errors: 1.

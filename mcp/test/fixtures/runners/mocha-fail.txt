@@ -1,0 +1,9 @@
+  2 passing (15ms)
+  1 pending
+  1 failing
+
+  1) Array
+       #indexOf()
+         should fail:
+
+      AssertionError: expected -1 to equal 0

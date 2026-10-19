@@ -1,0 +1,41 @@
+{
+  "name": "nobrainer-tech-flow-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Remote MCP server for NoBrainer Tech Flow: one task contract, evidence check and done gate in every MCP client.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-generated.mjs",
+    "typecheck": "tsc -p .",
+    "build:content": "node scripts/build-content.ts",
+    "check:content": "node scripts/build-content.ts --check",
+    "refresh:benchmark": "node scripts/build-benchmark-snapshot.mjs",
+    "test": "npm run typecheck && npm run check:content && node --test \"test/**/*.test.ts\"",
+    "serve": "node scripts/serve.ts",
+    "smoke": "node scripts/smoke.ts",
+    "transcripts": "node scripts/record-transcripts.ts",
+    "plugin": "node scripts/build-plugin.ts",
+    "check:output": "node scripts/check-output.mjs",
+    "conformance": "node scripts/conformance.ts",
+    "check:bundle": "node scripts/check-bundle.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.3.1",
+    "@vercel/firewall": "1.2.6",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.3.1",
+    "@modelcontextprotocol/conformance": "0.1.16",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@types/node": "22.20.5",
+    "fast-check": "4.10.2",
+    "js-tiktoken": "1.0.21",
+    "typescript": "6.0.3",
+    "yaml": "2.9.1"
+  }
+}

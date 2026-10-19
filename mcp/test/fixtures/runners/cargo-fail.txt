@@ -1,0 +1,11 @@
+running 3 tests
+test tests::a ... ok
+test tests::b ... FAILED
+test tests::c ... ok
+
+failures:
+    tests::b
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
