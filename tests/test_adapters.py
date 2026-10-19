@@ -315,7 +315,7 @@ if (result !== undefined) process.exit(2);
             (ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
         )
         # docs/INSTALL.md and docs/COMPATIBILITY.md give the `plugin@marketplace` form.
-        self.assertEqual("nobrainer-tech-skills-dev", marketplace["name"])
+        self.assertEqual("nobrainer-tech", marketplace["name"])
         (entry,) = marketplace["plugins"]
         self.assertEqual(manifest["name"], entry["name"])
         self.assertEqual({"source": "local", "path": "./"}, entry["source"])

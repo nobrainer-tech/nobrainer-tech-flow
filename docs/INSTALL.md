@@ -430,7 +430,7 @@ plugin channel needs a reviewed checkout:
 
 ```bash
 codex plugin marketplace add /path/to/reviewed/nobrainer-tech-flow
-codex plugin add nobrainer-tech-flow@nobrainer-tech-skills-dev
+codex plugin add nobrainer-tech-flow@nobrainer-tech
 ```
 
 The installer's `codex` destination is the shared `~/.agents/skills` path:
