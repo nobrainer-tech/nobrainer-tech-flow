@@ -131,6 +131,19 @@ class ReceiptTests(unittest.TestCase):
                 self.assertEqual(self.invoke('check', '--root', str(root), '--receipt', str(receipt)).returncode, 2)
 
     @unittest.skipUnless(os.name == 'posix', 'capture requires POSIX')
+    def test_detached_child_holding_output_leaves_a_checkable_incomplete_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); (root/'src').mkdir(); (root/'src/a.txt').write_text('before')
+            receipt = root/'proof.json'
+            code = ("import subprocess, sys; subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(4)'], "
+                    "start_new_session=True); print('ok')")
+            self.capture(root, receipt, code)
+            self.assertTrue(receipt.exists())
+            checked = self.invoke('check', '--root', str(root), '--receipt', str(receipt))
+            self.assertNotEqual(2, checked.returncode, checked.stderr)
+            self.assertNotEqual('completed', json.loads(checked.stdout)['execution'])
+
+    @unittest.skipUnless(os.name == 'posix', 'capture requires POSIX')
     def test_special_file_scope_is_refused_before_running(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); (root/'src').mkdir(); os.mkfifo(root/'src/pipe')

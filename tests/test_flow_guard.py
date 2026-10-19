@@ -181,6 +181,8 @@ class StopTests(unittest.TestCase):
         for final in (
             "Fixed the parser.\nProof: python3 -m unittest tests.test_parser passed (12 tests).",
             "Done.\n- **Checked:** readback of config.json shows the new key.",
+            "Done.\n**Proof**: python3 -m unittest passed.",
+            "Done.\n1. Proof: the smoke run printed OK.",
             "Changed the parser. UNVERIFIED: no test covers this path.",
         ):
             with self.subTest(final=final):

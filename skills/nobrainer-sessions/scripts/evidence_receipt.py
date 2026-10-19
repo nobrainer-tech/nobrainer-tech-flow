@@ -306,6 +306,11 @@ def capture(args) -> int:
         run_args = argparse.Namespace(command=command, cwd=root, wall_seconds=args.wall_seconds,
                                       max_output_bytes=args.max_output_bytes, record_argv=args.record_argv)
         execution, code, captured = runner.run_bounded(run_args)
+        # The runner calls a run completed when the command exits 0, even if it had to cut
+        # its output short, for example when a detached child keeps the pipe open. Such a
+        # run did not deliver all of its output, so it is recorded as an output-limit run.
+        if execution.get('status') == 'completed' and (execution.get('stdout_truncated') or execution.get('stderr_truncated')):
+            execution = {**execution, 'status': 'output_limit'}
         after = None; snapshot_error = None
         try:
             after = snapshot(root, scope)
@@ -324,8 +329,9 @@ def capture(args) -> int:
             raise EvidenceError('receipt directory unavailable; command ran but evidence was not written') from exc
         if not stat.S_ISDIR(current_parent.st_mode) or (current_parent.st_dev, current_parent.st_ino) != (parent_info.st_dev, parent_info.st_ino):
             raise EvidenceError('receipt directory changed; command ran but evidence was not written')
-        write_receipt(parent_fd, receipt.name, encoded)
+        # Checked before writing, so a receipt that a later check would reject is never left.
         report = assess(value, root)
+        write_receipt(parent_fd, receipt.name, encoded)
         print(json.dumps(report, sort_keys=True))
         return code if code else (0 if report['inputs'] == 'CURRENT' else 1)
     finally:

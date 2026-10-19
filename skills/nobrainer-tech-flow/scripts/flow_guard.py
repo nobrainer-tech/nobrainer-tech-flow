@@ -45,8 +45,8 @@ RECURSIVE = re.compile(r"^(?:-[a-zA-Z]*[rR][a-zA-Z]*|--recursive)$")
 TEMP_ROOTS = ("/tmp", "/private/tmp", "/var/folders", "/private/var/folders")
 TMPDIR_REFERENCE = re.compile(r"^(?:\$TMPDIR|\$\{TMPDIR\})(?=/|$)")
 EDITING_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit", "Bash"}
-# A proof line may sit in a list item or in bold.
-PROOF_LINE = re.compile(r"^[\s>*_-]*(?:Proof|Checked):", re.MULTILINE)
+# A proof line may sit in a bulleted or numbered list item, with the label in bold.
+PROOF_LINE = re.compile(r"^[\s>*_\-]*(?:\d+[.)]\s*)?(?:\*\*|__)?(?:Proof|Checked)(?:\*\*|__)?:", re.MULTILINE)
 STOP_REASON = (
     "Flow guard: this turn changed files or ran commands, but the final message has no "
     "proof. Add a line starting with 'Proof:' or 'Checked:' that names the command, test "
