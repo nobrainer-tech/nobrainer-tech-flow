@@ -817,6 +817,12 @@ preview() {
 	say "NO_CHANGES: preview only; install with: $(command_for --apply)"
 }
 
+# A refreshed copy of a file without owner write permission gets that permission
+# taken away again before it replaces the file.
+restore_mode() {
+	if [ "$_w_readonly" = 1 ]; then chmod u-w "$_w_tmp"; fi
+}
+
 # Append the block the way scripts/install_personalization.py does: after a line
 # break when the file does not end with one, and without a trailing one. A lone CR
 # (old Mac line breaks) gets a line break too, so that the block starts on a line
@@ -839,6 +845,13 @@ write_instructions() {
 			rm -f "$_w_tmp"
 			return 1
 		fi
+		# The copy keeps the file's mode. A file without owner write permission is written
+		# through a copy made writable and gets that permission taken away again before the
+		# rename, so the file keeps exactly the mode it had.
+		case $(ls -ld "$target") in ??-*) _w_readonly=1 ;; *) _w_readonly=0 ;; esac
+		chmod u+w "$_w_tmp" || { rm -f "$_w_tmp"; return 1; }
+	else
+		_w_readonly=0
 	fi
 	if [ "$file_status" = refresh ]; then
 		block_lines "$target" || { rm -f "$_w_tmp"; return 1; }
@@ -846,7 +859,7 @@ write_instructions() {
 			{ [ "$block_from" -eq 1 ] || head -n "$((block_from - 1))" "$target"; } &&
 				printf '%s' "$(block)" &&
 				tail -n "+$block_to" "$target" | tail -c "+$((${#END} + 1))"
-		} >"$_w_tmp" && mv -f "$_w_tmp" "$target"; then return 0; fi
+		} >"$_w_tmp" && restore_mode && mv -f "$_w_tmp" "$target"; then return 0; fi
 		rm -f "$_w_tmp"
 		return 1
 	fi
@@ -856,7 +869,7 @@ write_instructions() {
 			*) printf '\n' >>"$_w_tmp" ;;
 		esac
 	fi
-	if printf '%s' "$(block)" >>"$_w_tmp" && mv -f "$_w_tmp" "$target"; then return 0; fi
+	if printf '%s' "$(block)" >>"$_w_tmp" && restore_mode && mv -f "$_w_tmp" "$target"; then return 0; fi
 	rm -f "$_w_tmp"
 	return 1
 }

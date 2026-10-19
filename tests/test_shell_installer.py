@@ -1606,6 +1606,34 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertEqual(["opencode", "opencode/skills"], entries(elsewhere))
                 self.assertTrue((home / ".config").is_symlink())
 
+    @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0), "needs a mode this account cannot write through")
+    def test_a_read_only_instruction_file_is_appended_to_and_refreshed_and_stays_read_only(self) -> None:
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".codex" / "AGENTS.md"
+                instructions.parent.mkdir(parents=True)
+                instructions.write_bytes(b"# Mine\n")
+                instructions.chmod(0o444)
+                flags = ("--client", "codex", "--home", str(home), "--apply")
+
+                appended = install_step(installer, *flags, home=home)
+
+                self.assertEqual(0, appended.returncode, appended.stdout + appended.stderr)
+                self.assertIn(b"NOBRAINER-TECH-FLOW:START", instructions.read_bytes())
+                self.assertEqual(0o444, instructions.stat().st_mode & 0o777)
+                text = instructions.read_bytes()
+                start = text.index(b"NOBRAINER-TECH-FLOW:START")
+                instructions.chmod(0o644)
+                instructions.write_bytes(text[:start] + text[start:].replace(b"task entrypoint", b"entry", 1))
+                instructions.chmod(0o444)
+
+                refreshed = install_step(installer, *flags, home=home)
+
+                self.assertEqual(0, refreshed.returncode, refreshed.stdout + refreshed.stderr)
+                self.assertEqual(text, instructions.read_bytes())
+                self.assertEqual(0o444, instructions.stat().st_mode & 0o777)
+
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_a_repeat_apply_never_hands_a_folder_behind_a_new_link_to_the_undo(self) -> None:
         # After the setup, ~/.agents is swapped for a link to a folder that was there before
