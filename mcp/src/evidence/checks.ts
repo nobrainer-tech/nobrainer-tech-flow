@@ -147,12 +147,13 @@ export function applyEvidence(state: TokenState, records: EvidenceRecord[]): Evi
         results.push({ item: id, verdict: "REJECTED", code: "BAD_PATH", why: `${id}: path must not contain .. segments.` });
         continue;
       }
-      registerFile(state, r.path, r.sha256);
     }
     if (!kindMatches(r.kind, item.proof)) {
       results.push({ item: id, verdict: "REJECTED", code: "KIND_MISMATCH", why: `${id} needs ${item.proof} evidence, not ${r.kind}.` });
       continue;
     }
+    // Only accepted-shape file evidence for a file item may change the registry (and so stale runs).
+    if (r.kind === "file") registerFile(state, r.path as string, r.sha256 as string);
     const o = judge(r, id);
     if ("reject" in o) {
       results.push({ item: id, verdict: "REJECTED", code: o.reject, why: o.why });

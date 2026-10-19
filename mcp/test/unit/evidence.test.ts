@@ -171,3 +171,21 @@ test("staleness is still detected after the change epoch is full (255)", () => {
   assert.ok(!isCurrent(s.items[0]!, s.epoch), "a change at epoch 255 must still invalidate the run");
   assert.ok(isCurrent(s.items[1]!, s.epoch));
 });
+
+test("rejected file evidence for a non-file item never changes the registry or stales runs", () => {
+  const s = state([["test", "local"], ["file", "static"]]);
+  applyEvidence(s, [run(PYTEST_PASS, 0), { item: "AC02", kind: "file", path: "a.txt", sha256: sha("1") }]);
+  const out = applyEvidence(s, [{ item: "AC01", kind: "file", path: "a.txt", sha256: sha("2") }]);
+  assert.equal(out.results[0]?.code, "KIND_MISMATCH");
+  assert.equal(s.epoch, 0);
+  assert.ok(isCurrent(s.items[0]!, s.epoch));
+});
+
+test("IPv4-mapped IPv6 loopback in hex form counts as local", () => {
+  assert.equal(isPublicHost(new URL("https://[::ffff:127.0.0.1]/").hostname), false);
+  assert.equal(isPublicHost(new URL("https://[::ffff:10.0.0.1]/").hostname), false);
+  assert.equal(isPublicHost(new URL("https://[::ffff:8.8.8.8]/").hostname), true);
+  const s = state([["url", "production"]]);
+  const r = applyEvidence(s, [{ item: "AC01", kind: "url", url: "https://[::ffff:127.0.0.1]/", status: 200 }]).results[0];
+  assert.equal(r?.code, "LEVEL_TOO_LOW");
+});

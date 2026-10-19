@@ -74,6 +74,12 @@ export function isPublicHost(hostname: string): boolean {
     if (/^f[cd][0-9a-f]{0,2}:/.test(host) || /^fe[89ab][0-9a-f]?:/.test(host)) return false;
     const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(host);
     if (mapped?.[1]) return ipv4Local(mapped[1]) === false;
+    // WHATWG URL normalises ::ffff:127.0.0.1 to ::ffff:7f00:1; decode the hex form too.
+    const hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(host);
+    if (hex?.[1] && hex[2]) {
+      const [hi, lo] = [Number.parseInt(hex[1], 16), Number.parseInt(hex[2], 16)];
+      return ipv4Local(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`) === false;
+    }
     return true;
   }
   return host.includes(".");

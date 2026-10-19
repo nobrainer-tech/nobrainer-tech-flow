@@ -49,3 +49,12 @@ test("missing configuration fails closed", async () => {
   assert.equal((await createSpendHook({ SPEND_WEBHOOK_SECRET: SECRET }, f)(signed({ thresholdPercent: 100 }))).status, 503);
   assert.equal(calls.length, 0);
 });
+
+test("a malformed SPEND_PAUSE_PERCENT falls back to 75 instead of pausing on every alert", async () => {
+  const { calls, f } = recorder();
+  const hook = createSpendHook({ ...env, SPEND_PAUSE_PERCENT: "75%" }, f);
+  await hook(signed({ teamId: "team_test", thresholdPercent: 50 }));
+  assert.equal(calls.length, 0);
+  await hook(signed({ teamId: "team_test", thresholdPercent: 75 }));
+  assert.equal(calls.length, 1);
+});

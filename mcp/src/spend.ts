@@ -37,7 +37,9 @@ export function createSpendHook(env: SpendEnv, doFetch: typeof fetch = fetch) {
       return json(400, { error: "invalid json" });
     }
     const threshold = Number(event.thresholdPercent);
-    const pauseAt = Number(env.SPEND_PAUSE_PERCENT ?? "75");
+    const configured = Number(env.SPEND_PAUSE_PERCENT ?? "75");
+    // A malformed value (for example "75%") must never turn every alert into a pause.
+    const pauseAt = Number.isFinite(configured) && configured >= 1 && configured <= 100 ? configured : 75;
     console.log(JSON.stringify({ ts: new Date().toISOString(), route: "/api/spend-hook", threshold }));
     if (!Number.isFinite(threshold) || threshold < pauseAt) return json(200, { action: "none", threshold });
     if (env.FLOW_TEAM_ID && event.teamId !== env.FLOW_TEAM_ID) return json(200, { action: "none", reason: "other team" });
