@@ -88,8 +88,9 @@ evidence that would confirm and disprove it, then run the smallest safe test tha
 changes one variable. A failed hypothesis becomes recorded evidence; do not pile
 additional guesses onto it.
 
-After three failed fix-like experiments, stop and question the architecture
-with the owner. RCA itself does not implement a fix.
+When fix-like experiments exhaust the
+[Flow corrective-attempt budget](../nobrainer-tech-flow/SKILL.md), stop and question
+the architecture with the owner. RCA itself does not implement a fix.
 
 ### 4. Reconcile perspectives
 

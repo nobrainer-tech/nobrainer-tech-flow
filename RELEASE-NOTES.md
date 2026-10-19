@@ -1,5 +1,51 @@
 # nobrainer-tech-flow release notes
 
+## v2.3.2 - 2026-10-18
+
+Install, update and undo nobrainer-tech-flow without false alarms or leftovers. A
+second undo now says that nothing is recorded to undo and exits cleanly instead of
+failing. Undo puts your profile back as it was before the setup, including the empty
+folders the installer had to create, such as `~/.agents` for Codex or
+`~/.config/opencode` for a client that never ran; the `.bak` copy of an instruction
+file you already had stays. Updating through `install.sh` now delivers the current
+instruction block, as `install.py` already did, and keeps every byte outside the
+managed markers. Applying again when nothing changed says `UP TO DATE` and gives no
+restart hint.
+
+The instruction block now tells the model to use the name your client lists for the
+module, and the README and the repository instruction files give the same rule. Codex
+0.157.1 lists the module as `nobrainer-tech-flow:nobrainer-tech-flow` when it is linked
+from a git checkout or the npm package, and it loads the module only for that typed
+name; a copy is listed as `nobrainer-tech-flow`. The setup record
+(`.nobrainer-flow-onboarding-<client>.json`) and the owner-only mode of the files the
+installer writes are now described, and undo deletes the record.
+
+Undo now removes the skill links even after you edited the instruction file; it leaves
+the edited file as it is, exits 3 with `PARTLY UNDONE` and says how to take the block
+out too. Once the block is deleted by hand, the next undo finishes. The default block no longer tells every user to load the private
+`nobrainer-ak` skill; the next apply replaces a 2.3.1 block (through `install.sh` only
+when the block holds no option; `install.py` always, keeping its options). The npm command keeps
+its release copy in `~/.nobrainer-tech-flow-npm`, so cleaning a Git clone in
+`~/.nobrainer-tech-flow` cannot delete it. The Windows hook wrapper no longer runs a
+`bash.exe` from the current folder, returns the hook's exit code and says when Git Bash
+is missing. Undo also keeps folders that now lie under a link, removes a home made only
+for the record, and stops on a dangling older record.
+
+Five instruction fixes from a review of 2.3.1 also ship. The README leads with the
+Git install while the npm package is unpublished. Flow owns one corrective-attempt
+budget (two attempts per observed failure), and Build and RCA link to it instead of
+saying three. Dispatcher accepts the worker ID a host returns for a hidden native
+worker as the send receipt, so default delegation can be dispatched; visible sessions
+still go through Sessions. Saying "Use NBFlow" turns on session health observation
+only: a restart or archive needs separate owner consent, and the quick path skips
+startup care. Stale status lines, an undefined "team cap" and two lifecycle names are
+corrected, and every approval-gate list includes contacting people.
+
+The module set stays at eighteen. The native plugin 2.3.2 will carry the same
+installer; npm registry publication is still pending.
+
+See the [release scope and verification record](docs/releases/v2.3.2.md).
+
 ## v2.3.1 - 2026-10-13
 
 Keep your own skill under a name Flow retired and still install or update Flow.

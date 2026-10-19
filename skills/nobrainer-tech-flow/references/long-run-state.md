@@ -132,7 +132,7 @@ proves the same goal file remains durable and no task-owned writer is active.
 Otherwise end the turn or require manual action. Never claim a clear from a
 command submission alone. Creating or rotating a session requires current or standing task authorization
 under the Sessions startup contract; do not infer it from a timeout, compaction
-or continued goal. Explicit Flow invocation activates assessment; stricter host
+or continued goal. Explicit Flow invocation activates assessment only; stricter host
 consent requirements still apply.
 
 `task_complete` closes an outcome only; it does not prove `RUNTIME_RELEASE`.
@@ -162,22 +162,26 @@ For a persistent delegated queue:
 1. `nobrainer-team` maps every independent ready unit to a bounded native assignment.
 2. If several delegated units form a queue, `nobrainer-dispatcher` computes the
    ready set and bounded batch.
-3. `nobrainer-sessions` alone creates/reuses exact sessions, checks identity and
-   writer state, and sends each bounded unit.
-4. Dispatcher may record `READY -> SENT` only from that transport readback.
+3. MAIN spawns each bounded unit as a native subagent; only for owner-authorized
+   visible sessions does `nobrainer-sessions` create/reuse exact sessions, check
+   identity and writer state, and send each unit.
+4. Dispatcher may record `READY -> SENT` only from the send receipt: the returned
+   native worker ID or Sessions' transport readback.
 
-The canonical queued transition is:
+The queued transitions are `Team -> Dispatcher SCHEDULE -> native subagent spawn
+-> Dispatcher DISPATCH` (default) and, for visible sessions:
 
 `Team -> Dispatcher SCHEDULE -> Sessions setup/delegate -> Dispatcher DISPATCH`
 
-Sessions alone performs identity preflight and transport. Dispatcher never
-duplicates that send or treats a planned assignment as delivered.
+On that path Sessions alone performs identity preflight and transport. On either
+path Dispatcher never duplicates the send or treats a planned assignment as delivered.
 
 A worker receives one outcome, inputs, exact write scope, proof, stop conditions
 and report destination. It never chooses a successor.
 
-When a worker reports, Sessions performs `RECEIVE_AUDIT` against the exact
-session, host, checkout, commit, diff, tests, evidence and released writer state.
+When a worker reports, MAIN audits a native worker against its returned ID, and
+Sessions performs `RECEIVE_AUDIT` for a visible session, against the exact worker,
+host, checkout, commit, diff, tests, evidence and released writer state.
 If Dispatcher owns the queue, its reconcile step consumes that audited result
 before releasing dependencies.
 

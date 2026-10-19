@@ -7,7 +7,7 @@ Respect host hierarchy; user instructions override skill guidelines. Apply [deli
 <!-- NOBRAINER-WORKFLOW:START -->
 ## nobrainer-tech-flow
 
-- Use [nobrainer-tech-flow](https://github.com/nobrainer-tech/nobrainer-tech-flow) through `$nobrainer-tech-flow`. Preserve the selected MAIN model and effort. Inspect native worker models and capacity, then delegate every independent ready unit with exact scope and proof; MAIN integrates. Use `nobrainer-auto-fine-tune` when measured route calibration would help.
+- Use [nobrainer-tech-flow](https://github.com/nobrainer-tech/nobrainer-tech-flow) through the `nobrainer-tech-flow` module, by the exact name the client lists (in Codex `$nobrainer-tech-flow:nobrainer-tech-flow` when it lists modules under the plugin name). Preserve the selected MAIN model and effort. Inspect native worker models and capacity, then delegate every independent ready unit with exact scope and proof; MAIN integrates. Use `nobrainer-auto-fine-tune` when measured route calibration would help.
 - Start substantial work from an observable short-term goal grounded in the owner's direction; inspect project layers and the relevant wiki. Check once per active day for a newer stable release. Keep session checkpoints and verify takeover before authorized archival. Load only relevant specialist skills and verify the delivery layer.
 - Product name: nobrainer-tech-flow; repository and skill ID: `nobrainer-tech-flow`. No ritual preamble. X: `#NoBrainerTechFlow`.
 <!-- NOBRAINER-WORKFLOW:END -->
@@ -55,7 +55,7 @@ setup/upgrade work, ambiguous scope, several proof layers or meaningful recovery
 
 For non-trivial work:
 
-`inspect -> clarify once if needed -> scope -> implement -> verify -> review -> report`
+`DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN`
 
 Before planning, inspect checkout, nearest instructions, dirty state, callers, tests, runtime
 and durable decisions. Delegate every independent ready unit promptly within

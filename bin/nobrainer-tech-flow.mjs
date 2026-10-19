@@ -14,7 +14,7 @@ const help = [
   'Clients: codex, claude (Claude Code), opencode, copilot.',
   'Use --home PATH for an isolated profile. Python 3.11+ is required for installation.',
   'Nothing is installed until --apply. Applied installs retain this release in',
-  "your profile's .nobrainer-tech-flow/npm directory, so skills survive npx cache cleanup.",
+  "your profile's .nobrainer-tech-flow-npm directory, so skills survive npx cache cleanup.",
   'Undo uses the existing managed setup record; it preserves foreign files.',
   'For Claude Chat, use the release plugin ZIP. ChatGPT/Codex plugin setup:',
   'https://github.com/nobrainer-tech/nobrainer-tech-flow/blob/main/docs/CHAT_PLUGINS.md', ''

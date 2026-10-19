@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import importlib.util
+import itertools
 import json
 import os
 import re
@@ -45,6 +46,29 @@ def load(name: str, path: Path):
 SKILLS_MODULE = load("install_skills_for_shell_tests", ROOT / "scripts" / "install_skills.py")
 PERSONALIZATION_MODULE = load("personalization_for_shell_tests", PERSONALIZATION)
 SKILLS = sorted(SKILLS_MODULE.CURATED_SKILLS)
+
+DEFAULT_BLOCK = PERSONALIZATION_MODULE.build_block(None, False, False, None)
+# The block an earlier version wrote: the same, with one sentence worded differently.
+STALE_BLOCK = DEFAULT_BLOCK.replace(" Keep coordination in MAIN.", " Keep coordination in MAIN, always.")
+# The default block 2.3.1 wrote, which also named the private nobrainer-ak skill.
+BLOCK_2_3_1 = DEFAULT_BLOCK.replace(
+    "- Use `nobrainer-writing` for material writing when available;",
+    "- Use `nobrainer-ak` (`nbak`) for relevant marketing and sales content creation when available. "
+    "For general writing use `nobrainer-writing` when available;",
+)
+
+
+def stale_layouts() -> dict[str, tuple[bytes, bytes, bytes]]:
+    """Bytes before a block of an earlier version, the block, and the bytes after it."""
+
+    stale = STALE_BLOCK.encode()
+    return {
+        "plain text around the block": (b"# Mine\n\n", stale, b"\n\nAfter\n"),
+        "Windows line breaks": (b"# Mine\r\n\r\n", STALE_BLOCK.replace("\n", "\r\n").encode(), b"\r\nAfter\r\n"),
+        "a block that starts the file": (b"", stale, b"\nAfter\n"),
+        "a block that ends the file without a line break": (b"# Mine\n", stale, b""),
+        "a byte order mark, a NUL byte and a lone CR": (b"\xef\xbb\xbf# Mine\x00\r after\r\n", stale, b"\nend"),
+    }
 
 
 def symlinks_work() -> bool:
@@ -104,6 +128,28 @@ def run_py(*args: str, home: Path) -> subprocess.CompletedProcess[str]:
 
 def entries(root: Path) -> list[str]:
     return sorted(path.relative_to(root).as_posix() for path in root.rglob("*"))
+
+
+def install_step(installer: str, *args: str, home: Path) -> subprocess.CompletedProcess[str]:
+    """One run of the shell installer ("sh") or of the Python one ("py")."""
+
+    if installer == "sh":
+        return run_sh(*args, home=home)
+    return run_py(str(INSTALL_PY), *args, home=home)
+
+
+def chain(path: str) -> list[str]:
+    """A relative path and each folder above it, outermost first."""
+
+    parts = Path(path).parts
+    return [Path(*parts[: count + 1]).as_posix() for count in range(len(parts))]
+
+
+# Where a client keeps its skills and its instruction file, under a home that never ran it.
+LAYOUTS = {
+    "codex": (".agents/skills", ".codex/AGENTS.md"),
+    "opencode": (".config/opencode/skills", ".config/opencode/AGENTS.md"),
+}
 
 
 def other_shells() -> list[list[str]]:
@@ -371,6 +417,8 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
                 self.assertIn(f"SKILLS: {len(SKILLS)} linked in", applied.stdout)
                 self.assertIn(f"({len(SKILLS)} new)", applied.stdout)
+                self.assertIn("INSTALLED:", applied.stdout)
+                self.assertIn("NEXT: restart Claude Code", applied.stdout)
                 for name in SKILLS:
                     self.assertTrue((skills / name).is_symlink(), name)
                     self.assertEqual((ROOT / "skills" / name).resolve(), (skills / name).resolve())
@@ -391,6 +439,9 @@ class ShellInstallerTests(unittest.TestCase):
                 again = run_sh(*flags, "--apply", home=home, shell=shell)
                 self.assertEqual(0, again.returncode, again.stdout + again.stderr)
                 self.assertIn("(0 new)", again.stdout)
+                self.assertIn("UP TO DATE:", again.stdout)
+                self.assertNotIn("INSTALLED:", again.stdout)
+                self.assertNotIn("NEXT: restart", again.stdout)
                 self.assertEqual(written, instructions.read_bytes())
 
                 preview = run_sh(*flags, "--undo", home=home, shell=shell)
@@ -405,6 +456,51 @@ class ShellInstallerTests(unittest.TestCase):
                 self.assertFalse(skills.exists())
                 self.assertEqual(original, instructions.read_bytes())
                 self.assertFalse((home / ".nobrainer-flow-onboarding-claude.json").exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_repeat_apply_says_nothing_changed_and_asks_for_a_restart_only_after_a_change(self) -> None:
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".claude" / "CLAUDE.md"
+                instructions.parent.mkdir(parents=True)
+                instructions.write_bytes(b"# Mine\n")
+                skills = home / ".claude" / "skills"
+                flags = ("--client", "claude", "--home", str(home), "--apply")
+
+                def apply() -> subprocess.CompletedProcess[str]:
+                    if installer == "sh":
+                        return run_sh(*flags, home=home)
+                    return run_py(str(INSTALL_PY), *flags, home=home)
+
+                def check(result: subprocess.CompletedProcess[str], changed: bool) -> None:
+                    self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                    self.assertEqual(changed, "INSTALLED:" in result.stdout, result.stdout)
+                    self.assertEqual(changed, "NEXT: restart Claude Code" in result.stdout, result.stdout)
+                    self.assertEqual(not changed, "UP TO DATE:" in result.stdout, result.stdout)
+
+                check(apply(), True)
+                nothing = apply()
+                check(nothing, False)
+                self.assertIn("is already installed for Claude Code; nothing changed", nothing.stdout)
+                self.assertIn("(0 new)", nothing.stdout)
+                self.assertIn("left as it is", nothing.stdout)
+                self.assertIn("UNDO:", nothing.stdout)
+                self.assertNotIn("RECORD:", nothing.stdout)
+                # Text added outside the block only updates the record, so undo accepts it.
+                with instructions.open("ab") as handle:
+                    handle.write(b"\n# Added later\n")
+                edited = apply()
+                check(edited, False)
+                self.assertIn("RECORD: updated", edited.stdout)
+                # A link that went missing and a block deleted by hand are written again.
+                (skills / SKILLS[0]).unlink()
+                written = instructions.read_bytes()
+                instructions.write_bytes(written[: written.index(START.encode())])
+                repaired = apply()
+                check(repaired, True)
+                self.assertIn("(1 new)", repaired.stdout)
+                self.assertIn(START.encode(), instructions.read_bytes())
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_either_installer_undoes_what_the_other_did(self) -> None:
@@ -743,21 +839,202 @@ class ShellInstallerTests(unittest.TestCase):
             self.assertNotIn(START, content)
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
-    def test_undo_refuses_a_file_or_link_that_changed_since(self) -> None:
+    def test_undo_after_the_file_was_edited_unlinks_the_skills_and_leaves_the_file(self) -> None:
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".claude" / "CLAUDE.md"
+                skills = home / ".claude" / "skills"
+                flags = ("--client", "claude", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                with instructions.open("a", encoding="utf-8") as handle:
+                    handle.write("\nedited after the setup\n")
+                edited = instructions.read_bytes()
+
+                preview = install_step(installer, *flags, "--undo", home=home)
+
+                self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+                self.assertIn("PRESERVED: personalization changed since setup", preview.stdout)
+                self.assertNotIn("remove the managed block", preview.stdout)
+                self.assertTrue((skills / "nobrainer-build").is_symlink())
+                partly = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(3, partly.returncode, partly.stdout + partly.stderr)
+                self.assertIn("PARTLY UNDONE:", partly.stdout)
+                self.assertIn(f"SKILLS: {len(SKILLS)} unlinked", partly.stdout)
+                self.assertIn("PRESERVED: personalization changed since setup", partly.stdout)
+                self.assertIn("HINT: ", partly.stdout)
+                self.assertEqual([], list(skills.iterdir()))
+                self.assertEqual(edited, instructions.read_bytes())
+                record = json.loads((home / ".nobrainer-flow-onboarding-claude.json").read_text(encoding="utf-8"))
+                self.assertEqual([], record["created_skills"])
+
+                # As the hint says: the setup again records the file as it is, then the undo
+                # takes the block out and keeps the edit.
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                content = instructions.read_text(encoding="utf-8") if instructions.exists() else ""
+                self.assertNotIn(START, content)
+                self.assertIn("edited after the setup", content)
+                self.assertFalse(skills.exists())
+                self.assertFalse((home / ".nobrainer-flow-onboarding-claude.json").exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_undo_completes_once_the_block_was_taken_out_by_hand(self) -> None:
+        # The hint of a partial undo offers to delete the block by hand; the next undo then
+        # finishes instead of stopping at the changed file again.
+        for installer in ("sh", "py"):
+            for partly_first in (True, False):
+                with self.subTest(installer=installer, partly_first=partly_first), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    instructions = home / ".codex" / "AGENTS.md"
+                    flags = ("--client", "codex", "--home", str(home))
+                    self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                    instructions.write_bytes(instructions.read_bytes() + b"\nedited after the setup\n")
+                    if partly_first:
+                        partly = install_step(installer, *flags, "--undo", "--apply", home=home)
+                        self.assertEqual(3, partly.returncode, partly.stdout + partly.stderr)
+                        self.assertIn("undo again", partly.stdout)
+                    text = instructions.read_text(encoding="utf-8")
+                    edited = (text[: text.index(START)] + text[text.index("<!-- NOBRAINER-TECH-FLOW:END -->") + 32 :]).encode()
+                    instructions.write_bytes(edited)
+
+                    preview = install_step(installer, *flags, "--undo", home=home)
+
+                    self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+                    self.assertIn("no longer holds the managed block, so it is left as it is", preview.stdout)
+                    undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                    self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                    self.assertIn("UNDONE:", undone.stdout)
+                    self.assertNotIn("PARTLY", undone.stdout)
+                    self.assertNotIn("managed block included", undone.stdout)
+                    self.assertIn("no longer holds the managed block, so it is left as it is", undone.stdout)
+                    self.assertEqual(edited, instructions.read_bytes())
+                    self.assertEqual([".codex", ".codex/AGENTS.md"], entries(home))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_undo_after_an_edit_does_not_need_the_backup(self) -> None:
+        # The backup only serves to put the block back, which an edited file does not get.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".codex" / "AGENTS.md"
+                instructions.parent.mkdir(parents=True)
+                instructions.write_bytes(b"# Mine\n")
+                flags = ("--client", "codex", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                instructions.write_bytes(instructions.read_bytes() + b"\nedited after the setup\n")
+                edited = instructions.read_bytes()
+                for backup in instructions.parent.glob("AGENTS.md.bak.*"):
+                    backup.unlink()
+
+                partly = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(3, partly.returncode, partly.stdout + partly.stderr)
+                self.assertIn("PARTLY UNDONE:", partly.stdout)
+                self.assertEqual([], list((home / ".agents" / "skills").iterdir()))
+                self.assertEqual(edited, instructions.read_bytes())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_the_hint_after_an_edit_never_leads_to_an_undo_that_cannot_run(self) -> None:
+        # The hint offers to record the file as it is now and undo again. That record keeps the
+        # backup it names, so with the backup gone the next undo would stop on it, and the hint
+        # must ask for the block to be taken out by hand instead.
+        for installer in ("sh", "py"):
+            for backup_kept in (True, False):
+                with self.subTest(installer=installer, backup_kept=backup_kept), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    instructions = home / ".codex" / "AGENTS.md"
+                    instructions.parent.mkdir(parents=True)
+                    instructions.write_bytes(b"# Mine\n")
+                    flags = ("--client", "codex", "--home", str(home))
+                    self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                    instructions.write_bytes(instructions.read_bytes() + b"\nedited after the setup\n")
+                    if not backup_kept:
+                        for backup in instructions.parent.glob("AGENTS.md.bak.*"):
+                            backup.unlink()
+
+                    partly = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                    self.assertEqual(3, partly.returncode, partly.stdout + partly.stderr)
+                    hint = "\n".join(line for line in partly.stdout.splitlines() if line.startswith("HINT: "))
+                    self.assertIn("delete the lines from", hint.lower())
+                    if backup_kept:
+                        self.assertIn("records the file as it is now", hint)
+                        self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                    else:
+                        self.assertNotIn("records the file as it is now", hint)
+                        text = instructions.read_bytes()
+                        start, end = text.index(START.encode()), text.index(b"<!-- NOBRAINER-TECH-FLOW:END -->")
+                        instructions.write_bytes(text[:start] + text[end + len(b"<!-- NOBRAINER-TECH-FLOW:END -->"):])
+                    undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                    self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                    self.assertNotIn(START.encode(), instructions.read_bytes())
+                    self.assertIn(b"edited after the setup", instructions.read_bytes())
+                    self.assertFalse((home / ".nobrainer-flow-onboarding-codex.json").exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0), "needs a folder this account cannot search")
+    def test_a_record_in_a_home_that_cannot_be_searched_stops_the_undo(self) -> None:
+        # The record sits in a home this account can no longer search, while CLAUDE_CONFIG_DIR
+        # keeps the skills and the instructions reachable. The record cannot be checked, which
+        # is not the same as no record, so the undo stops instead of reporting nothing to undo.
+        for installer in ("sh", "py"):
+            for mode in (0o000, 0o600):
+                with self.subTest(installer=installer, mode=oct(mode)), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    home.mkdir()
+                    config = Path(temp) / "profile"
+                    config.mkdir()
+                    variables = {"CLAUDE_CONFIG_DIR": str(config)}
+
+                    def step(*more: str) -> subprocess.CompletedProcess[str]:
+                        if installer == "sh":
+                            return run_sh("--client", "claude", *more, home=home, variables=variables)
+                        return subprocess.run(
+                            [sys.executable, str(INSTALL_PY), "--client", "claude", *more],
+                            cwd=ROOT, text=True, encoding="utf-8", errors="replace", capture_output=True,
+                            check=False, stdin=subprocess.DEVNULL, env=environment(home, variables),
+                        )
+
+                    self.assertEqual(0, step("--apply").returncode)
+                    record = home / ".nobrainer-flow-onboarding-claude.json"
+                    before = (entries(config), (config / "CLAUDE.md").read_bytes(), record.read_bytes())
+                    home.chmod(mode)
+                    try:
+                        refused = step("--undo", "--apply")
+                    finally:
+                        home.chmod(0o755)
+
+                    self.assertEqual(3, refused.returncode, refused.stdout + refused.stderr)
+                    self.assertNotIn("NOTHING TO UNDO", refused.stdout)
+                    self.assertIn(f"ERROR: cannot check {record}", refused.stderr)
+                    self.assertNotIn("Traceback", refused.stderr)
+                    self.assertEqual(before, (entries(config), (config / "CLAUDE.md").read_bytes(), record.read_bytes()))
+                    self.assertTrue((config / "skills" / SKILLS[0]).is_symlink())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_undo_refuses_a_link_that_changed_since(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
             instructions = home / ".claude" / "CLAUDE.md"
+            skills = home / ".claude" / "skills"
             flags = ("--client", "claude", "--home", str(home))
             self.assertEqual(0, run_sh(*flags, "--apply", home=home).returncode)
-            with instructions.open("a", encoding="utf-8") as handle:
-                handle.write("\nedited after the setup\n")
+            before = instructions.read_bytes()
+            (skills / "nobrainer-review").unlink()
+            (skills / "nobrainer-review").symlink_to(Path(temp), target_is_directory=True)
 
             refused = run_sh(*flags, "--undo", "--apply", home=home)
 
             self.assertEqual(3, refused.returncode)
-            self.assertIn("PRESERVED: personalization changed since setup", refused.stdout)
-            self.assertTrue((home / ".claude" / "skills" / "nobrainer-build").is_symlink())
-            self.assertIn("edited after the setup", instructions.read_text(encoding="utf-8"))
+            self.assertIn("PRESERVED: changed target", refused.stdout)
+            self.assertTrue((skills / "nobrainer-build").is_symlink())
+            self.assertEqual(before, instructions.read_bytes())
 
     def test_a_foreign_skill_or_an_earlier_layout_is_refused_before_anything_is_written(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -883,6 +1160,174 @@ class ShellInstallerTests(unittest.TestCase):
             self.assertFalse((home / ".claude" / "skills").exists())
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_block_of_an_earlier_version_is_replaced_and_every_byte_around_it_stays(self) -> None:
+        self.assertNotEqual(DEFAULT_BLOCK, STALE_BLOCK)
+        every_shell = ("Windows line breaks", "a byte order mark, a NUL byte and a lone CR")
+        for label, (before, stale, after) in stale_layouts().items():
+            original = before + stale + after
+            expected = before + DEFAULT_BLOCK.encode() + after
+            for shell in [[SHELL], *other_shells()] if label in every_shell else [[SHELL]]:
+                with self.subTest(layout=label, shell=shell), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    target = home / ".codex" / "AGENTS.md"
+                    target.parent.mkdir(parents=True)
+                    target.write_bytes(original)
+                    flags = ("--client", "codex", "--home", str(home))
+
+                    applied = run_sh(*flags, "--apply", home=home, shell=shell)
+
+                    self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                    self.assertEqual(expected, target.read_bytes())
+                    self.assertIn("INSTALLED:", applied.stdout)
+                    self.assertIn("managed block updated to this version's text", applied.stdout)
+                    self.assertIn("NEXT: restart Codex", applied.stdout)
+                    backups = [path for path in target.parent.iterdir() if ".bak." in path.name]
+                    self.assertEqual([original], [path.read_bytes() for path in backups])
+                    again = run_sh(*flags, "--apply", home=home, shell=shell)
+                    self.assertEqual(0, again.returncode, again.stdout + again.stderr)
+                    self.assertIn("UP TO DATE:", again.stdout)
+                    self.assertEqual(expected, target.read_bytes())
+            with self.subTest(layout=label, installer="py"), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                target = home / ".codex" / "AGENTS.md"
+                target.parent.mkdir(parents=True)
+                target.write_bytes(original)
+
+                applied = run_py(str(INSTALL_PY), "--client", "codex", "--home", str(home), "--apply", home=home)
+
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                self.assertEqual(expected, target.read_bytes())
+                self.assertIn("managed block updated to this version's text", applied.stdout)
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_the_block_2_3_1_wrote_is_replaced_by_either_installer_and_undone_byte_for_byte(self) -> None:
+        self.assertNotEqual(DEFAULT_BLOCK, BLOCK_2_3_1)
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".claude" / "CLAUDE.md"
+                instructions.parent.mkdir(parents=True)
+                original = b"# Mine\n\n" + BLOCK_2_3_1.encode() + b"\n\nAfter\n"
+                instructions.write_bytes(original)
+                flags = ("--client", "claude", "--home", str(home))
+
+                applied = install_step(installer, *flags, "--apply", home=home)
+
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                self.assertIn("managed block updated to this version's text", applied.stdout)
+                self.assertEqual(b"# Mine\n\n" + DEFAULT_BLOCK.encode() + b"\n\nAfter\n", instructions.read_bytes())
+                self.assertNotIn(b"nobrainer-ak", instructions.read_bytes())
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertEqual(original, instructions.read_bytes())
+
+    def test_the_preview_of_a_replaced_block_shows_what_changes_and_writes_nothing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            target = home / ".codex" / "AGENTS.md"
+            target.parent.mkdir(parents=True)
+            original = b"# Mine\n\n" + STALE_BLOCK.encode() + b"\n\nAfter\n"
+            target.write_bytes(original)
+            before = entries(home)
+
+            preview = run_sh("--client", "codex", "--home", str(home), home=home)
+
+            self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+            lines = preview.stdout.splitlines()
+            self.assertIn("UPDATE: nobrainer-tech-flow personalization block", lines)
+            self.assertIn("PRESERVED: content outside the managed block", lines)
+            self.assertIn("-" + next(line for line in STALE_BLOCK.splitlines() if "always" in line), lines)
+            self.assertIn("+" + next(line for line in DEFAULT_BLOCK.splitlines() if "MAIN. Never" in line), lines)
+            self.assertIn("NO_CHANGES:", preview.stdout)
+            self.assertEqual(original, target.read_bytes())
+            self.assertEqual(before, entries(home))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_undo_after_a_replaced_block_puts_the_profile_back_as_it_was_before_the_setup(self) -> None:
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                target = home / ".codex" / "AGENTS.md"
+                target.parent.mkdir(parents=True)
+                original = b"# Mine\r\n\r\nAlways answer in Polish.\r\n"
+                target.write_bytes(original)
+                flags = ("--client", "codex", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                # The setup of an earlier version: the same file, its block worded as it was then.
+                installed = target.read_bytes()
+                aged = installed.replace(DEFAULT_BLOCK.encode(), STALE_BLOCK.encode())
+                self.assertNotEqual(installed, aged)
+                target.write_bytes(aged)
+                record_path = home / ".nobrainer-flow-onboarding-codex.json"
+                record = json.loads(record_path.read_text(encoding="utf-8"))
+                record["profile"]["written_sha256"] = hashlib.sha256(aged).hexdigest()
+                record_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+
+                refreshed = install_step(installer, *flags, "--apply", home=home)
+
+                self.assertEqual(0, refreshed.returncode, refreshed.stdout + refreshed.stderr)
+                self.assertEqual(installed, target.read_bytes())
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertEqual(original, target.read_bytes())
+                self.assertFalse(record_path.exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_replaced_block_with_no_record_is_undone_to_the_block_it_replaced(self) -> None:
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                target = home / ".codex" / "AGENTS.md"
+                target.parent.mkdir(parents=True)
+                original = b"# Mine\n\n" + STALE_BLOCK.encode() + b"\n\nAfter\n"
+                target.write_bytes(original)
+                flags = ("--client", "codex", "--home", str(home))
+
+                applied = install_step(installer, *flags, "--apply", home=home)
+
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                self.assertEqual(b"# Mine\n\n" + DEFAULT_BLOCK.encode() + b"\n\nAfter\n", target.read_bytes())
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertEqual(original, target.read_bytes())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_block_that_cannot_be_replaced_without_losing_something_is_left_as_it_is(self) -> None:
+        preference = "- Owner-approved setup preference: Answer in Polish.\n"
+        stale_with_grant = PERSONALIZATION_MODULE.build_block(None, True, False, None).replace(
+            " Keep coordination in MAIN.", " Keep coordination in MAIN, always."
+        )
+        cases = {
+            "a preference": STALE_BLOCK.replace("- Use `nobrainer-writing`", preference + "- Use `nobrainer-writing`").encode(),
+            "a standing authorization": stale_with_grant.encode(),
+            "a saved wiki root": PERSONALIZATION_MODULE.build_block(Path("/wiki"), False, False, None).replace(
+                " Keep coordination in MAIN.", " Keep coordination in MAIN, always."
+            ).encode(),
+            "a start marker in the middle of a line": b"# Mine\ntext " + START.encode() + b"\nbody\n<!-- NOBRAINER-TECH-FLOW:END -->\n",
+        }
+        for label, original in cases.items():
+            with self.subTest(case=label), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                target = home / ".codex" / "AGENTS.md"
+                target.parent.mkdir(parents=True)
+                target.write_bytes(original)
+                flags = ("--client", "codex", "--home", str(home))
+
+                preview = run_sh(*flags, home=home)
+                applied = run_sh(*flags, "--apply", home=home)
+
+                self.assertIn("PRESENT: the managed block is already there and is left as it is", preview.stdout)
+                self.assertIn("NOTE: it differs from this version's default block", preview.stdout)
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                self.assertIn("already has the managed block; left as it is", applied.stdout)
+                self.assertEqual(original, target.read_bytes())
+                self.assertEqual([], [path for path in target.parent.iterdir() if ".bak." in path.name])
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_a_claude_file_that_is_only_the_codex_import_keeps_a_single_block(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
@@ -976,17 +1421,582 @@ class ShellInstallerTests(unittest.TestCase):
             self.assertIn("PRESERVED: changed target", refused.stdout)
             self.assertTrue((skills / "nobrainer-build").is_symlink())
 
-    def test_undo_without_a_recorded_setup_says_so(self) -> None:
+    def test_undo_without_a_recorded_setup_is_a_clean_no_op_in_every_shell(self) -> None:
+        for shell in ([SHELL], *other_shells()):
+            for step in (("--undo",), ("--undo", "--apply")):
+                with self.subTest(shell=shell, step=step), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    home.mkdir()
+
+                    result = run_sh("--client", "claude", "--home", str(home), *step, home=home, shell=shell)
+
+                    self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                    self.assertIn("NOTHING TO UNDO: no setup is recorded for Claude Code", result.stdout)
+                    # Git Bash names the path its own way (/tmp/...), so only its end is compared.
+                    self.assertIn(f"{Path(temp).name}/home/.nobrainer-flow-onboarding-claude.json", result.stdout)
+                    self.assertEqual("", result.stderr)
+                    self.assertEqual([], entries(home))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_second_undo_changes_nothing_and_succeeds_for_either_installer(self) -> None:
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".claude" / "CLAUDE.md"
+                instructions.parent.mkdir(parents=True)
+                original = b"# Mine\n"
+                instructions.write_bytes(original)
+                flags = ("--client", "claude", "--home", str(home))
+
+                def step(*more: str) -> subprocess.CompletedProcess[str]:
+                    if installer == "sh":
+                        return run_sh(*flags, *more, home=home)
+                    return run_py(str(INSTALL_PY), *flags, *more, home=home)
+
+                self.assertEqual(0, step("--apply").returncode)
+                first = step("--undo", "--apply")
+                self.assertEqual(0, first.returncode, first.stdout + first.stderr)
+                self.assertIn("UNDONE:", first.stdout)
+                after_first = (entries(home), instructions.read_bytes())
+
+                for more in (("--undo",), ("--undo", "--apply")):
+                    second = step(*more)
+
+                    self.assertEqual(0, second.returncode, second.stdout + second.stderr)
+                    self.assertIn("NOTHING TO UNDO", second.stdout)
+                    self.assertNotIn("UNDONE:", second.stdout)
+                    self.assertEqual("", second.stderr)
+                    self.assertEqual(after_first, (entries(home), instructions.read_bytes()))
+                self.assertEqual(original, instructions.read_bytes())
+
+    @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0), "needs a mode this account cannot write through")
+    def test_a_failed_record_save_puts_a_read_only_instruction_file_back(self) -> None:
+        # The client folders can be written, the home that holds the record cannot. The run
+        # must undo its own changes, the read-only instruction file included.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".codex" / "AGENTS.md"
+                instructions.parent.mkdir(parents=True)
+                (home / ".agents" / "skills").mkdir(parents=True)
+                instructions.write_bytes(b"# Mine\n")
+                instructions.chmod(0o444)
+                home.chmod(0o555)
+                try:
+                    result = install_step(installer, "--client", "codex", "--home", str(home), "--apply", home=home)
+                finally:
+                    home.chmod(0o755)
+
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertEqual(b"# Mine\n", instructions.read_bytes())
+                self.assertEqual(0o444, instructions.stat().st_mode & 0o777)
+                self.assertEqual([], entries(home / ".agents" / "skills"))
+                self.assertFalse((home / ".nobrainer-flow-onboarding-codex.json").exists())
+
+    def test_a_record_with_a_relative_destination_is_refused_and_does_not_hang(self) -> None:
+        # A hand-edited record names its skills folder without a leading slash and lists a
+        # folder no setup could have made. Both installers must refuse it, not loop on it.
+        # "skills" exists in the folder the installers run from; "missing-skills" does not.
+        for installer, relative in itertools.product(("sh", "py"), ("skills", "missing-skills")):
+            with self.subTest(installer=installer, destination=relative), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                flags = ("--client", "codex", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                record_path = home / ".nobrainer-flow-onboarding-codex.json"
+                # Edited in place: the shell installer reads only the layout it writes.
+                text = record_path.read_text(encoding="utf-8")
+                record = json.loads(text)
+                text = text.replace(json.dumps(record["destination"]), json.dumps(relative), 1)
+                text = text.replace(json.dumps(record["created_dirs"][0]), json.dumps(str(Path(temp) / "elsewhere")), 1)
+                record_path.write_text(text, encoding="utf-8")
+                self.assertEqual(relative, json.loads(text)["destination"])
+                command = [SHELL, SCRIPT.as_posix()] if installer == "sh" else [sys.executable, str(INSTALL_PY)]
+                try:
+                    result = subprocess.run(
+                        [*command, *flags, "--undo", "--apply"], cwd=ROOT, text=True, encoding="utf-8",
+                        errors="replace", capture_output=True, check=False, stdin=subprocess.DEVNULL,
+                        env=environment(home), timeout=120,
+                    )
+                except subprocess.TimeoutExpired:
+                    self.fail("the undo did not finish")
+
+                self.assertEqual(3, result.returncode, result.stdout + result.stderr)
+                self.assertTrue(record_path.exists())
+
+    def test_undo_still_fails_when_a_record_is_there_but_cannot_be_used(self) -> None:
+        def garbage(path: Path) -> None:
+            path.write_text("{ this is not a setup record", encoding="utf-8")
+
+        def folder(path: Path) -> None:
+            path.mkdir()
+
+        def dangling_link(path: Path) -> None:
+            path.symlink_to(path.parent / "nowhere")
+
+        cases = {
+            "text that is not JSON": (".nobrainer-flow-onboarding-claude.json", garbage),
+            "a folder in its place": (".nobrainer-flow-onboarding-claude.json", folder),
+            "a dangling link in its place": (".nobrainer-flow-onboarding-claude.json", dangling_link),
+            "an unreadable older record": (".nobrainer-flow-onboarding.json", garbage),
+            "a dangling link as the older record": (".nobrainer-flow-onboarding.json", dangling_link),
+        }
+        for label, (name, make) in cases.items():
+            if "dangling" in label and not symlinks_work():
+                continue
+            for installer in ("sh", "py"):
+                with self.subTest(case=label, installer=installer), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    home.mkdir()
+                    make(home / name)
+                    before = entries(home)
+                    flags = ("--client", "claude", "--home", str(home), "--undo", "--apply")
+
+                    if installer == "sh":
+                        result = run_sh(*flags, home=home)
+                    else:
+                        result = run_py(str(INSTALL_PY), *flags, home=home)
+
+                    self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                    self.assertNotIn("NOTHING TO UNDO", result.stdout)
+                    self.assertIn("ERROR", result.stdout + result.stderr)
+                    self.assertEqual(before, entries(home))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_undo_takes_away_the_folders_the_setup_made_in_every_available_shell(self) -> None:
+        # Codex keeps its skills in ~/.agents and its instructions in ~/.codex. Neither is
+        # there when the client never ran, and after the undo neither is left behind.
+        folders = [".agents", ".agents/skills", ".codex"]
+        for shell in ([SHELL], *other_shells()):
+            with self.subTest(shell=shell), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                flags = ("--client", "codex", "--home", str(home))
+
+                applied = run_sh(*flags, "--apply", home=home, shell=shell)
+
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                record_path = home / ".nobrainer-flow-onboarding-codex.json"
+                record = json.loads(record_path.read_text(encoding="utf-8"))
+                # Each folder is written the way it really is, with the links on the way resolved.
+                self.assertEqual(sorted(str((home / folder).resolve()) for folder in folders), sorted(record["created_dirs"]))
+                tree = entries(home)
+
+                preview = run_sh(*flags, "--undo", home=home, shell=shell)
+
+                self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+                # Git Bash names a folder its own way (a drive or /tmp spelling), so only the part
+                # below the temporary folder is compared; the record above checks the full path.
+                for folder in folders:
+                    self.assertIn(f"{Path(temp).name}/home/{folder}: removed if it is still empty", preview.stdout)
+                self.assertEqual(tree, entries(home))
+
+                undone = run_sh(*flags, "--undo", "--apply", home=home, shell=shell)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                for folder in folders:
+                    self.assertRegex(undone.stdout, f"FOLDER: removed the empty folder .*{Path(temp).name}/home/{re.escape(folder)}\n")
+                self.assertEqual([], entries(home))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_undo_leaves_the_profile_as_it_was_whatever_was_there_before(self) -> None:
+        for installer in ("sh", "py"):
+            for client, (skills, instructions) in LAYOUTS.items():
+                folder = Path(instructions).parent.as_posix()
+                starts = {
+                    "an empty profile": [],
+                    "only the outer skills folder": [chain(skills)[0]],
+                    "the folder of the instruction file": [folder],
+                    "an empty skills folder": [skills],
+                }
+                for start, existing in starts.items():
+                    with self.subTest(installer=installer, client=client, start=start), tempfile.TemporaryDirectory() as temp:
+                        home = Path(temp) / "home"
+                        home.mkdir()
+                        for name in existing:
+                            (home / name).mkdir(parents=True, exist_ok=True)
+                        before = entries(home)
+                        flags = ("--client", client, "--home", str(home))
+
+                        applied = install_step(installer, *flags, "--apply", home=home)
+
+                        self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                        self.assertTrue((home / skills / SKILLS[0]).is_symlink())
+                        undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                        self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                        self.assertEqual(before, entries(home))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_folder_that_holds_something_now_stays_when_the_setup_is_undone(self) -> None:
+        for installer in ("sh", "py"):
+            for client, (skills, instructions) in LAYOUTS.items():
+                with self.subTest(installer=installer, client=client), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    home.mkdir()
+                    flags = ("--client", client, "--home", str(home))
+                    folder = Path(instructions).parent.as_posix()
+                    self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                    notes = home / folder / "notes.md"
+                    notes.write_bytes(b"mine\n")
+
+                    undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                    self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                    self.assertEqual("", undone.stderr)
+                    self.assertEqual([*chain(folder), f"{folder}/notes.md"], entries(home))
+                    self.assertEqual(b"mine\n", notes.read_bytes())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_record_from_before_the_folder_list_is_undone_as_it_was_then(self) -> None:
+        # Such a record cannot say which folders the setup made, so it claims none and only the
+        # skills folder goes, when it is empty. Running the setup again keeps it that way.
+        # "skills" exists in the folder the installers run from; "missing-skills" does not.
+        for installer, relative in itertools.product(("sh", "py"), ("skills", "missing-skills")):
+            with self.subTest(installer=installer, destination=relative), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                flags = ("--client", "codex", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                record_path = home / ".nobrainer-flow-onboarding-codex.json"
+                record = json.loads(record_path.read_text(encoding="utf-8"))
+                self.assertIn("created_dirs", record)
+                del record["created_dirs"]
+                record_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+                (home / LAYOUTS["codex"][0] / SKILLS[0]).unlink()
+
+                again = install_step(installer, *flags, "--apply", home=home)
+
+                self.assertEqual(0, again.returncode, again.stdout + again.stderr)
+                self.assertIn("(1 new)", again.stdout)
+                self.assertNotIn("created_dirs", json.loads(record_path.read_text(encoding="utf-8")))
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertNotIn("FOLDER:", undone.stdout)
+                self.assertEqual([".agents", ".codex"], entries(home))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_record_that_lists_a_folder_the_setup_cannot_have_made_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
             home.mkdir()
+            flags = ("--client", "codex", "--home", str(home))
+            self.assertEqual(0, run_sh(*flags, "--apply", home=home).returncode)
+            record_path = home / ".nobrainer-flow-onboarding-codex.json"
+            genuine = json.loads(record_path.read_text(encoding="utf-8"))
+            elsewhere = home / "elsewhere"
+            elsewhere.mkdir()
+            alias = Path(temp) / "alias"
+            alias.symlink_to(home, target_is_directory=True)
+            listed = genuine["created_dirs"]
+            cases = {
+                "a relative path": ["relative/place"],
+                "a path with ..": [f"{home}/.agents/../.codex"],
+                "the root": ["/"],
+                "a folder beside the setup's own": [str(elsewhere)],
+                "a folder listed twice": [*listed, listed[0]],
+                "a folder listed under two spellings": [*listed, str(alias / Path(listed[0]).relative_to(home.resolve()))],
+                "text instead of a list": str(home / ".codex"),
+                "an entry that is not text": [7],
+            }
+            for label, value in cases.items():
+                for installer in ("sh", "py"):
+                    for step in (("--undo", "--apply"), ("--apply",)):
+                        with self.subTest(case=label, installer=installer, step=step):
+                            record = copy.deepcopy(genuine)
+                            record["created_dirs"] = value
+                            record_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+                            before = (entries(home), record_path.read_bytes())
 
-            result = run_sh("--client", "claude", "--home", str(home), "--undo", "--apply", home=home)
+                            refused = install_step(installer, *flags, *step, home=home)
 
-            self.assertEqual(3, result.returncode)
-            self.assertIn("rollback state not found", result.stderr)
-            self.assertIn("none is recorded for Claude Code", result.stderr)
-            self.assertEqual([], entries(home))
+                            # The shell script and the undo refuse with 3; a Python apply reports its own code.
+                            if step == ("--undo", "--apply") or installer == "sh":
+                                self.assertEqual(3, refused.returncode, refused.stdout + refused.stderr)
+                            else:
+                                self.assertNotEqual(0, refused.returncode, refused.stdout + refused.stderr)
+                            self.assertNotIn("Traceback", refused.stderr)
+                            self.assertEqual(before, (entries(home), record_path.read_bytes()))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_folder_that_now_lies_under_a_link_is_left_where_the_link_points(self) -> None:
+        # After the setup, ~/.config is swapped for a link to another tree that has folders of
+        # the same names. The undo must not follow the link and remove them.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                flags = ("--client", "opencode", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                (home / ".config").rename(Path(temp) / "moved")
+                elsewhere = Path(temp) / "elsewhere"
+                (elsewhere / "opencode" / "skills").mkdir(parents=True)
+                (home / ".config").symlink_to(elsewhere, target_is_directory=True)
+
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertIn("a folder above it is a link now, so it is left as it is", undone.stdout)
+                self.assertNotIn("FOLDER: removed", undone.stdout)
+                self.assertEqual(["opencode", "opencode/skills"], entries(elsewhere))
+                self.assertTrue((home / ".config").is_symlink())
+
+    @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0), "needs a mode this account cannot write through")
+    def test_a_read_only_instruction_file_is_appended_to_and_refreshed_and_stays_read_only(self) -> None:
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".codex" / "AGENTS.md"
+                instructions.parent.mkdir(parents=True)
+                instructions.write_bytes(b"# Mine\n")
+                instructions.chmod(0o444)
+                flags = ("--client", "codex", "--home", str(home), "--apply")
+
+                appended = install_step(installer, *flags, home=home)
+
+                self.assertEqual(0, appended.returncode, appended.stdout + appended.stderr)
+                self.assertIn(b"NOBRAINER-TECH-FLOW:START", instructions.read_bytes())
+                self.assertEqual(0o444, instructions.stat().st_mode & 0o777)
+                text = instructions.read_bytes()
+                start = text.index(b"NOBRAINER-TECH-FLOW:START")
+                instructions.chmod(0o644)
+                instructions.write_bytes(text[:start] + text[start:].replace(b"task entrypoint", b"entry", 1))
+                instructions.chmod(0o444)
+
+                refreshed = install_step(installer, *flags, home=home)
+
+                self.assertEqual(0, refreshed.returncode, refreshed.stdout + refreshed.stderr)
+                self.assertEqual(text, instructions.read_bytes())
+                self.assertEqual(0o444, instructions.stat().st_mode & 0o777)
+                # The undo writes the file the same way: the block goes and the mode stays.
+                undone = install_step(installer, "--client", "codex", "--home", str(home), "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertEqual(b"# Mine\n", instructions.read_bytes())
+                self.assertEqual(0o444, instructions.stat().st_mode & 0o777)
+                self.assertEqual([".codex", ".codex/AGENTS.md"], [name for name in entries(home) if ".bak." not in name])
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0), "needs a file this account cannot read")
+    def test_an_instruction_file_or_backup_the_undo_cannot_read_stops_it_before_anything_changes(self) -> None:
+        # A file that cannot be read cannot be told apart from one without the block. Taking it
+        # for one would remove the links and the record while the block stays in the file.
+        for installer in ("sh", "py"):
+            for unreadable in ("instruction file", "backup"):
+                with self.subTest(installer=installer, unreadable=unreadable), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    instructions = home / ".codex" / "AGENTS.md"
+                    instructions.parent.mkdir(parents=True)
+                    instructions.write_bytes(b"# Mine\n")
+                    flags = ("--client", "codex", "--home", str(home))
+                    self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                    record_path = home / ".nobrainer-flow-onboarding-codex.json"
+                    (backup,) = instructions.parent.glob("AGENTS.md.bak.*")
+                    locked = instructions if unreadable == "instruction file" else backup
+                    before = (entries(home), record_path.read_bytes(), instructions.read_bytes())
+                    locked.chmod(0o000)
+                    try:
+                        refused = install_step(installer, *flags, "--undo", "--apply", home=home)
+                    finally:
+                        locked.chmod(0o644)
+
+                    self.assertEqual(3, refused.returncode, refused.stdout + refused.stderr)
+                    self.assertIn(f"ERROR: cannot read {locked}", refused.stderr)
+                    self.assertNotIn("Traceback", refused.stderr)
+                    self.assertEqual(before, (entries(home), record_path.read_bytes(), instructions.read_bytes()))
+                    self.assertTrue((home / ".agents" / "skills" / SKILLS[0]).is_symlink())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_folder_named_through_dot_dot_that_was_there_before_survives_the_undo(self) -> None:
+        # CLAUDE_CONFIG_DIR reaches an existing folder through a folder that does not exist
+        # yet. Before the setup, "missing/.." does not exist either, but once "missing" is made
+        # it is the existing folder, and the undo must not take that one away.
+        for installer in ("sh", "py"):
+            for alias in ("missing/../config", "missing/../../profile/config"):
+                with self.subTest(installer=installer, alias=alias), tempfile.TemporaryDirectory() as temp:
+                    home = Path(temp) / "home"
+                    home.mkdir()
+                    profile = Path(temp) / "profile"
+                    profile.mkdir()
+                    variables = {"CLAUDE_CONFIG_DIR": f"{profile}/{alias}"}
+
+                    def step(*more: str) -> subprocess.CompletedProcess[str]:
+                        if installer == "sh":
+                            return run_sh("--client", "claude", *more, home=home, variables=variables)
+                        return subprocess.run(
+                            [sys.executable, str(INSTALL_PY), "--client", "claude", *more],
+                            cwd=ROOT, text=True, encoding="utf-8", errors="replace", capture_output=True,
+                            check=False, stdin=subprocess.DEVNULL, env=environment(home, variables),
+                        )
+
+                    applied = step("--apply")
+
+                    self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                    # Windows drops "missing/.." from the path before any folder is made.
+                    folders = ["config", "config/skills"] + ([] if os.name == "nt" else ["missing"])
+                    made = [name for name in entries(profile) if not name.startswith("config/skills/")]
+                    self.assertEqual(sorted([*folders, "config/CLAUDE.md"]), made)
+                    record = json.loads((home / ".nobrainer-flow-onboarding-claude.json").read_text(encoding="utf-8"))
+                    real = profile.resolve()
+                    self.assertEqual(sorted(str(real / name) for name in folders), sorted(record["created_dirs"]))
+                    undone = step("--undo", "--apply")
+
+                    self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                    self.assertTrue(profile.is_dir())
+                    self.assertEqual([], entries(profile))
+                    self.assertEqual([], entries(home))
+
+    @unittest.skipUnless(os.name == "nt", "directory junctions exist only on Windows")
+    def test_the_undo_leaves_a_junction_put_in_place_of_a_folder_it_made(self) -> None:
+        # After the setup, ~/.agents is replaced by a junction to a folder that holds an empty
+        # skills folder. Removing the junction would disconnect that folder from whatever uses it.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                flags = ("--client", "codex", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                theirs = Path(temp) / "theirs"
+                (theirs / "skills").mkdir(parents=True)
+                shutil.rmtree(home / ".agents")
+                junction = subprocess.run(
+                    ["cmd", "/c", "mklink", "/J", str(home / ".agents"), str(theirs)],
+                    text=True, capture_output=True, check=False,
+                )
+                self.assertEqual(0, junction.returncode, junction.stdout + junction.stderr)
+
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertTrue((home / ".agents").exists())
+                self.assertEqual(["skills"], entries(theirs))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_repeat_apply_never_hands_a_folder_behind_a_new_link_to_the_undo(self) -> None:
+        # After the setup, ~/.agents is swapped for a link to a folder that was there before
+        # and holds an empty skills folder. Applying again and undoing must leave that folder.
+        # "skills" exists in the folder the installers run from; "missing-skills" does not.
+        for installer, relative in itertools.product(("sh", "py"), ("skills", "missing-skills")):
+            with self.subTest(installer=installer, destination=relative), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                flags = ("--client", "codex", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                record_path = home / ".nobrainer-flow-onboarding-codex.json"
+                first = json.loads(record_path.read_text(encoding="utf-8"))["created_dirs"]
+                theirs = Path(temp) / "theirs"
+                (theirs / "skills").mkdir(parents=True)
+                shutil.rmtree(home / ".agents")
+                (home / ".agents").symlink_to(theirs, target_is_directory=True)
+
+                again = install_step(installer, *flags, "--apply", home=home)
+
+                self.assertEqual(0, again.returncode, again.stdout + again.stderr)
+                self.assertEqual(first, json.loads(record_path.read_text(encoding="utf-8"))["created_dirs"])
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertEqual(["skills"], entries(theirs))
+                self.assertTrue((home / ".agents").is_symlink())
+
+    @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0), "needs a folder this account cannot write")
+    def test_a_home_that_cannot_be_made_stops_the_setup_before_anything_is_written(self) -> None:
+        # CLAUDE_CONFIG_DIR is writable, but the home for the record lies under a folder that
+        # is not. Nothing may be written that no record describes.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                locked = Path(temp) / "locked"
+                locked.mkdir()
+                home = locked / "home"
+                config = Path(temp) / "claude-config"
+                config.mkdir()
+                variables = {"CLAUDE_CONFIG_DIR": str(config)}
+                locked.chmod(0o555)
+                try:
+                    if installer == "sh":
+                        result = run_sh("--client", "claude", "--apply", home=home, variables=variables)
+                    else:
+                        result = subprocess.run(
+                            [sys.executable, str(INSTALL_PY), "--client", "claude", "--apply"],
+                            cwd=ROOT, text=True, encoding="utf-8", errors="replace", capture_output=True,
+                            check=False, stdin=subprocess.DEVNULL, env=environment(home, variables),
+                        )
+                finally:
+                    locked.chmod(0o755)
+
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertEqual([], entries(config))
+                self.assertFalse(home.exists())
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_home_made_only_for_the_record_is_taken_away_again(self) -> None:
+        # CLAUDE_CONFIG_DIR puts the skills and the instructions in a folder that exists, and
+        # the home is made only to hold the setup record. The undo takes the home away too.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "missing-home"
+                config = Path(temp) / "claude-config"
+                config.mkdir()
+                variables = {"CLAUDE_CONFIG_DIR": str(config)}
+
+                def step(*more: str) -> subprocess.CompletedProcess[str]:
+                    if installer == "sh":
+                        return run_sh("--client", "claude", *more, home=home, variables=variables)
+                    return subprocess.run(
+                        [sys.executable, str(INSTALL_PY), "--client", "claude", *more],
+                        cwd=ROOT, text=True, encoding="utf-8", errors="replace", capture_output=True,
+                        check=False, stdin=subprocess.DEVNULL, env=environment(home, variables),
+                    )
+
+                applied = step("--apply")
+
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                self.assertEqual([".nobrainer-flow-onboarding-claude.json"], entries(home))
+                record = json.loads((home / ".nobrainer-flow-onboarding-claude.json").read_text(encoding="utf-8"))
+                self.assertIn(str(home.resolve()), record["created_dirs"])
+                undone = step("--undo", "--apply")
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertFalse(home.exists())
+                self.assertEqual([], entries(config))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_home_the_setup_had_to_create_is_taken_away_again(self) -> None:
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "fresh" / "profile"
+                flags = ("--client", "codex", "--home", str(home))
+
+                applied = install_step(installer, *flags, "--apply", home=home)
+
+                self.assertEqual(0, applied.returncode, applied.stdout + applied.stderr)
+                self.assertTrue((home / ".agents" / "skills" / SKILLS[0]).is_symlink())
+                undone = install_step(installer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertEqual([], entries(Path(temp)))
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_either_installer_takes_away_the_folders_the_other_one_recorded(self) -> None:
+        for installer, undoer in (("sh", "py"), ("py", "sh")):
+            with self.subTest(installed_by=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                flags = ("--client", "opencode", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                # A link that went missing makes the next run rewrite the record, folder list included.
+                (home / LAYOUTS["opencode"][0] / SKILLS[0]).unlink()
+                repeated = install_step(undoer, *flags, "--apply", home=home)
+                self.assertEqual(0, repeated.returncode, repeated.stdout + repeated.stderr)
+                self.assertIn("(1 new)", repeated.stdout)
+
+                undone = install_step(undoer, *flags, "--undo", "--apply", home=home)
+
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertEqual([], entries(home))
 
     def test_a_relative_home_is_resolved_against_the_callers_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

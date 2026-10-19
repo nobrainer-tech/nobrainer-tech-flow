@@ -18,8 +18,8 @@ Repository work follows the [task worktree lifecycle](references/worktrees.md).
 
 ## Automatic session care
 
-On explicit Flow entry, when `nobrainer-sessions` is installed, run Sessions [startup and health](../nobrainer-sessions/references/session-restart.md#automatic-start-and-observation); otherwise stay in MAIN.
-Verify fresh MAIN takeover before authorized archive; installation grants no consent.
+For resumable, long or delegated work with `nobrainer-sessions` installed, run Sessions [startup and health](../nobrainer-sessions/references/session-restart.md#automatic-start-and-observation); otherwise stay in MAIN.
+Restart or archive needs separate owner consent and verified takeover.
 
 ## Current instructions
 
@@ -38,7 +38,7 @@ For a clear low-risk answer, rewrite, calculation or one coherent, reversible ed
 deliver and check directly. Chat-only work needs no repository or tools.
 For file edits inspect instructions, actual files and the nearest deterministic check;
 use checkout, dirty state and `git diff --check` only in a Git repository.
-Skip ledger, delegation and review; retain startup care. Escalate to the full Flow lifecycle
+Skip ledger, delegation, review and startup care. Escalate to the full Flow lifecycle
 for ambiguity, architecture, public behavior, routing or consequential
 side effects; quick path never bypasses an owner gate.
 
@@ -196,8 +196,8 @@ contact people, change credentials, migrate data, mutate production or weaken
 safety controls remain explicit gates unless the owner already authorized that
 exact action.
 
-Use at most two corrective attempts per observed failure, with new evidence
-for each, or the owner's smaller budget; then diagnose or report the blocker.
+Corrective-attempt budget (also Build and RCA): two attempts per observed failure,
+each with new evidence, or the owner's smaller budget; then diagnose or report the blocker.
 Timeouts, partial results, dead sessions, failed checks and exhausted retries never prove completion.
 
 ## `VERIFY` and `RECEIVE_AUDIT`

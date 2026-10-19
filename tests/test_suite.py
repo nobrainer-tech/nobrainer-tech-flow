@@ -854,7 +854,8 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("plan fingerprint and task contract are still current", normalized)
         self.assertIn("transport identity may still be", text)
         self.assertIn("unknown transport state keeps the task `READY`", normalized)
-        self.assertIn("Sessions alone performs the send", text)
+        self.assertIn("MAIN or Sessions performs the send; Dispatcher never does", normalized)
+        self.assertIn("The send receipt is the host-returned native worker ID", normalized)
         self.assertNotIn("execution map", text.lower())
         self.assertIn("approved plan", agent.lower())
         self.assertNotIn("execution map", agent.lower())
@@ -1260,7 +1261,7 @@ class SuiteTests(unittest.TestCase):
         claude = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
         self.assertEqual(agents, claude)
         self.assertLessEqual(len(agents.splitlines()), 205)
-        self.assertLessEqual(len(agents.split()), 1600)
+        self.assertLessEqual(len(agents.split()), 1620)
         for term in (
             "Expected files",
             "Done clean",

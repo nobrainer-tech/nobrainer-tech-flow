@@ -4,9 +4,11 @@
 # Same flags, locations, conflict rule and setup record as scripts/install.py, so
 # either one can undo what the other did. Every run previews until --apply. The
 # skills are linked to this checkout (never copied), one managed instruction block
-# is added, and no standing authorization is ever granted. One difference: a managed
-# block that is already there is left exactly as it is (install.py rewrites it to the
-# current text and keeps its options).
+# is added, and no standing authorization is ever granted. A managed block that is
+# already there is replaced by this version's text when it differs, and everything
+# outside the two markers stays byte for byte, as install.py does. One difference: a
+# block that carries options (a standing authorization, a wiki root or a preference)
+# is left exactly as it is; install.py rewrites it to the current text and keeps them.
 #
 # POSIX sh: dash, bash, busybox and zsh emulating sh. On Windows run it in Git Bash.
 
@@ -52,7 +54,7 @@ block() {
 <!-- NOBRAINER-TECH-FLOW:START -->
 ## nobrainer-tech-flow
 
-- Use `nobrainer-tech-flow` (`$nobrainer-tech-flow`) as the task entrypoint when this client supports skill invocation. If unavailable, check the documented installation path and report that limitation honestly.
+- Use the `nobrainer-tech-flow` module as the task entrypoint when this client supports skill invocation, by the exact name this client lists for it. In Codex that is `$nobrainer-tech-flow:nobrainer-tech-flow` when modules are listed under the plugin name, or `$nobrainer-tech-flow` when they are listed plainly. If unavailable, check the documented installation path and report that limitation honestly.
 - On first setup, load `nobrainer-auto-fine-tune` for a read-only capability audit; preserve MAIN model and effort, and mark unverified runtime values `UNKNOWN`.
 - Preserve the user's selected MAIN model and effort. Inspect the host's actual subagent models, capabilities, concurrency and quota; delegate every independent ready unit promptly and refill slots after audited completion. Keep coordination in MAIN. Never assume a model is available or silently substitute one.
 - Split substantial work into bounded tasks with clear outputs, exclusive write scope, dependencies, and verification. Keep integration and acceptance in MAIN; avoid duplicate or filler tasks.
@@ -60,7 +62,7 @@ block() {
 - At project start, discover whether a relevant wiki exists. If one exists, read its `WIKI.md`, locate relevant `index.md` entries with a targeted search, then read only the relevant pages. Ask before creating a wiki unless project rules or prior authorization already settle it.
 - Assess context and checkpoint at appropriate milestones. Recommend session rotation when it would help; do not restart or archive automatically. When rotation is authorized, use the supported lifecycle, verify exact successor takeover by ID/readback, and archive the old session only after that readback. Do not create recursive visible workers or claim a restart when unsupported.
 - On the first `nobrainer-tech-flow` use each calendar day, check for available updates when this client exposes a supported check and notify the owner; do not apply them automatically. If the client is inactive or cannot check, do not claim a check occurred.
-- Use `nobrainer-ak` (`nbak`) for relevant marketing and sales content creation when available. For general writing use `nobrainer-writing` when available; make technical documentation concrete, source-backed, and technically verified. Preserve facts, use the user's language, and verify at the actual delivery layer.
+- Use `nobrainer-writing` for material writing when available; make technical documentation concrete, source-backed, and technically verified. Preserve facts, use the user's language, and verify at the actual delivery layer.
 <!-- NOBRAINER-TECH-FLOW:END -->
 EOF
 }
@@ -396,7 +398,7 @@ json_field() {
 }
 
 read_state() {
-	st_dest= st_created= st_target= st_backup= st_hash= _r_in=
+	st_dest= st_created= st_target= st_backup= st_hash= st_dirs= st_has_dirs= st_bad_dirs= _r_in=
 	while IFS= read -r _r_line || [ -n "$_r_line" ]; do
 		# Python writes the record with CRLF line breaks on Windows.
 		_r_line=${_r_line%"$CR"}
@@ -409,6 +411,18 @@ read_state() {
 						case " $(printf '%s' "$SKILLS" | tr '\n' ' ') " in *" $json_value "*) ;; *) return 1 ;; esac
 						case " $st_created " in *" $json_value "*) return 1 ;; esac
 						st_created="$st_created $json_value" ;;
+				esac
+				continue ;;
+			dirs)
+				case $_r_line in
+					'  ]' | '  ],') _r_in= ;;
+					*)
+						json_field "\": ${_r_line#    }" || return 1
+						# cygpath drops a ".." on Windows, so it is looked for in the path as written.
+						case /$(printf '%s' "$json_value" | tr '\\' /)/ in */../*) st_bad_dirs=1 ;; esac
+						_r_dir=$(to_posix "$json_value")
+						st_dirs="$st_dirs$_r_dir
+" ;;
 				esac
 				continue ;;
 			profile)
@@ -427,6 +441,8 @@ read_state() {
 			'  "destination": '*) json_field "$_r_line" || return 1; st_dest=$json_value ;;
 			'  "created_skills": []' | '  "created_skills": [],') ;;
 			'  "created_skills": [') _r_in=skills ;;
+			'  "created_dirs": []' | '  "created_dirs": [],') st_has_dirs=1 ;;
+			'  "created_dirs": [') st_has_dirs=1 _r_in=dirs ;;
 			'  "profile": {}' | '  "profile": {},') ;;
 			'  "profile": {') _r_in=profile ;;
 			*) return 1 ;;
@@ -436,12 +452,19 @@ read_state() {
 	st_dest=$(to_posix "$st_dest")
 	if [ -n "$st_target" ]; then st_target=$(to_posix "$st_target"); fi
 	if [ -n "$st_backup" ]; then st_backup=$(to_posix "$st_backup"); fi
+	# The setup writes every path in full. A relative one is a damaged record: it would be
+	# read against the current folder, and no folder of it can be dropped on the way up.
+	for _r_path in "$st_dest" "$st_target" "$st_backup"; do
+		case $_r_path in '' | /?*) ;; *) return 1 ;; esac
+	done
 	return 0
 }
 
 write_state() {
 	mkdir -p "$home" || return 1
 	_s_tmp=$(mktemp "$home/.nobrainer-flow-onboarding-$client.XXXXXX") || return 1
+	# "profile" is followed by a comma only when the list of created folders comes next.
+	if [ -n "$want_dirs" ]; then _s_more=,; else _s_more=; fi
 	{
 		printf '{\n  "destination": %s,\n' "$(json_string "$(to_native "$skills_dir")")"
 		if [ -z "$new_created" ]; then
@@ -457,7 +480,7 @@ write_state() {
 			printf '\n  ],\n'
 		fi
 		if [ -z "$new_target" ]; then
-			printf '  "profile": {}\n'
+			printf '  "profile": {}%s\n' "$_s_more"
 		else
 			printf '  "profile": {\n    "target": %s,\n' "$(json_string "$(to_native "$new_target")")"
 			if [ -n "$new_backup" ]; then
@@ -465,12 +488,115 @@ write_state() {
 			else
 				printf '    "backup": null,\n'
 			fi
-			printf '    "written_sha256": "%s"\n  }\n' "$new_hash"
+			printf '    "written_sha256": "%s"\n  }%s\n' "$new_hash" "$_s_more"
+		fi
+		if [ -n "$new_dirs" ]; then
+			printf '  "created_dirs": [\n'
+			printf '%s\n' "$new_dirs" | {
+				_s_sep=
+				while IFS= read -r _s_dir; do
+					printf '%s    %s' "$_s_sep" "$(json_string "$(to_native "$_s_dir")")"
+					_s_sep=',
+'
+				done
+			}
+			printf '\n  ]\n'
+		elif [ -n "$want_dirs" ]; then
+			printf '  "created_dirs": []\n'
 		fi
 		printf '}\n'
 	} >"$_s_tmp" && chmod 600 "$_s_tmp" && mv -f "$_s_tmp" "$state" && return 0
 	rm -f "$_s_tmp"
 	return 1
+}
+
+# note_dirs PATH: add to dirs_to_make the folders on the way to PATH that do not exist yet,
+# one per line. A link counts as existing: it is never a folder this script made. So does
+# a spelling with ".." that resolves to an existing folder: profile/missing/.. does not
+# exist before missing is made, but it is profile, which was there already. The folders
+# above such a spelling are still checked, as missing is.
+note_dirs() {
+	_n_path=$1
+	while [ -n "$_n_path" ]; do
+		if [ ! -e "$_n_path" ] && [ ! -L "$_n_path" ] && [ ! -e "$(clean abs "$(physical "$_n_path")")" ]; then
+			dirs_to_make="$dirs_to_make$_n_path
+"
+		fi
+		_n_next=${_n_path%/*}
+		[ "$_n_next" != "$_n_path" ] || break
+		_n_path=$_n_next
+	done
+}
+
+# under_link PATH: a folder above PATH is a symbolic link. A record lists each folder with
+# the links on the way resolved, so such a link means the profile was rearranged since
+# the setup, and removing PATH would act on another tree.
+under_link() {
+	_z_up=${1%/*}
+	while [ -n "$_z_up" ]; do
+		[ ! -L "$_z_up" ] || return 0
+		_z_up=${_z_up%/*}
+	done
+	return 1
+}
+
+# The folders a record lists must be ones the setup can have made: each an absolute,
+# plain path listed once, that is, or lies above, the skills folder, the folder of the
+# instruction file or the folder of the record. Anything else is a damaged record that an undo must not act on. A path
+# may be spelled with or without the links on the way, so both spellings count.
+above() {
+	case "$2/" in "$1"/*) return 0 ;; esac
+	return 1
+}
+
+# on_way DIR BASE: DIR is the real form of a folder on the way to BASE as written. A folder
+# the setup made is listed as it really is, and a BASE spelled with ".." reaches it on the
+# way without lying below it.
+on_way() {
+	_y_up=$2
+	while [ -n "$_y_up" ]; do
+		[ "$(clean abs "$(physical "$_y_up")")" != "$1" ] || return 0
+		# A damaged record can hold a relative BASE, which has no folder left to drop.
+		[ "${_y_up%/*}" != "$_y_up" ] || return 1
+		_y_up=${_y_up%/*}
+	done
+	return 1
+}
+
+check_dirs() {
+	[ -z "$st_bad_dirs" ] || return 1
+	[ -n "$st_dirs" ] || return 0
+	_k_dest=$(physical "$st_dest")
+	_k_tdir= _k_tphys=
+	if [ -n "$st_target" ]; then _k_tdir=${st_target%/*} _k_tphys=$(physical "${st_target%/*}"); fi
+	_k_sdir=${state%/*} _k_sphys=$(physical "${state%/*}")
+	printf '%s' "$st_dirs" | {
+		_k_seen='
+'
+		while IFS= read -r _k_dir; do
+			case $_k_dir in /?*) ;; *) exit 1 ;; esac
+			[ "$(clean abs "$_k_dir")" = "$_k_dir" ] || exit 1
+			_k_real=$(physical "$_k_dir")
+			_k_ok=
+			for _k_form in "$_k_dir" "$_k_real"; do
+				if above "$_k_form" "$st_dest" || above "$_k_form" "$_k_dest"; then _k_ok=1; fi
+				if above "$_k_form" "$_k_sdir" || above "$_k_form" "$_k_sphys"; then _k_ok=1; fi
+				if [ -n "$_k_tdir" ]; then
+					if above "$_k_form" "$_k_tdir" || above "$_k_form" "$_k_tphys"; then _k_ok=1; fi
+				fi
+			done
+			if [ -z "$_k_ok" ]; then
+				if on_way "$_k_real" "$st_dest" || on_way "$_k_real" "$_k_sdir"; then _k_ok=1; fi
+				if [ -n "$_k_tdir" ] && on_way "$_k_real" "$_k_tdir"; then _k_ok=1; fi
+			fi
+			[ -n "$_k_ok" ] || exit 1
+			case $_k_seen in *"
+$_k_real
+"*) exit 1 ;; esac
+			_k_seen="$_k_seen$_k_real
+"
+		done
+	}
 }
 
 # Refuse a destination that cannot hold skills before anything is planned.
@@ -532,11 +658,13 @@ record_undo() {
 
 # The setup already recorded for this client must be for the same places.
 check_record() {
-	record=0 st_dest= st_created= st_target= st_backup= st_hash=
+	record=0 st_dest= st_created= st_target= st_backup= st_hash= st_dirs= st_has_dirs=
 	if [ ! -e "$state" ] && [ ! -L "$state" ]; then return 0; fi
 	if [ -L "$state" ] || [ ! -f "$state" ]; then die 3 "setup state path is not a regular file: $state"; fi
 	read_state "$state" || die 3 "cannot read the setup record $state" \
 		"it holds characters or a layout this script does not read; undo it with $(python_undo)"
+	check_dirs || die 3 "the setup record $state lists a folder this setup cannot have created" \
+		"inspect the record; the guided undo refuses it as well"
 	record=1
 	if [ "$(physical "$st_dest")" != "$(physical "$skills_dir")" ]; then
 		die 3 "existing setup state belongs to a different skills destination: $st_dest" \
@@ -635,6 +763,11 @@ plan_instructions() {
 		die 3 "malformed or duplicated nobrainer-tech-flow managed markers in $target"
 	fi
 	file_status=present
+	# A block of an earlier version is brought up to date, but only one that can be replaced
+	# without losing anything: its markers stand on lines of their own, and it holds no option.
+	if ! block_is_default && block_lines "$target" && ! block_has_options; then
+		file_status=refresh
+	fi
 }
 
 # line_of MARKER FILE: the numbers of the lines that hold MARKER and nothing else.
@@ -652,7 +785,19 @@ block_lines() {
 }
 
 block_is_default() {
-	block_lines "$target" && [ "$(head -n "$block_to" "$target" | tail -n "+$block_from")" = "$(block)" ]
+	block_lines "$target" || return 1
+	_b_text=$(head -n "$block_to" "$target" | tail -n "+$block_from")
+	# As scripts/install_personalization.py compares it: from the start marker to the end
+	# marker, so a carriage return that ends that last line is not part of the block.
+	[ "${_b_text%"$CR"}" = "$(block)" ]
+}
+
+# block_has_options: the block block_lines found in $target carries something the owner
+# chose: a standing authorization, a wiki root or a preference. Only install.py and
+# scripts/install_personalization.py --keep-options carry those over to a new block.
+block_has_options() {
+	head -n "$block_to" "$target" | tail -n "+$block_from" |
+		grep -a -q -F -e 'grants standing authorization' -e '- Relevant project wiki: read ' -e '- Owner-approved setup preference: '
 }
 
 variable_note() {
@@ -677,8 +822,17 @@ preview() {
 		if [ "$file_status" = present ]; then
 			say "PRESENT: the managed block is already there and is left as it is"
 			if ! block_is_default; then
-				say "NOTE: it differs from this version's default block; scripts/install_personalization.py --keep-options updates it and keeps its options"
+				say "NOTE: it differs from this version's default block but holds an option, or its markers do not stand on lines of their own, so it is not replaced here; scripts/install_personalization.py --keep-options updates it and keeps its options"
 			fi
+		elif [ "$file_status" = refresh ]; then
+			block_lines "$target"
+			say "UPDATE: nobrainer-tech-flow personalization block"
+			say "AUTO_UPDATE: CHECK_AND_NOTIFY"
+			say "AUTO_SESSION_RESTART: ASSESS_CHECKPOINT_RECOMMEND"
+			say "PRESERVED: content outside the managed block"
+			say "DIFF:"
+			head -n "$block_to" "$target" | tail -n "+$block_from" | sed 's/^/-/'
+			block | sed 's/^/+/'
 		else
 			say "MISSING: nobrainer-tech-flow personalization block"
 			say "AUTO_UPDATE: CHECK_AND_NOTIFY"
@@ -691,15 +845,29 @@ preview() {
 	say "NO_CHANGES: preview only; install with: $(command_for --apply)"
 }
 
+# restore_mode READONLY COPY: a copy of a file without owner write permission (READONLY
+# is 1) gets that permission taken away again before it replaces the file.
+restore_mode() {
+	if [ "$1" = 1 ]; then chmod u-w "$2"; fi
+}
+
+# read_only FILE: the owner may not write FILE.
+read_only() {
+	case $(ls -ld "$1") in ??-*) return 0 ;; esac
+	return 1
+}
+
 # Append the block the way scripts/install_personalization.py does: after a line
 # break when the file does not end with one, and without a trailing one. A lone CR
 # (old Mac line breaks) gets a line break too, so that the block starts on a line
-# of its own, which the undo needs.
+# of its own, which the undo needs. A block that is there already is replaced from its
+# start marker to its end marker and nothing else, so every byte around it stays; the
+# file as it was is kept as a backup first.
 write_instructions() {
 	_w_dir=${target%/*}
 	mkdir -p "$_w_dir" || return 1
 	_w_tmp=$(mktemp "$_w_dir/.${target##*/}.XXXXXX") || return 1
-	if [ "$file_status" = append ]; then
+	if [ "$file_status" = append ] || [ "$file_status" = refresh ]; then
 		_w_stamp=$(date -u +%Y%m%dT%H%M%SZ)
 		made_backup=$target.bak.$_w_stamp
 		_w_index=1
@@ -711,12 +879,32 @@ write_instructions() {
 			rm -f "$_w_tmp"
 			return 1
 		fi
+		# The copy keeps the file's mode. A file without owner write permission is written
+		# through a copy made writable and gets that permission taken away again before the
+		# rename, so the file keeps exactly the mode it had.
+		_w_readonly=0
+		if read_only "$target"; then _w_readonly=1; fi
+		chmod u+w "$_w_tmp" || { rm -f "$_w_tmp"; return 1; }
+	else
+		_w_readonly=0
+	fi
+	if [ "$file_status" = refresh ]; then
+		block_lines "$target" || { rm -f "$_w_tmp"; return 1; }
+		if {
+			{ [ "$block_from" -eq 1 ] || head -n "$((block_from - 1))" "$target"; } &&
+				printf '%s' "$(block)" &&
+				tail -n "+$block_to" "$target" | tail -c "+$((${#END} + 1))"
+		} >"$_w_tmp" && restore_mode "$_w_readonly" "$_w_tmp" && mv -f "$_w_tmp" "$target"; then return 0; fi
+		rm -f "$_w_tmp"
+		return 1
+	fi
+	if [ "$file_status" = append ]; then
 		case $(tail -c 1 "$_w_tmp" | od -An -to1 | tr -d ' \n') in
 			'' | 012) ;;
 			*) printf '\n' >>"$_w_tmp" ;;
 		esac
 	fi
-	if printf '%s' "$(block)" >>"$_w_tmp" && mv -f "$_w_tmp" "$target"; then return 0; fi
+	if printf '%s' "$(block)" >>"$_w_tmp" && restore_mode "$_w_readonly" "$_w_tmp" && mv -f "$_w_tmp" "$target"; then return 0; fi
 	rm -f "$_w_tmp"
 	return 1
 }
@@ -733,8 +921,18 @@ install() {
 	fi
 	sha256 /dev/null >/dev/null || die 2 "this script needs sha256sum, shasum or openssl to record the setup"
 
-	created=
-	if [ "$link_count" -gt 0 ]; then mkdir -p "$skills_dir" || die 2 "cannot create $skills_dir"; fi
+	created= dirs_to_make=
+	# The record's folder is made before anything else is written: when it cannot be made,
+	# the run stops here instead of leaving links and a block that no record describes. It
+	# counts among the folders the setup made: a home that does not exist yet is made for
+	# the record alone when a client variable puts the skills and the instructions elsewhere.
+	note_dirs "$home"
+	made_home=$dirs_to_make
+	mkdir -p "$home" || die 2 "cannot create $home, where the setup record goes"
+	if [ "$link_count" -gt 0 ]; then
+		note_dirs "$skills_dir"
+		mkdir -p "$skills_dir" || die 2 "cannot create $skills_dir"
+	fi
 	for _a_name in $to_link; do
 		_a_target=$skills_dir/$_a_name
 		_a_source=$root/skills/$_a_name
@@ -754,6 +952,7 @@ install() {
 
 	made_backup= wrote=0
 	if [ "$file_status" != present ] && [ "$inherit" = 0 ]; then
+		note_dirs "${target%/*}"
 		if ! write_instructions; then
 			for _a_done in $created; do remove_link "$skills_dir/$_a_done"; done
 			die 4 "could not write $target; the links made by this run were removed"
@@ -777,19 +976,60 @@ install() {
 		new_created=$(printf '%s\n' $st_created $created | LC_ALL=C sort -u | tr '\n' ' ')
 		new_created=${new_created# }
 		new_created=${new_created% }
+		# Of the folders this run meant to create, the ones that exist now, with the ones an
+		# earlier run of this setup made. A record from before this field has none, so none
+		# is claimed: they may have been there already.
+		made_dirs=$(printf '%s' "$dirs_to_make" | while IFS= read -r _a_dir; do
+			if [ -n "$_a_dir" ] && [ -d "$_a_dir" ] && [ ! -L "$_a_dir" ]; then printf '%s\n' "$_a_dir"; fi
+		done)
+		# A folder this run made is written the way it really is, links resolved, so that runs
+		# from different installers and spellings of the same path list it once. The folders an
+		# earlier run recorded stay as recorded: resolving them again would follow a link put in
+		# their place since, and hand the folder it points to over to the undo.
+		new_dirs=$({
+			printf '%s' "$st_dirs"
+			printf '%s\n' "$made_dirs" | while IFS= read -r _a_dir; do
+				if [ -n "$_a_dir" ]; then physical "$_a_dir"; fi
+			done
+		} | grep -v '^$' | LC_ALL=C sort -u)
+		# The record lists the folders this setup made, an empty list included, so that an undo
+		# knows to touch no other. A record from before the list keeps its form until a run
+		# makes a folder, and its undo keeps the rule it was made under.
+		want_dirs=1
+		if [ "$record" = 1 ] && [ -z "$st_has_dirs" ] && [ -z "$new_dirs" ]; then want_dirs=; fi
 		if ! write_state; then
 			for _a_done in $created; do remove_link "$skills_dir/$_a_done"; done
 			if [ "$wrote" = 1 ]; then
-				if [ -n "$made_backup" ]; then cp -p "$made_backup" "$target"; else rm -f "$target"; fi
+				# Through a copy beside it and a rename, so a read-only file comes back as well.
+				if [ -n "$made_backup" ]; then
+					_a_tmp=$(mktemp "${target%/*}/.${target##*/}.XXXXXX") &&
+						{ cp -p "$made_backup" "$_a_tmp" && mv -f "$_a_tmp" "$target" || rm -f "$_a_tmp"; }
+				else
+					rm -f "$target"
+				fi
 			fi
 			die 4 "could not save the setup record $state; the changes of this run were reversed"
 		fi
 	fi
 
-	say "INSTALLED: $source_line for $label"
+	# A home made for a record that was not needed goes again.
+	if [ ! -e "$state" ] && [ -n "$made_home" ]; then
+		printf '%s' "$made_home" | while IFS= read -r _a_dir; do rmdir "$_a_dir" 2>/dev/null; done
+	fi
+
+	# New links and a written instruction file are what a client has to be restarted for.
+	changed=0
+	if [ "$link_count" -gt 0 ] || [ "$wrote" = 1 ]; then changed=1; fi
+	if [ "$changed" = 1 ]; then
+		say "INSTALLED: $source_line for $label"
+	else
+		say "UP TO DATE: $source_line is already installed for $label; nothing changed"
+	fi
 	say "SKILLS: $((link_count + kept_count)) linked in $skills_dir ($link_count new)"
 	if [ "$inherit" = 1 ]; then
 		say "INSTRUCTIONS: inherited from the Codex global instructions; nothing written here"
+	elif [ "$wrote" = 1 ] && [ "$file_status" = refresh ]; then
+		say "INSTRUCTIONS: $target: managed block updated to this version's text; the rest of the file is kept as it is (backup: $made_backup)"
 	elif [ "$wrote" = 1 ] && [ -n "$made_backup" ]; then
 		say "INSTRUCTIONS: $target (backup: $made_backup)"
 	elif [ "$wrote" = 1 ]; then
@@ -797,13 +1037,18 @@ install() {
 	else
 		say "INSTRUCTIONS: $target already has the managed block; left as it is"
 	fi
+	if [ "$changed" = 0 ] && [ "$record" = 1 ] && [ -n "$new_hash" ] && [ "$new_hash" != "$st_hash" ]; then
+		say "RECORD: updated to the instruction file as it is now, so an undo keeps your edits outside the block"
+	fi
 	if [ -e "$state" ]; then
 		say "UNDO: $(command_for --undo --apply)"
 	else
 		say "UNDO: nothing was changed, so there is nothing to undo"
 	fi
 	variable_note
-	say "NEXT: restart $label, then give it one small task with a checkable result (docs/TRY_IT.md)."
+	if [ "$changed" = 1 ]; then
+		say "NEXT: restart $label, then give it one small task with a checkable result (docs/TRY_IT.md)."
+	fi
 }
 
 # restore_into CURRENT BACKUP OUT: CURRENT with its managed block replaced by the one
@@ -836,19 +1081,64 @@ restore_into() {
 	fi
 }
 
+# cannot_read FILE: stop the undo before it changes anything. A file that cannot be read
+# cannot be told apart from one without the managed block, and taking it for one would
+# remove the links and the record while the block stays.
+cannot_read() {
+	die 3 "cannot read $1, so the undo cannot tell what it holds; nothing was changed" \
+		"make it readable for this account, then undo again"
+}
+
+# holds_marker FILE: FILE holds either managed marker. grep tells an error (2) from no
+# match (1), and an error stops the undo.
+holds_marker() {
+	grep -a -q -F -e "$START" -e "$END" "$1"
+	case $? in
+		0) return 0 ;;
+		1) return 1 ;;
+	esac
+	cannot_read "$1"
+}
+
+# What to do about an instruction file that changed after the setup. Running the setup
+# again keeps the backup the record names, and the undo after it puts the block back from
+# that backup. With the backup gone or unreadable that undo would stop, so only the way by
+# hand is offered.
+keep_hint() {
+	if [ -n "$st_backup" ] && { [ -L "$st_backup" ] || [ ! -f "$st_backup" ] || [ ! -r "$st_backup" ]; }; then
+		say "HINT: to take the managed block out as well, delete the lines from $START to $END yourself and undo again; your edits outside the block stay. Running the setup again would not help: the backup $st_backup it keeps in the record is gone or unreadable."
+		return 0
+	fi
+	say "HINT: to take the managed block out as well, run $(command_for --apply), which records the file as it is now, then $(command_for --undo --apply); your edits outside the block stay. Or delete the lines from $START to $END yourself and undo again."
+}
+
 undo() {
+	# A record behind a folder this account cannot search cannot be checked: [ -e ] fails for
+	# it as for a missing one, but a record may be there, so the undo stops.
+	_u_up=$state
+	while [ -n "$_u_up" ] && [ ! -e "$_u_up" ] && [ ! -L "$_u_up" ]; do _u_up=${_u_up%/*}; done
+	if [ -n "$_u_up" ] && [ "$_u_up" != "$state" ] && [ -d "$_u_up" ] && [ ! -x "$_u_up" ]; then
+		die 3 "cannot check $state: Permission denied; nothing was changed" \
+			"give this account access to the folders on that path, then undo again"
+	fi
 	if [ ! -e "$state" ] && [ ! -L "$state" ]; then
-		if [ -e "$home/.nobrainer-flow-onboarding.json" ]; then
+		# A link counts, even a dangling one: it is a damaged record to inspect, not no record.
+		if [ -e "$home/.nobrainer-flow-onboarding.json" ] || [ -L "$home/.nobrainer-flow-onboarding.json" ]; then
 			die 3 "only an older setup record exists: $home/.nobrainer-flow-onboarding.json" \
 				"undo it with $(python_undo), which can tell which client it belongs to."
 		fi
-		die 3 "rollback state not found: $state" \
-			"undo reverses a setup that this script, scripts/install.py or the guided setup recorded; none is recorded for $label."
+		# A second undo, or an undo before any setup: nothing is recorded, so nothing is
+		# to be reversed, and nothing is written.
+		say "NOTHING TO UNDO: no setup is recorded for $label (looked for $state); nothing was changed"
+		return 0
 	fi
 	if [ -L "$state" ] || [ ! -f "$state" ]; then die 3 "rollback state must be a regular file: $state"; fi
 	read_state "$state" || die 3 "cannot read the setup record $state" \
 		"it holds characters or a layout this script does not read; undo it with $(python_undo)"
 
+	check_dirs || die 3 "rollback state lists a folder this setup cannot have created" \
+		"inspect the record; the guided undo refuses it as well"
+	_u_keep= _u_no_block=
 	if [ -n "$st_target" ]; then
 		# The record may only name a documented instruction file of this home.
 		_u_saved_skills=$skills_dir _u_saved_target=$target _u_saved_label=$label
@@ -878,9 +1168,6 @@ undo() {
 				*) die 3 "refusing unexpected personalization backup: $st_backup" ;;
 			esac
 			case ${st_backup#"$st_target".bak.} in */*) die 3 "refusing unexpected personalization backup: $st_backup" ;; esac
-			if [ -L "$st_backup" ] || [ ! -f "$st_backup" ]; then
-				die 3 "personalization backup must be a regular file: $st_backup"
-			fi
 			if [ ! -e "$st_target" ]; then
 				say "PRESERVED: personalization target is missing: $st_target"
 				exit 3
@@ -888,12 +1175,24 @@ undo() {
 		fi
 		if [ -e "$st_target" ]; then
 			sha256 /dev/null >/dev/null || die 2 "this script needs sha256sum, shasum or openssl to check the setup"
-			if [ "$(sha256 "$st_target")" != "$st_hash" ]; then
-				say "PRESERVED: personalization changed since setup: $st_target"
-				exit 3
-			fi
+			# A file that cannot be read hashes to nothing, which never matches the record.
+			_u_sum=$(sha256 "$st_target" 2>/dev/null)
+			[ "${#_u_sum}" = 64 ] || cannot_read "$st_target"
+			if [ "$_u_sum" != "$st_hash" ]; then
+				# Edited since the setup: the file stays exactly as it is. With its managed block
+				# taken out by hand the undo is otherwise complete; with the block still there only
+				# the links go. The backup is not needed either way.
+				if holds_marker "$st_target"; then
+					_u_keep=1
+				else
+					_u_no_block=1
+				fi
+			elif [ -n "$st_backup" ] && { [ -L "$st_backup" ] || [ ! -f "$st_backup" ]; }; then
+				die 3 "personalization backup must be a regular file: $st_backup"
+			elif [ -n "$st_backup" ] && ! cat "$st_backup" >/dev/null 2>&1; then
+				cannot_read "$st_backup"
 			# The line-based undo below needs each block on lines of its own.
-			if ! block_lines "$st_target" || { [ -n "$st_backup" ] && grep -q -F -e "$START" "$st_backup" && ! block_lines "$st_backup"; }; then
+			elif ! block_lines "$st_target" || { [ -n "$st_backup" ] && grep -q -F -e "$START" "$st_backup" && ! block_lines "$st_backup"; }; then
 				die 3 "the managed block in $st_target does not stand on lines of its own" \
 					"undo it with $(python_undo)"
 			fi
@@ -916,10 +1215,20 @@ undo() {
 	for _u_name in $st_created; do _u_count=$((_u_count + 1)); done
 	if [ "$apply" = 0 ]; then
 		say "UNDO_PLAN: unlink $_u_count skills from $st_dest"
-		if [ -n "$st_target" ] && [ -n "$st_backup" ]; then
+		if [ -n "$_u_keep" ]; then
+			say "PRESERVED: personalization changed since setup: $st_target; it is left exactly as it is, managed block included"
+			keep_hint
+		elif [ -n "$_u_no_block" ]; then
+			say "INSTRUCTIONS: $st_target no longer holds the managed block, so it is left as it is"
+		elif [ -n "$st_target" ] && [ -n "$st_backup" ]; then
 			say "INSTRUCTIONS: $st_target: put the managed block back as it was before the setup (from $st_backup); later edits outside the block stay"
 		elif [ -n "$st_target" ]; then
 			say "INSTRUCTIONS: $st_target: remove the managed block"
+		fi
+		if [ -n "$st_dirs" ] && [ -z "$_u_keep" ]; then
+			printf '%s' "$st_dirs" | LC_ALL=C sort -r | while IFS= read -r _u_dir; do
+				say "FOLDER: $_u_dir: removed if it is still empty; the setup created it"
+			done
 		fi
 		variable_note
 		say "NO_CHANGES: preview only; undo with: $(command_for --undo --apply)"
@@ -934,16 +1243,36 @@ undo() {
 			_u_removed=$((_u_removed + 1))
 		fi
 	done
+	if [ -n "$_u_keep" ]; then
+		# The record stays, with no links left in it, so that the block can still be taken out
+		# once the record knows the file as it is now.
+		skills_dir=$st_dest new_created= new_target=$st_target new_backup=$st_backup new_hash=$st_hash
+		new_dirs=$(printf '%s' "$st_dirs") want_dirs=$st_has_dirs
+		write_state || die 4 "the links are gone, but the setup record $state could not be updated"
+		say "PARTLY UNDONE: nobrainer-tech-flow for $label"
+		say "SKILLS: $_u_removed unlinked from $st_dest"
+		say "PRESERVED: personalization changed since setup: $st_target; it is left exactly as it is, managed block included"
+		keep_hint
+		say "NEXT: restart $label to drop the skills."
+		exit 3
+	fi
 	_u_result=
-	if [ -n "$st_target" ] && [ -e "$st_target" ]; then
+	if [ -n "$_u_no_block" ]; then
+		_u_result="INSTRUCTIONS: $st_target no longer holds the managed block, so it is left as it is"
+	elif [ -n "$st_target" ] && [ -e "$st_target" ]; then
 		_u_tmp=$(mktemp "${st_target%/*}/.${st_target##*/}.XXXXXX") || die 4 "cannot write next to $st_target"
-		cp -p "$st_target" "$_u_tmp" && restore_into "$st_target" "$st_backup" "$_u_tmp" ||
+		# As the setup does: a file without owner write permission is written through a copy
+		# made writable, which gets that permission taken away again before the rename.
+		_u_readonly=0
+		if read_only "$st_target"; then _u_readonly=1; fi
+		cp -p "$st_target" "$_u_tmp" && chmod u+w "$_u_tmp" && restore_into "$st_target" "$st_backup" "$_u_tmp" ||
 			{ rm -f "$_u_tmp"; die 4 "cannot write next to $st_target"; }
 		if [ -z "$st_backup" ] && ! grep -q '[^[:space:]]' "$_u_tmp"; then
 			rm -f "$_u_tmp" "$st_target"
 			_u_result="INSTRUCTIONS: $st_target removed; the setup had created it"
 		else
-			mv -f "$_u_tmp" "$st_target" || { rm -f "$_u_tmp"; die 4 "cannot write $st_target"; }
+			restore_mode "$_u_readonly" "$_u_tmp" && mv -f "$_u_tmp" "$st_target" ||
+				{ rm -f "$_u_tmp"; die 4 "cannot write $st_target"; }
 			if [ -n "$st_backup" ] && cmp -s "$st_target" "$st_backup"; then
 				_u_result="INSTRUCTIONS: $st_target is back as it was before the setup (backup kept: $st_backup)"
 			else
@@ -952,10 +1281,26 @@ undo() {
 		fi
 	fi
 	rm -f "$state"
-	rmdir "$st_dest" 2>/dev/null
+	# The record is gone, so the folder it sat in may be empty now. A folder that was there
+	# before the setup is not listed, and a folder that holds anything stays.
+	_u_gone=
+	if [ -n "$st_dirs" ]; then
+		_u_gone=$(printf '%s' "$st_dirs" | LC_ALL=C sort -r | while IFS= read -r _u_dir; do
+			if [ ! -d "$_u_dir" ] || [ -L "$_u_dir" ]; then continue; fi
+			if under_link "$_u_dir"; then
+				printf 'PRESERVED: %s: a folder above it is a link now, so it is left as it is\n' "$_u_dir"
+			elif rmdir "$_u_dir" 2>/dev/null; then
+				printf 'FOLDER: removed the empty folder %s\n' "$_u_dir"
+			fi
+		done)
+	fi
+	# A record from before the folder list still gets its skills folder removed when empty.
+	# One with the list says which folders the setup made, so no other is touched.
+	if [ -z "$st_has_dirs" ]; then rmdir "$st_dest" 2>/dev/null; fi
 	say "UNDONE: nobrainer-tech-flow for $label"
 	say "SKILLS: $_u_removed unlinked from $st_dest"
 	if [ -n "$_u_result" ]; then say "$_u_result"; fi
+	if [ -n "$_u_gone" ]; then say "$_u_gone"; fi
 	say "NEXT: restart $label to drop the skills."
 }
 

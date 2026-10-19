@@ -1,12 +1,13 @@
 # Adaptive session restart
 
-Development source adds automatic Flow startup care to the v1.8.1 restart
-protocol. Published tags remain unchanged; v1.8.1 is the rollback baseline.
+Automatic Flow startup care has shipped since v1.10.0 on top of the v1.8.1
+restart protocol.
 
-Invoke nobrainer-tech-flow with your task. Flow runs startup naming and health assessment
-without a separate restart command. It records adaptive policy within the task's
-authorization, preserves an existing `off` policy and obeys stricter host consent
-rules. Installation or incidental skill loading alone authorizes no mutation.
+Invoke nobrainer-tech-flow with resumable, long or delegated work. Flow runs startup
+naming and health assessment without a separate restart command; the quick path
+skips it. Flow entry enables observation only: restarting MAIN or archiving needs
+separately recorded owner consent. It preserves an existing `off` policy and obeys
+stricter host consent rules. Installation or incidental skill loading alone authorizes no mutation.
 Explicit automatic-restart consent remains valid for later rotations in scope;
 archival needs its own recorded authorization. Ordinary delegation uses native
 subagents; creating a separate visible conversation requires an explicit owner

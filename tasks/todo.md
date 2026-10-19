@@ -1,3 +1,27 @@
+# Release program 2.3.2 -> 2.4.0 -> distribution — 2026-10-18
+
+Outcome: ship a polished 2.3.2 hardening patch and a 2.4.0 "enforcement and
+proof" release, then publish nobrainer-tech-flow as a Claude Code plugin, a
+Codex plugin and an npm package, consistent with https://nobrainer.tech/flow/
+and the "From task to done." narrative. Distribution goal: GitHub Trending.
+Owner request 2026-10-18; benchmark routing (#70) and ModelMood stay on HOLD.
+
+- [>] 2.3.2: installer commits from #79 without benchmark routing; Codex P2
+  threads; Windows smoke; review findings (npm-first README, retry limit,
+  native dispatch, private `nbak` line, npm storage root, undo after an edited
+  instruction file, run-hook.cmd, restart consent, quick-path startup care).
+- [ ] 2.4.0: mechanical enforcement (optional hooks, lesson -> check), evidence
+  receipt salvage, test-sensitivity verdict, instruction-debt audit, retro,
+  cost limits, agent-readable secrets; dedupe repeated rules.
+- [ ] Distribution: npm Trusted Publisher (owner access), Claude plugin
+  marketplace and directory, Codex plugin, README + site + changelog aligned.
+
+Proof: validators + full unittest + CI 4/4 on exact release commit; PR review
+with 0 unresolved threads; public release/registry/site readback.
+Next: integrate 2.3.2 worker branches, push, open PR.
+
+---
+
 # Correct Codex source classification — 2026-09-05
 
 Outcome: present Codex as an execution host used with NoBrainer instructions.

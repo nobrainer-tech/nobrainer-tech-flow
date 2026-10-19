@@ -126,6 +126,66 @@ class HookScriptTests(unittest.TestCase):
         self.assertIn(MARKER, json.loads(result.stdout)["additional_context"])
 
 
+    @staticmethod
+    def wrapper_with_hook(folder: Path, name: str, body: str) -> Path:
+        """A copy of the wrapper beside a hook script NAME that runs BODY."""
+
+        hooks = folder / "hooks"
+        hooks.mkdir()
+        shutil.copy(ROOT / "hooks" / "run-hook.cmd", hooks / "run-hook.cmd")
+        (hooks / name).write_bytes(body.encode())
+        return hooks / "run-hook.cmd"
+
+    @unittest.skipIf(shutil.which("sh") is None or find_bash() is None, "sh and bash are needed")
+    def test_wrapper_shell_half_returns_the_hook_exit_code(self) -> None:
+        environment = clean_environment()
+        if os.name == "nt":
+            environment["PATH"] = str(Path(find_bash()).parent) + os.pathsep + environment.get("PATH", "")
+        with tempfile.TemporaryDirectory() as raw:
+            wrapper = self.wrapper_with_hook(Path(raw), "seven", "exit 7\n")
+            result = run(["sh", wrapper.as_posix(), "seven"], env=environment)
+        self.assertEqual(7, result.returncode, result.stdout + result.stderr)
+
+    @unittest.skipUnless(os.name == "nt", "the batch half of the wrapper only runs on Windows")
+    @unittest.skipIf(find_bash() is None, "Git Bash is not available")
+    def test_batch_wrapper_returns_the_hook_exit_code(self) -> None:
+        # An exit inside a parenthesised block used to report the code from before bash ran.
+        with tempfile.TemporaryDirectory() as raw:
+            wrapper = self.wrapper_with_hook(Path(raw), "seven", "exit 7\n")
+            result = run(["cmd", "/c", str(wrapper), "seven"], env=clean_environment())
+        self.assertEqual(7, result.returncode, result.stdout + result.stderr)
+
+    @unittest.skipUnless(os.name == "nt", "the batch half of the wrapper only runs on Windows")
+    def test_batch_wrapper_never_runs_a_bash_from_the_current_folder(self) -> None:
+        # A bash.exe planted in the current folder must never run. Windows can give a child
+        # process its Program Files variables back, so a Git Bash installed there may still be
+        # found; then the hook itself runs and prints its marker. Without one, the wrapper
+        # says that bash is missing. Either way the planted program prints nothing of its own.
+        with tempfile.TemporaryDirectory() as raw:
+            folder = Path(raw)
+            wrapper = self.wrapper_with_hook(folder, "session-start", "echo hook-ran\n")
+            empty = folder / "empty"
+            empty.mkdir()
+            planted = folder / "cwd"
+            planted.mkdir()
+            system32 = Path(os.environ["SystemRoot"]) / "System32"
+            shutil.copy(system32 / "where.exe", planted / "bash.exe")
+            # Windows names are case-insensitive, so the inherited spellings go before the new ones.
+            hidden = ("PATH", "ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA")
+            environment = {
+                key: value for key, value in clean_environment().items()
+                if key.upper() not in {name.upper() for name in hidden}
+            }
+            environment.update({name: str(empty) for name in hidden})
+            result = run([str(system32 / "cmd.exe"), "/c", str(wrapper), "session-start"], cwd=planted, env=environment)
+        output = result.stdout + result.stderr
+        if result.returncode == 0:
+            self.assertEqual("hook-ran", result.stdout.strip(), output)
+        else:
+            self.assertEqual(1, result.returncode, output)
+            self.assertIn("needs Git Bash, which was not found", result.stderr)
+            self.assertEqual("", result.stdout)
+
 class InstallerTests(unittest.TestCase):
     def test_copy_install_is_idempotent(self) -> None:
         # Symlinks need privileges on Windows, so copy mode is the supported route
