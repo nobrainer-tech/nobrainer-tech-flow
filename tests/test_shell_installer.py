@@ -1389,6 +1389,36 @@ class ShellInstallerTests(unittest.TestCase):
                     self.assertEqual(after_first, (entries(home), instructions.read_bytes()))
                 self.assertEqual(original, instructions.read_bytes())
 
+    def test_a_record_with_a_relative_destination_is_refused_and_does_not_hang(self) -> None:
+        # A hand-edited record names its skills folder without a leading slash and lists a
+        # folder no setup could have made. Both installers must refuse it, not loop on it.
+        for installer in ("sh", "py"):
+            with self.subTest(installer=installer), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                home.mkdir()
+                flags = ("--client", "codex", "--home", str(home))
+                self.assertEqual(0, install_step(installer, *flags, "--apply", home=home).returncode)
+                record_path = home / ".nobrainer-flow-onboarding-codex.json"
+                # Edited in place: the shell installer reads only the layout it writes.
+                text = record_path.read_text(encoding="utf-8")
+                record = json.loads(text)
+                text = text.replace(json.dumps(record["destination"]), '"skills"', 1)
+                text = text.replace(json.dumps(record["created_dirs"][0]), json.dumps(str(Path(temp) / "elsewhere")), 1)
+                record_path.write_text(text, encoding="utf-8")
+                self.assertEqual("skills", json.loads(text)["destination"])
+                command = [SHELL, SCRIPT.as_posix()] if installer == "sh" else [sys.executable, str(INSTALL_PY)]
+                try:
+                    result = subprocess.run(
+                        [*command, *flags, "--undo", "--apply"], cwd=ROOT, text=True, encoding="utf-8",
+                        errors="replace", capture_output=True, check=False, stdin=subprocess.DEVNULL,
+                        env=environment(home), timeout=120,
+                    )
+                except subprocess.TimeoutExpired:
+                    self.fail("the undo did not finish")
+
+                self.assertEqual(3, result.returncode, result.stdout + result.stderr)
+                self.assertTrue(record_path.exists())
+
     def test_undo_still_fails_when_a_record_is_there_but_cannot_be_used(self) -> None:
         def garbage(path: Path) -> None:
             path.write_text("{ this is not a setup record", encoding="utf-8")

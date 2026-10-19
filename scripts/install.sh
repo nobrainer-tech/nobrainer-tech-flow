@@ -551,6 +551,8 @@ on_way() {
 	_y_up=$2
 	while [ -n "$_y_up" ]; do
 		[ "$(clean abs "$(physical "$_y_up")")" != "$1" ] || return 0
+		# A damaged record can hold a relative BASE, which has no folder left to drop.
+		[ "${_y_up%/*}" != "$_y_up" ] || return 1
 		_y_up=${_y_up%/*}
 	done
 	return 1
