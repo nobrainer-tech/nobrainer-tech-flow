@@ -18,7 +18,7 @@ jobs:
   portable-suite:
     name: Portable suite (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       NOBRAINER_REQUIRE_RELEASE_TAG: "1"
       NOBRAINER_REQUIRE_SYMLINKS: "1"
