@@ -158,7 +158,9 @@ def backup_copy(target: Path) -> Path:
         try:
             with os.fdopen(descriptor, "wb") as handle, target.open("rb") as source:
                 shutil.copyfileobj(source, handle)
-            shutil.copystat(target, backup)
+            # Only the times are copied: copying the mode would undo the privacy above.
+            status = target.stat()
+            os.utime(backup, ns=(status.st_atime_ns, status.st_mtime_ns))
         except BaseException:
             backup.unlink(missing_ok=True)
             raise

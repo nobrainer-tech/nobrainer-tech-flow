@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -77,6 +78,12 @@ COMMANDS = (
     ("gh release view v2.4.0", False),
     ("gh issue create --title release", False),
     ("git status; git log --oneline -3", False),
+    ("brew install git\nrm -rf /home/dev/project", True),
+    ("cd ~/src/git\nrm -rf build", True),
+    ('"rm" -rf src', True),
+    ("'rm' -rf src", True),
+    ('rm -rf /tmp/a "x|y" /home/dev', True),
+    ("git status 2>&1 && git push --force", True),
 )
 
 
@@ -153,18 +160,32 @@ class PreToolTests(unittest.TestCase):
         completed = run_guard("pre-tool", json.dumps(payload))
         self.assertEqual("", completed.stdout)
 
+    def test_a_separator_inside_quotes_does_not_hide_a_later_path(self) -> None:
+        payload = {"tool_name": "Bash", "tool_input": {"command": 'rm -rf /tmp/a "x|y" /home/dev'}, "cwd": "/tmp/work"}
+        completed = run_guard("pre-tool", json.dumps(payload))
+        self.assertEqual("ask", json.loads(completed.stdout)["hookSpecificOutput"]["permissionDecision"])
+
     def test_a_temporary_path_that_links_elsewhere_is_not_exempt(self) -> None:
         with tempfile.TemporaryDirectory() as scratch:
             link = Path(scratch) / "work"
             # The suite may run from a copy under the temporary folder, so link outside it.
             link.symlink_to(Path(os.path.abspath(os.sep)), target_is_directory=True)
-            for command in (f"rm -rf {link}/skills", "rm -rf work/skills"):
+            for command in (f"rm -rf {link}/skills", "rm -rf work/skills", f"rm -rf {link}/../victim"):
                 with self.subTest(command=command):
                     payload = {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": scratch}
                     completed = run_guard("pre-tool", json.dumps(payload))
                     self.assertEqual("ask", json.loads(completed.stdout)["hookSpecificOutput"]["permissionDecision"])
             payload = {"tool_name": "Bash", "tool_input": {"command": f"rm -rf {scratch}/build"}, "cwd": scratch}
             self.assertEqual("", run_guard("pre-tool", json.dumps(payload)).stdout)
+
+    def test_a_long_command_is_asked_about_quickly(self) -> None:
+        for command in ("git push " * 1000, "echo ok; " + "git push " * 1000):
+            with self.subTest(length=len(command)):
+                started = time.monotonic()
+                output = self.decide(command)
+                self.assertLess(time.monotonic() - started, 5)
+                self.assertEqual("ask", output["hookSpecificOutput"]["permissionDecision"])
+        self.assertIsNone(self.decide("echo " + "x" * 5000))
 
     def test_a_directory_change_before_rm_drops_the_temporary_cwd_exemption(self) -> None:
         for command, asks in (

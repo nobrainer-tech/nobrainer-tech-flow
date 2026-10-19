@@ -188,13 +188,13 @@ class InstallGuardsTests(unittest.TestCase):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         self.write_settings({"env": {"ANTHROPIC_AUTH_TOKEN": "not-a-real-token"}})
-        self.settings.chmod(0o600)
+        # Even a settings file others can read gets a backup only its owner can read.
+        self.settings.chmod(0o644)
         previous = os.umask(0o022)
         try:
-            # Without copystat the mode is the one the backup was created with.
-            with mock.patch.object(module.shutil, "copystat"):
-                backup = module.backup_copy(self.settings)
+            backup = module.backup_copy(self.settings)
             self.assertEqual(0o600, backup.stat().st_mode & 0o777)
+            self.assertEqual(self.settings.stat().st_mtime_ns, backup.stat().st_mtime_ns)
             backup.unlink()
             folder = self.config / "not-a-file"
             folder.mkdir()

@@ -45,9 +45,14 @@ RISKY = (
     (re.compile(rf"\bkubectl\b{ARGS}\sdelete\b"), "kubectl delete removes cluster resources"),
     (re.compile(rf"\bgh\b{OPTIONS}\s+release\s+create{END}"), "gh release create publishes a release"),
 )
-# An rm, also path-qualified as /bin/rm, that is not part of "git rm"; its arguments
-# run to the next separator.
-RM = re.compile(r"(?<![\w./-])(?:[\w.-]*/)*rm(?=\s)([^;&|\n)]*)")
+# An rm, also path-qualified as /bin/rm or quoted as "rm", that is not part of "git rm";
+# its arguments run to the next separator.
+RM = re.compile(r"(?<![\w./-])[\"']?(?:[\w.-]*/)*rm[\"']?(?=\s)([^;&|\n)]*)")
+# Commands are matched one segment at a time. A segment this long that names a risky
+# tool is asked about whole, because the patterns slow down sharply on long lines.
+SEPARATOR = re.compile(r"[;&|\n]")
+LONGEST_SEGMENT = 2000
+RISKY_TOOL = re.compile(r"\b(?:git|vercel|npm|terraform|kubectl|gh)\b")
 # A directory change before an rm means the hook's cwd no longer says where a relative
 # target is, so the temporary-folder exemption cannot apply to it.
 CHANGE_DIRECTORY = re.compile(r"(?<![\w./-])(?:cd|pushd|popd)(?=\s|$|[;&|)])")
@@ -89,23 +94,24 @@ def inside_temp(argument: str, cwd: str | None, roots: list[str]) -> bool:
         if not cwd or not os.path.isabs(cwd):
             return False
         argument = os.path.join(cwd, argument)
-    # Links on the way are followed: a folder under /tmp that links to a project is the
-    # project, and its real place decides.
-    path = os.path.realpath(os.path.normpath(argument))
+    # Links on the way are followed before any "..", as the shell does: a folder under
+    # /tmp that links to a project is the project, and its real place decides.
+    path = os.path.realpath(argument)
     return any(path.startswith(root.rstrip("/") + "/") for root in roots)
 
 
 def risky_rm(command: str, cwd: str | None) -> str | None:
     roots = temp_roots()
     for match in RM.finditer(command):
-        before = command[: match.start()].split()
+        before = SEPARATOR.split(command[: match.start()])[-1].split()
         if before and os.path.basename(before[-1]) == "git":
             continue
         base = None if CHANGE_DIRECTORY.search(command, 0, match.start()) else cwd
         try:
             words = shlex.split(match.group(1))
         except ValueError:
-            words = match.group(1).split()
+            # An open quote means a separator inside it cut the arguments short.
+            return "rm -r with arguments the guard cannot read deletes files for good"
         if not any(RECURSIVE.match(word) for word in words):
             continue
         paths = [word for word in words if not word.startswith("-")]
@@ -122,7 +128,12 @@ def pre_tool(payload: dict) -> dict | None:
     if not isinstance(command, str):
         return None
     cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else None
-    reasons = [reason for pattern, reason in RISKY if pattern.search(command)]
+    reasons = []
+    for segment in SEPARATOR.split(command):
+        if len(segment) > LONGEST_SEGMENT and RISKY_TOOL.search(segment):
+            reasons.append("a long command names a risky tool and is too long to check")
+            continue
+        reasons += [reason for pattern, reason in RISKY if pattern.search(segment) and reason not in reasons]
     rm = risky_rm(command, cwd)
     if rm:
         reasons.insert(0, rm)

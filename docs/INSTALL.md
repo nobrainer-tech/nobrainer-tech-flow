@@ -433,7 +433,9 @@ Two opt-in hooks in your Claude Code user `settings.json`, never in the plugin:
   `gh release create`, also with global options before the subcommand
   (`npm -w pkg publish`, `gh -R owner/repo release create`). A relative `rm`
   target counts as temporary only when the working folder is temporary and the
-  command does not `cd` or `pushd` first;
+  command does not `cd` or `pushd` first, and a path counts by where its links
+  lead. An `rm -r` whose arguments it cannot read, and a command line over 2,000
+  characters that names one of these tools, are asked about as well;
 - when a turn that edited files or ran commands ends without a line starting
   with `Proof:` or `Checked:` and without `UNVERIFIED`, the stop is blocked once
   so the agent adds one. A read-only turn, a second stop and an unreadable
@@ -453,7 +455,7 @@ python3 scripts/install.py --client claude --guards --undo --apply
 `--home` flags. The settings file is `$CLAUDE_CONFIG_DIR/settings.json`, or
 `~/.claude/settings.json` when the variable is unset. The preview lists only the
 hooks it would add or remove, never other settings; other hooks are kept, each
-change writes a new backup without overwriting an older one, a second `--apply`
+change writes a new backup, readable only by you, without overwriting an older one, a second `--apply`
 changes nothing, and an invalid file is refused
 (exit 3) without being touched. The hooks run `flow_guard.py` through the
 skill link that `--client claude` created, so install the skills first. A
