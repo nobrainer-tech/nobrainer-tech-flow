@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NoBrainer Tech Flow MCP</title>
+<meta name="description" content="Remote MCP server for NoBrainer Tech Flow: one task contract, evidence check and done gate in every MCP client.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M126 0H476A36 36 0 0 1 512 36V386A126 126 0 0 1 386 512H36A36 36 0 0 1 0 476V126A126 126 0 0 1 126 0Z' fill='%233B65F0'/%3E%3Cpath d='M384 384H121A24 24 0 0 1 97 358A288 288 0 0 1 358 97A24 24 0 0 1 384 121Z' fill='%23FFF7EC'/%3E%3Crect x='240' y='240' width='104' height='104' fill='%23F04A14'/%3E%3C/svg%3E">
+<style>
+  :root { --blue: #3B65F0; --orange: #F04A14; --cream: #FFF7EC; --ink: #14161c; --muted: #4a4f5c; --line: #e6e1d8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--cream); color: var(--ink); font: 16px/1.55 "NoBrainer Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+  header { display: flex; align-items: center; gap: 14px; }
+  header svg { width: 48px; height: 48px; flex: none; }
+  h1 { font-size: 28px; line-height: 1.2; margin: 0; }
+  h1 span { color: var(--blue); }
+  h2 { font-size: 19px; margin: 32px 0 8px; }
+  p, li { color: var(--muted); }
+  code, pre { font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  pre { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; color: var(--ink); }
+  a { color: var(--blue); }
+  .tag { display: inline-block; background: var(--orange); color: #fff; border-radius: 6px; padding: 1px 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <svg viewBox="0 0 512 512" aria-hidden="true"><path d="M126 0H476A36 36 0 0 1 512 36V386A126 126 0 0 1 386 512H36A36 36 0 0 1 0 476V126A126 126 0 0 1 126 0Z" fill="#3B65F0"/><path d="M384 384H121A24 24 0 0 1 97 358A288 288 0 0 1 358 97A24 24 0 0 1 384 121Z" fill="#FFF7EC"/><rect x="240" y="240" width="104" height="104" fill="#F04A14"/></svg>
+    <h1>NoBrainer Tech Flow <span>MCP server</span></h1>
+  </header>
+  <p>One task contract, one evidence check and one done gate for AI agents, the same in every MCP client. Free, stateless: no accounts, no stored task content, no AI model.</p>
+  <p><span class="tag">Endpoint</span> <code>https://mcp.nobrainer.tech/mcp</code> (Streamable HTTP, no sign-in)</p>
+
+  <h2>Tools</h2>
+  <ul>
+    <li><code>start_flow_task</code>: check the outcome and definition of done; get item IDs and a signed contract token.</li>
+    <li><code>get_flow_step</code>: up to six rules for one Flow stage, event or module, quoted from the pinned Flow release.</li>
+    <li><code>check_flow_evidence</code>: check test output, command results, file hashes and URL status against each item.</li>
+    <li><code>check_flow_done</code>: DONE only when every item has accepted, current evidence.</li>
+    <li><code>draft_flow_handoff</code>: a final-report skeleton from the done receipt.</li>
+    <li><code>recommend_flow_model</code>: a top-3 model shortlist from a pinned snapshot of the <a href="https://nobrainer.tech/ai/benchmark/">NoBrainer AI benchmark</a>.</li>
+  </ul>
+
+  <h2>Install</h2>
+  <pre>claude mcp add --transport http nobrainer-tech-flow https://mcp.nobrainer.tech/mcp</pre>
+  <pre># ~/.codex/config.toml
+[mcp_servers.nobrainer-tech-flow]
+url = "https://mcp.nobrainer.tech/mcp"</pre>
+  <p>Other clients: <a href="https://github.com/nobrainer-tech/nobrainer-tech-flow/tree/main/mcp#install">install snippets</a>.</p>
+
+  <h2>Honest limits</h2>
+  <p>The server cannot see your machine. Evidence is reported by the agent; the server checks consistency, not truth.</p>
+
+  <p><a href="https://nobrainer.tech/flow/privacy/">Privacy</a> &middot; <a href="https://nobrainer.tech/flow/terms/">Terms</a> &middot; <a href="https://github.com/nobrainer-tech/nobrainer-tech-flow">Source (MIT)</a></p>
+</main>
+</body>
+</html>

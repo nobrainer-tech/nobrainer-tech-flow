@@ -1,0 +1,38 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "nobrainer-tech-flow",
+  "version": "1.0.0",
+  "description": "One task contract, evidence check and done gate for AI agents, in every MCP client.",
+  "author": {
+    "name": "NoBrainer Tech",
+    "url": "https://nobrainer.tech"
+  },
+  "homepage": "https://nobrainer.tech/flow/",
+  "repository": "https://github.com/nobrainer-tech/nobrainer-tech-flow",
+  "license": "MIT",
+  "keywords": ["workflow", "verification", "definition-of-done", "agents"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "NoBrainer Tech Flow",
+        "shortDescription": "From task to checked done",
+        "longDescription": "NoBrainer Tech Flow gives your agent one task contract and one done gate. Start a task with an observable outcome and a definition of done; each item gets an ID and a required kind and level of evidence. As the agent works, it submits test results, command output, file hashes or URL checks. The server checks them for consistency: exit codes, test counts, evidence level and results made stale by later changes. The task is reported done only when every item has accepted evidence or is listed as not checked with a reason. Guidance for each Flow stage and module comes from the current Flow release, a few rules at a time. A model advisor ranks models for a task type from a dated snapshot of the public NoBrainer AI benchmark. The server stores nothing and runs no AI model.",
+        "developerName": "NoBrainer Tech",
+        "category": "Developer Tools",
+        "capabilities": ["Interactive"],
+        "websiteURL": "https://nobrainer.tech/flow/",
+        "supportURL": "https://github.com/nobrainer-tech/nobrainer-tech-flow/issues",
+        "privacyPolicyURL": "https://nobrainer.tech/flow/privacy/",
+        "termsOfServiceURL": "https://nobrainer.tech/flow/terms/",
+        "defaultPrompt": [
+          "Use NoBrainer Tech Flow to fix this failing test and prove it is done.",
+          "Use NoBrainer Tech Flow to set a definition of done for this feature.",
+          "Use NoBrainer Tech Flow to check whether this task is really done."
+        ],
+        "brandColor": "#3B65F0",
+        "composerIcon": "./assets/icon.png",
+        "logo": "./assets/logo.png"
+      }
+    }
+  }
+}
