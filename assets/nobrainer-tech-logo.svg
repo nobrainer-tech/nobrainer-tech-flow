@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="nobrainer-tech-flow">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="NoBrainer Tech">
   <path d="M126 0H476A36 36 0 0 1 512 36V386A126 126 0 0 1 386 512H36A36 36 0 0 1 0 476V126A126 126 0 0 1 126 0Z" fill="#2948B8"/>
-  <path d="M128 80H192V112C192 200 416 164 416 336V360H320V336C320 248 96 284 96 112A32 32 0 0 1 128 80Z" fill="#FFFCF7"/>
-  <rect x="320" y="336" width="96" height="96" fill="#FF875A"/>
+  <path d="M384 384H121A24 24 0 0 1 97 358A288 288 0 0 1 358 97A24 24 0 0 1 384 121Z" fill="#FFFCF7"/>
+  <rect x="288" y="288" width="96" height="96" fill="#FF875A"/>
 </svg>
