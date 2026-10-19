@@ -183,6 +183,27 @@ class InstallGuardsTests(unittest.TestCase):
         self.assertEqual("unrelated", taken.read_text(encoding="utf-8"))
         self.assertEqual(["first", "second", "unrelated"], sorted(path.read_text(encoding="utf-8") for path in self.backups()))
 
+    def test_a_backup_is_private_from_its_first_byte_and_never_left_half_written(self) -> None:
+        spec = importlib.util.spec_from_file_location("install_guards_backup", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.write_settings({"env": {"ANTHROPIC_AUTH_TOKEN": "not-a-real-token"}})
+        self.settings.chmod(0o600)
+        previous = os.umask(0o022)
+        try:
+            # Without copystat the mode is the one the backup was created with.
+            with mock.patch.object(module.shutil, "copystat"):
+                backup = module.backup_copy(self.settings)
+            self.assertEqual(0o600, backup.stat().st_mode & 0o777)
+            backup.unlink()
+            folder = self.config / "not-a-file"
+            folder.mkdir()
+            with self.assertRaises(OSError):
+                module.backup_copy(folder)
+            self.assertEqual([], sorted(self.config.glob("not-a-file.flow-guards-*.bak")))
+        finally:
+            os.umask(previous)
+
     def test_undo_of_a_fresh_install_leaves_no_hooks_key(self) -> None:
         self.run_script("--apply")
         self.assertEqual([], self.backups())

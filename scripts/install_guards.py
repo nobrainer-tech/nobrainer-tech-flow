@@ -150,13 +150,18 @@ def backup_copy(target: Path) -> Path:
         suffix = f"-{counter}" if counter else ""
         backup = target.with_name(f"{target.name}.flow-guards-{stamp}{suffix}.bak")
         try:
-            # Exclusive creation also refuses a symlink planted at the name.
-            handle = backup.open("xb")
+            # Exclusive creation also refuses a symlink planted at the name. The settings can
+            # hold tokens, so the copy is private from its first byte whatever the umask is.
+            descriptor = os.open(backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         except FileExistsError:
             continue
-        with handle, target.open("rb") as source:
-            shutil.copyfileobj(source, handle)
-        shutil.copystat(target, backup)
+        try:
+            with os.fdopen(descriptor, "wb") as handle, target.open("rb") as source:
+                shutil.copyfileobj(source, handle)
+            shutil.copystat(target, backup)
+        except BaseException:
+            backup.unlink(missing_ok=True)
+            raise
         return backup
     raise RuntimeError(f"no free backup name for {target}")
 

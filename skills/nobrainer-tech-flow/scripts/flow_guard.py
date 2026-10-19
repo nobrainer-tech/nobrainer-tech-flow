@@ -73,7 +73,9 @@ def temp_roots() -> list[str]:
     for value in (os.environ.get("TMPDIR"), tempfile.gettempdir()):
         if value and os.path.isabs(value):
             roots.append(os.path.normpath(value))
-    return roots
+    # Compared with real paths below, so each root counts in its real form as well
+    # (/tmp is /private/tmp on macOS).
+    return sorted({form for root in roots for form in (root, os.path.realpath(root))})
 
 
 def inside_temp(argument: str, cwd: str | None, roots: list[str]) -> bool:
@@ -87,7 +89,9 @@ def inside_temp(argument: str, cwd: str | None, roots: list[str]) -> bool:
         if not cwd or not os.path.isabs(cwd):
             return False
         argument = os.path.join(cwd, argument)
-    path = os.path.normpath(argument)
+    # Links on the way are followed: a folder under /tmp that links to a project is the
+    # project, and its real place decides.
+    path = os.path.realpath(os.path.normpath(argument))
     return any(path.startswith(root.rstrip("/") + "/") for root in roots)
 
 
