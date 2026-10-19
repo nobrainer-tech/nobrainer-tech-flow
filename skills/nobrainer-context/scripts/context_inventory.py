@@ -10,6 +10,7 @@ writes. Client rules and sources: ../references/clients.md.
 from __future__ import annotations
 
 import argparse
+import glob
 import hashlib
 import json
 import os
@@ -30,17 +31,34 @@ IMPORT_DEPTH = {"claude": 4, "gemini": 5}
 LOADED = ("launch", "import", "global", "agent_surfaces")
 MIN_DUPLICATE_CHARS = 40
 MAX_READ_BYTES = 4 * 1024 * 1024
-IMPORT_RE = re.compile(r"(?:^|\s)@((?:\.{0,2}/)?[\w.\-/]*\w)")
+IMPORT_RE = re.compile(r"(?:^|\s)@((?:~/|\.{0,2}/)?[\w.\-/]*\w)")
 GOAL_ID_RE = re.compile(r"^GOAL_ID:\s*\S", re.MULTILINE)
 GOAL_STATUS_RE = re.compile(r"^STATUS:\s*([A-Z_]+)", re.MULTILINE)
 GOAL_DIRS = ("", "tasks", "docs", ".nobrainer")
-GLOBAL_FILES = {
-    "codex": ("~/.codex/AGENTS.override.md", "~/.codex/AGENTS.md"),
-    "claude": ("~/.claude/CLAUDE.md",),
-    "gemini": ("~/.gemini/GEMINI.md",),
-    "copilot": ("~/.copilot/copilot-instructions.md",),
-    "opencode": ("~/.config/opencode/AGENTS.md",),
-}
+
+
+def global_file(client: str) -> Path | None:
+    """The first user-level instruction file the client documents, if present."""
+
+    env = os.environ
+    codex = Path(env.get("CODEX_HOME") or "~/.codex").expanduser()
+    claude = Path(env.get("CLAUDE_CONFIG_DIR") or "~/.claude").expanduser()
+    config = Path(env.get("XDG_CONFIG_HOME") or "~/.config").expanduser()
+    candidates = {
+        "codex": (codex / "AGENTS.override.md", codex / "AGENTS.md"),
+        "claude": (claude / "CLAUDE.md",),
+        "gemini": (Path("~/.gemini/GEMINI.md").expanduser(),),
+        "copilot": (Path("~/.copilot/copilot-instructions.md").expanduser(),),
+        "opencode": (config / "opencode" / "AGENTS.md", Path("~/.claude/CLAUDE.md").expanduser()),
+    }.get(client, ())
+    return next((path for path in candidates if path.is_file()), None)
+
+
+def read_bytes(path: Path) -> bytes | None:
+    try:
+        return path.read_bytes()
+    except OSError:
+        return None
 
 
 def read_text(path: Path) -> str:
@@ -68,7 +86,8 @@ def imports(path: Path, depth: int, seen: set[Path] | None = None) -> list[Path]
     if depth <= 0:
         return found
     for match in IMPORT_RE.finditer(prose(read_text(path))):
-        target = (path.parent / match.group(1)).resolve()
+        name = match.group(1)
+        target = (Path(name).expanduser() if name.startswith("~") else path.parent / name).resolve()
         if target.is_file() and target not in seen:
             seen.add(target)
             found.append(target)
@@ -133,8 +152,10 @@ def client_files(client: str, root: Path, cwd: Path, codex_config: Path) -> list
         files = [(p, "launch") for p in agents or [p for d in up for p in present(d / "CLAUDE.md")][:1]]
         entries = project_settings(root / "opencode.json").get("instructions", [])
         for entry in entries if isinstance(entries, list) else []:
-            if isinstance(entry, str) and not entry.startswith(("http://", "https://")):
-                files += [(p, "launch") for p in sorted(root.glob(entry)) if p.is_file()]
+            if not isinstance(entry, str) or not entry.strip() or entry.startswith(("http://", "https://")):
+                continue
+            pattern = os.path.join(str(root), os.path.expanduser(entry))
+            files += [(Path(p), "launch") for p in sorted(glob.glob(pattern, recursive=True)) if Path(p).is_file()]
     depth = IMPORT_DEPTH.get(client, 0)
     expanded: list[tuple[Path, str]] = []
     for path, mode in files:
@@ -173,10 +194,12 @@ def label(path: Path, root: Path) -> str:
 
 
 def describe(path: Path, root: Path) -> dict[str, Any]:
-    raw = path.read_bytes()
+    data = read_bytes(path)
+    raw = data or b""
     text = raw.decode("utf-8", errors="replace")
     return {
         "path": label(path, root),
+        "readable": data is not None,
         "bytes": len(raw),
         "lines": text.count("\n") + (0 if text.endswith("\n") or not text else 1),
         "words": len(text.split()),
@@ -218,13 +241,15 @@ def inventory(cwd: Path, codex_config: Path, clients: tuple[str, ...], include_g
     findings: list[str] = []
     for client in clients:
         loaded = client_files(client, root, cwd, codex_config)
-        if include_global:
-            loaded += [(Path(p).expanduser(), "global") for p in GLOBAL_FILES.get(client, ())
-                       if Path(p).expanduser().is_file()][:1]
+        user_file = global_file(client) if include_global else None
+        if user_file is not None:
+            loaded.append((user_file, "global"))
         entries = []
         for path, mode in loaded:
             all_files.setdefault(path.resolve(), path)
             entry = describe(path, root) | {"mode": mode}
+            if not entry["readable"]:
+                findings.append(f"{client}: {entry['path']} cannot be read")
             guidance = LINE_GUIDANCE.get(client)
             entry["over_guidance"] = bool(guidance and mode != "import" and entry["lines"] > guidance)
             if entry["over_guidance"]:
@@ -247,7 +272,9 @@ def inventory(cwd: Path, codex_config: Path, clients: tuple[str, ...], include_g
     report["files"] = sorted({label(p, root) for p in paths})
     digests: dict[str, list[str]] = {}
     for path in paths:
-        digests.setdefault(hashlib.sha256(path.read_bytes()).hexdigest(), []).append(label(path, root))
+        data = read_bytes(path)
+        if data is not None:
+            digests.setdefault(hashlib.sha256(data).hexdigest(), []).append(label(path, root))
     report["identical_copies"] = [sorted(group) for group in digests.values() if len(group) > 1]
     report["duplicates"] = duplicates(paths, root)
     report["goal"] = goal_state(root, {label(p, root): read_text(p) for p in paths}, goal_file)

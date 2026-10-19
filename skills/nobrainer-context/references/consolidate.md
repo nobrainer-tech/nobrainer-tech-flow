@@ -34,9 +34,10 @@ Rules:
   start, so the import moves bytes, it does not remove them.
 - A sentence that only tells an agent to read another file is unreliable; use
   the client's import or file-name setting when it has one.
-- A byte-identical copy (for example `CLAUDE.md` copied from `AGENTS.md`) is
-  drifts, and GitHub Copilot's agent surfaces read both copies. Replace it with the pointer unless the
-  project requires the copy; a test that enforces the copy is such a reason.
+- A byte-identical copy (for example `CLAUDE.md` copied from `AGENTS.md`)
+  drifts, and GitHub Copilot's agent surfaces read both copies. Replace it with
+  the pointer unless the project requires the copy; a test that enforces the
+  copy is such a reason.
 - Preserve client-managed blocks (for example `NOBRAINER-TECH-FLOW` markers),
   `AGENTS.override.md` precedence and every byte outside the lines you change.
   A `NOBRAINER-CODEX-CONTEXT` block left by an earlier release is ordinary

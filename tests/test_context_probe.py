@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -102,11 +103,16 @@ SHARED = "- Run the full unit suite with python3 -m unittest before every commit
 
 
 class ContextInventoryTests(unittest.TestCase):
-    def inventory(self, cwd: Path, *extra: str) -> tuple[int, dict]:
+    def inventory(self, cwd: Path, *extra: str, home: Path | None = None) -> tuple[int, dict]:
         config = cwd / "missing-codex-config.toml"
+        env = dict(os.environ)
+        if home is not None:
+            env.update(HOME=str(home), USERPROFILE=str(home))
+            for name in ("CODEX_HOME", "CLAUDE_CONFIG_DIR", "XDG_CONFIG_HOME"):
+                env.pop(name, None)
         result = subprocess.run(
             [sys.executable, str(INVENTORY), "--cwd", str(cwd), "--codex-config", str(config), "--json", *extra],
-            cwd=ROOT, capture_output=True, text=True, check=False,
+            cwd=ROOT, capture_output=True, text=True, check=False, env=env,
         )
         self.assertEqual("", result.stderr)
         return result.returncode, json.loads(result.stdout)
@@ -195,6 +201,45 @@ class ContextInventoryTests(unittest.TestCase):
 
         self.assertEqual({"AGENTS.md": "launch"}, self.paths(payload, "gemini"))
         self.assertEqual({"AGENTS.md": "launch", "CONVENTIONS.md": "launch"}, self.paths(payload, "opencode"))
+
+    def test_home_imports_global_files_and_odd_opencode_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = self.repo(raw)
+            home = (Path(raw) / "home").resolve()
+            write(home / "shared.md", "shared notes\n")
+            write(home / ".claude/CLAUDE.md", "user rules\n")
+            write(root / "CLAUDE.md", "@~/shared.md\n")
+            write(root / "AGENTS.md", "agents\n")
+            outside = Path(raw) / "outside.md"
+            write(outside, "absolute entry\n")
+            entries = [str(outside), "", "~/shared.md", "docs/**/*.md", 7]
+            write(root / "opencode.json", json.dumps({"instructions": entries}))
+            write(root / "docs/a/b.md", "nested\n")
+            code, payload = self.inventory(root, "--client", "claude", "--client", "opencode",
+                                           "--include-global", home=home)
+
+        self.assertIn(code, (0, 1))
+        claude = self.paths(payload, "claude")
+        self.assertEqual("import", claude["~/shared.md"])
+        self.assertEqual("global", claude["~/.claude/CLAUDE.md"])
+        opencode = self.paths(payload, "opencode")
+        for name in ("AGENTS.md", str(outside.resolve()), "~/shared.md", "docs/a/b.md"):
+            self.assertIn(name, opencode)
+
+    @unittest.skipIf(os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0), "needs POSIX permissions")
+    def test_unreadable_file_is_a_finding_not_a_crash(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = self.repo(raw)
+            write(root / "AGENTS.md", SHARED)
+            (root / "AGENTS.md").chmod(0)
+            try:
+                code, payload = self.inventory(root, "--client", "opencode")
+            finally:
+                (root / "AGENTS.md").chmod(0o600)
+
+        self.assertEqual(0, code)
+        self.assertEqual("ATTENTION", payload["status"])
+        self.assertIn("opencode: AGENTS.md cannot be read", payload["findings"])
 
     def test_imports_inside_code_are_ignored_and_loops_stop(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
