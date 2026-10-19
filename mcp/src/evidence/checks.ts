@@ -2,7 +2,7 @@
 import { createHash } from "node:crypto";
 import { classifyUrl, kindMatches, levelSatisfies, type Level, type Proof } from "../rules/levels.ts";
 import { hasFailingSummary, parseTestSummary } from "./parsers.ts";
-import { normaliseOut } from "./normalise.ts";
+import { normaliseOut, normaliseText } from "./normalise.ts";
 import { MAX_FILES, hex8, itemId, type Item, type TokenState } from "../token.ts";
 
 export type EvidenceRecord = {
@@ -32,7 +32,8 @@ export type RecordResult = {
 const sha = (s: string): Buffer => createHash("sha256").update(s).digest();
 
 export function recordDigest(r: EvidenceRecord): Buffer {
-  const parts = [r.kind, r.cmd ?? "", r.exit ?? "", normaliseOut(r.out ?? ""), r.path ?? "", r.sha256 ?? "", r.url ?? "", r.status ?? ""];
+  // The note is part of the digest so two different observations never share one (spec 7.1 amended).
+  const parts = [r.kind, r.cmd ?? "", r.exit ?? "", normaliseOut(r.out ?? ""), r.path ?? "", r.sha256 ?? "", r.url ?? "", r.status ?? "", normaliseText(r.note ?? "")];
   return sha(parts.join("|")).subarray(0, 4);
 }
 
@@ -47,6 +48,15 @@ function normalisePath(p: string): string {
   return p.trim().replace(/\\/g, "/").replace(/\/{2,}/g, "/").replace(/^(\.\/)+/, "");
 }
 
+/** Reopen every accepted test or command result (used when the change epoch cannot grow). */
+function staleAllRuns(state: TokenState): void {
+  for (const item of state.items) {
+    if (item.status === "ACCEPTED" && (item.kind === "test" || item.kind === "command")) {
+      Object.assign(item, { status: "OPEN", kind: null, digest: Buffer.alloc(4) });
+    }
+  }
+}
+
 /** Register a file hash; a different hash for a known path increments the change epoch. */
 function registerFile(state: TokenState, path: string, sha256: string): void {
   const ph = sha(normalisePath(path)).subarray(0, 4);
@@ -55,7 +65,8 @@ function registerFile(state: TokenState, path: string, sha256: string): void {
   if (known) {
     if (!known.hash.equals(ch)) {
       known.hash = ch;
-      state.epoch = Math.min(255, state.epoch + 1);
+      if (state.epoch < 255) state.epoch += 1;
+      else staleAllRuns(state); // the epoch byte is full: invalidate directly so staleness is never missed
     }
     return;
   }

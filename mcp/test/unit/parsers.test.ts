@@ -140,3 +140,14 @@ test('property: never throws, fast on 4,000-char inputs', () => {
     assert.ok(performance.now() - t0 < 50, 'slow input');
   }
 });
+
+test('regression: lines built to force regex backtracking parse in a few milliseconds', () => {
+  const lines = ['==' + ' '.repeat(298), '='.repeat(50) + ' '.repeat(200) + 'x', '=' + ' '.repeat(298), 'Tests  ' + ' (1)'.repeat(70)];
+  for (const line of lines) {
+    const out = Array(13).fill(line).join('\n');
+    const t = performance.now();
+    for (let i = 0; i < 4; i++) parseTestSummary(out);
+    const ms = performance.now() - t;
+    assert.ok(ms < 40, `${JSON.stringify(line.slice(0, 10))}: ${ms.toFixed(1)} ms for four calls`);
+  }
+});

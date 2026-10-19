@@ -29,11 +29,25 @@ function parts(body: string): Map<string, number> | null {
 
 const PYTEST_WORDS = /^(?:passed|failed|errors?|skipped|xfailed|xpassed|warnings?|deselected|rerun)$/;
 
+// Body of a pytest summary: comma-separated "N word" pairs that cannot absorb whitespace, so
+// matching is linear (no ambiguous \s / lazy-dot splits to backtrack through).
+const PYTEST_BODY = /^(\d{1,9} [a-z]{2,20}(?:, \d{1,9} [a-z]{2,20}){0,11})(?: in [\d.]{1,10}s(?: \(\d{1,3}:\d{2}:\d{2}\))?)?$/;
+
+function stripRule(line: string): { core: string; wrapped: boolean } {
+  let a = 0;
+  let b = line.length;
+  while (a < b && line[a] === '=') a++;
+  while (b > a && line[b - 1] === '=') b--;
+  return { core: line.slice(a, b).trim().replace(/ {2,}/g, ' '), wrapped: a >= 2 && line.length - b >= 2 };
+}
+
 function pytestLine(line: string): RunnerSummary | null {
-  const timed = /^=*\s*(.{1,200}?)\s+in\s+[\d.]{1,10}s(?:\s+\(\d{1,3}:\d{2}:\d{2}\))?\s*=*$/.exec(line);
-  const wrapped = /^={2,}\s*(.{1,200}?)\s*={2,}$/.exec(line);
-  const body = timed?.[1] ?? wrapped?.[1];
-  if (body === undefined) return null;
+  if (!/\d/.test(line)) return null;
+  const { core, wrapped } = stripRule(line);
+  const m = PYTEST_BODY.exec(core);
+  // A timed line ("... in 0.12s") may stand alone; an untimed one must be wrapped in === rules.
+  if (!m?.[1] || (!wrapped && !/ in [\d.]{1,10}s/.test(core))) return null;
+  const body = m[1];
   const p = parts(body);
   if (!p) return null;
   for (const k of p.keys()) if (!PYTEST_WORDS.test(k)) return null;

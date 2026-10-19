@@ -57,13 +57,14 @@ export function findSecret(value: string): string | null {
 
 type Hit = { field: string; pattern: string };
 
-function childPath(path: string, key: string | number): string {
+function childPath(path: string, key: string | number, known?: ReadonlySet<string>): string {
   if (typeof key === 'number') return `${path}[${key}]`;
-  if (!/^[A-Za-z_]\w{0,63}$/.test(key)) return `${path}["*"]`;
+  // Keys are user input until the schema has rejected unknown ones: only schema names are echoed.
+  if (!/^[A-Za-z_]\w{0,63}$/.test(key) || (known && !known.has(key))) return `${path}["*"]`;
   return path === '' ? key : `${path}.${key}`;
 }
 
-function walk(v: unknown, path: string, depth: number): Hit | null {
+function walk(v: unknown, path: string, depth: number, known?: ReadonlySet<string>): Hit | null {
   if (typeof v === 'string') {
     const pattern = findSecret(v);
     return pattern === null ? null : { field: path === '' ? '$' : path, pattern };
@@ -72,13 +73,13 @@ function walk(v: unknown, path: string, depth: number): Hit | null {
   if (depth > MAX_DEPTH) return { field: path === '' ? '$' : path, pattern: 'too_deep' };
   if (Array.isArray(v)) {
     for (let i = 0; i < v.length; i++) {
-      const hit = walk(v[i], childPath(path, i), depth + 1);
+      const hit = walk(v[i], childPath(path, i, known), depth + 1, known);
       if (hit) return hit;
     }
     return null;
   }
   for (const key of Object.keys(v)) {
-    const hit = walk((v as Record<string, unknown>)[key], childPath(path, key), depth + 1);
+    const hit = walk((v as Record<string, unknown>)[key], childPath(path, key, known), depth + 1, known);
     if (hit) return hit;
   }
   return null;
@@ -87,8 +88,8 @@ function walk(v: unknown, path: string, depth: number): Hit | null {
 /**
  * Walks strings in objects and arrays (container depth limit 8). Returns the first hit with a
  * field path such as `evidence[0].out`, or `too_deep` for deeper nesting. A bare string input
- * reports the field `$`.
+ * reports the field `$`. With `known`, keys outside that set are reported as `["*"]`.
  */
-export function scanInput(input: unknown): Hit | null {
-  return walk(input, '', 0);
+export function scanInput(input: unknown, known?: ReadonlySet<string>): Hit | null {
+  return walk(input, '', 0, known);
 }

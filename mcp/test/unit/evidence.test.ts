@@ -148,3 +148,26 @@ test("level satisfaction rules", () => {
   assert.ok(levelSatisfies("user", "user"));
   assert.ok(!levelSatisfies("local", "deployed"));
 });
+
+test("two different observations never share a digest or trigger SAME_OUTPUT", () => {
+  const s = state([["observation", "user"], ["observation", "user"]]);
+  const out = applyEvidence(s, [
+    { item: "AC01", kind: "observation", note: "the owner read the page and approved the copy" },
+    { item: "AC02", kind: "observation", note: "the support lead confirmed the reply template works" },
+  ]);
+  assert.deepEqual(out.warnings, []);
+  assert.notEqual(out.results[0]?.digest, out.results[1]?.digest);
+});
+
+test("staleness is still detected after the change epoch is full (255)", () => {
+  const s = state([["test", "local"], ["file", "static"]]);
+  s.epoch = 254;
+  applyEvidence(s, [{ item: "AC02", kind: "file", path: "a.txt", sha256: sha("1") }]);
+  applyEvidence(s, [{ item: "AC02", kind: "file", path: "a.txt", sha256: sha("2") }]);
+  assert.equal(s.epoch, 255);
+  applyEvidence(s, [run(PYTEST_PASS, 0)]);
+  assert.ok(isCurrent(s.items[0]!, s.epoch));
+  applyEvidence(s, [{ item: "AC02", kind: "file", path: "a.txt", sha256: sha("3") }]);
+  assert.ok(!isCurrent(s.items[0]!, s.epoch), "a change at epoch 255 must still invalidate the run");
+  assert.ok(isCurrent(s.items[1]!, s.epoch));
+});
