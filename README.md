@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://nobrainer.tech">
-    <img src="assets/nobrainer-tech-logo.svg" width="96" alt="nobrainer-tech-flow monogram">
+    <img src="assets/nobrainer-tech-logo.svg" width="96" alt="nobrainer-tech-flow logo: a path from task to done">
   </a>
 </p>
 
