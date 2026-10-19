@@ -192,11 +192,13 @@ when each channel reads back that version, or the gap is reported:
 
 1. GitHub release from the annotated `vX.Y.Z` tag, with
    `nobrainer-tech-flow-X.Y.Z-plugin.zip` (`scripts/build_plugin.py`) and the
-   `npm pack` tarball built from the merge commit; download both and compare SHA-256.
+   `npm pack` tarball built from the merge commit; download each asset and compare its
+   SHA-256 with the digest of that same file before upload.
 2. npm: run the `Publish npm` workflow from the tag, then read back
    `npm view nobrainer-tech-flow version`.
-3. Claude Code and Codex marketplaces in this repository: install
-   `nobrainer-tech-flow@nobrainer-tech` in a throwaway profile and read back the version.
+3. Claude Code and Codex marketplaces in this repository: they follow the default
+   branch, so install `nobrainer-tech-flow@nobrainer-tech` in a throwaway profile while
+   `main` still equals the tag, and read back the version and the installed commit.
 4. `nobrainer-tech/nobrainer-tech-flow-plugin`: export the release ZIP there
    through a PR, update `SOURCE.json`, run its unmodified
    `_maintainers/verify_release.py`, then release it. It is the hook-free copy that
