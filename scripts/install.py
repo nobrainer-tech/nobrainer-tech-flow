@@ -342,12 +342,20 @@ def unrecorded_path(ctx: Context) -> Path | None:
     """Where this client's setup record would be, when no record exists at all.
 
     Neither this client's record nor the older single-client one may be there, not even
-    as a link: anything that is there is a record to read, or to refuse.
+    as a link: anything that is there is a record to read, or to refuse. A path that cannot
+    be checked, because a folder on the way cannot be searched, raises OSError: a record may
+    be there, so it is not the same as none.
     """
 
     guided = ctx.guided
     paths = (guided.state_path(ctx.home, None, ctx.client), guided.legacy_state_path(ctx.home, None))
-    if any(path is not None and (path.exists() or path.is_symlink()) for path in paths):
+    for path in paths:
+        if path is None:
+            continue
+        try:
+            path.lstat()
+        except (FileNotFoundError, NotADirectoryError):
+            continue
         return None
     return paths[0]
 
@@ -427,7 +435,12 @@ def install(ctx: Context) -> int:
 
 
 def undo(ctx: Context) -> int:
-    missing = unrecorded_path(ctx)
+    try:
+        missing = unrecorded_path(ctx)
+    except OSError as exc:
+        print(f"ERROR: cannot check {exc.filename}: {exc.strerror}; nothing was changed", file=sys.stderr)
+        print("HINT: give this account access to the folders on that path, then undo again", file=sys.stderr)
+        return 3
     if missing is not None:
         # A second undo, or an undo before any setup: nothing is recorded, so nothing is
         # to be reversed, and nothing is written.
@@ -464,7 +477,10 @@ def undo(ctx: Context) -> int:
         if re.search(r"^PRESERVED: personalization changed since setup", out, re.MULTILINE):
             # The file stays as it is, and so do the folders; the note below says why.
             target, directories = None, []
-        if target and backup:
+        kept = re.search(r"^INSTRUCTIONS_KEPT: (.+)$", out, re.MULTILINE)
+        if kept:
+            print(f"INSTRUCTIONS: {kept.group(1)}")
+        elif target and backup:
             print(
                 f"INSTRUCTIONS: {target}: put the managed block back as it was before the setup "
                 f"(from {backup}); later edits outside the block stay"
@@ -484,7 +500,10 @@ def undo(ctx: Context) -> int:
     removed = [name for name in readback.group(1).split(",") if name not in ("", "none")] if readback else []
     print(f"UNDONE: nobrainer-tech-flow for {ctx.label}")
     print(f"SKILLS: {len(removed)} unlinked from {destination}")
-    if target:
+    kept = re.search(r"^INSTRUCTIONS_KEPT: (.+)$", out, re.MULTILINE)
+    if kept:
+        print(f"INSTRUCTIONS: {kept.group(1)}")
+    elif target:
         if any(line.startswith("RESTORED: ") for line in out.splitlines()):
             print(f"INSTRUCTIONS: {target} is back as it was before the setup (backup kept: {backup})")
         elif not Path(str(target)).exists():

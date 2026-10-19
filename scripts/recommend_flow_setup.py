@@ -623,15 +623,18 @@ def physical_path(path: Path) -> Path:
 def missing_directories(*paths: Path) -> list[Path]:
     """The folders on the way to PATHS that do not exist yet, outermost first.
 
-    A link counts as existing: it is somebody's link, never a folder this setup made.
+    A link counts as existing: it is somebody's link, never a folder this setup made. So
+    does a spelling with ``..`` that resolves to an existing folder: ``profile/missing/..``
+    does not exist before ``missing`` is made, but it is ``profile``, which was there
+    already. The folders above such a spelling are still checked, as ``missing`` is.
     """
 
     missing: list[Path] = []
     for path in paths:
         chain: list[Path] = []
         for candidate in (path, *path.parents):
-            if candidate.exists() or candidate.is_symlink():
-                break
+            if candidate.exists() or candidate.is_symlink() or physical_path(candidate).exists():
+                continue
             chain.append(candidate)
         for candidate in reversed(chain):
             if candidate not in missing:
@@ -645,7 +648,9 @@ def recorded_directories(state: dict[str, object], record: Path) -> list[Path]:
     A folder the setup made lies on the way to its skills folder, to the folder of its
     instruction file or to the folder of the RECORD itself, so any other entry (a relative path, a root, a path with
     ``..``, a folder elsewhere) means a damaged record, and an undo must not act on it.
-    A path may be spelled with or without the links on the way, so both spellings count.
+    A path may be spelled with or without the links on the way, so both spellings count. A
+    folder the setup made is listed as it really is, and a base spelled with ``..`` reaches
+    it on the way without lying below it, so the real form of each folder on that way counts.
     """
 
     raw = state.get("created_dirs", [])
@@ -657,7 +662,7 @@ def recorded_directories(state: dict[str, object], record: Path) -> list[Path]:
     if isinstance(target, str) and target:
         bases.append(Path(target).parent)
     bases.append(record.parent)
-    places = [form for base in bases for form in (base, physical_path(base))]
+    places = [form for base in bases for step in (base, *base.parents) for form in (step, physical_path(step))]
     directories: list[Path] = []
     seen: set[Path] = set()
     for item in raw:
@@ -677,6 +682,22 @@ def recorded_directories(state: dict[str, object], record: Path) -> list[Path]:
     return directories
 
 
+def is_link(path: Path) -> bool:
+    """A symbolic link, or on Windows any reparse point such as a directory junction.
+
+    ``is_symlink`` misses a junction before Python 3.12, and removing one with ``rmdir``
+    disconnects whatever uses the folder it points to, even when that folder is not empty.
+    """
+
+    if path.is_symlink():
+        return True
+    try:
+        attributes = getattr(os.lstat(path), "st_file_attributes", 0)
+    except OSError:
+        return False
+    return bool(attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0))
+
+
 def remove_empty_directories(directories: list[Path]) -> tuple[list[Path], list[Path]]:
     """Remove each of these folders that is still empty, innermost first.
 
@@ -690,9 +711,9 @@ def remove_empty_directories(directories: list[Path]) -> tuple[list[Path], list[
     kept: list[Path] = []
     for path in sorted(directories, key=lambda item: len(item.parts), reverse=True):
         try:
-            if path.is_symlink() or not path.is_dir():
+            if is_link(path) or not path.is_dir():
                 continue
-            if any(parent.is_symlink() for parent in path.parents):
+            if any(is_link(parent) for parent in path.parents):
                 kept.append(path)
                 continue
             path.rmdir()
@@ -913,13 +934,38 @@ def restore_file_preimage(
     )
 
 
-def print_changed_profile(target: Path) -> None:
+def print_changed_profile(target: Path, backup: object) -> None:
     print(f"PRESERVED: personalization changed since setup: {target}; it is left exactly as it is, managed block included")
+    by_hand = f"delete the lines from {BLOCK_START.decode()} to {BLOCK_END.decode()} yourself and undo again"
+    # Running the setup again keeps the backup the record names, and the undo after it puts
+    # the block back from that backup. With the backup gone or unreadable that undo would stop,
+    # so only the way by hand is offered.
+    backup_file = Path(str(backup)) if backup else None
+    if backup_file and (backup_file.is_symlink() or not backup_file.is_file() or not os.access(backup_file, os.R_OK)):
+        print(
+            f"HINT: to take the managed block out as well, {by_hand}; your edits outside the block stay. "
+            f"Running the setup again would not help: the backup {backup_file} it keeps in the record is gone or unreadable."
+        )
+        return
     print(
         "HINT: to take the managed block out as well, run the setup again with --apply, which records the "
-        "file as it is now, then undo again; your edits outside the block stay. Or delete the lines from "
-        f"{BLOCK_START.decode()} to {BLOCK_END.decode()} yourself."
+        f"file as it is now, then undo again; your edits outside the block stay. Or {by_hand}."
     )
+
+
+def read_or_report(path: Path) -> bytes | None:
+    """PATH's bytes, or None after saying why the undo stops before it changes anything.
+
+    A file that cannot be read cannot be told apart from one without the managed block, and
+    taking it for one would remove the links and the record while the block stays.
+    """
+
+    try:
+        return path.read_bytes()
+    except OSError:
+        print(f"ERROR: cannot read {path}, so the undo cannot tell what it holds; nothing was changed", file=sys.stderr)
+        print("HINT: make it readable for this account, then undo again", file=sys.stderr)
+        return None
 
 
 def rollback(args: argparse.Namespace, state_file: Path) -> int:
@@ -927,6 +973,10 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         metadata = state_file.lstat()
     except FileNotFoundError:
         print(f"ERROR: rollback state not found: {state_file}", file=sys.stderr)
+        return 3
+    except OSError as exc:
+        print(f"ERROR: cannot check {state_file}: {exc.strerror}; nothing was changed", file=sys.stderr)
+        print("HINT: give this account access to the folders on that path, then undo again", file=sys.stderr)
         return 3
     if state_file.is_symlink() or not state_file.is_file():
         print(f"ERROR: rollback state must be a regular file: {state_file}", file=sys.stderr)
@@ -968,13 +1018,6 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
             if backup_file.parent != target_path.parent or not backup_file.name.startswith(target_path.name + ".bak."):
                 print(f"ERROR: refusing unexpected personalization backup: {backup_file}", file=sys.stderr)
                 return 3
-            try:
-                backup_metadata = backup_file.lstat()
-            except FileNotFoundError:
-                backup_metadata = None
-            if backup_metadata is None or backup_file.is_symlink() or not backup_file.is_file():
-                print(f"ERROR: personalization backup must be a regular file: {backup_file}", file=sys.stderr)
-                return 3
         expected_hash = profile.get("written_sha256")
         if target_path and (not isinstance(expected_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_hash)):
             print("ERROR: invalid personalization readback hash in rollback state", file=sys.stderr)
@@ -984,17 +1027,27 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         return 3
     restored: bytes | None = None
     original: bytes | None = None
-    # An instruction file edited since the setup stays exactly as it is; only the links go.
+    # An instruction file edited since the setup stays exactly as it is. With its managed block
+    # taken out by hand the undo is otherwise complete; with the block still there only the
+    # links go. The backup is not needed either way.
     profile_changed = False
+    block_gone = False
     if target_path and target_path.exists():
-        current = target_path.read_bytes()
-        expected_hash = profile.get("written_sha256")
-        profile_changed = hashlib.sha256(current).hexdigest() != expected_hash
-    if target_path and target_path.exists() and not profile_changed:
-        if backup and not Path(str(backup)).is_file():
-            print(f"ERROR: personalization backup missing: {backup}", file=sys.stderr)
+        current = read_or_report(target_path)
+        if current is None:
             return 3
-        original = Path(str(backup)).read_bytes() if backup else None
+        expected_hash = profile.get("written_sha256")
+        if hashlib.sha256(current).hexdigest() != expected_hash:
+            block_gone = BLOCK_START not in current and BLOCK_END not in current
+            profile_changed = not block_gone
+    if target_path and target_path.exists() and not profile_changed and not block_gone:
+        backup_file = Path(str(backup)) if backup else None
+        if backup_file and (backup_file.is_symlink() or not backup_file.is_file()):
+            print(f"ERROR: personalization backup must be a regular file: {backup_file}", file=sys.stderr)
+            return 3
+        original = read_or_report(backup_file) if backup_file else None
+        if backup_file and original is None:
+            return 3
         try:
             restored = restored_content(current, original)
         except ValueError:
@@ -1011,8 +1064,10 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
             return 3
     print(f"ROLLBACK_PLAN: remove={','.join(created) or 'none'}; personalization={target_path or 'none'}; backup={backup or 'none'}")
     if profile_changed:
-        print_changed_profile(target_path)
+        print_changed_profile(target_path, backup)
     else:
+        if block_gone:
+            print(f"INSTRUCTIONS_KEPT: {target_path} no longer holds the managed block, so it is left as it is")
         for directory in sorted(directories, key=lambda item: len(item.parts), reverse=True):
             print(f"ROLLBACK_FOLDER: {directory}: removed if it is still empty; the setup created it")
     if not args.apply:
@@ -1067,7 +1122,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         # The record stays, with no links left in it, so that the block can still be taken
         # out once the record knows the file as it is now.
         save_state(state_file, {**state, "created_skills": []})
-        print_changed_profile(target_path)
+        print_changed_profile(target_path, backup)
         print(f"ROLLBACK_READBACK: removed={','.join(removed) or 'none'}; profile=preserved")
         return 3
     state_file.unlink()
@@ -1083,7 +1138,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
             destination.rmdir()
         except OSError:
             pass
-    print(f"ROLLBACK_READBACK: removed={','.join(removed) or 'none'}; profile=restored")
+    print(f"ROLLBACK_READBACK: removed={','.join(removed) or 'none'}; profile={'kept' if block_gone else 'restored'}")
     return 0
 
 
@@ -1318,6 +1373,9 @@ def main(argv: list[str] | None = None) -> int:
             code, _ = run(command, hide=("NOTE: ",))
             if code:
                 return code
+        # The record's folder is made before anything else is written: when it cannot be made,
+        # the run stops here instead of leaving links and a block that no record describes.
+        state.parent.mkdir(parents=True, exist_ok=True)
         profile_preimage = read_file_preimage(profile_target)
         if args.apply:
             for name in install_names:
@@ -1357,13 +1415,13 @@ def main(argv: list[str] | None = None) -> int:
             }
         created = sorted(set(previous.get("created_skills", [])) | {name for name in new_skills if (destination / name).is_symlink()})
         next_state = {"destination": str(destination), "created_skills": created, "profile": profile}
-        # Folders an earlier run made stay in the record. A record from before this field
-        # existed has none: its folders may have been there already, so none is claimed.
-        # Each folder is written the way it really is, links resolved, so that runs from
-        # different installers and spellings of the same path list it once.
-        previous_dirs = {str(physical_path(path)) for path in recorded_directories(previous, state)} if previous else set()
-        # save_state would make the record's folder below; making it here lets the record list it.
-        state.parent.mkdir(parents=True, exist_ok=True)
+        # Folders an earlier run made stay in the record as recorded, links already resolved
+        # then. Resolving them again would follow a link put in their place since, and hand the
+        # folder it points to over to the undo. A record from before this field existed has
+        # none: its folders may have been there already, so none is claimed. A folder this run
+        # made is written the way it really is, links resolved, so that runs from different
+        # installers and spellings of the same path list it once.
+        previous_dirs = {str(path) for path in recorded_directories(previous, state)} if previous else set()
         made_dirs = {str(physical_path(path)) for path in new_directories if path.is_dir() and not path.is_symlink()}
         created_dirs = sorted(previous_dirs | made_dirs)
         # A record that has no folder list is from an earlier version. It keeps that form until

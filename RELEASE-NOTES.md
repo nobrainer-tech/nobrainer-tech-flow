@@ -65,8 +65,9 @@ installer writes are now described, and undo deletes the record.
 
 Undo now removes the skill links even after you edited the instruction file; it leaves
 the edited file as it is, exits 3 with `PARTLY UNDONE` and says how to take the block
-out too. The default block no longer tells every user to load the private
-`nobrainer-ak` skill; a 2.3.1 block is replaced on the next apply. The npm command keeps
+out too. Once the block is deleted by hand, the next undo finishes. The default block no longer tells every user to load the private
+`nobrainer-ak` skill; the next apply replaces a 2.3.1 block (through `install.sh` only
+when the block holds no option; `install.py` always, keeping its options). The npm command keeps
 its release copy in `~/.nobrainer-tech-flow-npm`, so cleaning a Git clone in
 `~/.nobrainer-tech-flow` cannot delete it. The Windows hook wrapper no longer runs a
 `bash.exe` from the current folder, returns the hook's exit code and says when Git Bash

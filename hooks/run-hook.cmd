@@ -8,16 +8,16 @@ if "%~1"=="" (
 set "HOOK_DIR=%~dp0"
 set "HOOK_BASH="
 set "HOOK_GIT="
-rem Git Bash from its install folders, or beside the git.exe on PATH. Never a bare "bash":
-rem cmd tries the current folder first, where anyone could have put a bash.exe. The PATH
-rem modifier of a for variable looks only in the folders PATH lists. No labels: goto can
-rem miss a label in a file with LF line breaks.
+rem Git Bash from its install folders, or beside the git.exe on PATH. Never a bare "bash",
+rem nor the PATH modifier of a for variable: both try the current folder first, where anyone
+rem could have put a bash.exe. Each PATH folder is checked by name instead. No labels: goto
+rem can miss a label in a file with LF line breaks.
 if defined ProgramFiles if exist "%ProgramFiles%\Git\bin\bash.exe" set "HOOK_BASH=%ProgramFiles%\Git\bin\bash.exe"
 if not defined HOOK_BASH if defined ProgramFiles(x86) if exist "%ProgramFiles(x86)%\Git\bin\bash.exe" set "HOOK_BASH=%ProgramFiles(x86)%\Git\bin\bash.exe"
 if not defined HOOK_BASH if defined LOCALAPPDATA if exist "%LOCALAPPDATA%\Programs\Git\bin\bash.exe" set "HOOK_BASH=%LOCALAPPDATA%\Programs\Git\bin\bash.exe"
-if not defined HOOK_BASH for %%I in (git.exe) do set "HOOK_GIT=%%~$PATH:I"
+if not defined HOOK_BASH if defined PATH for %%P in ("%PATH:;=" "%") do if not defined HOOK_GIT if not "%%~P"=="" if exist "%%~P\git.exe" set "HOOK_GIT=%%~P\git.exe"
 if defined HOOK_GIT for %%D in ("%HOOK_GIT%\..\..") do if exist "%%~fD\bin\bash.exe" set "HOOK_BASH=%%~fD\bin\bash.exe"
-if not defined HOOK_BASH for %%I in (bash.exe) do set "HOOK_BASH=%%~$PATH:I"
+if not defined HOOK_BASH if defined PATH for %%P in ("%PATH:;=" "%") do if not defined HOOK_BASH if not "%%~P"=="" if exist "%%~P\bash.exe" set "HOOK_BASH=%%~P\bash.exe"
 rem Without bash, exit 1 as session-start does when it cannot add the bootstrap: the client
 rem reports a hook error that blocks nothing, and the session goes on.
 if not defined HOOK_BASH (
