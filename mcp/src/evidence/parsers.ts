@@ -179,23 +179,30 @@ function goTest(lines: string[]): Found | null {
   let failPkgs = 0;
   let subPass = 0;
   let subFail = 0;
-  let subSkip = 0;
+  let pkgPass = 0;
+  let pkgSkip = 0;
+  let skippedPkgs = 0;
   let at = -1;
   lines.forEach((l, i) => {
     const pkg = /^(ok|FAIL)\s+\S{1,200}\s+(?:\(cached\)|[\d.]{1,10}s(?:\s+coverage:.{0,60})?|\[(?:build|setup) failed\])\s*$/.exec(l);
     if (pkg) {
-      if (pkg[1] === 'ok') okPkgs++;
+      if (pkg[1] === 'ok') {
+        okPkgs++;
+        if (pkgSkip > 0 && pkgPass === 0) skippedPkgs++;
+      }
       else failPkgs++;
+      pkgPass = 0;
+      pkgSkip = 0;
       at = i;
-    } else if (/^\s*--- PASS: \S/.test(l)) subPass++;
+    } else if (/^\s*--- PASS: \S/.test(l)) { subPass++; pkgPass++; }
     else if (/^\s*--- FAIL: \S/.test(l)) subFail++;
-    else if (/^\s*--- SKIP: \S/.test(l)) subSkip++;
+    else if (/^\s*--- SKIP: \S/.test(l)) pkgSkip++;
   });
   if (at < 0) return null;
   return {
     runner: 'go',
-    // Packages count as passes only when no per-test lines exist; skipped-only output passes nothing.
-    passed: subPass > 0 ? subPass : subSkip > 0 ? 0 : okPkgs,
+    // A skipped-only package cannot suppress successful summaries from other packages in a tail.
+    passed: subPass > 0 ? subPass : okPkgs - skippedPkgs,
     failed: subFail > 0 ? subFail : failPkgs,
     at,
   };

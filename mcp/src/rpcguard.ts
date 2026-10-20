@@ -6,7 +6,15 @@ import { cardIds } from "./content/cards.ts";
 import { findSecret } from "./evidence/secrets.ts";
 
 export const TOOL_NAMES: readonly string[] = TOOLS.map((t) => t.name);
-const CARD_URIS = new Set(cardIds().map((id) => `flow://card/${id}`));
+const CARD_IDS = new Set(cardIds());
+function knownCard(uri: unknown): boolean {
+  if (typeof uri !== "string" || !uri.startsWith("flow://card/")) return false;
+  try {
+    return CARD_IDS.has(decodeURIComponent(uri.slice("flow://card/".length)));
+  } catch {
+    return false;
+  }
+}
 const KNOWN_METHODS = new Set([
   "initialize", "ping", "server/discover", "tools/list", "tools/call", "prompts/list", "prompts/get",
   "resources/list", "resources/templates/list", "resources/read", "subscriptions/listen", "logging/setLevel",
@@ -30,6 +38,7 @@ export function guardMessage(body: unknown): Rejection | null {
   if (!body || typeof body !== "object") return rpcError(400, null, -32600, "Invalid request");
   const msg = body as Record<string, unknown>;
   if ("id" in msg && !validId(msg.id)) return rpcError(400, null, -32600, "Invalid request id");
+  if (!("id" in msg)) return null; // Let the transport accept notifications without a response.
   const params = (msg.params && typeof msg.params === "object" ? msg.params : {}) as Record<string, unknown>;
   const id = msg.id ?? null;
   switch (msg.method) {
@@ -43,7 +52,7 @@ export function guardMessage(body: unknown): Rejection | null {
       delete params.arguments; // the prompt takes no arguments and never reflects caller text
       return null;
     case "resources/read":
-      if (typeof params.uri !== "string" || !CARD_URIS.has(params.uri)) {
+      if (!knownCard(params.uri)) {
         return rpcError(200, id, -32602, "Unknown resource. resources/list returns the card URIs.");
       }
       return null;
@@ -54,7 +63,7 @@ export function guardMessage(body: unknown): Rejection | null {
 
 /** Log-safe forms of caller-supplied identifiers: canonical names or a fixed marker. */
 export function logSafe(method: unknown, tool: unknown, version: unknown, client: unknown) {
-  const name = typeof client === "string" ? client.replace(/[^A-Za-z0-9 ._-]/g, "").slice(0, 40) : undefined;
+  const name = typeof client === "string" ? (findSecret(client) ? "redacted" : client.replace(/[^A-Za-z0-9 ._-]/g, "").slice(0, 40)) : undefined;
   return {
     rpc_method: typeof method === "string" ? (KNOWN_METHODS.has(method) ? method : "other") : undefined,
     tool: method === "tools/call" ? (typeof tool === "string" && TOOL_NAMES.includes(tool) ? tool : "unknown") : undefined,

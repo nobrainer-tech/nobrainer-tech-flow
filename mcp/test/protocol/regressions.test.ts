@@ -2,6 +2,7 @@
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { startLocal, type Local } from "../helpers.ts";
+import { ResourceTemplate } from "@modelcontextprotocol/server";
 
 let local: Local;
 before(async () => { local = await startLocal(); });
@@ -50,6 +51,44 @@ for (const modern of [false, true]) {
     assert.ok(!unknown.text.includes(SECRET), unknown.text.slice(0, 200));
     const resource = await post({ jsonrpc: "2.0", id: 4, method: "resources/read", params: withMeta({ uri: `flow://card/${SECRET}` }) }, modern);
     assert.ok(!resource.text.includes(SECRET), resource.text.slice(0, 200));
+  });
+
+  test(`delta 4 (${era}): SDK-expanded card URIs work like literal card URIs`, async () => {
+    const template = new ResourceTemplate("flow://card/{id}", { list: undefined });
+    const expanded = template.uriTemplate.expand({ id: "stage:DRIFT_CHECK" });
+    assert.equal(expanded, "flow://card/stage%3ADRIFT_CHECK");
+    for (const uri of ["flow://card/stage:DRIFT_CHECK", expanded]) {
+      const r = await post({ jsonrpc: "2.0", id: 20, method: "resources/read", params: withMeta({ uri }) }, modern);
+      const reply = JSON.parse(r.text);
+      assert.equal(reply.error, undefined, r.text);
+      assert.match(reply.result.contents[0].text, /DRIFT_CHECK/);
+    }
+    for (const uri of ["flow://card/%", "flow://card/stage%3Aunknown"]) {
+      const r = await post({ jsonrpc: "2.0", id: 21, method: "resources/read", params: withMeta({ uri }) }, modern);
+      assert.equal(JSON.parse(r.text).error.code, -32602);
+    }
+  });
+
+  test(`delta 6 (${era}): client names are screened before filtering and truncation`, async () => {
+    for (const name of ["password=reviewfixture12345", "a".repeat(45) + " password=reviewfixture12345"]) {
+      const before = local.logs.length;
+      const body = modern
+        ? { jsonrpc: "2.0", id: 22, method: "tools/list", params: { _meta: { ...meta, "io.modelcontextprotocol/clientInfo": { name, version: "1" } } } }
+        : { ...legacyInit, id: 22, params: { ...legacyInit.params, clientInfo: { name, version: "1" } } };
+      const r = await post(body, modern);
+      assert.equal(r.status, 200, r.text);
+      const logs = local.logs.slice(before);
+      assert.ok(logs.some(l => l.client_name === "redacted"));
+      assert.ok(!JSON.stringify(logs).includes("reviewfixture12345"));
+    }
+  });
+
+  test(`delta 7 (${era}): unknown notification targets receive no JSON-RPC response`, async () => {
+    for (const [method, params] of [["tools/call", { name: SECRET, arguments: {} }], ["resources/read", { uri: `flow://card/${SECRET}` }], ["prompts/get", { name: SECRET }]] as const) {
+      const r = await post({ jsonrpc: "2.0", method, params: withMeta(params) }, modern);
+      assert.equal(r.status, 202, r.text);
+      assert.equal(r.text, "");
+    }
   });
 }
 

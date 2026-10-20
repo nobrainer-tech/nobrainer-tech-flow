@@ -77,7 +77,7 @@ function registerFile(state: TokenState, path: string, sha256: string): void {
   state.files.push({ path: ph, hash: ch });
 }
 
-const INVALIDATING = new Set(["COUNTS_MISMATCH", "EXIT_OUTPUT_CONFLICT"]);
+const INVALIDATING = new Set(["COUNTS_MISMATCH", "EXIT_OUTPUT_CONFLICT", "NO_TESTS_RAN"]);
 
 type Outcome = { pass: true; level: Level } | { pass: false; failed: true } | { reject: string; why: string };
 
@@ -88,25 +88,26 @@ function judgeRun(r: EvidenceRecord, id: string): Outcome {
     return reject("MISSING_FIELD", `${id}: ${r.kind} evidence needs cmd, exit${r.kind === "test" ? " and out" : ""}.`);
   }
   const out = normaliseOut(r.out ?? "");
+  if (r.kind === "command") {
+    if (r.exit !== 0) return { pass: false, failed: true };
+    if (hasFailingSummary(out)) return reject("EXIT_OUTPUT_CONFLICT", `${id}: exit 0 but the output has a failing test summary.`);
+  } else {
+    const s = parseTestSummary(out);
+    if (s && ((r.passed !== undefined && r.passed !== s.passed) || (r.failed !== undefined && r.failed !== s.failed))) {
+      return reject("COUNTS_MISMATCH", `${id}: claimed counts differ from the output (${s.passed} passed, ${s.failed} failed).`);
+    }
+    if (r.exit !== 0) return { pass: false, failed: true };
+    if (!s) return reject("NO_TEST_SUMMARY", `${id}: no recognised test summary; include the summary line, or submit it as kind command.`);
+    if (s.failed > 0) return reject("EXIT_OUTPUT_CONFLICT", `${id}: exit 0 but the summary has ${s.failed} failed.`);
+    if (s.passed < 1) return reject("NO_TESTS_RAN", `${id}: the summary shows no passed tests.`);
+  }
+  // Optional location metadata must not conceal a failed or zero-pass rerun.
   let level: Level = "local";
   if (r.url !== undefined) {
     const u = classifyUrl(r.url);
     if (!u.ok) return reject("BAD_URL", `${id}: url must be an http or https URL.`);
     if (u.https && u.publicHost) level = "deployed";
   }
-  if (r.kind === "command") {
-    if (r.exit !== 0) return { pass: false, failed: true };
-    if (hasFailingSummary(out)) return reject("EXIT_OUTPUT_CONFLICT", `${id}: exit 0 but the output has a failing test summary.`);
-    return { pass: true, level };
-  }
-  const s = parseTestSummary(out);
-  if (s && ((r.passed !== undefined && r.passed !== s.passed) || (r.failed !== undefined && r.failed !== s.failed))) {
-    return reject("COUNTS_MISMATCH", `${id}: claimed counts differ from the output (${s.passed} passed, ${s.failed} failed).`);
-  }
-  if (r.exit !== 0) return { pass: false, failed: true };
-  if (!s) return reject("NO_TEST_SUMMARY", `${id}: no recognised test summary; include the summary line, or submit it as kind command.`);
-  if (s.failed > 0) return reject("EXIT_OUTPUT_CONFLICT", `${id}: exit 0 but the summary has ${s.failed} failed.`);
-  if (s.passed < 1) return reject("NO_TESTS_RAN", `${id}: the summary shows no passed tests.`);
   return { pass: true, level };
 }
 
@@ -162,7 +163,7 @@ export function applyEvidence(state: TokenState, records: EvidenceRecord[]): Evi
     const o = judge(r, id);
     if ("reject" in o) {
       results.push({ item: id, verdict: "REJECTED", code: o.reject, why: o.why });
-      // A run that shows a failure or contradicts itself withdraws any earlier acceptance; only a
+      // A run that fails, contradicts itself or passes no tests withdraws acceptance; only a
       // later consistent pass can accept the item again. It does not count toward the failure budget.
       if (INVALIDATING.has(o.reject)) Object.assign(item, { status: "FAILED", kind: r.kind, digest: recordDigest(r), epoch: state.epoch });
       continue;

@@ -6,7 +6,7 @@
 import type { LoadedSnapshot, Row, SnapshotModel } from './snapshot.ts';
 
 export type Code = 'g' | 'b' | 'e';
-export type RankState = { task: string; have: string[]; native: string[] | null; role: 'main' | 'subs'; excluded: Set<string> };
+export type RankState = { task: string; have: string[]; native: string[] | null; role: 'main' | 'subs'; excluded: Set<string>; modelRoutes?: ReadonlyMap<string, ReadonlySet<string>> };
 export type Ranked = Row & { route: string; routeId: string; fallbackOnly: boolean; cohort: string };
 export type RankResult = { pool: Ranked[]; ranked: Ranked[]; chosen: Ranked | null; cohort: string | null; reason: string | null };
 
@@ -26,7 +26,8 @@ export function routing(S: LoadedSnapshot, state: RankState) {
     .sort((a, b) => routePriority(a) - routePriority(b));
   const routeFor = (m: SnapshotModel) => {
     if (state.excluded.has(m.id)) return null;
-    const route = wanted.find(r => m.routes[r]);
+    const allowed = state.modelRoutes?.get(m.id);
+    const route = wanted.find(r => m.routes[r] && (!allowed || allowed.has(r)));
     return route ? { route, routeId: m.routes[route] as string } : null;
   };
   const roleAllowed = (m: SnapshotModel) => state.role === 'main' ? m.main : m.worker;

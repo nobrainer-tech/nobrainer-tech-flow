@@ -87,8 +87,15 @@ export function recommendFlowModel(input: unknown, now: Date = new Date()): Reco
   if (providers.length && restrict && !providers.some(p => restrict.includes(p))) notes.push('These apps reach none of the given providers natively.');
   if (!providers.length && !matched.length && !restrict) notes.push('No providers or models given; assumed site defaults: ' + have.join(', ') + '.');
   const allowed = new Set(matched.flatMap(x => x.models.map(m => m.id)));
+  const modelRoutes = new Map<string, Set<string>>();
+  for (const entry of matched) for (const model of entry.models) {
+    const routes = modelRoutes.get(model.id) ?? new Set<string>();
+    for (const route of entry.route ? [entry.route] : S.policy.route_order) routes.add(route);
+    modelRoutes.set(model.id, routes);
+  }
   const state: RankState = {
     task, have, native: restrict, role: role === 'main' ? 'main' : 'subs',
+    modelRoutes,
     excluded: new Set(matched.length ? S.models.filter(m => !allowed.has(m.id)).map(m => m.id) : [])
   };
   const result = rankTask(S, state, PRIORITY_CODES[priority]);

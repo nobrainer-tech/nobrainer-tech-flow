@@ -111,3 +111,49 @@ test("finding 12: a valid maximum-size contract succeeds within the budget", asy
   assert.match(r.json.token, /^nbf1\./);
   assert.ok(r.bytes <= 1500, String(r.bytes));
 });
+
+test("delta 1: invalid optional metadata cannot conceal a failed rerun", async () => {
+  for (const kind of ["test", "command"]) {
+    for (const [exit, failed] of [[0, 0], [1, 0], [1, undefined]]) {
+      let token = await contract([{ text: "checks pass", proof: kind }]);
+      token = (await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind, cmd: "pytest", exit: 0, out: PASS }] })).json.token;
+      assert.equal((await call("check_flow_done", { token })).json.verdict, "DONE");
+      const rerun = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind, cmd: "pytest", exit, out: FAIL, failed, url: "not-a-url" }] });
+      assert.deepEqual(rerun.json.open, ["AC01"], JSON.stringify(rerun.json.results));
+      assert.equal((await call("check_flow_done", { token: rerun.json.token })).json.verdict, "NOT_DONE");
+    }
+  }
+});
+
+test("delta 2: a recognized all-skipped rerun withdraws earlier acceptance", async () => {
+  let token = await contract([{ text: "tests pass", proof: "test" }]);
+  token = (await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "test", cmd: "pytest", exit: 0, out: PASS }] })).json.token;
+  const rerun = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "test", cmd: "python -m unittest", exit: 0, out: "Ran 3 tests in 0.001s\n\nOK (skipped=3)" }] });
+  assert.equal(rerun.json.results[0].code, "NO_TESTS_RAN");
+  assert.deepEqual(rerun.json.open, ["AC01"]);
+  assert.equal((await call("check_flow_done", { token: rerun.json.token })).json.verdict, "NOT_DONE");
+  const recovered = await call("check_flow_evidence", { token: rerun.json.token, evidence: [{ item: "AC01", kind: "test", cmd: "pytest", exit: 0, out: PASS }] });
+  assert.equal((await call("check_flow_done", { token: recovered.json.token })).json.verdict, "DONE");
+});
+
+test("delta 3: mixed model inputs preserve each qualified route", () => {
+  for (const extra of ["openai/gpt-6-luna", "unknown-model", "gpt-6-luna"]) {
+    const out = recommendFlowModel({ task: "writing", have: ["github-copilot/gpt-6.1-sol", extra] }, FRESH) as { shortlist: Array<{ model: string }> };
+    assert.ok(out.shortlist.some(e => e.model === "github-copilot/gpt-6.1-sol"));
+    assert.ok(!out.shortlist.some(e => e.model === "openai/gpt-6.1-sol"), JSON.stringify(out));
+  }
+  const both = recommendFlowModel({ task: "writing", have: ["github-copilot/gpt-6.1-sol", "openai/gpt-6.1-sol"] }, FRESH) as { shortlist: Array<{ model: string }> };
+  assert.ok(both.shortlist.some(e => e.model === "openai/gpt-6.1-sol"), "an explicitly allowed direct route remains usable");
+});
+
+test("delta 5: Go output tails retain successful packages alongside skipped packages", async () => {
+  const skipped = "=== RUN   TestOptional\n--- SKIP: TestOptional (0.00s)\nPASS\nok\texample.com/optional\t0.010s";
+  assert.deepEqual(parseTestSummary(skipped), { runner: "go", passed: 0, failed: 0 });
+  for (const out of [`ok\texample.com/required\t0.100s\n${skipped}`, `${skipped}\nok\texample.com/required\t(cached)`]) {
+    assert.deepEqual(parseTestSummary(out), { runner: "go", passed: 1, failed: 0 });
+    const token = await contract([{ text: "Go tests pass", proof: "test" }]);
+    const checked = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "test", cmd: "go test -v ./...", exit: 0, out }] });
+    assert.equal(checked.json.results[0].verdict, "ACCEPTED");
+    assert.equal((await call("check_flow_done", { token: checked.json.token })).json.verdict, "DONE");
+  }
+});
