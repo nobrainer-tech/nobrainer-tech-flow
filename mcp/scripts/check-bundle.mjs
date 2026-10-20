@@ -26,12 +26,24 @@ try {
     headers: { host: "mcp.nobrainer.tech", "content-type": "application/json", accept: "application/json, text/event-stream" },
     body: JSON.stringify(body),
   }));
-  const init = await post({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "check-bundle", version: "1" } } });
-  const tools = JSON.parse(await (await post({ jsonrpc: "2.0", id: 2, method: "tools/list" })).text()).result.tools;
-  const advice = JSON.parse(await (await post({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "recommend_flow_model", arguments: { task: "coding" } } })).text());
-  const step = JSON.parse(await (await post({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "get_flow_step", arguments: { event: "blocked" } } })).text());
-  failed = init.status !== 200 || tools.length !== 6 || advice.result?.isError || step.result?.isError;
-  console.log(`${failed ? "CHECK_BUNDLE_FAILED" : "CHECK_BUNDLE_OK"} initialize=${init.status} tools=${tools.length} advisor=${advice.result?.isError ? "error" : "ok"} cards=${step.result?.isError ? "error" : "ok"}`);
+  // Every call must be HTTP 200 with a JSON-RPC result (never an error), and each tool call must be
+  // a successful tool result whose single text block parses as JSON without an error field.
+  const call = async (body) => {
+    const res = await post(body);
+    const json = JSON.parse(await res.text());
+    if (res.status !== 200 || json.error || !json.result) throw new Error(`${body.method} failed (HTTP ${res.status})`);
+    return json.result;
+  };
+  const toolOk = (result) => {
+    const text = result.content?.length === 1 && result.content[0].type === "text" ? result.content[0].text : null;
+    return result.isError !== true && text !== null && !JSON.parse(text).error;
+  };
+  await call({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "check-bundle", version: "1" } } });
+  const tools = (await call({ jsonrpc: "2.0", id: 2, method: "tools/list" })).tools ?? [];
+  const advice = await call({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "recommend_flow_model", arguments: { task: "writing" } } });
+  const step = await call({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "get_flow_step", arguments: { event: "blocked" } } });
+  failed = tools.length !== 6 || !toolOk(advice) || !toolOk(step);
+  console.log(`${failed ? "CHECK_BUNDLE_FAILED" : "CHECK_BUNDLE_OK"} tools=${tools.length} advisor=${toolOk(advice) ? "ok" : "error"} cards=${toolOk(step) ? "ok" : "error"}`);
 } catch (err) {
   failed = true;
   console.error(`CHECK_BUNDLE_FAILED ${err.message}`);

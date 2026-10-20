@@ -1,7 +1,7 @@
 // Pre-deploy gate for a prebuilt upload: run after `vercel build --prod`, before `vercel deploy --prebuilt`.
 // Fails on native modules, darwin paths, a non-x86_64 architecture or a runtime other than Node.js 22.
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 
 const root = process.argv[2] ?? ".vercel/output";
 const problems = [];
@@ -18,7 +18,15 @@ function walk(dir) {
       functions++;
       const cfg = JSON.parse(readFileSync(path, "utf8"));
       if (cfg.runtime !== "nodejs22.x") problems.push(`runtime ${cfg.runtime} in ${rel}`);
-      if (cfg.architecture && cfg.architecture !== "x86_64") problems.push(`architecture ${cfg.architecture} in ${rel}`);
+      if (cfg.architecture !== "x86_64") problems.push(`architecture ${cfg.architecture ?? "unset"} in ${rel}`);
+      // Mapped files are uploaded with the function too: check both the destination and the source.
+      for (const [to, from] of Object.entries(cfg.filePathMap ?? {})) {
+        for (const p of [to, String(from)]) {
+          if (p.endsWith(".node")) problems.push(`native module (mapped): ${p} in ${rel}`);
+          if (/darwin/i.test(p)) problems.push(`darwin path (mapped): ${p} in ${rel}`);
+        }
+        if (!existsSync(resolve(root, "../..", String(from)))) problems.push(`mapped source missing: ${from} in ${rel}`);
+      }
     }
   }
 }
