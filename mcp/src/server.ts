@@ -82,19 +82,16 @@ export function buildServer(ctx: ToolContext, record?: CallRecord): McpServer {
       (raw: unknown) => runTool(def, raw, ctx, record),
     );
   }
+  // No arguments: the prompt never reflects caller text (review finding 4); the user states the task next.
   server.registerPrompt(
     "flow",
-    {
-      title: "Run a task with Flow",
-      description: "Run one task with the Flow contract, evidence and done gate.",
-      argsSchema: z.object({ task: z.string().max(500).describe("The task to run") }),
-    },
-    ({ task }) => ({
+    { title: "Run a task with Flow", description: "Run the next task with the Flow contract, evidence and done gate." },
+    () => ({
       messages: [{
         role: "user" as const,
         content: {
           type: "text" as const,
-          text: `Run this task with the NoBrainer Tech Flow tools: start_flow_task first, check_flow_evidence after each check, check_flow_done before calling it done, then draft_flow_handoff.\n\nTask: ${task}`,
+          text: "Run my next task with the NoBrainer Tech Flow tools: start_flow_task first, check_flow_evidence after each check, check_flow_done before calling it done, then draft_flow_handoff.",
         },
       }],
     }),

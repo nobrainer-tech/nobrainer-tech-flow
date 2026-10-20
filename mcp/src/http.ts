@@ -6,6 +6,8 @@ import { buildServer, type CallRecord } from "./server.ts";
 import type { KeyRing } from "./token.ts";
 import type { RateLimiter } from "./ratelimit.ts";
 import { logLine, type LogLine } from "./log.ts";
+import { guardMessage, logSafe, sanitizeErrorBody } from "./rpcguard.ts";
+import { findSecret } from "./evidence/secrets.ts";
 
 export const MAX_BODY_BYTES = 32 * 1024;
 const MAX_DEPTH = 8; // spec 12.2; the deepest valid message nests about 6 levels
@@ -77,12 +79,8 @@ function describe(body: unknown, req: Request): Pick<LogLine, "rpc_method" | "to
   const msg = (Array.isArray(body) ? body[0] : body) as Record<string, any> | undefined;
   const params = (msg?.params ?? {}) as Record<string, any>;
   const meta = (params._meta ?? {}) as Record<string, any>;
-  return {
-    rpc_method: short(msg?.method),
-    tool: msg?.method === "tools/call" ? short(params.name, 64) : undefined,
-    protocol_version: short(req.headers.get("mcp-protocol-version") ?? meta[PROTOCOL_VERSION_META_KEY] ?? params.protocolVersion, 20),
-    client_name: short(params.clientInfo?.name ?? meta[CLIENT_INFO_META_KEY]?.name),
-  };
+  const version = req.headers.get("mcp-protocol-version") ?? meta[PROTOCOL_VERSION_META_KEY] ?? params.protocolVersion;
+  return logSafe(msg?.method, params.name, version, params.clientInfo?.name ?? meta[CLIENT_INFO_META_KEY]?.name);
 }
 
 export function createHttpHandler(opts: HttpOptions): (req: Request) => Promise<Response> {
@@ -121,8 +119,10 @@ export function createHttpHandler(opts: HttpOptions): (req: Request) => Promise<
         log(line);
         return res;
       }
-      const buf = await res.arrayBuffer();
-      line.response_bytes = buf.byteLength;
+      const raw = await res.arrayBuffer();
+      const json = (res.headers.get("content-type") ?? "").includes("application/json") && raw.byteLength > 0;
+      const buf: ArrayBuffer | string = json ? sanitizeErrorBody(new TextDecoder().decode(raw)) : raw;
+      line.response_bytes = typeof buf === "string" ? Buffer.byteLength(buf) : buf.byteLength;
       line.duration_ms = Math.round(performance.now() - started);
       log(line);
       const headers = new Headers(res.headers);
@@ -134,7 +134,8 @@ export function createHttpHandler(opts: HttpOptions): (req: Request) => Promise<
     if (local ? !isLoopback(host) : !opts.allowedHosts.includes(host)) return finish(plain(403, "Forbidden host"));
     const origin = req.headers.get("origin");
     if (origin !== null && !opts.allowedOrigins.includes(origin) && !(local && isLoopbackOrigin(origin))) {
-      line.rejected_origin = short(origin.replace(/^[a-z]+:\/\//i, "").split("/")[0], 80);
+      const host = (origin.replace(/^[a-z]+:\/\//i, "").split("/")[0] ?? "").replace(/[^A-Za-z0-9.:-]/g, "").slice(0, 80);
+      line.rejected_origin = findSecret(host) ? "redacted" : host;
       return finish(plain(403, "Forbidden origin"));
     }
     if (req.method !== "POST") return finish(plain(405, "Method not allowed. Use POST with JSON-RPC.", { allow: "POST" }));
@@ -151,7 +152,12 @@ export function createHttpHandler(opts: HttpOptions): (req: Request) => Promise<
     } catch {
       return finish(rpcError(400, -32700, "Parse error"));
     }
-    const inner = new Request(req.url, { method: "POST", headers: req.headers, body: text });
+    const rejected = guardMessage(body);
+    if (rejected) {
+      line.result_code = "REJECTED";
+      return finish(new Response(JSON.stringify(rejected.body), { status: rejected.status, headers: { "content-type": "application/json" } }));
+    }
+    const inner = new Request(req.url, { method: "POST", headers: req.headers, body: JSON.stringify(body) });
     const record: CallRecord = {};
     records.set(inner, record);
     let res: Response;
