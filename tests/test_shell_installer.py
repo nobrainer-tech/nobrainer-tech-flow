@@ -2180,6 +2180,47 @@ class ShellInstallerTests(unittest.TestCase):
             self.assertEqual(original_link, retired.readlink())
             self.assertEqual(original_inode, retired.lstat().st_ino)
 
+    @unittest.skipIf(os.name == "nt", "uses POSIX command wrappers")
+    def test_unclaim_never_overwrites_a_concurrent_destination(self) -> None:
+        text = SCRIPT.read_text(encoding="utf-8")
+        function = text[text.index("unclaim() {"):text.index("\n}\n", text.index("unclaim() {")) + 3]
+        for shell in ([SHELL], *other_shells()):
+            with self.subTest(shell=shell), tempfile.TemporaryDirectory() as temp:
+                directory = Path(temp)
+                claim = directory / "claim" / "old-link"
+                claim.parent.mkdir()
+                claim.symlink_to("missing-source")
+                target = directory / "target"
+                fake = directory / "bin"
+                fake.mkdir()
+                # Inject the competing file immediately before either implementation's
+                # restore primitive, after any shell-level absence check has passed.
+                for name, argument, executable in (("mv", "2", shutil.which("mv")),
+                                                    ("python3", "4", sys.executable)):
+                    wrapper = fake / name
+                    wrapper.write_text(f'#!/bin/sh\nprintf "owner data" > "${argument}"\nexec "{executable}" "$@"\n')
+                    wrapper.chmod(0o755)
+                code = 'err() { printf "%s\\n" "$*" >&2; }\n' + function + '\nroot=$1; unclaim "$2" "$3"'
+                result = subprocess.run([*shell, "-c", code, "unclaim-test", str(ROOT), str(claim), str(target)],
+                                        capture_output=True, text=True,
+                                        env={**os.environ, "PATH": str(fake) + os.pathsep + os.environ["PATH"]})
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertEqual("owner data", target.read_text())
+                self.assertTrue(claim.is_symlink())
+                self.assertEqual("missing-source", os.readlink(claim))
+                # With no supported atomic helper, keep the recovery entry and fail;
+                # normal installation still has its separate no-Python acceptance test.
+                target.unlink()
+                (fake / "python3").unlink()
+                unavailable = subprocess.run(
+                    [shutil.which(shell[0]), *shell[1:], "-c", code, "unclaim-test", str(ROOT), str(claim), str(target)],
+                    capture_output=True, text=True, env={**os.environ, "PATH": str(fake)},
+                )
+                self.assertNotEqual(0, unavailable.returncode)
+                self.assertFalse(target.exists())
+                self.assertTrue(claim.is_symlink())
+                self.assertIn("atomic restore unavailable or blocked", unavailable.stderr)
+
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_a_setup_from_before_the_context_rename_updates_and_undoes(self) -> None:
         # Until 2.4.1 the module was called nobrainer-codex-context. A setup made then
@@ -2188,7 +2229,7 @@ class ShellInstallerTests(unittest.TestCase):
         runs = [("sh", shell) for shell in ([SHELL], *other_shells())] + [("py", None)]
         for installer, shell in runs:
             with self.subTest(installer=installer, shell=shell), tempfile.TemporaryDirectory() as temp:
-                home = Path(temp) / "home"
+                home = Path(temp) / "home with spaces"
                 flags = ("--client", "claude", "--home", str(home))
 
                 def run(*extra: str) -> subprocess.CompletedProcess[str]:
@@ -2240,6 +2281,7 @@ class ShellInstallerTests(unittest.TestCase):
                 again = run("--apply")
                 self.assertEqual(0, again.returncode, again.stdout + again.stderr)
                 self.assertFalse((skills / old).is_symlink())
+                self.assertEqual([], list(skills.glob(".nobrainer-retire-*")))
                 self.assertEqual(ROOT / "skills" / new, (skills / new).resolve())
                 saved = json.loads(record.read_text(encoding="utf-8"))["created_skills"]
                 self.assertEqual(SKILLS, saved)
@@ -2257,6 +2299,7 @@ class ShellInstallerTests(unittest.TestCase):
                 only = run("--apply")
                 self.assertEqual(0, only.returncode, only.stdout + only.stderr)
                 self.assertFalse((skills / old).is_symlink())
+                self.assertEqual([], list(skills.glob(".nobrainer-retire-*")))
                 self.assertEqual(SKILLS, json.loads(record.read_text(encoding="utf-8"))["created_skills"])
                 self.assertEqual(0, run("--undo", "--apply").returncode)
 

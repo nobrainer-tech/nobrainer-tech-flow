@@ -288,11 +288,23 @@ is_our_link() {
 # Put a claimed entry ($1) back at its name ($2) unless something new stands there; the
 # private folder it was moved into goes too. A blocked restore keeps the claim and says where.
 unclaim() {
-	if [ ! -e "$2" ] && [ ! -L "$2" ] && mv "$1" "$2" 2>/dev/null; then
-		rmdir "${1%/*}" 2>/dev/null
+	# Restore through the same native no-replace primitive as the Python installer.
+	# Normal shell installs need no Python; without it, a recovery claim stays intact.
+	if command -v python3 >/dev/null 2>&1 && python3 - "$root/scripts" "$1" "$2" <<'PYTHON'
+import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from install_skills import restore_claim
+try:
+    restore_claim(Path(sys.argv[3]), Path(sys.argv[2]))
+except (OSError, RuntimeError) as exc:
+    print(exc, file=sys.stderr)
+    sys.exit(1)
+PYTHON
+	then
 		return 0
 	fi
-	err "PRESERVED: could not put $2 back; it is kept at $1"
+	err "PRESERVED: atomic restore unavailable or blocked; could not put $2 back; it is kept at $1"
 	return 1
 }
 
@@ -1023,18 +1035,22 @@ install() {
 	# The retired links the record lists go last, after every other write. Each is moved into
 	# a private folder and checked there; one that changed after the check goes back as it is.
 	# They come back if the record cannot be saved, and are deleted only once it is.
-	retired_claims=
+	retired_claims= retirement_error=
 	for _a_name in $to_retire; do
 		_a_link=$skills_dir/$_a_name
 		is_exact_legacy_link "$_a_link" "$_a_name" || continue
 		_a_text=$(readlink "$_a_link") || continue
-		_a_claim=$(mktemp -d "$skills_dir/.nobrainer-retire-XXXXXX") || die 4 "could not make a private folder in $skills_dir"
+		if ! _a_claim=$(mktemp -d "$skills_dir/.nobrainer-retire-XXXXXX"); then
+			retirement_error=1
+			break
+		fi
 		if ! mv "$_a_link" "$_a_claim/$_a_name" 2>/dev/null; then
 			rmdir "$_a_claim"
 			continue
 		fi
 		if [ -L "$_a_claim/$_a_name" ] && [ "$(readlink "$_a_claim/$_a_name")" = "$_a_text" ]; then
-			retired_claims="$retired_claims $_a_claim/$_a_name"
+			retired_claims="$retired_claims$_a_claim/$_a_name
+"
 		else
 			unclaim "$_a_claim/$_a_name" "$_a_link"
 			err "PRESERVED: $_a_link changed during the setup and is left as it is"
@@ -1073,7 +1089,7 @@ install() {
 		# makes a folder, and its undo keeps the rule it was made under.
 		want_dirs=1
 		if [ "$record" = 1 ] && [ -z "$st_has_dirs" ] && [ -z "$new_dirs" ]; then want_dirs=; fi
-		if ! write_state; then
+		if [ -n "$retirement_error" ] || ! write_state; then
 			for _a_done in $created; do remove_link "$skills_dir/$_a_done"; done
 			if [ "$wrote" = 1 ]; then
 				# Through a copy beside it and a rename, so a read-only file comes back as well.
@@ -1084,11 +1100,15 @@ install() {
 					rm -f "$target"
 				fi
 			fi
-			for _a_claim in $retired_claims; do unclaim "$_a_claim" "$skills_dir/${_a_claim##*/}"; done
+			if ! printf '%s' "$retired_claims" | while IFS= read -r _a_claim; do
+				unclaim "$_a_claim" "$skills_dir/${_a_claim##*/}" || exit 1
+			done; then
+				die 4 "could not save the setup record $state; rollback incomplete; recovery claims were preserved"
+			fi
 			die 4 "could not save the setup record $state; the changes of this run were reversed"
 		fi
 	fi
-	for _a_claim in $retired_claims; do
+	printf '%s' "$retired_claims" | while IFS= read -r _a_claim; do
 		remove_link "$_a_claim" && rmdir "${_a_claim%/*}" 2>/dev/null
 		say "REMOVED_RETIRED: $skills_dir/${_a_claim##*/}"
 	done

@@ -297,6 +297,27 @@ class ContextInventoryTests(unittest.TestCase):
         self.assertEqual(sum(e["bytes"] for e in claude["files"] if e["path"] in ("CLAUDE.md", "AGENTS.md")),
                          claude["launch_bytes"])
 
+    def test_imports_keep_conditional_scope_and_startup_precedence(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = self.repo(raw)
+            write(root / "CLAUDE.md", "root instructions\n")
+            write(root / "shared.md", "@nested.md\nshared instruction text\n")
+            write(root / "nested.md", "nested instruction text\n")
+            write(root / ".claude/rules/a-scoped.md", "---\npaths: src/**\n---\n@../../shared.md\n")
+            _, conditional = self.inventory(root, "--client", "claude")
+            self.assertEqual("on_demand", self.paths(conditional, "claude")["shared.md"])
+            self.assertEqual("on_demand", self.paths(conditional, "claude")["nested.md"])
+            self.assertEqual((root / "CLAUDE.md").stat().st_size,
+                             conditional["clients"]["claude"]["launch_bytes"])
+            # This startup import follows the conditional one in discovery order.
+            write(root / ".claude/rules/z-always.md", "@../../shared.md\n")
+            _, startup = self.inventory(root, "--client", "claude")
+            self.assertEqual("import", self.paths(startup, "claude")["shared.md"])
+            self.assertEqual("import", self.paths(startup, "claude")["nested.md"])
+            self.assertEqual(sum((root / name).stat().st_size for name in
+                                 ("CLAUDE.md", "shared.md", "nested.md", ".claude/rules/z-always.md")),
+                             startup["clients"]["claude"]["launch_bytes"])
+
     def test_opencode_jsonc_and_parse_errors(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = self.repo(raw)
@@ -304,6 +325,16 @@ class ContextInventoryTests(unittest.TestCase):
             write(root / "SECURITY.md", "security\n")
             write(root / "opencode.jsonc", '{\n  // team rules\n  "instructions": ["SECURITY.md",], /* end */\n}\n')
             _, jsonc = self.inventory(root, "--client", "opencode")
+            # String contents that resemble a trailing comma are literal path bytes.
+            write(root / "notes,].md", "literal filename\n")
+            write(root / "opencode.jsonc", '{"instructions": ["notes,].md"]}')
+            _, literal = self.inventory(root, "--client", "opencode")
+            self.assertIn("notes,].md", self.paths(literal, "opencode"))
+            for invalid in ('{"instructions": []} /* unclosed', '{"instructions": [], "x": tr/* gap */ue}'):
+                write(root / "opencode.jsonc", invalid)
+                code, problem = self.inventory(root, "--client", "opencode", "--check")
+                self.assertEqual(1, code)
+                self.assertTrue(any("cannot be parsed" in item for item in problem["findings"]))
             (root / "opencode.jsonc").unlink()
             write(root / "opencode.json", '{"instructions": ["SECURITY.md"')
             code, broken = self.inventory(root, "--client", "opencode", "--check")

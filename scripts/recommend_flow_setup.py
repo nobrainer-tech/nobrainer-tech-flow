@@ -138,18 +138,24 @@ def claim_retired_links(destination: Path, record: dict | None) -> list[tuple[Pa
 
     skills = _sibling(INSTALL_SKILLS)
     claims = []
-    for name in (record or {}).get("created_skills", []):
-        if not isinstance(name, str) or name in BY_SKILL:
-            continue
-        target = destination / name
-        if not skills.is_exact_legacy_link(target, name):
-            continue
-        try:
-            claim, expected = skills.claim_legacy_link(target, name)
-        except RuntimeError as exc:
-            print(f"PRESERVED: {target} changed during the setup and is left as it is ({exc})")
-            continue
-        claims.append((target, claim, expected))
+    try:
+        for name in (record or {}).get("created_skills", []):
+            if not isinstance(name, str) or name in BY_SKILL:
+                continue
+            target = destination / name
+            if not skills.is_exact_legacy_link(target, name):
+                continue
+            try:
+                claim, expected = skills.claim_legacy_link(target, name)
+            except RuntimeError as exc:
+                print(f"PRESERVED: {target} changed during the setup and is left as it is ({exc})")
+                continue
+            claims.append((target, claim, expected))
+    except OSError as exc:
+        errors = restore_retired_links(claims)
+        if errors:
+            raise OSError(f"{exc}; {'; '.join(errors)}") from exc
+        raise
     return claims
 
 
@@ -1517,10 +1523,11 @@ def main(argv: list[str] | None = None) -> int:
             next_state["created_dirs"] = created_dirs
         # The retired links the record lists go last, after every other write, and come back
         # if the record cannot be saved.
-        retired_claims = claim_retired_links(destination, previous)
-        retired_names = {target.name for target, _, _ in retired_claims}
-        next_state["created_skills"] = [name for name in created if name not in retired_names]
+        retired_claims = []
         try:
+            retired_claims = claim_retired_links(destination, previous)
+            retired_names = {target.name for target, _, _ in retired_claims}
+            next_state["created_skills"] = [name for name in created if name not in retired_names]
             save_state(state, next_state)
         except (OSError, TypeError, ValueError) as exc:
             rollback_errors: list[str] = []

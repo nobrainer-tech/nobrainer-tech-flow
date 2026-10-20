@@ -17,8 +17,9 @@ ask. The client rules come from each client's documentation, checked on 2026-10-
 cited in the module; anything the documentation does not state is reported as unknown.
 
 The old name and trigger no longer work. Updating a Git checkout through `install.sh` or
-`install.py` removes the old link the setup record lists and links `nobrainer-context`;
-undo of an older setup removes it too. An npm setup is undone with the earlier
+`install.py` links `nobrainer-context` and, as its last change, removes the old link the
+setup record lists; a run that fails puts the old link back. Undo of an older setup
+removes it too. An npm setup is undone with the earlier
 release's command first, as before. A file, folder, copy or link at the old name that is not
 this checkout's link is left unchanged. The [migration guide](docs/MIGRATION_TO_FLOW.md)
 has the details.

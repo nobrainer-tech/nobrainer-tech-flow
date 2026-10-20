@@ -581,6 +581,37 @@ class InstallerTests(unittest.TestCase):
         finally:
             sys.modules.pop(spec.name, None)
 
+    def test_guided_retirement_restores_earlier_claim_on_later_failure(self) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "guided_retire_failure_test", ROOT / "scripts" / "recommend_flow_setup.py"
+        )
+        guided = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = guided
+        try:
+            spec.loader.exec_module(guided)
+            skills = guided._sibling(guided.INSTALL_SKILLS)
+            real_claim = skills.claim_legacy_link
+            with tempfile.TemporaryDirectory() as temp:
+                destination = Path(temp) / "skills"
+                destination.mkdir()
+                names = ["nobrainer-codex-context", "nobrainer-reddit"]
+                for name in names:
+                    (destination / name).symlink_to(ROOT / "skills" / name, target_is_directory=True)
+
+                def fail_second(target: Path, name: str):
+                    if name == names[1]:
+                        raise OSError("synthetic second claim failure")
+                    return real_claim(target, name)
+
+                with mock.patch.object(skills, "claim_legacy_link", side_effect=fail_second):
+                    with self.assertRaises(OSError):
+                        guided.claim_retired_links(destination, {"created_skills": names})
+                for name in names:
+                    self.assertEqual(ROOT / "skills" / name, (destination / name).readlink())
+                self.assertEqual([], list(destination.glob(".nobrainer-*")))
+        finally:
+            sys.modules.pop(spec.name, None)
+
     def test_foreign_flow_alias_still_blocks_installation(self) -> None:
         for migrate in (False, True):
             with self.subTest(migrate=migrate):

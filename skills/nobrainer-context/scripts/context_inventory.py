@@ -141,12 +141,18 @@ def strip_jsonc(text: str) -> str:
             continue
         elif text.startswith("/*", index):
             end = text.find("*/", index + 2)
-            index = len(text) if end < 0 else end + 2
+            if end < 0:
+                raise ValueError("unterminated block comment")
+            out.append(" ")
+            index = end + 2
             continue
         else:
             out.append(char)
         index += 1
-    return re.sub(r",(\s*[}\]])", r"\1", "".join(out))
+    # Match complete strings first so comma/bracket bytes in paths stay literal.
+    return re.sub(r'"(?:\\.|[^"\\])*"|,(\s*[}\]])',
+                  lambda match: match.group(1) if match.group(1) is not None else match.group(0),
+                  "".join(out))
 
 
 def project_settings(path: Path, problems: list[str], client: str, root: Path) -> dict[str, Any]:
@@ -249,12 +255,15 @@ def client_files(client: str, root: Path, cwd: Path, codex_config: Path,
     expanded: list[tuple[Path, str]] = []
     for path, mode in files:
         expanded.append((path, mode))
-        expanded += [(extra, "import") for extra in imports(path, depth, missing=missing)]
+        import_mode = "import" if mode in LOADED else mode
+        expanded += [(extra, import_mode) for extra in imports(path, depth, missing=missing)]
     for path, number, name in dict.fromkeys(missing):
         problems.append(f"{client}: {label(path, root)}:{number} imports {name}, which does not exist")
     unique: dict[Path, tuple[Path, str]] = {}
     for path, mode in expanded:
-        unique.setdefault(path.resolve(), (path, mode))
+        key = path.resolve()
+        if key not in unique or (mode in LOADED and unique[key][1] not in LOADED):
+            unique[key] = (path, mode)
     return list(unique.values())
 
 
