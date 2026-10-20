@@ -9,7 +9,8 @@ import { SNAPSHOT } from '../../src/advisor/snapshot.ts';
 
 const enc = new Tiktoken(o200k_base);
 const tokens = (s: string) => enc.encode(s).length;
-const STALE = new Date(Date.parse(SNAPSHOT.as_of + 'T00:00:00Z') + 400 * 86400000);
+// Latest still-valid moment (13 days after fetched_at): the worst case for note length.
+const STALE = new Date(Date.parse(SNAPSHOT.fetched_at) + 13 * 86400000);
 
 // Model lists that maximise notes: retired, escalation-only, junk and real ids.
 const JUNK = [

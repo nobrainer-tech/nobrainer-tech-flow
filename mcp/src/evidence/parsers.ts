@@ -97,14 +97,18 @@ function unittest(lines: string[]): Found | null {
     const total = num(ran[1]);
     for (let j = i + 1; j <= i + 3 && j < lines.length; j++) {
       const line = lines[j] ?? '';
-      if (/^OK(?: \([^)]{0,100}\))?$/.test(line)) {
-        best = { runner: 'unittest', passed: total, failed: 0, at: j };
+      // Skipped tests did not pass, and unexpected successes are failures (zero passes never count).
+      const ok = /^OK(?: \(([^)]{0,100})\))?$/.exec(line);
+      if (ok) {
+        const skipped = num(/skipped=(\d+)/.exec(ok[1] ?? '')?.[1]);
+        best = { runner: 'unittest', passed: Math.max(0, total - skipped), failed: 0, at: j };
         return;
       }
       const f = /^FAILED \(([^)]{1,100})\)$/.exec(line);
       if (f?.[1] !== undefined) {
-        const bad = num(/failures=(\d+)/.exec(f[1])?.[1]) + num(/errors=(\d+)/.exec(f[1])?.[1]);
-        best = { runner: 'unittest', passed: Math.max(0, total - bad), failed: bad, at: j };
+        const count = (k: string) => num(new RegExp(`${k}=(\\d+)`).exec(f[1] ?? '')?.[1]);
+        const bad = count('failures') + count('errors') + count('unexpected successes');
+        best = { runner: 'unittest', passed: Math.max(0, total - bad - count('skipped')), failed: bad, at: j };
         return;
       }
     }
@@ -175,6 +179,7 @@ function goTest(lines: string[]): Found | null {
   let failPkgs = 0;
   let subPass = 0;
   let subFail = 0;
+  let subSkip = 0;
   let at = -1;
   lines.forEach((l, i) => {
     const pkg = /^(ok|FAIL)\s+\S{1,200}\s+(?:\(cached\)|[\d.]{1,10}s(?:\s+coverage:.{0,60})?|\[(?:build|setup) failed\])\s*$/.exec(l);
@@ -184,11 +189,13 @@ function goTest(lines: string[]): Found | null {
       at = i;
     } else if (/^\s*--- PASS: \S/.test(l)) subPass++;
     else if (/^\s*--- FAIL: \S/.test(l)) subFail++;
+    else if (/^\s*--- SKIP: \S/.test(l)) subSkip++;
   });
   if (at < 0) return null;
   return {
     runner: 'go',
-    passed: subPass > 0 ? subPass : okPkgs,
+    // Packages count as passes only when no per-test lines exist; skipped-only output passes nothing.
+    passed: subPass > 0 ? subPass : subSkip > 0 ? 0 : okPkgs,
     failed: subFail > 0 ? subFail : failPkgs,
     at,
   };
@@ -223,8 +230,10 @@ function phpunit(lines: string[]): Found | null {
     if (ok) return { runner: 'phpunit', passed: num(ok[1]), failed: 0, at };
     const m = /^Tests: (\d{1,9}), Assertions: \d{1,9}((?:, [A-Za-z]{3,12}: \d{1,9}){0,8})\.?$/.exec(l);
     if (!m) return null;
-    const bad = num(/Failures: (\d+)/.exec(m[2] ?? '')?.[1]) + num(/Errors: (\d+)/.exec(m[2] ?? '')?.[1]);
-    return { runner: 'phpunit', passed: Math.max(0, num(m[1]) - bad), failed: bad, at };
+    const count = (k: string) => num(new RegExp(`${k}: (\\d+)`).exec(m[2] ?? '')?.[1]);
+    const bad = count('Failures') + count('Errors');
+    const notRun = count('Skipped') + count('Incomplete');
+    return { runner: 'phpunit', passed: Math.max(0, num(m[1]) - bad - notRun), failed: bad, at };
   });
 }
 

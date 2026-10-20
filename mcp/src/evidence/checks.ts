@@ -44,8 +44,11 @@ export function isStale(item: Item, epoch: number): boolean {
 
 export const isCurrent = (item: Item, epoch: number): boolean => item.status === "ACCEPTED" && !isStale(item, epoch);
 
+/** One identity per file: forward slashes, no empty or "." segments (".." is kept, then rejected). */
 function normalisePath(p: string): string {
-  return p.trim().replace(/\\/g, "/").replace(/\/{2,}/g, "/").replace(/^(\.\/)+/, "");
+  const unix = p.trim().replace(/\\/g, "/");
+  const segments = unix.split("/").filter((s) => s !== "" && s !== ".");
+  return (unix.startsWith("/") ? "/" : "") + segments.join("/");
 }
 
 /** Reopen every accepted test or command result (used when the change epoch cannot grow). */
@@ -74,12 +77,14 @@ function registerFile(state: TokenState, path: string, sha256: string): void {
   state.files.push({ path: ph, hash: ch });
 }
 
+const INVALIDATING = new Set(["COUNTS_MISMATCH", "EXIT_OUTPUT_CONFLICT"]);
+
 type Outcome = { pass: true; level: Level } | { pass: false; failed: true } | { reject: string; why: string };
 
 const reject = (code: string, why: string): Outcome => ({ reject: code, why });
 
 function judgeRun(r: EvidenceRecord, id: string): Outcome {
-  if (r.cmd === undefined || r.exit === undefined || (r.kind === "test" && r.out === undefined)) {
+  if (!r.cmd?.trim() || r.exit === undefined || (r.kind === "test" && r.out === undefined)) {
     return reject("MISSING_FIELD", `${id}: ${r.kind} evidence needs cmd, exit${r.kind === "test" ? " and out" : ""}.`);
   }
   const out = normaliseOut(r.out ?? "");
@@ -139,7 +144,7 @@ export function applyEvidence(state: TokenState, records: EvidenceRecord[]): Evi
     const item = state.items[index] as Item;
     const id = itemId(index);
     if (r.kind === "file") {
-      if (r.path === undefined || r.sha256 === undefined) {
+      if (!r.path?.trim() || !normalisePath(r.path) || r.sha256 === undefined) {
         results.push({ item: id, verdict: "REJECTED", code: "MISSING_FIELD", why: `${id}: file evidence needs path and sha256.` });
         continue;
       }
@@ -157,6 +162,9 @@ export function applyEvidence(state: TokenState, records: EvidenceRecord[]): Evi
     const o = judge(r, id);
     if ("reject" in o) {
       results.push({ item: id, verdict: "REJECTED", code: o.reject, why: o.why });
+      // A run that shows a failure or contradicts itself withdraws any earlier acceptance; only a
+      // later consistent pass can accept the item again. It does not count toward the failure budget.
+      if (INVALIDATING.has(o.reject)) Object.assign(item, { status: "FAILED", kind: r.kind, digest: recordDigest(r), epoch: state.epoch });
       continue;
     }
     const digest = recordDigest(r);

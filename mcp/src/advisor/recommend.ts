@@ -1,11 +1,11 @@
 import { rankTask, routing, type RankState, type Ranked } from './rank.ts';
 import { PRIORITY_CODES, parseInput } from './schema.ts';
-import { SNAPSHOT as S, STALE_AFTER_DAYS, type SnapshotModel } from './snapshot.ts';
+import { SNAPSHOT as S, expiresAt, type SnapshotModel } from './snapshot.ts';
 
 export const MAX_RESPONSE_BYTES = 1500;
 const SHORTLIST = 3;
-const DAY = 86400000;
 const API_ROUTES = ['xai', 'google', 'meta'];
+const EXPIRED_NOTE = 'Snapshot expired. Refresh the released sources before generating a routing policy.';
 const QUALITY_FIRST = 'Quality first: highest quality lower bound; cost and time do not decide.';
 // Common names for the site's provider ids (task-app-defaults.js ROUTES) and client apps (APPS).
 const PROVIDER_ALIASES: Record<string, string> = { chatgpt: 'openai', 'z.ai': 'zai', glm: 'zai', grok: 'xai', gemini: 'google', 'opencode-zen': 'zen' };
@@ -19,6 +19,14 @@ function matchModels(wanted: string): SnapshotModel[] {
   const s = wanted.trim().toLowerCase();
   return S.models.filter(m => m.id.toLowerCase() === s || keyOf(m.id) === s || m.family.toLowerCase() === s ||
     Object.values(m.routes).some(r => r.toLowerCase() === s || keyOf(r) === s));
+}
+
+/** The provider whose route ID equals `wanted` exactly, if any. */
+function routeProvider(wanted: string): string | null {
+  for (const m of S.models) {
+    for (const [provider, route] of Object.entries(m.routes)) if (route.toLowerCase() === wanted) return provider;
+  }
+  return null;
 }
 
 function evidence(r: Ranked, eligible: boolean) {
@@ -48,11 +56,18 @@ export function recommendFlowModel(input: unknown, now: Date = new Date()): Reco
   const task = S.jobs[req.task] ?? req.task;
   const priority = req.priority ?? 'balanced';
   const role = req.role ?? 'worker';
+  // The website refuses an expired snapshot (rank(), fetchedAt + 14 days); so does the advisor.
+  // Freshness lives in structured fields, which the note trimming in fit() never touches.
+  const expiry = expiresAt();
+  const fresh = { expired: !expiry || now.getTime() > expiry.getTime(), expires: expiry?.toISOString().slice(0, 10) ?? null };
+  if (fresh.expired) {
+    return { task, priority, role, ...fresh, shortlist: [], note: EXPIRED_NOTE, snapshot: S.as_of, snapshot_sha: S.sha.slice(0, 8), source: S.source };
+  }
   const notes: string[] = [];
   // Each "have" entry is a provider id (or common alias); anything else is matched as a model.
   const providers: string[] = [];
   const apps: string[] = [];
-  const matched: { name: string; at: number; models: SnapshotModel[] }[] = [];
+  const matched: { name: string; at: number; models: SnapshotModel[]; route: string | null }[] = [];
   (req.have ?? []).forEach((name, at) => {
     const s = name.trim().toLowerCase();
     // An exact provider id wins ("copilot" is the plan); "github-copilot" names the app.
@@ -60,12 +75,15 @@ export function recommendFlowModel(input: unknown, now: Date = new Date()): Reco
     const app = provider ? undefined : S.policy.apps.includes(s) ? s : APP_ALIASES[s];
     if (app) apps.push(app);
     if (provider) providers.push(provider);
-    else if (!app) matched.push({ name, at, models: matchModels(name) });
+    else if (!app) matched.push({ name, at, models: matchModels(name), route: routeProvider(s) });
   });
   // An app alone selects its native plans (codex: openai, claude: anthropic, copilot: copilot);
   // opencode and other (e.g. Cursor) allow every route, like the site's NATIVE map.
   const restrict = apps.length && apps.every(a => S.policy.native_routes[a]) ? [...new Set(apps.flatMap(a => S.policy.native_routes[a] ?? []))] : null;
-  const have = providers.length ? providers : matched.length ? S.policy.route_order : restrict ?? S.policy.default_providers;
+  // A qualified route ID ("github-copilot/gpt-6.1-sol") keeps its provider; a bare model name
+  // may be reached through any route.
+  const routed = matched.every(m => m.route) ? [...new Set(matched.map(m => m.route as string))] : S.policy.route_order;
+  const have = providers.length ? providers : matched.length ? routed : restrict ?? S.policy.default_providers;
   if (providers.length && restrict && !providers.some(p => restrict.includes(p))) notes.push('These apps reach none of the given providers natively.');
   if (!providers.length && !matched.length && !restrict) notes.push('No providers or models given; assumed site defaults: ' + have.join(', ') + '.');
   const allowed = new Set(matched.flatMap(x => x.models.map(m => m.id)));
@@ -115,11 +133,9 @@ export function recommendFlowModel(input: unknown, now: Date = new Date()): Reco
   }
   if (shortlist.length) notes.push('Cost and time are per-task reference figures, not invoices.');
   if (shortlist.some(r => API_ROUTES.includes(r.route))) notes.push('xai/google/meta routes need separate API access.');
-  const age = Math.floor((now.getTime() - Date.parse(S.as_of + 'T00:00:00Z')) / DAY);
-  if (age > STALE_AFTER_DAYS) notes.push('Snapshot is ' + age + ' days old (stale after ' + STALE_AFTER_DAYS + '); refresh before relying on it.');
 
   const out: Record<string, unknown> = {
-    task, priority, role,
+    task, priority, role, ...fresh,
     cohort: result.cohort,
     scale: result.cohort ? S.tasks[task]?.scale ?? null : null,
     shortlist: shortlist.map(r => evidence(r, inPool.has(r.id))),

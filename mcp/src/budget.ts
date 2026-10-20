@@ -14,7 +14,7 @@ function cut(list: unknown[], keep: number): unknown[] {
   return list.length > keep ? [...list.slice(0, keep), `+${list.length - keep} more`] : list;
 }
 
-/** Serialise; if over the cap, drop lint beyond 3, cut rules to 3, then collapse lists to 5. */
+/** Serialise; if over the cap, shape in a fixed order (lint, rules, lists, optional guidance). Token and verdict stay. */
 export function serialise(result: Shapeable, cap = MAX_RESPONSE_BYTES): string {
   let text = toAscii(result);
   if (text.length <= cap) return text;
@@ -30,6 +30,18 @@ export function serialise(result: Shapeable, cap = MAX_RESPONSE_BYTES): string {
       for (const k of ["missing", "stale", "results", "warnings", "shortlist"]) {
         if (Array.isArray(r[k])) r[k] = cut(r[k] as unknown[], 5);
       }
+    },
+    // Optional guidance goes next: the next step keeps its stage and source, the rules can be
+    // fetched with get_flow_step. Items become "AC01 url production"; lint keeps its first entry.
+    (r) => {
+      const next = r.next as Shapeable | undefined;
+      if (next && Array.isArray(next.rules)) delete next.rules;
+    },
+    (r) => {
+      if (Array.isArray(r.items)) {
+        r.items = r.items.map((i) => (i && typeof i === "object" ? Object.values(i as object).join(" ") : i));
+      }
+      if (Array.isArray(r.lint)) r.lint = cut(r.lint, 1);
     },
   ];
   for (const step of steps) {

@@ -2,12 +2,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fc from "fast-check";
+import { findSecret } from "../../src/evidence/secrets.ts";
 import { tokens, TEST_RING } from "../helpers.ts";
 import { runTool } from "../../src/server.ts";
 import { TOOLS } from "../../src/tools/index.ts";
 import { memoryLimiter } from "../../src/ratelimit.ts";
 import { MODULES, cardIds, getCard } from "../../src/content/cards.ts";
-import { LEVELS, PROOFS, RISKS } from "../../src/rules/levels.ts";
+import { PROOFS, REACHABLE, RISKS } from "../../src/rules/levels.ts";
 import type { ToolContext } from "../../src/tools/common.ts";
 
 const ctx: ToolContext = { ring: TEST_RING, now: () => Math.floor(Date.now() / 1000), limiter: memoryLimiter(1e9) };
@@ -63,10 +64,13 @@ test("every card response and UNKNOWN_CARD error fit the budget", async () => {
   assert.ok(MODULES.length >= 18);
 });
 
-const text = (max: number) => fc.string({ minLength: 1, maxLength: max, unit: "grapheme-ascii" });
+// Valid free text: at least one visible character and nothing secret-shaped.
+const text = (max: number) =>
+  fc.string({ minLength: 1, maxLength: max, unit: "grapheme-ascii" }).filter((s) => s.trim().length > 0 && findSecret(s) === null);
 const startArgs = fc.record({
   outcome: text(300),
-  dod: fc.array(fc.record({ text: text(160), proof: fc.constantFrom(...PROOFS), level: fc.constantFrom(...LEVELS) }), { minLength: 10, maxLength: 10 }),
+  // Only valid proof/level pairs, so every generated contract must succeed (finding 12).
+  dod: fc.array(fc.constantFrom(...PROOFS).chain((proof) => fc.record({ text: text(160), proof: fc.constant(proof), level: fc.constantFrom(...REACHABLE[proof]) })), { minLength: 10, maxLength: 10 }),
   non_goals: fc.array(text(120), { maxLength: 5 }),
   risks: fc.uniqueArray(fc.constantFrom(...RISKS), { maxLength: 6 }),
   local_flow: fc.constantFrom("1.0.0", "x", "9.9.9"),
@@ -76,6 +80,8 @@ test("fuzz: start_flow_task at maximum sizes stays within 600 tokens and 1,500 b
   await fc.assert(fc.asyncProperty(startArgs, async (args) => {
     const r = await run("start_flow_task", args);
     check("fuzz start", r.text, 600);
+    assert.equal(r.isError, false, r.text.slice(0, 160));
+    assert.match(r.json.token, /^nbf1\./);
   }), { numRuns: 150 });
 });
 
@@ -92,6 +98,7 @@ test("fuzz: evidence with 4 maximal records and done with 10 unchecked items sta
   await fc.assert(fc.asyncProperty(fc.array(rec, { minLength: 4, maxLength: 4 }), async (evidence) => {
     const r = await run("check_flow_evidence", { token: s.json.token, evidence });
     check("fuzz evidence", r.text, 600);
+    assert.ok(!["BUDGET_EXCEEDED", "INTERNAL"].includes(r.json.error?.code), r.text.slice(0, 160));
     if (!r.isError) {
       const unchecked = Array.from({ length: 10 }, (_, i) => ({ item: `AC${String(i + 1).padStart(2, "0")}`, reason: "x".repeat(200) }));
       check("fuzz done", (await run("check_flow_done", { token: r.json.token })).text, 600);

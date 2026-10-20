@@ -32,7 +32,7 @@ export const doneTool: ToolDef<typeof input> = {
       } else if (isStale(it, state.epoch)) {
         stale.push({ item: id, why: "a registered file changed after this check ran; re-run it" });
       } else {
-        const failed = it.status === "FAILED" ? "; the last record failed" : "";
+        const failed = it.status === "FAILED" ? "; the last record failed or was inconsistent" : "";
         missing.push({ item: id, need: `${it.proof} evidence, level ${it.level}${failed}` });
       }
     });

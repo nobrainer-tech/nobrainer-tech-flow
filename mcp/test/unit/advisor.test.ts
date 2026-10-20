@@ -2,12 +2,13 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { AdvisorInputError, recommendFlowModel, snapshotInfo, STALE_AFTER_DAYS } from '../../src/advisor/index.ts';
+import { AdvisorInputError, recommendFlowModel, snapshotInfo, EXPIRES_AFTER_DAYS } from '../../src/advisor/index.ts';
 
 type Entry = { model: string; effort: string | null; quality: number; cost_usd: number | null; seconds: number | null; eligible?: boolean };
-type Out = { task: string; shortlist: Entry[]; note?: string; why: string | null; snapshot: string; snapshot_sha: string; source: string; cohort: string | null };
+type Out = { task: string; shortlist: Entry[]; note?: string; expired?: boolean; expires?: string | null; why: string | null; snapshot: string; snapshot_sha: string; source: string; cohort: string | null };
 
 const SNAPSHOT_DAY = new Date('2026-10-17T12:00:00Z');
+const SNAPSHOT_FETCHED: string = JSON.parse(readFileSync(new URL('../../data/benchmark/snapshot.json', import.meta.url), 'utf8')).fetched_at;
 const run = (input: unknown, now = SNAPSHOT_DAY) => recommendFlowModel(input, now) as unknown as Out;
 const dataUrl = (name: string) => new URL('../../data/benchmark/' + name, import.meta.url);
 const sourceInfo = JSON.parse(readFileSync(dataUrl('SOURCE.json'), 'utf8')) as { snapshot_date: string; snapshot_sha256: string };
@@ -78,13 +79,16 @@ describe('recommend_flow_model notes', () => {
     assert.doesNotMatch(run({ task: 'writing', have: ['openai'] }).note ?? '', /assumed site defaults/);
   });
 
-  it('adds a stale note only after the threshold', () => {
+  it('refuses after the website expiry (fetched_at + 14 days), like the site router', () => {
     const fresh = run({ task: 'writing', have: ['openai'] });
-    assert.doesNotMatch(fresh.note ?? '', /stale/);
-    const later = new Date(Date.parse(fresh.snapshot + 'T00:00:00Z') + 100 * 86400000);
-    const stale = run({ task: 'writing', have: ['openai'] }, later);
-    assert.match(stale.note ?? '', new RegExp('Snapshot is 100 days old \\(stale after ' + STALE_AFTER_DAYS + '\\)'));
-    assert.ok(stale.shortlist.length > 0, 'stale data still ranks, with a note');
+    assert.equal(fresh.expired, false);
+    const fetched = Date.parse(SNAPSHOT_FETCHED);
+    const edge = run({ task: 'writing', have: ['openai'] }, new Date(fetched + EXPIRES_AFTER_DAYS * 86400000));
+    assert.ok(edge.shortlist.length > 0, 'still valid at the boundary');
+    const late = run({ task: 'writing', have: ['openai'] }, new Date(fetched + EXPIRES_AFTER_DAYS * 86400000 + 1));
+    assert.equal(late.expired, true);
+    assert.deepEqual(late.shortlist, []);
+    assert.match(late.note ?? '', /Snapshot expired/);
   });
 
   it('returns an empty shortlist with a note when no available model has data', () => {
@@ -142,7 +146,7 @@ describe('snapshot identity', () => {
     const sha = createHash('sha256').update(bytes).digest('hex');
     assert.equal(sha, sourceInfo.snapshot_sha256, 'SOURCE.json matches the committed snapshot');
     const info = snapshotInfo();
-    assert.deepEqual(info, { date: sourceInfo.snapshot_date, sha: sha.slice(0, 8), source: 'https://nobrainer.tech/ai/benchmark/', stale_after_days: 45 });
+    assert.deepEqual(info, { date: sourceInfo.snapshot_date, sha: sha.slice(0, 8), source: 'https://nobrainer.tech/ai/benchmark/', expires: new Date(Date.parse(SNAPSHOT_FETCHED) + EXPIRES_AFTER_DAYS * 86400000).toISOString().slice(0, 10) });
     const out = run({ task: 'coding' });
     assert.equal(out.snapshot, info.date);
     assert.equal(out.snapshot_sha, info.sha);

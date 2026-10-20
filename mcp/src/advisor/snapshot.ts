@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 // Same depth from src/advisor/ and dist/advisor/, so this resolves in both layouts.
 const SNAPSHOT_URL = new URL('../../data/benchmark/snapshot.json', import.meta.url);
 
-export const STALE_AFTER_DAYS = 45;
+// Mirrors task-router-core.js rank(): a snapshot expires 14 days after fetchedAt.
+export const EXPIRES_AFTER_DAYS = 14;
 
 export type SnapshotModel = {
   id: string;
@@ -38,6 +39,7 @@ type RawRow = [string, string, string, string, number, number, number, string, n
 export type Snapshot = {
   source: string;
   as_of: string;
+  fetched_at: string;
   policy: {
     quality_band_fraction: number;
     source_priority: string[];
@@ -65,6 +67,12 @@ function load(): LoadedSnapshot {
 
 export const SNAPSHOT: LoadedSnapshot = load();
 
-export function snapshotInfo(): { date: string; sha: string; source: string; stale_after_days: number } {
-  return { date: SNAPSHOT.as_of, sha: SNAPSHOT.sha.slice(0, 8), source: SNAPSHOT.source, stale_after_days: STALE_AFTER_DAYS };
+/** Expiry date (YYYY-MM-DD) of the pinned snapshot, or null when fetched_at is unreadable. */
+export function expiresAt(): Date | null {
+  const fetched = Date.parse(SNAPSHOT.fetched_at);
+  return Number.isFinite(fetched) ? new Date(fetched + EXPIRES_AFTER_DAYS * 86400000) : null;
+}
+
+export function snapshotInfo(): { date: string; sha: string; source: string; expires: string | null } {
+  return { date: SNAPSHOT.as_of, sha: SNAPSHOT.sha.slice(0, 8), source: SNAPSHOT.source, expires: expiresAt()?.toISOString().slice(0, 10) ?? null };
 }
