@@ -241,6 +241,103 @@ class ContextInventoryTests(unittest.TestCase):
         self.assertEqual("ATTENTION", payload["status"])
         self.assertIn("opencode: AGENTS.md cannot be read", payload["findings"])
 
+    def test_dot_claude_pointer_resolves_relative_to_its_file(self) -> None:
+        guide = (SCRIPTS.parent / "references" / "consolidate.md").read_text(encoding="utf-8")
+        self.assertIn("`@../AGENTS.md`", guide)
+        with tempfile.TemporaryDirectory() as raw:
+            root = self.repo(raw)
+            write(root / "AGENTS.md", SHARED)
+            write(root / ".claude/CLAUDE.md", "@../AGENTS.md\n")
+            code, payload = self.inventory(root, "--client", "claude", "--check")
+
+        self.assertEqual(0, code, payload["findings"])
+        self.assertEqual({".claude/CLAUDE.md": "launch", "AGENTS.md": "import"}, self.paths(payload, "claude"))
+
+    def test_unresolved_import_is_a_finding(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = self.repo(raw)
+            write(root / "CLAUDE.md", "# Rules\n\n@missing-security.md\n")
+            code, payload = self.inventory(root, "--client", "claude", "--check")
+
+        self.assertEqual(1, code)
+        self.assertEqual("ATTENTION", payload["status"])
+        self.assertIn("claude: CLAUDE.md:3 imports missing-security.md, which does not exist", payload["findings"])
+
+    def test_claude_reads_ancestors_above_the_git_root(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            workspace = (Path(raw) / "workspace").resolve()
+            root = workspace / "repo"
+            (root / ".git").mkdir(parents=True)
+            write(workspace / "CLAUDE.md", "workspace rules\n")
+            write(root / "AGENTS.md", SHARED)
+            _, payload = self.inventory(root, "--client", "claude", "--client", "codex")
+
+        self.assertEqual({str(workspace / "CLAUDE.md"): "launch"}, self.paths(payload, "claude"))
+        self.assertEqual({"AGENTS.md": "launch"}, self.paths(payload, "codex"))
+
+    def test_descendant_instructions_are_on_demand_and_not_counted_at_launch(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = self.repo(raw)
+            write(root / "AGENTS.md", SHARED)
+            write(root / "CLAUDE.md", "@AGENTS.md\n")
+            write(root / "src/CLAUDE.md", "src claude\n")
+            write(root / "src/GEMINI.md", "src gemini\n")
+            write(root / "src/AGENTS.md", "src agents\n")
+            write(root / "node_modules/pkg/AGENTS.md", "vendored\n")
+            _, payload = self.inventory(root)
+
+        self.assertEqual("on_demand", self.paths(payload, "claude")["src/CLAUDE.md"])
+        self.assertEqual("on_demand", self.paths(payload, "gemini")["src/GEMINI.md"])
+        self.assertEqual("conditional", self.paths(payload, "cursor")["src/AGENTS.md"])
+        self.assertEqual("conditional", self.paths(payload, "copilot")["src/AGENTS.md"])
+        self.assertNotIn("src/AGENTS.md", self.paths(payload, "codex"))
+        for client in payload["clients"]:
+            self.assertNotIn("node_modules/pkg/AGENTS.md", self.paths(payload, client))
+        claude = payload["clients"]["claude"]
+        self.assertEqual(sum(e["bytes"] for e in claude["files"] if e["path"] in ("CLAUDE.md", "AGENTS.md")),
+                         claude["launch_bytes"])
+
+    def test_opencode_jsonc_and_parse_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = self.repo(raw)
+            write(root / "AGENTS.md", "shared\n")
+            write(root / "SECURITY.md", "security\n")
+            write(root / "opencode.jsonc", '{\n  // team rules\n  "instructions": ["SECURITY.md",], /* end */\n}\n')
+            _, jsonc = self.inventory(root, "--client", "opencode")
+            (root / "opencode.jsonc").unlink()
+            write(root / "opencode.json", '{"instructions": ["SECURITY.md"')
+            code, broken = self.inventory(root, "--client", "opencode", "--check")
+
+        self.assertIn("SECURITY.md", self.paths(jsonc, "opencode"))
+        self.assertEqual(1, code)
+        self.assertTrue(any(item.startswith("opencode: opencode.json cannot be parsed") for item in broken["findings"]))
+
+    def test_invalid_codex_config_fails_the_check(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = self.repo(raw)
+            write(root / "AGENTS.md", SHARED)
+            config = Path(raw) / "config.toml"
+            config.write_text("project_doc_max_bytes = [\n", encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(INVENTORY), "--cwd", str(root), "--codex-config", str(config),
+                 "--client", "codex", "--json", "--check"],
+                cwd=ROOT, capture_output=True, text=True, check=False,
+            )
+            payload = json.loads(result.stdout)
+
+        self.assertEqual(1, result.returncode)
+        self.assertEqual("ATTENTION", payload["status"])
+        self.assertTrue(any(item.startswith("codex: config unreadable") for item in payload["findings"]))
+
+    def test_duplicate_locations_count_lines_inside_code_blocks(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = self.repo(raw)
+            write(root / "AGENTS.md", "# A\n```sh\nmake\n```\n" + SHARED)
+            write(root / "CLAUDE.md", SHARED)
+            _, payload = self.inventory(root)
+
+        self.assertEqual({"AGENTS.md:5", "CLAUDE.md:1"}, set(payload["duplicates"][0]["locations"]))
+
     def test_imports_inside_code_are_ignored_and_loops_stop(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = self.repo(raw)

@@ -95,8 +95,11 @@ project-local rules below.
 - Project: the first `AGENTS.md` found walking up from the working directory;
   a `CLAUDE.md` only when no `AGENTS.md` exists. Global:
   `~/.config/opencode/AGENTS.md`, else `~/.claude/CLAUDE.md`.
-- `instructions` in `opencode.json`: extra paths, globs or URLs, all added. The
-  probe resolves local paths and globs and never fetches URLs.
+- `instructions` in the project `opencode.json`: extra paths, globs or URLs, all
+  added. Config files may be JSON or JSONC (JSON with comments). The docs name
+  `opencode.jsonc` for managed settings; a project `opencode.jsonc` is
+  `UNVERIFIED`, and the probe reads it too. The probe resolves local paths and
+  globs and never fetches URLs. Source: <https://opencode.ai/docs/config/>.
 - Limit: none documented. Readback: none documented.
 - Source: <https://opencode.ai/docs/rules>.
 

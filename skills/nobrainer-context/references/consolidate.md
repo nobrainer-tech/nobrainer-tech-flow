@@ -17,13 +17,14 @@ is project-local and needs a preview and explicit approval before any write.
 
 | File | Keep | Pointer |
 |---|---|---|
-| `CLAUDE.md` / `.claude/CLAUDE.md` | Claude-only lines | `@AGENTS.md` on its own line |
+| `CLAUDE.md` | Claude-only lines | `@AGENTS.md` on its own line |
+| `.claude/CLAUDE.md` | Claude-only lines | `@../AGENTS.md`: imports resolve from the importing file's folder |
 | `CLAUDE.local.md` | personal, uncommitted lines | none; it stops Claude reading `AGENTS.md` directly, so keep the `@AGENTS.md` import in `CLAUDE.md` |
 | `GEMINI.md` | Gemini-only lines | `@AGENTS.md`, or `context.fileName` in project `.gemini/settings.json` listing `AGENTS.md` |
 | `.cursor/rules/*.mdc` | path- or task-scoped rules | none needed; Cursor reads `AGENTS.md` |
 | `.github/copilot-instructions.md` | lines for surfaces that ignore `AGENTS.md` (Copilot Chat on GitHub.com, code review in IDEs) | no import syntax; keep it short and non-contradictory |
 | `.github/instructions/*.instructions.md` | path-scoped rules with `applyTo` | none |
-| `opencode.json` `instructions` | extra files OpenCode should add | entries only |
+| `opencode.json` / `opencode.jsonc` `instructions` | extra files OpenCode should add | entries only |
 
 Rules:
 
@@ -60,6 +61,6 @@ the files to delete if new. Wait for an explicit yes.
 
 Write only the approved files, then run the inventory again. The change is
 `UPDATED` when the new inventory matches the preview: the same files per client,
-no new truncation, fewer or equal repeated lines and the goal pointer as
-proposed. Otherwise restore the preimages and report `BLOCKED` with the
+no new truncation, no import of a missing file, fewer or equal repeated lines and
+the goal pointer as proposed. Otherwise restore the preimages and report `BLOCKED` with the
 difference.

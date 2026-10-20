@@ -36,8 +36,10 @@ python3 <context-skill-dir>/scripts/context_inventory.py --json
 It lists, per client (Codex, Claude Code, Gemini CLI, Cursor, GitHub Copilot,
 OpenCode), the files loaded at start, on demand or by import, with bytes, lines
 and words; the Codex byte budget and truncation; files over documented line
-guidance; byte-identical copies; lines repeated across files; and the Flow goal
-pointer state. Add `--include-global` to size each client's user-level file,
+guidance; byte-identical copies; lines repeated across files; imports of missing
+files; settings or Codex configuration it cannot parse; and the Flow goal pointer
+state. Instructions in folders below the current one are listed as on demand and
+left out of the start-up totals. Add `--include-global` to size each client's user-level file,
 `--client NAME` to narrow it, and `--goal-file PATH` for an explicit goal file.
 `scripts/codex_context.py --check --json` keeps the detailed Codex chain probe.
 

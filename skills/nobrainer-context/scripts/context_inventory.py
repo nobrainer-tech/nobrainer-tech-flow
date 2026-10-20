@@ -76,22 +76,33 @@ def chain(root: Path, cwd: Path) -> list[Path]:
 def prose(text: str) -> str:
     """Text outside fenced code blocks and inline code spans."""
 
-    text = re.sub(r"^(```|~~~).*?^\1", "", text, flags=re.MULTILINE | re.DOTALL)
+    # Blank fenced blocks but keep their line breaks, so line numbers stay true.
+    text = re.sub(r"^(```|~~~).*?^\1", lambda m: "\n" * m.group(0).count("\n"), text,
+                  flags=re.MULTILINE | re.DOTALL)
     return re.sub(r"`[^`\n]*`", "", text)
 
 
-def imports(path: Path, depth: int, seen: set[Path] | None = None) -> list[Path]:
+def imports(path: Path, depth: int, seen: set[Path] | None = None,
+            missing: list[tuple[Path, int, str]] | None = None) -> list[Path]:
+    """Files path imports with @path, recursively; unresolved path-like imports go to missing."""
+
     seen = seen if seen is not None else {path.resolve()}
     found: list[Path] = []
     if depth <= 0:
         return found
-    for match in IMPORT_RE.finditer(prose(read_text(path))):
-        name = match.group(1)
-        target = (Path(name).expanduser() if name.startswith("~") else path.parent / name).resolve()
-        if target.is_file() and target not in seen:
-            seen.add(target)
-            found.append(target)
-            found.extend(imports(target, depth - 1, seen))
+    for number, line in enumerate(prose(read_text(path)).splitlines(), 1):
+        for match in IMPORT_RE.finditer(line):
+            name = match.group(1)
+            target = (Path(name).expanduser() if name.startswith("~") else path.parent / name).resolve()
+            if not target.is_file():
+                # A path, not a handle such as @alice: it names a file that is not there.
+                if missing is not None and ("/" in name or re.search(r"\.[A-Za-z0-9]+$", name)):
+                    missing.append((path, number, name))
+                continue
+            if target not in seen:
+                seen.add(target)
+                found.append(target)
+                found.extend(imports(target, depth - 1, seen, missing))
     return found
 
 
@@ -107,60 +118,140 @@ def present(*paths: Path) -> list[Path]:
     return [path for path in paths if path.is_file()]
 
 
-def project_settings(path: Path) -> dict[str, Any]:
+def strip_jsonc(text: str) -> str:
+    """JSON from JSONC: comments outside strings and trailing commas removed."""
+
+    out: list[str] = []
+    index, quoted = 0, False
+    while index < len(text):
+        char = text[index]
+        if quoted:
+            out.append(char)
+            if char == "\\":
+                out.append(text[index + 1:index + 2])
+                index += 1
+            elif char == '"':
+                quoted = False
+        elif char == '"':
+            quoted = True
+            out.append(char)
+        elif text.startswith("//", index):
+            end = text.find("\n", index)
+            index = len(text) if end < 0 else end
+            continue
+        elif text.startswith("/*", index):
+            end = text.find("*/", index + 2)
+            index = len(text) if end < 0 else end + 2
+            continue
+        else:
+            out.append(char)
+        index += 1
+    return re.sub(r",(\s*[}\]])", r"\1", "".join(out))
+
+
+def project_settings(path: Path, problems: list[str], client: str, root: Path) -> dict[str, Any]:
+    """A project settings file as a dict; a file that cannot be parsed is a problem."""
+
+    if not path.is_file():
+        return {}
     try:
-        value = json.loads(read_text(path)) if path.is_file() else {}
-    except ValueError:
+        value = json.loads(strip_jsonc(read_text(path)))
+    except ValueError as exc:
+        problems.append(f"{client}: {label(path, root)} cannot be parsed: {exc}")
         return {}
     return value if isinstance(value, dict) else {}
 
 
-def client_files(client: str, root: Path, cwd: Path, codex_config: Path) -> list[tuple[Path, str]]:
-    """Return (file, load mode) pairs one client reads for this project."""
+SKIP_DIRS = {"node_modules", "vendor", "dist", "build", "target", "venv", "__pycache__"}
+MAX_DESCENDANT_DIRS = 5000
+
+
+def descendants(cwd: Path) -> list[Path]:
+    """Folders below cwd that may hold scoped instructions; hidden and vendored ones skipped."""
+
+    found: list[Path] = []
+    for current, names, _ in os.walk(cwd):
+        names[:] = sorted(n for n in names if not n.startswith(".") and n not in SKIP_DIRS)
+        if Path(current) != cwd:
+            found.append(Path(current))
+        if len(found) >= MAX_DESCENDANT_DIRS:
+            break
+    return found
+
+
+def client_files(client: str, root: Path, cwd: Path, codex_config: Path,
+                 problems: list[str]) -> list[tuple[Path, str]]:
+    """Return (file, load mode) pairs one client reads for this project.
+
+    Problems found on the way (a settings file that cannot be parsed, an import of a
+    file that does not exist) are appended to problems.
+    """
 
     dirs = chain(root, cwd)
+    below = descendants(cwd)
     files: list[tuple[Path, str]] = []
     if client == "codex":
         result = codex_context.inspect_context(cwd, codex_config)
+        problems.extend(f"codex: {error}" for error in result["config_errors"])
         return [(Path(doc["path"]), "launch") for doc in result["documents"]]
     if client == "claude":
-        claude = [p for d in dirs for p in present(d / "CLAUDE.md", d / ".claude" / "CLAUDE.md", d / "CLAUDE.local.md")]
-        agents = [p for d in dirs for p in present(d / "AGENTS.md", d / ".claude" / "AGENTS.md")]
+        # Claude Code reads every folder from the filesystem root down, not only the project.
+        home = Path.home().resolve()
+        ancestors = list(reversed([cwd, *cwd.parents]))
+
+        def claude_names(folder: Path) -> list[Path]:
+            # ~/.claude/CLAUDE.md is the user file: it loads anyway and does not stop AGENTS.md.
+            dot = [] if folder == home else [folder / ".claude" / "CLAUDE.md"]
+            return present(folder / "CLAUDE.md", *dot, folder / "CLAUDE.local.md")
+
+        claude = [p for d in ancestors for p in claude_names(d)]
+        agents = [p for d in ancestors for p in present(d / "AGENTS.md", d / ".claude" / "AGENTS.md")]
         files = [(p, "launch") for p in (claude or agents)]
         for rule in sorted((root / ".claude" / "rules").rglob("*.md")):
             scoped = re.search(r"^paths\s*:", frontmatter(rule), re.MULTILINE)
             files.append((rule, "on_demand" if scoped else "launch"))
+        for folder in below:
+            own = claude_names(folder)
+            files += [(p, "on_demand") for p in own or (present(folder / "AGENTS.md") if not claude else [])]
     elif client == "gemini":
-        names = project_settings(root / ".gemini" / "settings.json").get("context", {})
+        settings = project_settings(root / ".gemini" / "settings.json", problems, client, root)
+        names = settings.get("context", {})
         names = names.get("fileName", "GEMINI.md") if isinstance(names, dict) else "GEMINI.md"
         names = [names] if isinstance(names, str) else [n for n in names if isinstance(n, str)] or ["GEMINI.md"]
         files = [(p, "launch") for d in dirs for p in present(*(d / n for n in names))]
+        files += [(p, "on_demand") for d in below for p in present(*(d / n for n in names))]
     elif client == "cursor":
         for rule in sorted((root / ".cursor" / "rules").rglob("*.mdc")):
             always = re.search(r"^alwaysApply\s*:\s*true", frontmatter(rule), re.MULTILINE)
             files.append((rule, "launch" if always else "conditional"))
         files += [(p, "launch") for d in dirs for p in present(d / "AGENTS.md")]
+        files += [(p, "conditional") for d in below for p in present(d / "AGENTS.md")]
         files += [(p, "legacy") for p in present(root / ".cursorrules")]
     elif client == "copilot":
         files = [(p, "launch") for p in present(root / ".github" / "copilot-instructions.md")]
         files += [(p, "conditional") for p in sorted((root / ".github" / "instructions").rglob("*.instructions.md"))]
         nearest = [p for d in reversed(dirs) for p in present(d / "AGENTS.md")][:1]
         files += [(p, "agent_surfaces") for p in nearest + present(root / "CLAUDE.md", root / "GEMINI.md")]
+        files += [(p, "conditional") for d in below for p in present(d / "AGENTS.md")]
     elif client == "opencode":
         up = list(reversed(dirs))
         agents = [p for d in up for p in present(d / "AGENTS.md")][:1]
         files = [(p, "launch") for p in agents or [p for d in up for p in present(d / "CLAUDE.md")][:1]]
-        entries = project_settings(root / "opencode.json").get("instructions", [])
-        for entry in entries if isinstance(entries, list) else []:
-            if not isinstance(entry, str) or not entry.strip() or entry.startswith(("http://", "https://")):
-                continue
-            pattern = os.path.join(str(root), os.path.expanduser(entry))
-            files += [(Path(p), "launch") for p in sorted(glob.glob(pattern, recursive=True)) if Path(p).is_file()]
+        for config in ("opencode.json", "opencode.jsonc"):
+            entries = project_settings(root / config, problems, client, root).get("instructions", [])
+            for entry in entries if isinstance(entries, list) else []:
+                if not isinstance(entry, str) or not entry.strip() or entry.startswith(("http://", "https://")):
+                    continue
+                pattern = os.path.join(str(root), os.path.expanduser(entry))
+                files += [(Path(p), "launch") for p in sorted(glob.glob(pattern, recursive=True)) if Path(p).is_file()]
     depth = IMPORT_DEPTH.get(client, 0)
+    missing: list[tuple[Path, int, str]] = []
     expanded: list[tuple[Path, str]] = []
     for path, mode in files:
         expanded.append((path, mode))
-        expanded += [(extra, "import") for extra in imports(path, depth)]
+        expanded += [(extra, "import") for extra in imports(path, depth, missing=missing)]
+    for path, number, name in dict.fromkeys(missing):
+        problems.append(f"{client}: {label(path, root)}:{number} imports {name}, which does not exist")
     unique: dict[Path, tuple[Path, str]] = {}
     for path, mode in expanded:
         unique.setdefault(path.resolve(), (path, mode))
@@ -240,7 +331,7 @@ def inventory(cwd: Path, codex_config: Path, clients: tuple[str, ...], include_g
     all_files: dict[Path, Path] = {}
     findings: list[str] = []
     for client in clients:
-        loaded = client_files(client, root, cwd, codex_config)
+        loaded = client_files(client, root, cwd, codex_config, findings)
         user_file = global_file(client) if include_global else None
         if user_file is not None:
             loaded.append((user_file, "global"))
