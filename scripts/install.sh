@@ -285,6 +285,17 @@ is_our_link() {
 	[ "$_o_resolved" = "$2" ]
 }
 
+# Put a claimed entry ($1) back at its name ($2) unless something new stands there; the
+# private folder it was moved into goes too. A blocked restore keeps the claim and says where.
+unclaim() {
+	if [ ! -e "$2" ] && [ ! -L "$2" ] && mv "$1" "$2" 2>/dev/null; then
+		rmdir "${1%/*}" 2>/dev/null
+		return 0
+	fi
+	err "PRESERVED: could not put $2 back; it is kept at $1"
+	return 1
+}
+
 # A recorded skill link this checkout made: $1 is the link, $2 the skill name. The link of
 # a retired module dangles, so it is compared as written.
 owns_link() {
@@ -970,12 +981,6 @@ install() {
 		note_dirs "$skills_dir"
 		mkdir -p "$skills_dir" || die 2 "cannot create $skills_dir"
 	fi
-	for _a_name in $to_retire; do
-		if is_exact_legacy_link "$skills_dir/$_a_name" "$_a_name"; then
-			remove_link "$skills_dir/$_a_name" || die 4 "could not remove the retired link $skills_dir/$_a_name"
-			say "REMOVED_RETIRED: $skills_dir/$_a_name"
-		fi
-	done
 	for _a_name in $to_link; do
 		_a_target=$skills_dir/$_a_name
 		_a_source=$root/skills/$_a_name
@@ -1015,6 +1020,26 @@ install() {
 	elif [ "$wrote" = 1 ]; then
 		new_target=$target new_backup=$made_backup new_hash=$(sha256 "$target")
 	fi
+	# The retired links the record lists go last, after every other write. Each is moved into
+	# a private folder and checked there; one that changed after the check goes back as it is.
+	# They come back if the record cannot be saved, and are deleted only once it is.
+	retired_claims=
+	for _a_name in $to_retire; do
+		_a_link=$skills_dir/$_a_name
+		is_exact_legacy_link "$_a_link" "$_a_name" || continue
+		_a_text=$(readlink "$_a_link") || continue
+		_a_claim=$(mktemp -d "$skills_dir/.nobrainer-retire-XXXXXX") || die 4 "could not make a private folder in $skills_dir"
+		if ! mv "$_a_link" "$_a_claim/$_a_name" 2>/dev/null; then
+			rmdir "$_a_claim"
+			continue
+		fi
+		if [ -L "$_a_claim/$_a_name" ] && [ "$(readlink "$_a_claim/$_a_name")" = "$_a_text" ]; then
+			retired_claims="$retired_claims $_a_claim/$_a_name"
+		else
+			unclaim "$_a_claim/$_a_name" "$_a_link"
+			err "PRESERVED: $_a_link changed during the setup and is left as it is"
+		fi
+	done
 	if [ -n "$created" ] || [ -n "$to_retire" ] || [ "$wrote" = 1 ] || { [ "$record" = 1 ] && [ "$new_hash" != "$st_hash" ]; }; then
 		# A retired module's link is gone once migrated; then the record drops its name.
 		_k_created=
@@ -1059,9 +1084,14 @@ install() {
 					rm -f "$target"
 				fi
 			fi
+			for _a_claim in $retired_claims; do unclaim "$_a_claim" "$skills_dir/${_a_claim##*/}"; done
 			die 4 "could not save the setup record $state; the changes of this run were reversed"
 		fi
 	fi
+	for _a_claim in $retired_claims; do
+		remove_link "$_a_claim" && rmdir "${_a_claim%/*}" 2>/dev/null
+		say "REMOVED_RETIRED: $skills_dir/${_a_claim##*/}"
+	done
 
 	# A home made for a record that was not needed goes again.
 	if [ ! -e "$state" ] && [ -n "$made_home" ]; then
@@ -1070,7 +1100,7 @@ install() {
 
 	# New links and a written instruction file are what a client has to be restarted for.
 	changed=0
-	if [ "$link_count" -gt 0 ] || [ "$wrote" = 1 ]; then changed=1; fi
+	if [ "$link_count" -gt 0 ] || [ "$wrote" = 1 ] || [ -n "$retired_claims" ]; then changed=1; fi
 	if [ "$changed" = 1 ]; then
 		say "INSTALLED: $source_line for $label"
 	else

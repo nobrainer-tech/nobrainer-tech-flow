@@ -128,6 +128,56 @@ def recorded_retired_args(record: dict | None) -> list[str]:
     return [arg for name in names if isinstance(name, str) and name not in BY_SKILL for arg in ("--recorded-retired", name)]
 
 
+def claim_retired_links(destination: Path, record: dict | None) -> list[tuple[Path, Path, tuple]]:
+    """Move the retired links a record lists aside, verifying each moved entry.
+
+    The claim is install_skills.py's atomic claim-and-verify: an entry that changed after
+    the check is put back untouched. The claims are deleted only once the whole setup run
+    has succeeded, and put back on any failure before that.
+    """
+
+    skills = _sibling(INSTALL_SKILLS)
+    claims = []
+    for name in (record or {}).get("created_skills", []):
+        if not isinstance(name, str) or name in BY_SKILL:
+            continue
+        target = destination / name
+        if not skills.is_exact_legacy_link(target, name):
+            continue
+        try:
+            claim, expected = skills.claim_legacy_link(target, name)
+        except RuntimeError as exc:
+            print(f"PRESERVED: {target} changed during the setup and is left as it is ({exc})")
+            continue
+        claims.append((target, claim, expected))
+    return claims
+
+
+def restore_retired_links(claims: list[tuple[Path, Path, tuple]]) -> list[str]:
+    """Put claimed retired links back; return what could not be restored."""
+
+    errors = []
+    for target, claim, expected in reversed(claims):
+        try:
+            # Moves the entry back without replacing a new one, and removes the private folder.
+            _sibling(INSTALL_SKILLS).restore_claim(target, claim, expected)
+        except (OSError, RuntimeError) as exc:
+            errors.append(f"retired link restore failed: {exc}")
+    return errors
+
+
+def commit_retired_links(claims: list[tuple[Path, Path, tuple]]) -> None:
+    """Delete the claimed retired links once the setup run has succeeded."""
+
+    for target, claim, expected in claims:
+        if _sibling(INSTALL_SKILLS).entry_fingerprint(claim) == expected:
+            claim.unlink()
+            claim.parent.rmdir()
+            print(f"REMOVED_RETIRED: {target}")
+        else:
+            print(f"BACKUP_PRESERVED: the claimed retired link changed and is kept: {claim}")
+
+
 def links_to(target: Path, source: Path) -> bool:
     """True when target is a symlink resolving to source; loops and dangling links are not."""
 
@@ -1448,7 +1498,7 @@ def main(argv: list[str] | None = None) -> int:
                 "backup": recorded_backup,
                 "written_sha256": hashlib.sha256(profile_target.read_bytes()).hexdigest(),
             }
-        # A retired module's link is gone once migrated; then the record drops its name.
+        # A retired module's link is gone once retired; then the record drops its name.
         kept = {name for name in previous.get("created_skills", []) if name in BY_SKILL or owns_link(destination / name, name)}
         created = sorted(kept | {name for name in new_skills if (destination / name).is_symlink()})
         next_state = {"destination": str(destination), "created_skills": created, "profile": profile}
@@ -1465,6 +1515,11 @@ def main(argv: list[str] | None = None) -> int:
         # a run makes a folder, so that its undo follows the rule it was made under.
         if created_dirs or not previous or "created_dirs" in previous:
             next_state["created_dirs"] = created_dirs
+        # The retired links the record lists go last, after every other write, and come back
+        # if the record cannot be saved.
+        retired_claims = claim_retired_links(destination, previous)
+        retired_names = {target.name for target, _, _ in retired_claims}
+        next_state["created_skills"] = [name for name in created if name not in retired_names]
         try:
             save_state(state, next_state)
         except (OSError, TypeError, ValueError) as exc:
@@ -1505,6 +1560,7 @@ def main(argv: list[str] | None = None) -> int:
                 remove_exact_created_links(destination, new_skills)
             except OSError as rollback_exc:
                 rollback_errors.append(f"skill rollback failed: {rollback_exc}")
+            rollback_errors.extend(restore_retired_links(retired_claims))
             remaining_links = [
                 name
                 for name in new_skills
@@ -1529,6 +1585,7 @@ def main(argv: list[str] | None = None) -> int:
             detail = f"{exc}; rollback incomplete: {'; '.join(rollback_errors)}" if rollback_errors else f"{exc}; applied changes were rolled back and read back"
             print(f"ERROR: setup state save failed: {detail}", file=sys.stderr)
             return 3 if rollback_errors else 2
+        commit_retired_links(retired_claims)
         after = installed_ids(destination)
         actual_added = sorted(after - before)
         expected_added = sorted(BY_SKILL[name].id for name in new_skills)

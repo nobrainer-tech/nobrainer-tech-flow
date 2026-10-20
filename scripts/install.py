@@ -248,8 +248,8 @@ def symlink_help(where: Path | None = None) -> str:
     )
 
 
-def plan_skills(ctx: Context) -> tuple[int, int]:
-    """Dry-run the skill install: (skills to link, skills already linked)."""
+def plan_skills(ctx: Context) -> tuple[int, int, list[str]]:
+    """Dry-run the skill install: (skills to link, skills already linked, retired links due to go)."""
 
     code, out, err = run(
         [sys.executable, str(INSTALL_SKILLS), "--client", ctx.client, "--dest", str(ctx.skills),
@@ -272,7 +272,8 @@ def plan_skills(ctx: Context) -> tuple[int, int]:
     if to_link and not symlinks_available():
         print(symlink_help(), file=sys.stderr)
         raise Refused(2)
-    return to_link, actions.count("KEEP")
+    retired = [line.split(": ", 1)[1] for line in out.splitlines() if line.startswith("RETIRED_RECORDED: ")]
+    return to_link, actions.count("KEEP"), retired
 
 
 def plan_instructions(ctx: Context) -> list[str]:
@@ -362,7 +363,7 @@ def unrecorded_path(ctx: Context) -> Path | None:
 
 
 def install(ctx: Context) -> int:
-    to_link, kept = plan_skills(ctx)
+    to_link, kept, retired = plan_skills(ctx)
     instructions = plan_instructions(ctx)
     # The guided setup's own dry run checks the recorded setup, the paths and the
     # target, so the preview refuses whatever --apply would refuse.
@@ -372,6 +373,8 @@ def install(ctx: Context) -> int:
     if not ctx.apply:
         print(f"{source_line()} for {ctx.label}")
         print(f"SKILLS: {to_link} to link into {ctx.skills} ({kept} already linked)")
+        for line in retired:
+            print(f"REMOVE_RETIRED: {line}")
         for line in unique(instructions):
             print(line)
         note = ctx.variable_note()
@@ -395,12 +398,15 @@ def install(ctx: Context) -> int:
     # New links and a written instruction file are what a client has to be restarted for.
     # The personalization helper prints APPLIED only for a file it wrote.
     written = re.search(r"^APPLIED: ", out, re.MULTILINE) is not None
-    changed = bool(to_link) or written
+    removed_retired = re.findall(r"^REMOVED_RETIRED: (.+)$", out, re.MULTILINE)
+    changed = bool(to_link) or written or bool(removed_retired)
     if changed:
         print(f"INSTALLED: {source_line()} for {ctx.label}")
     else:
         print(f"UP TO DATE: {source_line()} is already installed for {ctx.label}; nothing changed")
     print(f"SKILLS: {linked} linked in {ctx.skills} ({to_link} new)")
+    for target in removed_retired:
+        print(f"REMOVED_RETIRED: {target}")
     if profile.get("target"):
         backup = profile.get("backup")
         if written and re.search(r"^UPDATE: ", out, re.MULTILINE):

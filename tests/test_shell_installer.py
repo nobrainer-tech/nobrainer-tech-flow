@@ -2220,8 +2220,23 @@ class ShellInstallerTests(unittest.TestCase):
                 shown = run()
                 self.assertEqual(0, shown.returncode, shown.stdout + shown.stderr)
                 self.assertTrue((skills / old).is_symlink())
-                if installer == "sh":
-                    self.assertIn(f"REMOVE_RETIRED: {old}", shown.stdout)
+                self.assertIn(f"REMOVE_RETIRED: {old}", shown.stdout)
+
+                # A run that fails after the old link was due to go keeps it: the record
+                # cannot be written here, and the previous installation stays usable.
+                if os.name != "nt" and os.geteuid() != 0:
+                    home.chmod(0o555)
+                    try:
+                        failed = run("--apply")
+                    finally:
+                        home.chmod(0o755)
+                    self.assertNotEqual(0, failed.returncode, failed.stdout + failed.stderr)
+                    self.assertTrue((skills / old).is_symlink(), failed.stdout + failed.stderr)
+                    self.assertEqual(ROOT / "skills" / old, (skills / old).readlink())
+                    self.assertEqual(pristine, record.read_bytes())
+                    self.assertEqual([], [p.name for p in skills.iterdir() if p.name.startswith(".")])
+                    if (skills / new).is_symlink():
+                        (skills / new).unlink()
                 again = run("--apply")
                 self.assertEqual(0, again.returncode, again.stdout + again.stderr)
                 self.assertFalse((skills / old).is_symlink())
@@ -2234,7 +2249,15 @@ class ShellInstallerTests(unittest.TestCase):
                 blocked = run("--apply")
                 self.assertEqual(3, blocked.returncode, blocked.stdout + blocked.stderr)
                 self.assertTrue((skills / old).is_symlink())
-                (skills / old).unlink()
+
+                # A run that only retires the old link still rewrites the record.
+                data = json.loads(record.read_text(encoding="utf-8"))
+                data["created_skills"] = sorted(data["created_skills"] + [old])
+                record.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+                only = run("--apply")
+                self.assertEqual(0, only.returncode, only.stdout + only.stderr)
+                self.assertFalse((skills / old).is_symlink())
+                self.assertEqual(SKILLS, json.loads(record.read_text(encoding="utf-8"))["created_skills"])
                 self.assertEqual(0, run("--undo", "--apply").returncode)
 
     @unittest.skipIf(os.name == "nt", "the record holds Windows paths there")

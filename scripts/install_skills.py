@@ -693,7 +693,8 @@ def parse_args() -> argparse.Namespace:
         metavar="NAME",
         help=(
             "A retired name that the calling setup's record lists as created by it: "
-            "its exact link into this checkout is removed instead of blocking."
+            "its exact link into this checkout no longer blocks installation and is "
+            "left in place for that setup to retire once its whole run has succeeded."
         ),
     )
     return parser.parse_args()
@@ -766,7 +767,8 @@ def main() -> int:
             and legacy_name in RETIRED_LEGACY
             and legacy_name in args.recorded_retired
         ):
-            # The setup record proves the setup made this link; undo would remove it too.
+            # The setup record proves the setup made this link. The setup retires it
+            # after its own run succeeds; this helper never deletes it.
             state = "recorded"
         alias_plan.append((legacy_name, canonical_name, target, state))
         if state == "conflict" or (state == "legacy" and not args.migrate_legacy):
@@ -795,7 +797,7 @@ def main() -> int:
 
     for legacy_name, canonical_name, target, state in alias_plan:
         if state == "recorded":
-            print(f"REMOVE_RETIRED: {legacy_name}: made by this setup; renamed {canonical_name}: {target}")
+            print(f"RETIRED_RECORDED: {legacy_name}: made by this setup; renamed {canonical_name}: {target}")
             continue
         if state == "preserved":
             print(
@@ -860,17 +862,8 @@ def main() -> int:
         return 2
     created: list[tuple[Path, EntryFingerprint, TreeManifest | None]] = []
     migrated: list[tuple[Path, Path, str, EntryFingerprint]] = []
-    removed_retired: list[tuple[Path, str]] = []
     copied_manifests: dict[Path, TreeManifest] = {}
     try:
-        for legacy_name, _, target, state in alias_plan:
-            if state != "recorded":
-                continue
-            snapshot = legacy_link_snapshot(target, legacy_name)
-            if snapshot is None:
-                raise RuntimeError(f"retired link changed after preflight: {target}")
-            target.unlink()
-            removed_retired.append((target, snapshot[3] or ""))
         for _, source, target, state in plan:
             if state == "current" and args.mode == "copy":
                 copied_manifests[target] = tree_manifest(source)
@@ -940,12 +933,6 @@ def main() -> int:
                 remove_created_entry(target, fingerprint, manifest)
             except (OSError, RuntimeError) as rollback_exc:
                 rollback_errors.append(f"{target}: {rollback_exc}")
-        for target, linked in reversed(removed_retired):
-            try:
-                if not target.exists() and not target.is_symlink():
-                    os.symlink(linked, target, target_is_directory=True)
-            except OSError as rollback_exc:
-                rollback_errors.append(f"{target} (was a link to {linked}): {rollback_exc}")
         for target, claim, _, expected in reversed(migrated):
             try:
                 restore_claim(target, claim, expected)
@@ -963,8 +950,6 @@ def main() -> int:
             print(f"ERROR: installation rolled back: {exc}", file=sys.stderr)
         return 4
 
-    for target, _ in removed_retired:
-        print(f"REMOVED_RETIRED: {target}")
     changed_backups: list[str] = []
     for _, claim, _, expected in migrated:
         if entry_fingerprint(claim) == expected:

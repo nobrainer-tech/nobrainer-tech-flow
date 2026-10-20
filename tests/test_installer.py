@@ -484,15 +484,102 @@ class InstallerTests(unittest.TestCase):
 
             preview = self.run_installer(*args, "--recorded-retired", old)
             self.assertEqual(0, preview.returncode, preview.stderr)
-            self.assertIn(f"REMOVE_RETIRED: {old}:", preview.stdout)
+            self.assertIn(f"RETIRED_RECORDED: {old}:", preview.stdout)
             self.assertTrue(link.is_symlink())
 
+            # The helper never deletes: the calling setup retires the link once its whole
+            # run has succeeded, through the claim-and-verify path.
             applied = self.run_installer(*args, "--recorded-retired", old, "--apply")
             self.assertEqual(0, applied.returncode, applied.stderr)
-            self.assertIn("REMOVED_RETIRED:", applied.stdout)
-            self.assertFalse(link.is_symlink())
-            self.assertEqual([], list(destination.glob(".nobrainer-migration-*")))
+            self.assertIn(f"RETIRED_RECORDED: {old}:", applied.stdout)
+            self.assertTrue(link.is_symlink())
+            self.assertEqual([], list(destination.glob(".nobrainer-*")))
             self.assertEqual(ROOT / "skills" / "nobrainer-context", (destination / "nobrainer-context").resolve())
+
+    def test_recorded_retired_never_deletes_a_concurrent_replacement(self) -> None:
+        old = "nobrainer-codex-context"
+        spec = importlib.util.spec_from_file_location("skill_installer_retire_race_test", INSTALLER)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "skills"
+            destination.mkdir()
+            link = destination / old
+            link.symlink_to(ROOT / "skills" / old, target_is_directory=True)
+            real_snapshot = module.legacy_link_snapshot
+            calls = []
+
+            def snapshot_then_replace(target: Path, legacy_name: str):
+                result = real_snapshot(target, legacy_name)
+                calls.append(target)
+                if target.is_symlink():
+                    # After every check, another process swaps in the user's own file.
+                    target.unlink()
+                    target.write_text("mine\n", encoding="utf-8")
+                    if len(calls) == 1:
+                        # Planning saw the link; put it back so the run reaches its writes.
+                        target.unlink()
+                        target.symlink_to(ROOT / "skills" / old, target_is_directory=True)
+                return result
+
+            argv = [str(INSTALLER), "--client", "claude", "--dest", str(destination), "--skill",
+                    "nobrainer-context", "--recorded-retired", old, "--apply"]
+            with (
+                mock.patch.object(sys, "argv", argv),
+                mock.patch.object(module, "legacy_link_snapshot", side_effect=snapshot_then_replace),
+                redirect_stdout(io.StringIO()),
+                redirect_stderr(io.StringIO()),
+            ):
+                module.main()
+
+            # Whatever stands at the name after the run, nothing there was deleted: the user's
+            # file keeps its bytes, or the old link is still in place for the setup to retire.
+            self.assertTrue(link.is_symlink() or link.is_file())
+            if link.is_file():
+                self.assertEqual("mine\n", link.read_text(encoding="utf-8"))
+
+    def test_guided_retirement_claim_keeps_a_concurrent_replacement(self) -> None:
+        old = "nobrainer-codex-context"
+        spec = importlib.util.spec_from_file_location(
+            "guided_retire_race_test", ROOT / "scripts" / "recommend_flow_setup.py"
+        )
+        guided = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = guided
+        try:
+            spec.loader.exec_module(guided)
+            skills = guided._sibling(guided.INSTALL_SKILLS)
+            real_claim = skills.claim_legacy_link
+            with tempfile.TemporaryDirectory() as temp:
+                destination = Path(temp) / "skills"
+                destination.mkdir()
+                link = destination / old
+                link.symlink_to(ROOT / "skills" / old, target_is_directory=True)
+
+                def replace_then_claim(target: Path, name: str):
+                    target.unlink()
+                    target.write_text("mine\n", encoding="utf-8")
+                    return real_claim(target, name)
+
+                output = io.StringIO()
+                with mock.patch.object(skills, "claim_legacy_link", side_effect=replace_then_claim), \
+                        redirect_stdout(output):
+                    claims = guided.claim_retired_links(destination, {"created_skills": [old]})
+
+                self.assertEqual([], claims)
+                self.assertEqual("mine\n", link.read_text(encoding="utf-8"))
+                self.assertIn("changed during the setup", output.getvalue())
+                self.assertEqual([], list(destination.glob(".nobrainer-*")))
+
+                link.unlink()
+                link.symlink_to(ROOT / "skills" / old, target_is_directory=True)
+                with redirect_stdout(io.StringIO()):
+                    claims = guided.claim_retired_links(destination, {"created_skills": [old]})
+                self.assertFalse(link.is_symlink())
+                self.assertEqual([], guided.restore_retired_links(claims))
+                self.assertEqual(ROOT / "skills" / old, link.readlink())
+                self.assertEqual([], list(destination.glob(".nobrainer-*")))
+        finally:
+            sys.modules.pop(spec.name, None)
 
     def test_foreign_flow_alias_still_blocks_installation(self) -> None:
         for migrate in (False, True):
