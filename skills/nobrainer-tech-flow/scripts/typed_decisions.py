@@ -128,6 +128,11 @@ def invoke(provider, model, request, timeout, key_env=None):
     # from the variable the caller names with --key-env, and passed on stdin.
     env = {k: v for k, v in os.environ.items()
            if not any(part in k.upper() for part in ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL"))}
+    if key_env:
+        # The named variable may not look like a credential (TYPESAFE_AUTH, FOO); drop it anyway.
+        # Windows treats variable names without regard to case.
+        for name in [k for k in env if k == key_env or (os.name == "nt" and k.upper() == key_env.upper())]:
+            del env[name]
     key = os.environ.get(key_env) if provider == "jev" and key_env else None
     process = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--worker", provider, model],
                              input=json.dumps({"request": request, "key": key}), capture_output=True, text=True,

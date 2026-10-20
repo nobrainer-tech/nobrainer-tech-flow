@@ -56,6 +56,21 @@ class TypedDecisionTests(unittest.TestCase):
             self.assertEqual({"PATH": "/bin"}, env)
         self.assertEqual("MISSING_TYPESAFE_API_KEY", runtime.worker("jev", "jev-latest", REQUEST)["error"])
 
+    def test_named_variable_never_reaches_the_worker_environment(self):
+        from unittest.mock import patch
+        for name in ("TYPESAFE_AUTH", "FOO"):
+            seen = []
+
+            def fake_run(command, input, **kwargs):
+                seen.append((json.loads(input)["key"], kwargs["env"]))
+                return subprocess.CompletedProcess(command, 0, stdout="{}")
+
+            with patch.dict(runtime.os.environ, {name: "synthetic-value", "PATH": "/bin"}, clear=True), \
+                    patch.object(runtime.subprocess, "run", fake_run):
+                runtime.invoke("jev", "jev-latest", REQUEST, 1, key_env=name)
+            self.assertEqual("synthetic-value", seen[0][0], name)
+            self.assertNotIn(name, seen[0][1], name)
+
     def test_off_and_unapproved_never_touch_provider(self):
         def forbidden(*args):
             self.fail("Provider called without opt-in")
