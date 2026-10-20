@@ -45,7 +45,7 @@ Result
 {
  "path": "QUICK",
  "flow_version": "2.4.1",
- "contract": "8c9f2070",
+ "contract": "85c3e544",
  "items": [
   {
    "id": "AC01",
@@ -284,7 +284,7 @@ Result
 ```json
 {
  "verdict": "DONE_WITH_GAPS",
- "markdown": "## Delivered\n<one sentence: the observable outcome>\n\n## Proof\n- AC01 test, local, accepted (digest 13848f53): <command and result>\n\n## Not checked\n- AC02: <reason>\n\n## Decisions left to you\n<owner decisions, or 'None'>\n\n## Next action\n<one action, or 'None'>\n\nContract 8c9f2070, Flow 2.4.1. Evidence was reported by the agent; the server checked consistency, not truth."
+ "markdown": "## Delivered\n<one sentence: the observable outcome>\n\n## Proof\n- AC01 test, local, accepted (digest 13848f53): <command and result>\n\n## Not checked\n- AC02: <reason>\n\n## Decisions left to you\n<owner decisions, or 'None'>\n\n## Next action\n<one action, or 'None'>\n\nContract 85c3e544, Flow 2.4.1. Evidence was reported by the agent; the server checked consistency, not truth."
 }
 ```
 
@@ -317,6 +317,8 @@ Result
  "task": "terminal-coding",
  "priority": "balanced",
  "role": "worker",
+ "expired": false,
+ "expires": "2026-10-30",
  "cohort": "terminal-bench",
  "scale": "Task success, %",
  "shortlist": [

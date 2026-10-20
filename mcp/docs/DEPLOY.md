@@ -104,7 +104,15 @@ the certificate is active.
 4. Resume after a pause: dashboard or `POST /v1/projects/{id}/unpause`.
 5. Test once with a signed request against a throwaway project before relying on it.
 
-## 6. After the first deploy
+## 6. Keeping the advisor current
+
+The benchmark snapshot expires 14 days after its `fetched_at` (the website's own rule). After that,
+`recommend_flow_model` returns `expired: true` and an empty shortlist. Every deploy should carry a
+snapshot fetched within the last 14 days: `npm run refresh:benchmark -- --source <website>/public_html/ai/benchmark`,
+`npm test`, commit, then build and deploy as in section 2. The snapshot in this release was fetched
+2026-10-16 and expires 2026-10-30.
+
+## 7. After the first deploy
 
 - Run MCP Inspector against production and call each tool with valid and invalid input.
 - Connect each client from the README and record the result there.

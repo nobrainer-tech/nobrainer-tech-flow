@@ -19,7 +19,7 @@ client, plus guidance quoted from the pinned Flow release and a model advisor ba
 | `check_flow_evidence` | Checks one to four evidence records: exit codes, the test-runner summary (pytest, unittest, node:test, Vitest, Jest, Mocha, Playwright, Go, cargo, RSpec, PHPUnit, dotnet), claimed counts, evidence level, URL host and status, file hashes. Marks earlier test results stale when a registered file changes, and returns `REPEATED_DEFECT` after a second failure. |
 | `check_flow_done` | `DONE` only when every item has accepted, current evidence; `DONE_WITH_GAPS` when the rest are listed as unchecked with a reason; otherwise `NOT_DONE` with the exact missing items. |
 | `draft_flow_handoff` | A final-report skeleton built only from the done receipt. |
-| `recommend_flow_model` | A top-3 model shortlist for a task type (`orchestration`, `instructions`, `frontend`, `research`, `writing`, `terminal-coding`, `coding`) from a pinned, dated benchmark snapshot, filtered by the providers, models or client apps you have (`have`), with an optional priority (quality, balanced, efficient) and role. Never invents scores; says when data is missing or stale. Artificial Analysis-derived scores are not redistributed (their terms forbid it), so `coding` points to `terminal-coding` and the website. |
+| `recommend_flow_model` | A top-3 model shortlist for a task type (`orchestration`, `instructions`, `frontend`, `research`, `writing`, `terminal-coding`, `coding`) from a pinned, dated benchmark snapshot, filtered by the providers, models or client apps you have (`have`), with an optional priority (quality, balanced, efficient) and role. Never invents scores and says when data is missing. Like the website, it refuses once the snapshot is 14 days past its fetch time (`expired: true`, `expires` date in every response). Artificial Analysis-derived scores are not redistributed (their terms forbid it), so `coding` points to `terminal-coding` and the website. |
 
 All six tools are read-only (`readOnlyHint: true`, `openWorldHint: false`). Results are one compact
 JSON text block. Responses never echo your free text: only IDs, enums, digests and canonical Flow text.
@@ -121,6 +121,7 @@ survive a restart. On Vercel the key is required.
 
 ```text
 api/mcp.js          Vercel Function; logic compiled from src/ into dist/ by `npm run build`
+src/rpcguard.ts     fixed-text answers for unknown tool/prompt/resource names, protocol error rewriting
 src/http.ts         POST only, 32 KiB body cap, Host and Origin checks, JSON depth limit, one
                     content-free log line; 2026-07-28 traffic -> SDK handler (JSON responses),
                     2025-era traffic -> fresh stateless transport with JSON responses
@@ -150,7 +151,7 @@ release: update `content/SOURCE.json` (tag, commit, hashes), fix `cards.yaml`, r
 ### Updating the benchmark snapshot
 
 `npm run refresh:benchmark -- --source <website>/public_html/ai/benchmark` regenerates
-`data/benchmark/snapshot.json` and `SOURCE.json` deterministically. See `data/benchmark/NOTICE.md`
+`data/benchmark/snapshot.json` and `SOURCE.json` deterministically. The website rule applies: a snapshot expires 14 days after its fetch time, so refresh and redeploy at least every 14 days or the advisor answers `expired: true` with an empty shortlist. See `data/benchmark/NOTICE.md`
 for provenance and third-party licences.
 
 ## Documents
