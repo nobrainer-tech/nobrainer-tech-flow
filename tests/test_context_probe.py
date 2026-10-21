@@ -398,6 +398,68 @@ class ContextInventoryTests(unittest.TestCase):
         self.assertEqual("STALE_POINTER", stale["goal"]["status"])
         self.assertEqual(["tasks/old-goal.md"], stale["goal"]["missing_paths"])
 
+    def test_completed_goals_need_no_pointer_but_dangling_paths_still_fail(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = self.repo(raw)
+            write(root / "tasks/GOAL.md", "GOAL_ID: historical\nSTATUS: COMPLETE\n")
+            for pointer in ("", "Current goal: tasks/GOAL.md\n"):
+                with self.subTest(pointer=pointer):
+                    write(root / "AGENTS.md", SHARED + pointer)
+                    code, payload = self.inventory(root, "--client", "codex", "--check")
+                    self.assertEqual(0, code, payload["findings"])
+                    self.assertEqual("NONE", payload["goal"]["status"])
+                    self.assertEqual([{"path": "tasks/GOAL.md", "status": "COMPLETE"}],
+                                     payload["goal"]["goal_files"])
+            write(root / "AGENTS.md", SHARED + "Current goal: tasks/missing-goal.md\n")
+            code, dangling = self.inventory(root, "--client", "codex", "--check")
+
+        self.assertEqual(1, code)
+        self.assertEqual("STALE_POINTER", dangling["goal"]["status"])
+
+    def test_included_globals_expand_imports_for_totals_duplicates_and_goals(self) -> None:
+        for client, filename in (("claude", ".claude/CLAUDE.md"), ("gemini", ".gemini/GEMINI.md")):
+            with self.subTest(client=client), tempfile.TemporaryDirectory() as raw:
+                root = self.repo(raw)
+                home = (Path(raw) / "home").resolve()
+                project = "CLAUDE.md" if client == "claude" else "GEMINI.md"
+                write(root / project, SHARED)
+                write(root / "tasks/GOAL.md", "GOAL_ID: current\nSTATUS: ACTIVE\n")
+                write(home / filename, "@../shared.md\n")
+                write(home / "shared.md", SHARED + "Current goal: tasks/GOAL.md\n@nested.md\n")
+                write(home / "nested.md", "nested global instructions\n")
+                _, excluded = self.inventory(root, "--client", client, home=home)
+                _, payload = self.inventory(root, "--client", client, "--include-global", home=home)
+
+                self.assertNotIn("~/shared.md", self.paths(excluded, client))
+                self.assertEqual({project: "launch", "~/" + filename: "global",
+                                  "~/shared.md": "import", "~/nested.md": "import"}, self.paths(payload, client))
+                self.assertEqual(sum(p.stat().st_size for p in
+                                     (root / project, home / filename, home / "shared.md", home / "nested.md")),
+                                 payload["clients"][client]["launch_bytes"])
+                self.assertEqual(1, payload["clients"][client]["repeated_lines"])
+                self.assertEqual("POINTED", payload["goal"]["status"])
+
+    def test_included_global_missing_import_fails_check(self) -> None:
+        for client, filename in (("claude", ".claude/CLAUDE.md"), ("gemini", ".gemini/GEMINI.md")):
+            with self.subTest(client=client), tempfile.TemporaryDirectory() as raw:
+                root = self.repo(raw)
+                home = (Path(raw) / "home").resolve()
+                write(home / filename, "@missing.md\n")
+                code, payload = self.inventory(root, "--client", client, "--include-global", "--check", home=home)
+
+                self.assertEqual(1, code)
+                self.assertIn(f"{client}: ~/{filename}:1 imports missing.md, which does not exist", payload["findings"])
+
+    def test_claude_line_guidance_excludes_agents_fallback_and_rules(self) -> None:
+        for filename in ("AGENTS.md", ".claude/rules/long.md"):
+            with self.subTest(filename=filename), tempfile.TemporaryDirectory() as raw:
+                root = self.repo(raw)
+                write(root / filename, "".join(f"instruction {n}\n" for n in range(201)))
+                code, payload = self.inventory(root, "--client", "claude", "--check")
+
+                self.assertEqual(0, code, payload["findings"])
+                self.assertFalse(payload["clients"]["claude"]["files"][0]["over_guidance"])
+
     def test_codex_truncation_is_a_finding(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = self.repo(raw)

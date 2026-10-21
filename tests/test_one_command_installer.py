@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import io
+import json
 import os
 import subprocess
 import sys
@@ -32,6 +33,50 @@ def symlinks_work() -> bool:
 
 
 class OneCommandInstallerTests(unittest.TestCase):
+    def test_retirement_blocked_restore_aborts_and_restores_earlier_claims(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp).resolve() / "home"
+            flags = ["--client", "claude", "--home", str(home)]
+            installed = self.run_install(*flags, "--apply")
+            self.assertEqual(0, installed.returncode, installed.stdout + installed.stderr)
+            destination = home / ".claude" / "skills"
+            names = ["nobrainer-codex-context", "nobrainer-reddit"]
+            for name in names:
+                (destination / name).symlink_to(ROOT / "skills" / name, target_is_directory=True)
+            record = home / ".nobrainer-flow-onboarding-claude.json"
+            data = json.loads(record.read_text())
+            data["created_skills"] += names
+            record.write_text(json.dumps(data))
+            pristine = record.read_bytes()
+            real_rename = Path.rename
+
+            def replace_during_claim(source, target):
+                if source == destination / names[1]:
+                    source.unlink()
+                    source.write_text("claimed replacement\n")
+                    result = real_rename(source, target)
+                    source.write_text("new occupant\n")
+                    return result
+                return real_rename(source, target)
+
+            output, errors = io.StringIO(), io.StringIO()
+            with mock.patch.object(Path, "rename", replace_during_claim), \
+                    contextlib.redirect_stdout(output), contextlib.redirect_stderr(errors):
+                code = GUIDED.main([
+                    *flags, "--repo-url", "https://github.com/nobrainer-tech/nobrainer-tech-flow", "--offline",
+                    "--work-profile", "software-development", "--goal", "audit",
+                    "--tools", "claude", "--existing-setup", "Flow", "--selection", "01,02", "--apply",
+                ])
+            self.assertEqual(3, code, output.getvalue() + errors.getvalue())
+            self.assertIn("rollback incomplete", errors.getvalue())
+            self.assertEqual(pristine, record.read_bytes())
+            self.assertTrue((destination / names[0]).is_symlink())
+            self.assertEqual("new occupant\n", (destination / names[1]).read_text())
+            claims = list(destination.glob(".nobrainer-migration-*/*"))
+            self.assertEqual(1, len(claims))
+            self.assertEqual("claimed replacement\n", claims[0].read_text())
+            self.assertNotIn("READBACK: installed=", output.getvalue())
+
     def run_install(
         self,
         *args: str,

@@ -458,6 +458,10 @@ def legacy_name_for(target: Path, canonical: Path) -> str | None:
     return None
 
 
+class ClaimRestoreError(RuntimeError):
+    """A changed entry was claimed but could not be restored to its original name."""
+
+
 def claim_legacy_link(
     target: Path, legacy_name: str
 ) -> tuple[Path, EntryFingerprint]:
@@ -487,7 +491,7 @@ def claim_legacy_link(
     try:
         restore_claim(target, claim)
     except RuntimeError as exc:
-        raise RuntimeError(
+        raise ClaimRestoreError(
             f"legacy link changed after preflight; {exc}"
         ) from exc
     raise RuntimeError(

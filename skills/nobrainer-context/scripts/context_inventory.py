@@ -186,7 +186,7 @@ def descendants(cwd: Path) -> list[Path]:
 
 
 def client_files(client: str, root: Path, cwd: Path, codex_config: Path,
-                 problems: list[str]) -> list[tuple[Path, str]]:
+                 problems: list[str], include_global: bool = False) -> list[tuple[Path, str]]:
     """Return (file, load mode) pairs one client reads for this project.
 
     Problems found on the way (a settings file that cannot be parsed, an import of a
@@ -199,8 +199,8 @@ def client_files(client: str, root: Path, cwd: Path, codex_config: Path,
     if client == "codex":
         result = codex_context.inspect_context(cwd, codex_config)
         problems.extend(f"codex: {error}" for error in result["config_errors"])
-        return [(Path(doc["path"]), "launch") for doc in result["documents"]]
-    if client == "claude":
+        files = [(Path(doc["path"]), "launch") for doc in result["documents"]]
+    elif client == "claude":
         # Claude Code reads every folder from the filesystem root down, not only the project.
         home = Path.home().resolve()
         ancestors = list(reversed([cwd, *cwd.parents]))
@@ -250,6 +250,9 @@ def client_files(client: str, root: Path, cwd: Path, codex_config: Path,
                     continue
                 pattern = os.path.join(str(root), os.path.expanduser(entry))
                 files += [(Path(p), "launch") for p in sorted(glob.glob(pattern, recursive=True)) if Path(p).is_file()]
+    user_file = global_file(client) if include_global else None
+    if user_file is not None:
+        files.append((user_file, "global"))
     depth = IMPORT_DEPTH.get(client, 0)
     missing: list[tuple[Path, int, str]] = []
     expanded: list[tuple[Path, str]] = []
@@ -323,7 +326,7 @@ def goal_state(root: Path, texts: dict[str, str], explicit: Path | None) -> dict
     mentioned = {g["path"] for g in goals for t in texts.values() if g["path"] in t}
     dangling = sorted({m for t in texts.values() for m in re.findall(r"[\w./-]*goal[\w./-]*\.md", t, re.I)
                        if not (root / m).is_file()})
-    if not goals:
+    if not active:
         status = "STALE_POINTER" if dangling else "NONE"
     elif any(g["path"] in mentioned for g in active):
         status = "POINTED"
@@ -340,10 +343,7 @@ def inventory(cwd: Path, codex_config: Path, clients: tuple[str, ...], include_g
     all_files: dict[Path, Path] = {}
     findings: list[str] = []
     for client in clients:
-        loaded = client_files(client, root, cwd, codex_config, findings)
-        user_file = global_file(client) if include_global else None
-        if user_file is not None:
-            loaded.append((user_file, "global"))
+        loaded = client_files(client, root, cwd, codex_config, findings, include_global)
         entries = []
         for path, mode in loaded:
             all_files.setdefault(path.resolve(), path)
@@ -351,6 +351,8 @@ def inventory(cwd: Path, codex_config: Path, clients: tuple[str, ...], include_g
             if not entry["readable"]:
                 findings.append(f"{client}: {entry['path']} cannot be read")
             guidance = LINE_GUIDANCE.get(client)
+            if client == "claude" and path.name != "CLAUDE.md":
+                guidance = None
             entry["over_guidance"] = bool(guidance and mode != "import" and entry["lines"] > guidance)
             if entry["over_guidance"]:
                 findings.append(f"{client}: {entry['path']} has {entry['lines']} lines (guidance {guidance})")

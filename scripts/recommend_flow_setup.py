@@ -147,14 +147,16 @@ def claim_retired_links(destination: Path, record: dict | None) -> list[tuple[Pa
                 continue
             try:
                 claim, expected = skills.claim_legacy_link(target, name)
+            except skills.ClaimRestoreError:
+                raise
             except RuntimeError as exc:
                 print(f"PRESERVED: {target} changed during the setup and is left as it is ({exc})")
                 continue
             claims.append((target, claim, expected))
-    except OSError as exc:
+    except (OSError, skills.ClaimRestoreError) as exc:
         errors = restore_retired_links(claims)
         if errors:
-            raise OSError(f"{exc}; {'; '.join(errors)}") from exc
+            raise skills.ClaimRestoreError(f"{exc}; {'; '.join(errors)}") from exc
         raise
     return claims
 
@@ -1529,8 +1531,10 @@ def main(argv: list[str] | None = None) -> int:
             retired_names = {target.name for target, _, _ in retired_claims}
             next_state["created_skills"] = [name for name in created if name not in retired_names]
             save_state(state, next_state)
-        except (OSError, TypeError, ValueError) as exc:
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
             rollback_errors: list[str] = []
+            if isinstance(exc, _sibling(INSTALL_SKILLS).ClaimRestoreError):
+                rollback_errors.append(str(exc))
             if profile.get("target") and "APPLIED: " in profile_output:
                 restore_preimage = profile_preimage
                 if backup_match:

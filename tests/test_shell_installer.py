@@ -171,6 +171,47 @@ def other_shells() -> list[list[str]]:
 
 @unittest.skipIf(SHELL is None, "no POSIX shell here")
 class ShellInstallerTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "POSIX executable shim")
+    def test_retirement_blocked_restore_aborts_and_restores_earlier_claims(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            flags = ("--client", "claude", "--home", str(home))
+            installed = run_sh(*flags, "--apply", home=home)
+            self.assertEqual(0, installed.returncode, installed.stdout + installed.stderr)
+            destination = home / ".claude" / "skills"
+            names = ["nobrainer-codex-context", "nobrainer-reddit"]
+            for name in names:
+                (destination / name).symlink_to(ROOT / "skills" / name, target_is_directory=True)
+            record = home / ".nobrainer-flow-onboarding-claude.json"
+            data = json.loads(record.read_text())
+            data["created_skills"] += names
+            record.write_text(json.dumps(data, indent=2) + "\n")
+            pristine = record.read_bytes()
+            shim_dir = Path(temp) / "bin"
+            shim_dir.mkdir()
+            shim = shim_dir / "mv"
+            shim.write_text(
+                f"#!{sys.executable}\n"
+                "import subprocess, sys\nfrom pathlib import Path\n"
+                f"source = Path(sys.argv[1])\nrace = source == Path({str(destination / names[1])!r})\n"
+                "if race:\n    source.unlink()\n    source.write_text('claimed replacement\\n')\n"
+                f"code = subprocess.call([{shutil.which('mv')!r}, *sys.argv[1:]])\n"
+                "if race and code == 0:\n    source.write_text('new occupant\\n')\n"
+                "sys.exit(code)\n"
+            )
+            shim.chmod(0o755)
+            result = run_sh(*flags, "--apply", home=home,
+                            variables={"PATH": str(shim_dir) + os.pathsep + os.environ["PATH"]})
+            self.assertEqual(4, result.returncode, result.stdout + result.stderr)
+            self.assertIn("rollback incomplete", result.stderr)
+            self.assertEqual(pristine, record.read_bytes())
+            self.assertTrue((destination / names[0]).is_symlink())
+            self.assertEqual("new occupant\n", (destination / names[1]).read_text())
+            claims = list(destination.glob(".nobrainer-retire-*/*"))
+            self.assertEqual(1, len(claims))
+            self.assertEqual("claimed replacement\n", claims[0].read_text())
+            self.assertNotIn("UP TO DATE:", result.stdout)
+
     def test_the_script_parses_in_every_available_posix_shell(self) -> None:
         for shell in ([SHELL], *other_shells()):
             with self.subTest(shell=shell):

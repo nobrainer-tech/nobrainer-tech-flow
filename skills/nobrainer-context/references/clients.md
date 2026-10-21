@@ -37,9 +37,12 @@ project-local rules below.
   `claude-md-and-agents-md` is chosen. A `CLAUDE.md` with `@AGENTS.md` works on
   every version and never reads `AGENTS.md` twice.
 - Imports: `@path`, relative to the importing file, up to four hops; imported
-  files also load at start. Not expanded inside code spans or blocks.
-- Limits: guidance of under 200 lines per `CLAUDE.md`; a file over 4 MiB is
-  skipped.
+  files inherit the importing file's start-up or on-demand scope. With
+  `--include-global`, the probe also expands imports from the user-level
+  `~/.claude/CLAUDE.md`. Not expanded inside code spans or blocks.
+- Limits: guidance of under 200 lines per `CLAUDE.md`; the probe applies it to
+  directly discovered `CLAUDE.md` files, not imported files, `AGENTS.md` fallbacks
+  or `.claude/rules/*.md` rules. A file over 4 MiB is skipped.
 - Readback: `/context` (Memory files) and `/memory` in a fresh interactive
   session; the `InstructionsLoaded` hook logs loads (not for `AGENTS.md` read
   through the setting). `/doctor prompt-audit` (v2.1.283 or later) is a native
@@ -54,7 +57,9 @@ project-local rules below.
 - `context.fileName` in `settings.json` sets one name or a list, for example
   `["AGENTS.md", "GEMINI.md"]`. The probe reads only project
   `.gemini/settings.json`.
-- Imports: `@path`, default depth 5, circular imports blocked.
+- Imports: `@path`, default depth 5, circular imports blocked. With
+  `--include-global`, the probe also expands imports from the user-level
+  `~/.gemini/GEMINI.md`, using the same size, duplicate and goal-pointer checks.
 - Limit: none documented.
 - Readback: `/memory show` prints the combined memory.
 - Sources: <https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/gemini-md.md>,

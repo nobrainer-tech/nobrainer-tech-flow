@@ -1035,7 +1035,7 @@ install() {
 	# The retired links the record lists go last, after every other write. Each is moved into
 	# a private folder and checked there; one that changed after the check goes back as it is.
 	# They come back if the record cannot be saved, and are deleted only once it is.
-	retired_claims= retirement_error=
+	retired_claims= retirement_error= retirement_restore_error=
 	for _a_name in $to_retire; do
 		_a_link=$skills_dir/$_a_name
 		is_exact_legacy_link "$_a_link" "$_a_name" || continue
@@ -1052,7 +1052,10 @@ install() {
 			retired_claims="$retired_claims$_a_claim/$_a_name
 "
 		else
-			unclaim "$_a_claim/$_a_name" "$_a_link"
+			if ! unclaim "$_a_claim/$_a_name" "$_a_link"; then
+				retirement_error=1 retirement_restore_error=1
+				break
+			fi
 			err "PRESERVED: $_a_link changed during the setup and is left as it is"
 		fi
 	done
@@ -1104,6 +1107,9 @@ install() {
 				unclaim "$_a_claim" "$skills_dir/${_a_claim##*/}" || exit 1
 			done; then
 				die 4 "could not save the setup record $state; rollback incomplete; recovery claims were preserved"
+			fi
+			if [ -n "$retirement_restore_error" ]; then
+				die 4 "retired link restore failed; rollback incomplete; recovery claims were preserved"
 			fi
 			die 4 "could not save the setup record $state; the changes of this run were reversed"
 		fi

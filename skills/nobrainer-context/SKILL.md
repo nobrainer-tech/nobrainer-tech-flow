@@ -39,8 +39,12 @@ and words; the Codex byte budget and truncation; files over documented line
 guidance; byte-identical copies; lines repeated across files; imports of missing
 files; settings or Codex configuration it cannot parse; and the Flow goal pointer
 state. Instructions in folders below the current one are listed as on demand and
-left out of the start-up totals. Add `--include-global` to size each client's user-level file,
-`--client NAME` to narrow it, and `--goal-file PATH` for an explicit goal file.
+left out of the start-up totals. Add `--include-global` to include each client's
+user-level file and, for Claude and Gemini, its recursive imports in the same
+size, duplicate and goal-pointer checks. Claude's 200-line guidance applies only
+to `CLAUDE.md` files discovered directly, not imported files, `AGENTS.md` fallbacks
+or `.claude/rules/*.md` rules. Use `--client NAME` to narrow the report and
+`--goal-file PATH` for an explicit goal file.
 `scripts/codex_context.py --check --json` keeps the detailed Codex chain probe.
 
 The probe applies the rules in [clients.md](references/clients.md). Only those
@@ -83,6 +87,8 @@ When the project keeps a Flow goal file (`GOAL_ID:` block, see
 that the instructions name the current one and no stale or missing goal path.
 Propose the one-line pointer fix in the same preview. Goal content, status and
 handoff stay with `nobrainer-tech-flow` and `nobrainer-sessions`.
+If no active goals remain, the pointer state is `NONE`, including when completed
+goals are still mentioned; a pointer to a missing file remains `STALE_POINTER`.
 
 ## Closeout
 
