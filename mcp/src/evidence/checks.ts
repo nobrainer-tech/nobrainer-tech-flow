@@ -1,7 +1,7 @@
 // Evidence verdicts, staleness and the failure budget (spec section 7).
 import { createHash } from "node:crypto";
 import { classifyUrl, kindMatches, levelSatisfies, type Level, type Proof } from "../rules/levels.ts";
-import { hasFailingSummary, parseTestSummary } from "./parsers.ts";
+import { parseTestSummary } from "./parsers.ts";
 import { normaliseOut, normaliseText } from "./normalise.ts";
 import { MAX_FILES, hex8, itemId, type Item, type TokenState } from "../token.ts";
 
@@ -88,18 +88,16 @@ function judgeRun(r: EvidenceRecord, id: string): Outcome {
     return reject("MISSING_FIELD", `${id}: ${r.kind} evidence needs cmd, exit${r.kind === "test" ? " and out" : ""}.`);
   }
   const out = normaliseOut(r.out ?? "");
-  if (r.kind === "command") {
-    if (r.exit !== 0) return { pass: false, failed: true };
-    if (hasFailingSummary(out)) return reject("EXIT_OUTPUT_CONFLICT", `${id}: exit 0 but the output has a failing test summary.`);
-  } else {
-    const s = parseTestSummary(out);
-    if (s && ((r.passed !== undefined && r.passed !== s.passed) || (r.failed !== undefined && r.failed !== s.failed))) {
-      return reject("COUNTS_MISMATCH", `${id}: claimed counts differ from the output (${s.passed} passed, ${s.failed} failed).`);
-    }
-    if (r.exit !== 0) return { pass: false, failed: true };
-    if (!s) return reject("NO_TEST_SUMMARY", `${id}: no recognised test summary; include the summary line, or submit it as kind command.`);
-    if (s.failed > 0) return reject("EXIT_OUTPUT_CONFLICT", `${id}: exit 0 but the summary has ${s.failed} failed.`);
-    if (s.passed < 1) return reject("NO_TESTS_RAN", `${id}: the summary shows no passed tests.`);
+  const s = parseTestSummary(out);
+  if (s && ((r.passed !== undefined && r.passed !== s.passed) || (r.failed !== undefined && r.failed !== s.failed))) {
+    return reject("COUNTS_MISMATCH", `${id}: claimed counts differ from the output (${s.passed} passed, ${s.failed} failed).`);
+  }
+  if (r.exit !== 0) return { pass: false, failed: true };
+  if (s && s.failed > 0) return reject("EXIT_OUTPUT_CONFLICT", `${id}: exit 0 but the summary has ${s.failed} failed.`);
+  if (s && s.passed < 1) return reject("NO_TESTS_RAN", `${id}: the summary shows no passed tests.`);
+  // Commands need no test summary, but any recognised summary must be consistent.
+  if (r.kind === "test" && !s) {
+    return reject("NO_TEST_SUMMARY", `${id}: no recognised test summary; include the summary line, or submit it as kind command.`);
   }
   // Optional location metadata must not conceal a failed or zero-pass rerun.
   let level: Level = "local";

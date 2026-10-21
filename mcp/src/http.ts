@@ -134,7 +134,8 @@ export function createHttpHandler(opts: HttpOptions): (req: Request) => Promise<
     if (local ? !isLoopback(host) : !opts.allowedHosts.includes(host)) return finish(plain(403, "Forbidden host"));
     const origin = req.headers.get("origin");
     if (origin !== null && !opts.allowedOrigins.includes(origin) && !(local && isLoopbackOrigin(origin))) {
-      const host = (origin.replace(/^[a-z]+:\/\//i, "").split("/")[0] ?? "").replace(/[^A-Za-z0-9.:-]/g, "").slice(0, 80);
+      const host = findSecret(origin) ? "redacted"
+        : (origin.replace(/^[a-z]+:\/\//i, "").split("/")[0] ?? "").replace(/[^A-Za-z0-9.:-]/g, "").slice(0, 80);
       line.rejected_origin = findSecret(host) ? "redacted" : host;
       return finish(plain(403, "Forbidden origin"));
     }

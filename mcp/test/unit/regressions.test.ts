@@ -136,6 +136,32 @@ test("delta 2: a recognized all-skipped rerun withdraws earlier acceptance", asy
   assert.equal((await call("check_flow_done", { token: recovered.json.token })).json.verdict, "DONE");
 });
 
+test("review 1: contradictory command counts withdraw acceptance before optional URL validation", async () => {
+  for (const url of [undefined, "not-a-url"]) {
+    let token = await contract([{ text: "checks pass", proof: "command" }]);
+    token = (await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "command", cmd: "pytest", exit: 0, out: PASS }] })).json.token;
+    assert.equal((await call("check_flow_done", { token })).json.verdict, "DONE");
+    const rerun = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "command", cmd: "pytest", exit: 0, out: PASS, passed: 0, url }] });
+    assert.equal(rerun.json.results[0].code, "COUNTS_MISMATCH");
+    assert.deepEqual(rerun.json.open, ["AC01"]);
+    assert.equal((await call("check_flow_done", { token: rerun.json.token })).json.verdict, "NOT_DONE");
+  }
+});
+
+test("review 2: recognized zero-pass command reruns withdraw acceptance before optional URL validation", async () => {
+  for (const url of [undefined, "not-a-url"]) {
+    let token = await contract([{ text: "checks pass", proof: "command" }]);
+    token = (await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "command", cmd: "make check", exit: 0 }] })).json.token;
+    assert.equal((await call("check_flow_done", { token })).json.verdict, "DONE");
+    const rerun = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "command", cmd: "python -m unittest", exit: 0, out: "Ran 3 tests in 0.001s\n\nOK (skipped=3)", url }] });
+    assert.equal(rerun.json.results[0].code, "NO_TESTS_RAN");
+    assert.deepEqual(rerun.json.open, ["AC01"]);
+    assert.equal((await call("check_flow_done", { token: rerun.json.token })).json.verdict, "NOT_DONE");
+    const recovered = await call("check_flow_evidence", { token: rerun.json.token, evidence: [{ item: "AC01", kind: "command", cmd: "make check", exit: 0 }] });
+    assert.equal((await call("check_flow_done", { token: recovered.json.token })).json.verdict, "DONE");
+  }
+});
+
 test("delta 3: mixed model inputs preserve each qualified route", () => {
   for (const extra of ["openai/gpt-6-luna", "unknown-model", "gpt-6-luna"]) {
     const out = recommendFlowModel({ task: "writing", have: ["github-copilot/gpt-6.1-sol", extra] }, FRESH) as { shortlist: Array<{ model: string }> };
