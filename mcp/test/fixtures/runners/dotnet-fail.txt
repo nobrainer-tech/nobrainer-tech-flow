@@ -1,0 +1,2 @@
+  Failed App.Tests.CartTests.Total [4 ms]
+Failed!  - Failed:     1, Passed:     9, Skipped:     0, Total:    10, Duration: 1 s - App.Tests.dll (net8.0)

@@ -1,0 +1,13 @@
+============================= test session starts ==============================
+collected 13 items
+
+tests/test_api.py ..F.....                                               [ 61%]
+tests/test_models.py ..sF.                                               [100%]
+
+=================================== FAILURES ===================================
+____________________________ test_create_user __________________________________
+E       assert 201 == 400
+=========================== short test summary info ============================
+FAILED tests/test_api.py::test_create_user - assert 201 == 400
+FAILED tests/test_models.py::test_slug - AssertionError
+=================== 2 failed, 10 passed, 1 skipped in 1.52s ====================

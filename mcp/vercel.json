@@ -1,0 +1,27 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
+  "outputDirectory": "public",
+  "regions": ["iad1"],
+  "functions": {
+    "api/mcp.js": { "maxDuration": 10, "includeFiles": "{dist,data}/**" },
+    "api/spend-hook.js": { "maxDuration": 10, "includeFiles": "dist/**" },
+    "api/challenge.js": { "maxDuration": 5 }
+  },
+  "rewrites": [
+    { "source": "/mcp", "destination": "/api/mcp" },
+    { "source": "/.well-known/openai-apps-challenge", "destination": "/api/challenge" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" }
+      ]
+    }
+  ]
+}

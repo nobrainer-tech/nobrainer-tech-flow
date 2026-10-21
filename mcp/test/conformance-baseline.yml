@@ -1,0 +1,31 @@
+# Official MCP conformance suite (@modelcontextprotocol/conformance), spec 2025-11-25.
+# These scenarios call fixture tools, prompts and resources of the reference "everything"
+# server (test_simple_text, test://static-text, ...) or capabilities this tools-first server
+# does not declare (logging, completion, subscriptions). They do not apply here; every other
+# active scenario must pass. The suite has no 2026-07-28 scenarios yet (version 0.1.16).
+# server-sse-multiple-streams only warns that a stateless server issues no session ID.
+server:
+  - server-sse-multiple-streams
+  - logging-set-level
+  - completion-complete
+  - tools-call-simple-text
+  - tools-call-image
+  - tools-call-audio
+  - tools-call-embedded-resource
+  - tools-call-mixed-content
+  - tools-call-with-logging
+  - tools-call-error
+  - tools-call-with-progress
+  - tools-call-sampling
+  - tools-call-elicitation
+  - elicitation-sep1034-defaults
+  - elicitation-sep1330-enums
+  - resources-read-text
+  - resources-read-binary
+  - resources-templates-read
+  - resources-subscribe
+  - resources-unsubscribe
+  - prompts-get-simple
+  - prompts-get-with-args
+  - prompts-get-embedded-resource
+  - prompts-get-with-image

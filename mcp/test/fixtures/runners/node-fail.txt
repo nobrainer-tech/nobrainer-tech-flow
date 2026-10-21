@@ -1,0 +1,12 @@
+TAP version 13
+ok 1 - adds numbers
+not ok 2 - subtracts numbers
+1..4
+# tests 4
+# suites 0
+# pass 3
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 61.8

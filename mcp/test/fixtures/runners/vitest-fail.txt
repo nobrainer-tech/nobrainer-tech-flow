@@ -1,0 +1,9 @@
+ RUN  v2.1.1 /work/app
+
+ FAIL  src/cart.test.ts > total > sums items
+AssertionError: expected 3 to be 4
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 6 passed (7)
+   Start at  10:12:01
+   Duration  1.10s
