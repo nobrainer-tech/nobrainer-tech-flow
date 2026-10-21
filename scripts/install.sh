@@ -19,7 +19,7 @@ unset CDPATH
 # The eighteen skills, and the names earlier layouts used. Tests keep these lists
 # equal to the ones in scripts/install_skills.py.
 SKILLS='nobrainer-auto-fine-tune nobrainer-autoimprove nobrainer-browser nobrainer-build
-nobrainer-codex-context nobrainer-decide nobrainer-dispatcher nobrainer-rca
+nobrainer-context nobrainer-decide nobrainer-dispatcher nobrainer-rca
 nobrainer-research nobrainer-review nobrainer-security nobrainer-sessions
 nobrainer-skill-doctor nobrainer-spec-driven-development nobrainer-team
 nobrainer-tech-flow nobrainer-wiki nobrainer-writing'
@@ -28,13 +28,13 @@ deep-audit deep-autoresearch deep-autoreview deep-bugs-finder deep-code-review
 deep-decide deep-rca dispatching-parallel-agents engineering-standards
 karpathy-auto-improver karpathy-llm-wiki llm-wiki nb-add nb-dispatcher nb-flow nb-get
 nb-multi nb-tidy nb-workflow nb-write nobrainer-autopilot nobrainer-capture-lesson
-nobrainer-continuous-improvement nobrainer-fast-audit nobrainer-human-like
+nobrainer-codex-context nobrainer-continuous-improvement nobrainer-fast-audit nobrainer-human-like
 nobrainer-memory nobrainer-memory-memsearch nobrainer-npm-secure nobrainer-reddit
 nobrainer-simplifier nobrainer-skill-browser nobrainer-starter nobrainer-style
 nobrainer-team-builder nobrainer-ultra nobrainer-ultracode-workflow nobrainer-wiki-add
 nobrainer-wiki-get nobrainer-wiki-tidy playwright-cli security-review session-handoff
 wiki-add wiki-get wiki-tidy'
-RETIRED='nobrainer-reddit'
+RETIRED='nobrainer-codex-context nobrainer-reddit'
 START='<!-- NOBRAINER-TECH-FLOW:START -->'
 END='<!-- NOBRAINER-TECH-FLOW:END -->'
 LEGACY_TEXT='(^|[^[:alnum:]_])nobrainer-ultra([^[:alnum:]_]|$)|^[[:space:]]*#{1,6}[[:space:]]+nobrainer([ .]?tech)?[[:space:]]+flow([^[:alnum:]_]|$)'
@@ -285,6 +285,38 @@ is_our_link() {
 	[ "$_o_resolved" = "$2" ]
 }
 
+# Put a claimed entry ($1) back at its name ($2) unless something new stands there; the
+# private folder it was moved into goes too. A blocked restore keeps the claim and says where.
+unclaim() {
+	# Restore through the same native no-replace primitive as the Python installer.
+	# Normal shell installs need no Python; without it, a recovery claim stays intact.
+	if command -v python3 >/dev/null 2>&1 && python3 - "$root/scripts" "$1" "$2" <<'PYTHON'
+import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from install_skills import restore_claim
+try:
+    restore_claim(Path(sys.argv[3]), Path(sys.argv[2]))
+except (OSError, RuntimeError) as exc:
+    print(exc, file=sys.stderr)
+    sys.exit(1)
+PYTHON
+	then
+		return 0
+	fi
+	err "PRESERVED: atomic restore unavailable or blocked; could not put $2 back; it is kept at $1"
+	return 1
+}
+
+# A recorded skill link this checkout made: $1 is the link, $2 the skill name. The link of
+# a retired module dangles, so it is compared as written.
+owns_link() {
+	case " $RETIRED " in
+		*" $2 "*) is_exact_legacy_link "$1" "$2" ;;
+		*) is_our_link "$1" "$root/skills/$2" ;;
+	esac
+}
+
 # Resolve links before "..", including dangling final links. A trailing slash
 # preserves a pathname's trailing newlines across command substitution.
 resolve_legacy_path() (
@@ -410,7 +442,8 @@ read_state() {
 					'  ]' | '  ],') _r_in= ;;
 					*)
 						json_field "\": ${_r_line#    }" || return 1
-						case " $(printf '%s' "$SKILLS" | tr '\n' ' ') " in *" $json_value "*) ;; *) return 1 ;; esac
+						# A record from an earlier release may hold a module since retired.
+						case " $(printf '%s' "$SKILLS $RETIRED" | tr '\n' ' ') " in *" $json_value "*) ;; *) return 1 ;; esac
 						case " $st_created " in *" $json_value "*) return 1 ;; esac
 						st_created="$st_created $json_value" ;;
 				esac
@@ -681,7 +714,7 @@ check_record() {
 }
 
 plan_skills() {
-	to_link= link_count=0 kept_count=0 problems=
+	to_link= link_count=0 kept_count=0 problems= to_retire=
 	for _p_name in $SKILLS; do
 		_p_source=$root/skills/$_p_name
 		[ -f "$_p_source/SKILL.md" ] || die 2 "this checkout is incomplete: $_p_source/SKILL.md is missing"
@@ -708,7 +741,13 @@ CONFLICT: $_p_name: $_p_source -> $_p_target"
 					if ! is_exact_legacy_link "$_p_target" "$_p_name"; then
 						err "PRESERVED_FOREIGN: $_p_name: retired from nobrainer-tech-flow; left unchanged: $_p_target"
 						continue
-					fi ;;
+					fi
+					# This setup's record lists the link, as an undo would remove it.
+					case " $st_created " in
+						*" $_p_name "*)
+							to_retire="$to_retire $_p_name"
+							continue ;;
+					esac ;;
 			esac
 			problems="$problems
 LEGACY: $_p_name: $_p_target"
@@ -819,6 +858,9 @@ variable_note() {
 preview() {
 	say "$source_line for $label"
 	say "SKILLS: $link_count to link into $skills_dir ($kept_count already linked)"
+	for _v_name in $to_retire; do
+		say "REMOVE_RETIRED: $_v_name: made by this setup, now renamed: $skills_dir/$_v_name"
+	done
 	if [ "$inherit" = 1 ]; then
 		say "INHERITS_CODEX: $target imports $codex_file; no duplicate block added"
 	else
@@ -914,6 +956,10 @@ write_instructions() {
 }
 
 install() {
+	# plan_skills needs the retired links the record lists; check_record judges the record
+	# after the skills, as before, so a record that cannot be read only lists none here.
+	st_created=
+	if [ -f "$state" ] && [ ! -L "$state" ]; then read_state "$state" || st_created=; fi
 	plan_skills
 	plan_instructions
 	check_record
@@ -986,8 +1032,43 @@ install() {
 	elif [ "$wrote" = 1 ]; then
 		new_target=$target new_backup=$made_backup new_hash=$(sha256 "$target")
 	fi
-	if [ -n "$created" ] || [ "$wrote" = 1 ] || { [ "$record" = 1 ] && [ "$new_hash" != "$st_hash" ]; }; then
-		new_created=$(printf '%s\n' $st_created $created | LC_ALL=C sort -u | tr '\n' ' ')
+	# The retired links the record lists go last, after every other write. Each is moved into
+	# a private folder and checked there; one that changed after the check goes back as it is.
+	# They come back if the record cannot be saved, and are deleted only once it is.
+	retired_claims= retirement_error= retirement_restore_error=
+	for _a_name in $to_retire; do
+		_a_link=$skills_dir/$_a_name
+		is_exact_legacy_link "$_a_link" "$_a_name" || continue
+		_a_text=$(readlink "$_a_link") || continue
+		if ! _a_claim=$(mktemp -d "$skills_dir/.nobrainer-retire-XXXXXX"); then
+			retirement_error=1
+			break
+		fi
+		if ! mv "$_a_link" "$_a_claim/$_a_name" 2>/dev/null; then
+			rmdir "$_a_claim"
+			continue
+		fi
+		if [ -L "$_a_claim/$_a_name" ] && [ "$(readlink "$_a_claim/$_a_name")" = "$_a_text" ]; then
+			retired_claims="$retired_claims$_a_claim/$_a_name
+"
+		else
+			if ! unclaim "$_a_claim/$_a_name" "$_a_link"; then
+				retirement_error=1 retirement_restore_error=1
+				break
+			fi
+			err "PRESERVED: $_a_link changed during the setup and is left as it is"
+		fi
+	done
+	if [ -n "$created" ] || [ -n "$to_retire" ] || [ "$wrote" = 1 ] || { [ "$record" = 1 ] && [ "$new_hash" != "$st_hash" ]; }; then
+		# A retired module's link is gone once migrated; then the record drops its name.
+		_k_created=
+		for _k_name in $st_created; do
+			case " $RETIRED " in
+				*" $_k_name "*) owns_link "$skills_dir/$_k_name" "$_k_name" || continue ;;
+			esac
+			_k_created="$_k_created $_k_name"
+		done
+		new_created=$(printf '%s\n' $_k_created $created | LC_ALL=C sort -u | tr '\n' ' ')
 		new_created=${new_created# }
 		new_created=${new_created% }
 		# Of the folders this run meant to create, the ones that exist now, with the ones an
@@ -1011,7 +1092,7 @@ install() {
 		# makes a folder, and its undo keeps the rule it was made under.
 		want_dirs=1
 		if [ "$record" = 1 ] && [ -z "$st_has_dirs" ] && [ -z "$new_dirs" ]; then want_dirs=; fi
-		if ! write_state; then
+		if [ -n "$retirement_error" ] || ! write_state; then
 			for _a_done in $created; do remove_link "$skills_dir/$_a_done"; done
 			if [ "$wrote" = 1 ]; then
 				# Through a copy beside it and a rename, so a read-only file comes back as well.
@@ -1022,9 +1103,21 @@ install() {
 					rm -f "$target"
 				fi
 			fi
+			if ! printf '%s' "$retired_claims" | while IFS= read -r _a_claim; do
+				unclaim "$_a_claim" "$skills_dir/${_a_claim##*/}" || exit 1
+			done; then
+				die 4 "could not save the setup record $state; rollback incomplete; recovery claims were preserved"
+			fi
+			if [ -n "$retirement_restore_error" ]; then
+				die 4 "retired link restore failed; rollback incomplete; recovery claims were preserved"
+			fi
 			die 4 "could not save the setup record $state; the changes of this run were reversed"
 		fi
 	fi
+	printf '%s' "$retired_claims" | while IFS= read -r _a_claim; do
+		remove_link "$_a_claim" && rmdir "${_a_claim%/*}" 2>/dev/null
+		say "REMOVED_RETIRED: $skills_dir/${_a_claim##*/}"
+	done
 
 	# A home made for a record that was not needed goes again.
 	if [ ! -e "$state" ] && [ -n "$made_home" ]; then
@@ -1033,7 +1126,7 @@ install() {
 
 	# New links and a written instruction file are what a client has to be restarted for.
 	changed=0
-	if [ "$link_count" -gt 0 ] || [ "$wrote" = 1 ]; then changed=1; fi
+	if [ "$link_count" -gt 0 ] || [ "$wrote" = 1 ] || [ -n "$retired_claims" ]; then changed=1; fi
 	if [ "$changed" = 1 ]; then
 		say "INSTALLED: $source_line for $label"
 	else
@@ -1215,7 +1308,7 @@ undo() {
 	for _u_name in $st_created; do
 		_u_link=$st_dest/$_u_name
 		if [ -L "$_u_link" ]; then
-			if ! is_our_link "$_u_link" "$root/skills/$_u_name"; then
+			if ! owns_link "$_u_link" "$_u_name"; then
 				say "PRESERVED: changed target $_u_link"
 				exit 3
 			fi
@@ -1252,7 +1345,7 @@ undo() {
 	_u_removed=0
 	for _u_name in $st_created; do
 		_u_link=$st_dest/$_u_name
-		if is_our_link "$_u_link" "$root/skills/$_u_name"; then
+		if owns_link "$_u_link" "$_u_name"; then
 			remove_link "$_u_link" || die 4 "could not remove $_u_link"
 			_u_removed=$((_u_removed + 1))
 		fi

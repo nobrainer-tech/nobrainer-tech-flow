@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
 
 CANONICAL_ITEMS = (
-    ("nobrainer-codex-context", "nb-codex-context"),
+    ("nobrainer-context", "nb-context"),
     ("nobrainer-skill-doctor", "nb-skill-doctor"),
     ("nobrainer-auto-fine-tune", "nb-auto-fine-tune"),
     ("nobrainer-tech-flow", "NBFlow"),

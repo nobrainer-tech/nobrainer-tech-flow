@@ -171,6 +171,47 @@ def other_shells() -> list[list[str]]:
 
 @unittest.skipIf(SHELL is None, "no POSIX shell here")
 class ShellInstallerTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "POSIX executable shim")
+    def test_retirement_blocked_restore_aborts_and_restores_earlier_claims(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp) / "home"
+            flags = ("--client", "claude", "--home", str(home))
+            installed = run_sh(*flags, "--apply", home=home)
+            self.assertEqual(0, installed.returncode, installed.stdout + installed.stderr)
+            destination = home / ".claude" / "skills"
+            names = ["nobrainer-codex-context", "nobrainer-reddit"]
+            for name in names:
+                (destination / name).symlink_to(ROOT / "skills" / name, target_is_directory=True)
+            record = home / ".nobrainer-flow-onboarding-claude.json"
+            data = json.loads(record.read_text())
+            data["created_skills"] += names
+            record.write_text(json.dumps(data, indent=2) + "\n")
+            pristine = record.read_bytes()
+            shim_dir = Path(temp) / "bin"
+            shim_dir.mkdir()
+            shim = shim_dir / "mv"
+            shim.write_text(
+                f"#!{sys.executable}\n"
+                "import subprocess, sys\nfrom pathlib import Path\n"
+                f"source = Path(sys.argv[1])\nrace = source == Path({str(destination / names[1])!r})\n"
+                "if race:\n    source.unlink()\n    source.write_text('claimed replacement\\n')\n"
+                f"code = subprocess.call([{shutil.which('mv')!r}, *sys.argv[1:]])\n"
+                "if race and code == 0:\n    source.write_text('new occupant\\n')\n"
+                "sys.exit(code)\n"
+            )
+            shim.chmod(0o755)
+            result = run_sh(*flags, "--apply", home=home,
+                            variables={"PATH": str(shim_dir) + os.pathsep + os.environ["PATH"]})
+            self.assertEqual(4, result.returncode, result.stdout + result.stderr)
+            self.assertIn("rollback incomplete", result.stderr)
+            self.assertEqual(pristine, record.read_bytes())
+            self.assertTrue((destination / names[0]).is_symlink())
+            self.assertEqual("new occupant\n", (destination / names[1]).read_text())
+            claims = list(destination.glob(".nobrainer-retire-*/*"))
+            self.assertEqual(1, len(claims))
+            self.assertEqual("claimed replacement\n", claims[0].read_text())
+            self.assertNotIn("UP TO DATE:", result.stdout)
+
     def test_the_script_parses_in_every_available_posix_shell(self) -> None:
         for shell in ([SHELL], *other_shells()):
             with self.subTest(shell=shell):
@@ -2179,6 +2220,129 @@ class ShellInstallerTests(unittest.TestCase):
             self.assertIn("PRESERVED_FOREIGN: nobrainer-reddit:", applied.stderr)
             self.assertEqual(original_link, retired.readlink())
             self.assertEqual(original_inode, retired.lstat().st_ino)
+
+    @unittest.skipIf(os.name == "nt", "uses POSIX command wrappers")
+    def test_unclaim_never_overwrites_a_concurrent_destination(self) -> None:
+        text = SCRIPT.read_text(encoding="utf-8")
+        function = text[text.index("unclaim() {"):text.index("\n}\n", text.index("unclaim() {")) + 3]
+        for shell in ([SHELL], *other_shells()):
+            with self.subTest(shell=shell), tempfile.TemporaryDirectory() as temp:
+                directory = Path(temp)
+                claim = directory / "claim" / "old-link"
+                claim.parent.mkdir()
+                claim.symlink_to("missing-source")
+                target = directory / "target"
+                fake = directory / "bin"
+                fake.mkdir()
+                # Inject the competing file immediately before either implementation's
+                # restore primitive, after any shell-level absence check has passed.
+                for name, argument, executable in (("mv", "2", shutil.which("mv")),
+                                                    ("python3", "4", sys.executable)):
+                    wrapper = fake / name
+                    wrapper.write_text(f'#!/bin/sh\nprintf "owner data" > "${argument}"\nexec "{executable}" "$@"\n')
+                    wrapper.chmod(0o755)
+                code = 'err() { printf "%s\\n" "$*" >&2; }\n' + function + '\nroot=$1; unclaim "$2" "$3"'
+                result = subprocess.run([*shell, "-c", code, "unclaim-test", str(ROOT), str(claim), str(target)],
+                                        capture_output=True, text=True,
+                                        env={**os.environ, "PATH": str(fake) + os.pathsep + os.environ["PATH"]})
+                self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertEqual("owner data", target.read_text())
+                self.assertTrue(claim.is_symlink())
+                self.assertEqual("missing-source", os.readlink(claim))
+                # With no supported atomic helper, keep the recovery entry and fail;
+                # normal installation still has its separate no-Python acceptance test.
+                target.unlink()
+                (fake / "python3").unlink()
+                unavailable = subprocess.run(
+                    [shutil.which(shell[0]), *shell[1:], "-c", code, "unclaim-test", str(ROOT), str(claim), str(target)],
+                    capture_output=True, text=True, env={**os.environ, "PATH": str(fake)},
+                )
+                self.assertNotEqual(0, unavailable.returncode)
+                self.assertFalse(target.exists())
+                self.assertTrue(claim.is_symlink())
+                self.assertIn("atomic restore unavailable or blocked", unavailable.stderr)
+
+    @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_setup_from_before_the_context_rename_updates_and_undoes(self) -> None:
+        # Until 2.4.1 the module was called nobrainer-codex-context. A setup made then
+        # records that name and links it into this checkout, where it no longer exists.
+        old, new = "nobrainer-codex-context", "nobrainer-context"
+        runs = [("sh", shell) for shell in ([SHELL], *other_shells())] + [("py", None)]
+        for installer, shell in runs:
+            with self.subTest(installer=installer, shell=shell), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home with spaces"
+                flags = ("--client", "claude", "--home", str(home))
+
+                def run(*extra: str) -> subprocess.CompletedProcess[str]:
+                    if installer == "sh":
+                        return run_sh(*flags, *extra, home=home, shell=shell)
+                    return run_py(str(INSTALL_PY), *flags, *extra, home=home)
+
+                self.assertEqual(0, run("--apply").returncode)
+                skills = home / ".claude" / "skills"
+                record = home / ".nobrainer-flow-onboarding-claude.json"
+                (skills / new).unlink()
+                (skills / old).symlink_to(ROOT / "skills" / old, target_is_directory=True)
+                record.write_text(record.read_text(encoding="utf-8").replace(f'"{new}"', f'"{old}"'), encoding="utf-8")
+                pristine = record.read_bytes()
+
+                preview = run("--undo")
+                self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
+                self.assertIn("unlink 18 skills", preview.stdout)
+                undone = run("--undo", "--apply")
+                self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
+                self.assertFalse(skills.exists())
+
+                # Updating instead: the setup removes the link its record lists, links the
+                # new name and records it, and undo then removes everything.
+                self.assertEqual(0, run("--apply").returncode)
+                (skills / new).unlink()
+                (skills / old).symlink_to(ROOT / "skills" / old, target_is_directory=True)
+                record.write_bytes(pristine)
+                shown = run()
+                self.assertEqual(0, shown.returncode, shown.stdout + shown.stderr)
+                self.assertTrue((skills / old).is_symlink())
+                self.assertIn(f"REMOVE_RETIRED: {old}", shown.stdout)
+
+                # A run that fails after the old link was due to go keeps it: the record
+                # cannot be written here, and the previous installation stays usable.
+                if os.name != "nt" and os.geteuid() != 0:
+                    home.chmod(0o555)
+                    try:
+                        failed = run("--apply")
+                    finally:
+                        home.chmod(0o755)
+                    self.assertNotEqual(0, failed.returncode, failed.stdout + failed.stderr)
+                    self.assertTrue((skills / old).is_symlink(), failed.stdout + failed.stderr)
+                    self.assertEqual(ROOT / "skills" / old, (skills / old).readlink())
+                    self.assertEqual(pristine, record.read_bytes())
+                    self.assertEqual([], [p.name for p in skills.iterdir() if p.name.startswith(".")])
+                    if (skills / new).is_symlink():
+                        (skills / new).unlink()
+                again = run("--apply")
+                self.assertEqual(0, again.returncode, again.stdout + again.stderr)
+                self.assertFalse((skills / old).is_symlink())
+                self.assertEqual([], list(skills.glob(".nobrainer-retire-*")))
+                self.assertEqual(ROOT / "skills" / new, (skills / new).resolve())
+                saved = json.loads(record.read_text(encoding="utf-8"))["created_skills"]
+                self.assertEqual(SKILLS, saved)
+
+                # A link at the old name that the record does not list is not this setup's.
+                (skills / old).symlink_to(ROOT / "skills" / old, target_is_directory=True)
+                blocked = run("--apply")
+                self.assertEqual(3, blocked.returncode, blocked.stdout + blocked.stderr)
+                self.assertTrue((skills / old).is_symlink())
+
+                # A run that only retires the old link still rewrites the record.
+                data = json.loads(record.read_text(encoding="utf-8"))
+                data["created_skills"] = sorted(data["created_skills"] + [old])
+                record.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+                only = run("--apply")
+                self.assertEqual(0, only.returncode, only.stdout + only.stderr)
+                self.assertFalse((skills / old).is_symlink())
+                self.assertEqual([], list(skills.glob(".nobrainer-retire-*")))
+                self.assertEqual(SKILLS, json.loads(record.read_text(encoding="utf-8"))["created_skills"])
+                self.assertEqual(0, run("--undo", "--apply").returncode)
 
     @unittest.skipIf(os.name == "nt", "the record holds Windows paths there")
     def test_a_record_it_cannot_read_points_to_the_python_undo(self) -> None:

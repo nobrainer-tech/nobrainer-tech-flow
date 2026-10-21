@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Bounded advisory typed decisions; never executes selected actions."""
 import argparse
+import functools
 import json
 import math
 import os
@@ -81,9 +82,8 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise ValueError("redirect_not_allowed")
 
 
-def worker(provider, model, request):
+def worker(provider, model, request, key=None):
     if provider == "jev":
-        key = os.environ.get("TYPESAFE_API_KEY")
         if not key:
             return {"error": "MISSING_TYPESAFE_API_KEY"}
         payload = json.dumps(dict(request, model=model)).encode()
@@ -123,13 +123,19 @@ def worker(provider, model, request):
     return result
 
 
-def invoke(provider, model, request, timeout):
+def invoke(provider, model, request, timeout, key_env=None):
+    # The child gets no credential from the environment. The TypeSafe key is read only
+    # from the variable the caller names with --key-env, and passed on stdin.
     env = {k: v for k, v in os.environ.items()
            if not any(part in k.upper() for part in ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL"))}
-    if provider == "jev" and os.environ.get("TYPESAFE_API_KEY"):
-        env["TYPESAFE_API_KEY"] = os.environ["TYPESAFE_API_KEY"]
+    if key_env:
+        # The named variable may not look like a credential (TYPESAFE_AUTH, FOO); drop it anyway.
+        # Windows treats variable names without regard to case.
+        for name in [k for k in env if k == key_env or (os.name == "nt" and k.upper() == key_env.upper())]:
+            del env[name]
+    key = os.environ.get(key_env) if provider == "jev" and key_env else None
     process = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--worker", provider, model],
-                             input=json.dumps(request), capture_output=True, text=True,
+                             input=json.dumps({"request": request, "key": key}), capture_output=True, text=True,
                              timeout=timeout, env=env)
     if process.returncode:
         raise ValueError("provider_failed")
@@ -182,9 +188,11 @@ def main():
             # Third-party stdout may contain progress or input; contain it.
             import contextlib
             import io
-            request = validate_request(json.load(sys.stdin))
+            payload = json.load(sys.stdin)
+            request = validate_request(payload["request"])
+            key = payload.get("key") if isinstance(payload.get("key"), str) else None
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-                result = worker(sys.argv[2], sys.argv[3], request)
+                result = worker(sys.argv[2], sys.argv[3], request, key)
             print(json.dumps(result))
             return 0
         except Exception:
@@ -194,12 +202,15 @@ def main():
     parser.add_argument("--config", type=Path, default=Path(".nobrainer/flow.json"))
     parser.add_argument("--request", type=Path, help="JSON array of requests; otherwise stdin")
     parser.add_argument("--approved-data", action="store_true", help="Only with existing approval for this data and provider")
+    parser.add_argument("--key-env", metavar="NAME",
+                        help="Jev only: the environment variable that holds your TypeSafe key; nothing is read without it")
     args = parser.parse_args()
     try:
         data = json.loads(args.request.read_text()) if args.request else json.load(sys.stdin)
         if not isinstance(data, list) or len(data) > 100:
             raise ValueError("batch")
-        print(json.dumps(evaluate(data, read(args.config), args.approved_data), ensure_ascii=False))
+        call = functools.partial(invoke, key_env=args.key_env)
+        print(json.dumps(evaluate(data, read(args.config), args.approved_data, call), ensure_ascii=False))
         return 0
     except (OSError, ValueError, TypeError):
         print(json.dumps({"status": "CORE_FALLBACK", "reason": "INVALID_INPUT"}))

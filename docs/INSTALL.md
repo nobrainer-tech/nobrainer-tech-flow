@@ -14,9 +14,9 @@ upgraded merely because the new source is installed nearby.
 Node 18+ and Python 3.11+ are prerequisites. Preview the setup first:
 
 ```sh
-npx nobrainer-tech-flow@2.4.1 --client codex
-npx nobrainer-tech-flow@2.4.1 --client codex --apply
-npx nobrainer-tech-flow@2.4.1 --client codex --undo --apply
+npx nobrainer-tech-flow@2.5.0 --client codex
+npx nobrainer-tech-flow@2.5.0 --client codex --apply
+npx nobrainer-tech-flow@2.5.0 --client codex --undo --apply
 ```
 
 Use claude for Claude Code, opencode or copilot for those clients. Add --home PATH
@@ -24,7 +24,7 @@ for an isolated profile. These commands become available once this version is
 published on npm; a source candidate is not registry availability.
 
 Application copies the release files into the chosen home directory's
-.nobrainer-tech-flow-npm/2.4.1 and verifies the copy. That folder sits beside
+.nobrainer-tech-flow-npm/2.5.0 and verifies the copy. That folder sits beside
 ~/.nobrainer-tech-flow, where the Git installation suggests a clone, so cleaning
 the clone cannot delete the files the skill links point to. Releases before 2.3.2
 kept their copy in .nobrainer-tech-flow/npm; undo such a setup with the command of
@@ -213,8 +213,11 @@ shared folder.
 ## Conflict and migration behavior
 
 `install_skills.py` and `install.sh` never overwrite an unknown directory, file
-or symlink. A foreign target at the retired name `nobrainer-reddit` is reported as
-`PRESERVED_FOREIGN` and left unchanged without blocking installation. A foreign
+or symlink. A foreign target at a retired name such as `nobrainer-reddit` is
+reported as `PRESERVED_FOREIGN` and left unchanged without blocking installation.
+An exact old link into this checkout at a retired name that a setup record lists
+is removed by the next `install.sh` or `install.py` apply (see the
+[migration guide](MIGRATION_TO_FLOW.md) for the 2.5.0 rename). A foreign
 target at a renamed alias such as `nb-flow`, a canonical name or an unresolved
 legacy name such as `nobrainer-fast-audit` still stops installation.
 

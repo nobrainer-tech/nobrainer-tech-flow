@@ -1,6 +1,6 @@
 ---
 name: nobrainer-skill-doctor
-description: "Use when the owner says nb-skill-doctor, requests a skill or task-prompt quality audit, or reviews instruction conflicts across projects. For which AGENTS files Codex loads in one project, use nobrainer-codex-context."
+description: "Use when the owner says nb-skill-doctor, requests a skill or task-prompt quality audit, or reviews instruction conflicts across projects. For which instruction files coding agents load in one project, use nobrainer-context."
 ---
 
 # NoBrainer Skill Doctor
@@ -105,8 +105,8 @@ their owner gate. A model/client behavior case that was not run is `UNTESTED`.
 
 ## Ownership boundaries
 
-- Use `nobrainer-codex-context` for one project's Codex instruction discovery,
-  context setup or repair.
+- Use `nobrainer-context` for one project's instruction files across coding
+  agents: discovery, consolidation or repair.
 - Use `nobrainer-review` for the exact diff, bug hunt or release closeout; the
   doctor does not replace its final evidence gate.
 - Use `nobrainer-build` for an accepted code, documentation or configuration fix.
@@ -123,7 +123,7 @@ review, capability installation or delivery orchestration.
 
 If repair is explicitly requested, freeze the source/ref and write only to the
 canonical target. Preserve user changes and managed blocks. Route context edits
-to `nobrainer-codex-context`, implementation edits to `nobrainer-build`, and a
+to `nobrainer-context`, implementation edits to `nobrainer-build`, and a
 consequential closeout to `nobrainer-review`. Do not silently change model
 selection, install a package, delete a skill, commit, push or publish.
 

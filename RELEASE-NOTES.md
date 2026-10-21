@@ -1,5 +1,36 @@
 # nobrainer-tech-flow release notes
 
+## v2.5.0 - 2026-10-20
+
+One set of project instructions for every coding agent. The module
+`nobrainer-codex-context` (`nb-codex-context`) is now `nobrainer-context`
+(`nb-context`) and covers Codex, Claude Code, Gemini CLI, Cursor, GitHub Copilot and
+OpenCode, not only Codex. Its read-only probe, `context_inventory.py`, lists the
+instruction files each client loads in one project, with their size against each
+client's documented limits (the Codex byte budget, Claude Code's 200-line guidance,
+Cursor's 500-line guidance), byte-identical copies, lines repeated across files and
+whether the instructions name the current Flow goal file. The module then proposes one
+source of truth, usually `AGENTS.md`, with short pointers such as `@AGENTS.md` in
+`CLAUDE.md`, and changes project files only after you see the preview and approve it.
+It reads the project again afterwards. Global configuration stays untouched unless you
+ask. The client rules come from each client's documentation, checked on 2026-10-20 and
+cited in the module; anything the documentation does not state is reported as unknown.
+
+The old name and trigger no longer work. Updating a Git checkout through `install.sh` or
+`install.py` links `nobrainer-context` and, as its last change, removes the old link the
+setup record lists; a run that fails puts the old link back. Undo of an older setup
+removes it too. An npm setup is undone with the earlier
+release's command first, as before. A file, folder, copy or link at the old name that is not
+this checkout's link is left unchanged. The [migration guide](docs/MIGRATION_TO_FLOW.md)
+has the details.
+
+The optional TypeSafe helper (`typed_decisions.py`) no longer reads
+`TYPESAFE_API_KEY` by itself: name the variable with `--key-env`, and the key reaches the
+worker on standard input, not through its environment.
+
+The module set stays at eighteen. See the
+[release scope and verification record](docs/releases/v2.5.0.md).
+
 ## v2.4.1 - 2026-10-19
 
 Undo works after a rearranged profile. When a link put in place after the setup makes

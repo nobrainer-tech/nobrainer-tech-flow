@@ -107,6 +107,85 @@ def recorded_setting(client: str, home: Path, destination: object, target: objec
     return None
 
 
+def recorded_skill(name: object) -> bool:
+    """A name a setup record may hold: a current module, or one a release retired."""
+
+    return isinstance(name, str) and (name in BY_SKILL or name in _sibling(INSTALL_SKILLS).RETIRED_LEGACY)
+
+
+def owns_link(target: Path, name: str) -> bool:
+    """True when target is this checkout's link for name; a retired module's link dangles."""
+
+    if name in BY_SKILL:
+        return links_to(target, SKILLS_DIR / name)
+    return _sibling(INSTALL_SKILLS).is_exact_legacy_link(target, name)
+
+
+def recorded_retired_args(record: dict | None) -> list[str]:
+    """install_skills.py flags for retired modules a setup record says this setup linked."""
+
+    names = (record or {}).get("created_skills", [])
+    return [arg for name in names if isinstance(name, str) and name not in BY_SKILL for arg in ("--recorded-retired", name)]
+
+
+def claim_retired_links(destination: Path, record: dict | None) -> list[tuple[Path, Path, tuple]]:
+    """Move the retired links a record lists aside, verifying each moved entry.
+
+    The claim is install_skills.py's atomic claim-and-verify: an entry that changed after
+    the check is put back untouched. The claims are deleted only once the whole setup run
+    has succeeded, and put back on any failure before that.
+    """
+
+    skills = _sibling(INSTALL_SKILLS)
+    claims = []
+    try:
+        for name in (record or {}).get("created_skills", []):
+            if not isinstance(name, str) or name in BY_SKILL:
+                continue
+            target = destination / name
+            if not skills.is_exact_legacy_link(target, name):
+                continue
+            try:
+                claim, expected = skills.claim_legacy_link(target, name)
+            except skills.ClaimRestoreError:
+                raise
+            except RuntimeError as exc:
+                print(f"PRESERVED: {target} changed during the setup and is left as it is ({exc})")
+                continue
+            claims.append((target, claim, expected))
+    except (OSError, skills.ClaimRestoreError) as exc:
+        errors = restore_retired_links(claims)
+        if errors:
+            raise skills.ClaimRestoreError(f"{exc}; {'; '.join(errors)}") from exc
+        raise
+    return claims
+
+
+def restore_retired_links(claims: list[tuple[Path, Path, tuple]]) -> list[str]:
+    """Put claimed retired links back; return what could not be restored."""
+
+    errors = []
+    for target, claim, expected in reversed(claims):
+        try:
+            # Moves the entry back without replacing a new one, and removes the private folder.
+            _sibling(INSTALL_SKILLS).restore_claim(target, claim, expected)
+        except (OSError, RuntimeError) as exc:
+            errors.append(f"retired link restore failed: {exc}")
+    return errors
+
+
+def commit_retired_links(claims: list[tuple[Path, Path, tuple]]) -> None:
+    """Delete the claimed retired links once the setup run has succeeded."""
+
+    for target, claim, expected in claims:
+        if _sibling(INSTALL_SKILLS).entry_fingerprint(claim) == expected:
+            claim.unlink()
+            claim.parent.rmdir()
+            print(f"REMOVED_RETIRED: {target}")
+        else:
+            print(f"BACKUP_PRESERVED: the claimed retired link changed and is kept: {claim}")
+
+
 def links_to(target: Path, source: Path) -> bool:
     """True when target is a symlink resolving to source; loops and dangling links are not."""
 
@@ -144,7 +223,7 @@ ITEMS = (
     Item("14", "nobrainer-spec-driven-development", "Specifications", ("software-development", "product"), "define durable contracts for architectural changes"),
     Item("15", "nobrainer-rca", "Root-cause analysis", ("software-development", "operations"), "diagnose repeated or causally unclear failures"),
     Item("16", "nobrainer-team", "Capability-to-role design", ("software-development", "operations"), "assign available capabilities to bounded work"),
-    Item("17", "nobrainer-codex-context", "Project context", ("software-development", "operations"), "inspect and maintain project instructions and context"),
+    Item("17", "nobrainer-context", "Project instructions", ("software-development", "operations"), "one tidy set of project instructions for every coding agent"),
     Item("18", "nobrainer-wiki", "Durable knowledge", ("research", "product", "operations"), "query and maintain a sourced project knowledge base"),
 )
 BY_ID = {item.id: item for item in ITEMS}
@@ -604,10 +683,10 @@ def run(command: list[str], hide: tuple[str, ...] = ()) -> tuple[int, str]:
 
 def remove_exact_created_links(destination: Path, names: list[str]) -> None:
     for name in names:
-        if name not in BY_SKILL:
+        if not recorded_skill(name):
             continue
         target = destination / name
-        if links_to(target, SKILLS_DIR / name):
+        if owns_link(target, name):
             target.unlink()
 
 
@@ -783,7 +862,7 @@ def read_state_file(path: Path) -> dict[str, object]:
         or not isinstance(loaded.get("destination"), str)
         or not isinstance(loaded.get("created_skills"), list)
         or not isinstance(loaded.get("profile"), dict)
-        or any(not isinstance(name, str) or name not in BY_SKILL for name in loaded.get("created_skills", []))
+        or not all(recorded_skill(name) for name in loaded.get("created_skills", []))
     ):
         raise ValueError(f"refusing to overwrite unrecognized setup state: {path}")
     try:
@@ -997,7 +1076,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
         return 3
     destination = Path(state["destination"])
     created = state.get("created_skills", [])
-    if not isinstance(created, list) or len(created) != len(set(created)) or any(name not in BY_SKILL for name in created):
+    if not isinstance(created, list) or len(created) != len(set(created)) or not all(recorded_skill(name) for name in created):
         print("ERROR: rollback state contains invalid skill ownership entries", file=sys.stderr)
         return 3
     try:
@@ -1066,7 +1145,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     for name in created:
         target = destination / name
         if target.is_symlink():
-            if not links_to(target, SKILLS_DIR / name):
+            if not owns_link(target, name):
                 print(f"PRESERVED: changed target {target}")
                 return 3
         elif target.exists():
@@ -1086,8 +1165,7 @@ def rollback(args: argparse.Namespace, state_file: Path) -> int:
     removed: list[str] = []
     for name in created:
         target = destination / name
-        source = SKILLS_DIR / name
-        if links_to(target, source):
+        if owns_link(target, name):
             target.unlink()
             removed.append(name)
         elif target.exists() or target.is_symlink():
@@ -1384,7 +1462,7 @@ def main(argv: list[str] | None = None) -> int:
         # Inspect every target before writing any of them. This keeps a later
         # conflict from leaving a partial selection installed.
         for name in install_names:
-            command = [sys.executable, str(ROOT / "scripts" / "install_skills.py"), "--client", args.client, "--dest", str(destination), "--skill", name]
+            command = [sys.executable, str(ROOT / "scripts" / "install_skills.py"), "--client", args.client, "--dest", str(destination), "--skill", name, *recorded_retired_args(previous)]
             code, _ = run(command, hide=("NOTE: ",))
             if code:
                 return code
@@ -1394,7 +1472,7 @@ def main(argv: list[str] | None = None) -> int:
         profile_preimage = read_file_preimage(profile_target)
         if args.apply:
             for name in install_names:
-                command = [sys.executable, str(ROOT / "scripts" / "install_skills.py"), "--client", args.client, "--dest", str(destination), "--skill", name, "--apply"]
+                command = [sys.executable, str(ROOT / "scripts" / "install_skills.py"), "--client", args.client, "--dest", str(destination), "--skill", name, "--apply", *recorded_retired_args(previous)]
                 code, _ = run(command, hide=("NOTE: ",))
                 if code:
                     remove_exact_created_links(destination, new_skills)
@@ -1428,7 +1506,9 @@ def main(argv: list[str] | None = None) -> int:
                 "backup": recorded_backup,
                 "written_sha256": hashlib.sha256(profile_target.read_bytes()).hexdigest(),
             }
-        created = sorted(set(previous.get("created_skills", [])) | {name for name in new_skills if (destination / name).is_symlink()})
+        # A retired module's link is gone once retired; then the record drops its name.
+        kept = {name for name in previous.get("created_skills", []) if name in BY_SKILL or owns_link(destination / name, name)}
+        created = sorted(kept | {name for name in new_skills if (destination / name).is_symlink()})
         next_state = {"destination": str(destination), "created_skills": created, "profile": profile}
         # Folders an earlier run made stay in the record as recorded, links already resolved
         # then. Resolving them again would follow a link put in their place since, and hand the
@@ -1443,10 +1523,18 @@ def main(argv: list[str] | None = None) -> int:
         # a run makes a folder, so that its undo follows the rule it was made under.
         if created_dirs or not previous or "created_dirs" in previous:
             next_state["created_dirs"] = created_dirs
+        # The retired links the record lists go last, after every other write, and come back
+        # if the record cannot be saved.
+        retired_claims = []
         try:
+            retired_claims = claim_retired_links(destination, previous)
+            retired_names = {target.name for target, _, _ in retired_claims}
+            next_state["created_skills"] = [name for name in created if name not in retired_names]
             save_state(state, next_state)
-        except (OSError, TypeError, ValueError) as exc:
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
             rollback_errors: list[str] = []
+            if isinstance(exc, _sibling(INSTALL_SKILLS).ClaimRestoreError):
+                rollback_errors.append(str(exc))
             if profile.get("target") and "APPLIED: " in profile_output:
                 restore_preimage = profile_preimage
                 if backup_match:
@@ -1483,6 +1571,7 @@ def main(argv: list[str] | None = None) -> int:
                 remove_exact_created_links(destination, new_skills)
             except OSError as rollback_exc:
                 rollback_errors.append(f"skill rollback failed: {rollback_exc}")
+            rollback_errors.extend(restore_retired_links(retired_claims))
             remaining_links = [
                 name
                 for name in new_skills
@@ -1507,6 +1596,7 @@ def main(argv: list[str] | None = None) -> int:
             detail = f"{exc}; rollback incomplete: {'; '.join(rollback_errors)}" if rollback_errors else f"{exc}; applied changes were rolled back and read back"
             print(f"ERROR: setup state save failed: {detail}", file=sys.stderr)
             return 3 if rollback_errors else 2
+        commit_retired_links(retired_claims)
         after = installed_ids(destination)
         actual_added = sorted(after - before)
         expected_added = sorted(BY_SKILL[name].id for name in new_skills)

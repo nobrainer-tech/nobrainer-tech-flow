@@ -41,14 +41,14 @@ Popularity, file size and prior existence are not admission criteria.
 | `nobrainer-decide` | One consequential decision after alternatives, scoring and adversarial attack. |
 | `nobrainer-rca` | Read-only causal diagnosis of an observed failure. |
 | `nobrainer-review` | Final acceptance/bug/release evidence gate and verified actionable findings. |
-| `nobrainer-codex-context` | Project-local Codex instruction discovery, byte-budget audit, safe context-block setup and runtime readback. |
+| `nobrainer-context` | One project's instruction files for every coding agent: what each client loads, size limits, duplicates and contradictions, one approved source of truth with pointers, and readback. |
 | `nobrainer-skill-doctor` | Cross-project audit of skills, project instructions and task prompts, with coverage, overlap and minimal portfolio repair planning. |
 
 ## Boundaries that stay embedded
 
 Do not create separate permanent skills for:
 
-- planning, autopilot, general NoBrainer setup or correction capture: the Flow entry skill owns the lifecycle; Codex-specific project-context setup belongs to `nobrainer-codex-context`;
+- planning, autopilot, general NoBrainer setup or correction capture: the Flow entry skill owns the lifecycle; one project's instruction files belong to `nobrainer-context`;
 - visible goal/TODO progress: Flow owns one canonical plan and its compact view;
   do not add a separate goal, todo or progress skill;
 - KISS, DRY, SOLID, YAGNI, simplification or test safety: Build owns them;
@@ -108,6 +108,12 @@ functionality or trigger. `install_skills.py` and `install.sh` preserve foreign
 targets at that name with `PRESERVED_FOREIGN`. Only exact old links from this
 checkout remain migration candidates. Renamed/absorbed aliases retain blocking
 conflict checks.
+
+`nobrainer-codex-context` is `RETIRED` in 2.5.0 by owner decision (2026-10-20): its
+boundary grew into `nobrainer-context`, which covers every coding agent's project
+instructions, and the old name keeps no alias or trigger. Foreign targets at the
+old name are preserved like `nobrainer-reddit`; an exact old link that a setup
+record lists is removed by the next setup apply or undo.
 
 ## Change control
 

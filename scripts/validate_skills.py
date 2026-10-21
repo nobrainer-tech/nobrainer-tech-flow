@@ -18,7 +18,7 @@ LINK_RE = re.compile(r"\[[^\]]+\]\((?!https?://|#|mailto:)([^)]+)\)")
 
 SUITE = {
     "nobrainer-auto-fine-tune": "nb-auto-fine-tune",
-    "nobrainer-codex-context": "nb-codex-context",
+    "nobrainer-context": "nb-context",
     "nobrainer-skill-doctor": "nb-skill-doctor",
     "nobrainer-tech-flow": "NBFlow",
     "nobrainer-team": "nb-team",
@@ -69,6 +69,7 @@ LEGACY = {
     "nb-write",
     "nobrainer-autopilot",
     "nobrainer-capture-lesson",
+    "nobrainer-codex-context",
     "nobrainer-continuous-improvement",
     "nobrainer-memory",
     "nobrainer-memory-memsearch",

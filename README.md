@@ -423,7 +423,7 @@ recurring boundary:
 |---|---|---|
 | [`nobrainer-tech-flow`](skills/nobrainer-tech-flow/) | `NBFlow`, `NBF` | Technical entrypoint for end-to-end setup and delivery: one requirements gate, concise progress, bounded execution, recovery, audit and learning |
 | [`nobrainer-auto-fine-tune`](skills/nobrainer-auto-fine-tune/) | `nb-auto-fine-tune` | Read-only capability audit and route calibration: verified host models, effort, context and useful parallelism while MAIN keeps the owner's model |
-| [`nobrainer-codex-context`](skills/nobrainer-codex-context/) | `nb-codex-context` | Project-local Codex context setup: instruction discovery, fallback and byte-budget audit, safe context block reconciliation and runtime readback |
+| [`nobrainer-context`](skills/nobrainer-context/) | `nb-context` | One set of project instructions for every coding agent: what Codex, Claude Code, Gemini CLI, Cursor, Copilot and OpenCode load, size limits, duplicates and contradictions, one source of truth with pointers after approval, and readback |
 | [`nobrainer-skill-doctor`](skills/nobrainer-skill-doctor/) | `nb-skill-doctor` | Cross-project audit of skills, project instructions and task prompts: trigger overlap, excessive process, coverage and minimal portfolio repair planning |
 | [`nobrainer-team`](skills/nobrainer-team/) | `nb-team` | Capability selection and bounded native assignments, installed-skill inventory and safe temporary specialist discovery |
 | [`nobrainer-dispatcher`](skills/nobrainer-dispatcher/) | `nb-dispatcher` | Dependency-aware ready-set scheduling, bounded dispatch, backpressure and audited result routing |
@@ -531,12 +531,14 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-**What's new in 2.4.0:** nobrainer-tech-flow can ask before risky commands and
-shows whether its proof still matches your files. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+**What's new in 2.5.0:** `nobrainer-context` (`nb-context`) keeps one set of project
+instructions for every coding agent: it shows what Codex, Claude Code, Gemini CLI,
+Cursor, Copilot and OpenCode load, and proposes one source of truth with pointers.
+See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
-Current source version: **2.4.1**, which fixes undo after a rearranged profile. Check the
+Current source version: **2.5.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.4.1](docs/releases/v2.4.1.md) and
+for distribution and the [2.5.0](docs/releases/v2.5.0.md) and
 [2.4.0 verification records](docs/releases/v2.4.0.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not

@@ -98,6 +98,20 @@ until migrated with `install_skills.py --migrate-legacy`. Foreign renamed aliase
 such as `nb-flow` and unresolved legacy names still block installation to prevent
 trigger conflicts.
 
+In 2.5.0 the module `nobrainer-codex-context` (trigger `nb-codex-context`) became
+`nobrainer-context` (trigger `nb-context`) and covers every coding agent's project
+instructions, not only Codex. The old name and trigger no longer work. When the
+setup record of a Git checkout (`install.sh` or `install.py`) lists the old link,
+the next apply removes that exact link into this checkout and links
+`nobrainer-context`; undo also removes it. The npm setup keeps each release in its
+own folder, so undo an npm setup with the earlier release's command before
+applying 2.5.0, as [INSTALL.md](INSTALL.md) describes. An old link without a record, for example one made by
+`install_skills.py` directly, still blocks until migrated with
+`install_skills.py --migrate-legacy`. A file, folder, copy or link at the old name
+that is not this checkout's link is left unchanged (`PRESERVED_FOREIGN`); remove a
+copy you made of the old module yourself. Plugin installs pick up the new name on
+update.
+
 After an update, read back the source commit and package identity, restart the
 client and confirm that `nobrainer-tech-flow` loads once. A version change or an
 installed file alone does not establish runtime compatibility.

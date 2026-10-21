@@ -73,7 +73,7 @@ except ValueError:
 
 CURATED_SKILLS = frozenset(
     {
-        "nobrainer-codex-context",
+        "nobrainer-context",
         "nobrainer-skill-doctor",
         "nobrainer-autoimprove",
         "nobrainer-auto-fine-tune",
@@ -104,6 +104,7 @@ LEGACY_TO_CANONICAL = {
     "agents-restraint": "nobrainer-tech-flow",
     "codex-in-claude-code": "nobrainer-tech-flow",
     "code-autoresearch": "nobrainer-autoimprove",
+    "nobrainer-codex-context": "nobrainer-context",
     "deep-audit": "nobrainer-review",
     "deep-autoreview": "nobrainer-review",
     "deep-autoresearch": "nobrainer-autoimprove",
@@ -149,9 +150,11 @@ LEGACY_TO_CANONICAL = {
     "wiki-get": "nobrainer-wiki",
     "wiki-tidy": "nobrainer-wiki",
 }
-# Reddit integration was removed, not absorbed into a canonical skill. Keep its
-# owned-link migration, but a different source may legitimately use this name.
-RETIRED_LEGACY = frozenset({"nobrainer-reddit"})
+# Names Flow no longer ships: Reddit integration was removed, and
+# nobrainer-codex-context was renamed to nobrainer-context in 2.5.0 without an
+# alias. Keep their owned-link migration, but another source may legitimately
+# use these names, so a foreign target there is preserved, never removed.
+RETIRED_LEGACY = frozenset({"nobrainer-codex-context", "nobrainer-reddit"})
 UNMAPPED_LEGACY = frozenset({"nobrainer-fast-audit"})
 
 
@@ -455,6 +458,10 @@ def legacy_name_for(target: Path, canonical: Path) -> str | None:
     return None
 
 
+class ClaimRestoreError(RuntimeError):
+    """A changed entry was claimed but could not be restored to its original name."""
+
+
 def claim_legacy_link(
     target: Path, legacy_name: str
 ) -> tuple[Path, EntryFingerprint]:
@@ -484,7 +491,7 @@ def claim_legacy_link(
     try:
         restore_claim(target, claim)
     except RuntimeError as exc:
-        raise RuntimeError(
+        raise ClaimRestoreError(
             f"legacy link changed after preflight; {exc}"
         ) from exc
     raise RuntimeError(
@@ -683,6 +690,17 @@ def parse_args() -> argparse.Namespace:
             "root-level layout and renamed aliases."
         ),
     )
+    parser.add_argument(
+        "--recorded-retired",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help=(
+            "A retired name that the calling setup's record lists as created by it: "
+            "its exact link into this checkout no longer blocks installation and is "
+            "left in place for that setup to retire once its whole run has succeeded."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -748,6 +766,14 @@ def main() -> int:
             if legacy_name in RETIRED_LEGACY
             else "conflict"
         )
+        if (
+            state == "legacy"
+            and legacy_name in RETIRED_LEGACY
+            and legacy_name in args.recorded_retired
+        ):
+            # The setup record proves the setup made this link. The setup retires it
+            # after its own run succeeds; this helper never deletes it.
+            state = "recorded"
         alias_plan.append((legacy_name, canonical_name, target, state))
         if state == "conflict" or (state == "legacy" and not args.migrate_legacy):
             conflicts.append(target)
@@ -774,6 +800,9 @@ def main() -> int:
         print(f"{action}: {name}: {source} -> {target}")
 
     for legacy_name, canonical_name, target, state in alias_plan:
+        if state == "recorded":
+            print(f"RETIRED_RECORDED: {legacy_name}: made by this setup; renamed {canonical_name}: {target}")
+            continue
         if state == "preserved":
             print(
                 f"PRESERVED_FOREIGN: {legacy_name}: retired from nobrainer-tech-flow; "
