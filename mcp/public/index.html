@@ -101,8 +101,10 @@
     html { scroll-behavior: auto; }
     .rise { transform: none; animation-name: fade; }
     @keyframes fade { to { opacity: 1; } }
+    .marquee { margin: 36px 0 0; mask-image: none; }
     .track { animation: none; }
-    .track, .set { flex-wrap: wrap; width: auto; }
+    .track, .set { flex-wrap: wrap; width: auto; justify-content: center; }
+    .set { padding-right: 0; }
     .set[aria-hidden="true"] { display: none; }
     .console .line { transform: none; }
     .pill.bump, .chip:hover, .tabs button:hover, .button:hover, .tool.live { transform: none; }
