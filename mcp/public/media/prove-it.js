@@ -21,8 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const video = document.querySelector('[data-tv]');
   if (video) {
     const box = video.closest('.tv');
-    ['play', 'pause', 'ended'].forEach((e) => video.addEventListener(e, () => box.classList.toggle('playing', e === 'play')));
+    // Dance only while frames actually advance; stop on pause, end, stall or a failed load.
+    video.addEventListener('playing', () => box.classList.add('playing'));
+    ['pause', 'ended', 'waiting', 'emptied'].forEach((e) => video.addEventListener(e, () => box.classList.remove('playing')));
+    video.addEventListener('error', () => box.classList.remove('playing'), true);
     video.addEventListener('play', () => setLook(true, video));
+    // Fetch the dance sheets early so the cast does not blank out on the first play.
+    ['/media/flo-dance.png', '/media/mcp-dance.png'].forEach((src) => { new Image().src = src; });
   }
   sync();
 });
