@@ -103,13 +103,22 @@ The mode is informed by ASD-STE100; it does not claim full standard compliance.
 
 ## Install and use the plugin
 
-Claude Code and Codex add nobrainer-tech-flow as a plugin straight from this
-repository. Any coding agent can use the Git install, which previews every
-change and has undo. Both are under [Install safely](#install-safely). The
-[npm command](docs/INSTALL.md#npm-command) is coming soon: the package is not
-yet published on npm. The [portable plugin ZIP](docs/CHAT_PLUGINS.md) brings the
-same 18 modules to supported ChatGPT/Codex and Claude surfaces. Public directory
-approval remains a separate step.
+Pick the channel that fits your client; each one installs the same 18 modules:
+
+- **Claude Code plugin:** `claude plugin marketplace add nobrainer-tech/nobrainer-tech-flow`,
+  then `claude plugin install nobrainer-tech-flow@nobrainer-tech`.
+- **Codex plugin:** `codex plugin marketplace add nobrainer-tech/nobrainer-tech-flow`,
+  then `codex plugin add nobrainer-tech-flow@nobrainer-tech`.
+- **npm:** [`npx nobrainer-tech-flow --client codex`](https://www.npmjs.com/package/nobrainer-tech-flow)
+  previews the setup for Codex, Claude Code (`claude`), OpenCode or GitHub Copilot;
+  add `--apply` to install.
+- **Git, for any coding agent:** a setup prompt or `scripts/install.sh`, with a
+  preview of every change and undo.
+- **Chat apps:** the [portable plugin ZIP](docs/CHAT_PLUGINS.md) for supported
+  ChatGPT/Codex and Claude surfaces.
+
+Details for each are under [Install safely](#install-safely). Listing in the
+public Claude and OpenAI plugin directories is a separate review step.
 
 ## How it works
 
@@ -267,7 +276,17 @@ notification only. No other authorization is granted. To update, run `git pull` 
 `~/.nobrainer-tech-flow` and the same two commands again, or paste the prompt again. With Python,
 `python3 scripts/install.py` takes the same flags.
 
-**npm:** coming soon. The package is not published yet.
+**npm** (Node 18+ and Python 3.11+; [package page](https://www.npmjs.com/package/nobrainer-tech-flow)):
+
+```sh
+npx nobrainer-tech-flow@2.6.0 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.6.0 --client codex --apply    # install
+npx nobrainer-tech-flow@2.6.0 --client codex --undo --apply
+```
+
+`--client` is `codex`, `claude`, `opencode` or `copilot`. The files are copied to a
+stable folder in your home directory, so nothing points into npx's cache; see the
+[npm command](docs/INSTALL.md#npm-command).
 
 **Next step:** in a fresh session, give it one small task with a checkable result:
 
@@ -366,7 +385,7 @@ Use nobrainer-tech-flow through the canonical skill
 outcome. A small reversible edit without a public contract, routing, workflow or
 portfolio change can use its quick path; other changes use the full path and its
 coherence gate.
-In Codex, type the exact name it lists for the module: `$nobrainer-tech-flow:nobrainer-tech-flow` after the installer or a plugin install (and after the npm package, once it is published), and `$nobrainer-tech-flow` for a copy made with `install_skills.py --mode copy`. Say
+In Codex, type the exact name it lists for the module: `$nobrainer-tech-flow:nobrainer-tech-flow` after the installer, a plugin install or the npm package, and `$nobrainer-tech-flow` for a copy made with `install_skills.py --mode copy`. Say
 `Use NBFlow`, `Use NBF` or `Use nobrainer-tech-flow` in natural language;
 older trigger phrases are migration context only and
 depend on a client's implicit description matching.
