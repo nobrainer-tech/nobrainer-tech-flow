@@ -37,7 +37,9 @@ Apply these principles as decision rules, not slogans:
 
 - `KISS`: choose the simplest complete design that satisfies acceptance.
 - `YAGNI`: do not add extension points, compatibility layers or options for an
-  unproven future requirement.
+  unproven future requirement. Before adding complexity for a speculative race
+  or security edge case, name the concrete failure, its likelihood and the cost;
+  add it only when that case is accepted.
 - `DRY`: keep each rule and mutable fact under one owner, but do not abstract
   incidental similarity. Duplication can be cheaper than the wrong coupling.
 - `SOLID`: preserve cohesive responsibilities and stable dependency boundaries;
@@ -80,7 +82,9 @@ Reject a patch that contains any of the following without explicit acceptance:
 - duplicate state owners, speculative abstractions or fallback stacks that make
   failure ambiguous;
 - tests that only assert a mock/fixture while the real contract remains
-  unexercised.
+  unexercised;
+- in user interfaces, taglines, helper text and secondary labels added to explain
+  a screen; if the screen needs them, fix the layout.
 
 Names should explain intent. Comments should explain only non-obvious why,
 constraints, risk or tradeoffs. Do not create a new README, framework or process

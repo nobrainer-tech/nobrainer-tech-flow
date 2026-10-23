@@ -1,5 +1,26 @@
 # nobrainer-tech-flow release notes
 
+## v2.6.0 - 2026-10-23
+
+Flow now delegates aggressively, so substantial work reaches done sooner. Independent
+units go to native subagents in parallel while MAIN works its own unit and keeps the
+critical path, integration and verification. A unit is delegated when parallel work
+shortens the time to done more than a worker's start-up costs; each worker gets a short
+task packet instead of the whole conversation and returns a concise report, and narrow,
+mechanical work goes to a cheaper model under the host's policy. The workflow names no
+model. When part of a batch fails, only the failed units are sent again.
+
+Verification depth now follows the blast radius of a change. A reversible, low-risk change
+may proceed on green automated tests, review and security checks; CI configuration,
+credentials, security-sensitive paths, data migrations and irreversible effects still need
+an independent review and stay owner-gated. An agent's approval never counts as the
+owner's.
+
+`nobrainer-build` gains two rules: complexity for a speculative race or security edge case
+needs a named failure, its likelihood and its cost first, and in user interfaces taglines,
+helper text and secondary labels that explain a screen are treated as slop: fix the layout
+instead.
+
 ## v2.5.0 - 2026-10-20
 
 One set of project instructions for every coding agent. The module

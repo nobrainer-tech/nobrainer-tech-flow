@@ -115,6 +115,12 @@ useful authorized work remains. Never turn an unknown right/license into consent
 
 ## Keep review proportional to progress
 
+Scale verification to blast radius. A reversible, low-risk change may proceed on
+green automated tests, review and security checks. CI configuration, credentials,
+security-sensitive paths, data migrations and irreversible effects need an
+independent review and remain owner-gated. An agent's approval never counts as the
+owner's.
+
 Review the next executable slice against concrete acceptance and failure paths.
 For a stable slice, default to one review and one focused correction verification.
 More review needs a newly evidenced material defect or changed risk, not a new
@@ -136,7 +142,14 @@ reviews, tests or generated files.
 ## Coordinated team execution
 
 MAIN owns the full outcome, coordination, critical path, dependencies, integration,
-owner decisions and acceptance. Before executing non-trivial work or entering a
+owner decisions and acceptance. Delegation is the default route to a faster done:
+MAIN works its own unit while workers run, and keeps only tiny, tightly coupled,
+gated or shared-state steps. Delegate a unit when it is independent and large
+enough that parallel work shortens the time to done more than a worker's start-up
+costs. Give each worker a short task packet, not the whole conversation, and ask
+for a concise report. Send narrow, mechanical work to a cheaper model under the
+host's policy. Each worker's model and effort come from that policy; the workflow
+names no model. Before executing non-trivial work or entering a
 blocking wait, identify independent ready units and dispatch every useful eligible
 unit promptly to native workers within verified host capacity and authorized usage
 limits. Eligibility requires accepted dependencies, authority, a supported route
@@ -197,7 +210,9 @@ worker completion, MAIN reconciles the exact returned ID, inspects the current
 artifact, assigned scope and required proof, and verifies that the worker has
 stopped writing. Then release only that unit's proven ownership, recompute readiness
 and dispatch newly ready work without waiting for unrelated slow workers. A
-worker's report, exit code or self-score does not accept its artifact.
+worker's report, exit code or self-score does not accept its artifact. When a batch
+partly fails, resend only the failed units with their new evidence; never rerun the
+accepted ones.
 
 A waiting, suspended or uncertain worker has a stated reason and a bounded next
 observation in the current tracker. Reserve its scope and possible capacity until

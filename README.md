@@ -531,14 +531,14 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-**What's new in 2.5.0:** `nobrainer-context` (`nb-context`) keeps one set of project
-instructions for every coding agent: it shows what Codex, Claude Code, Gemini CLI,
-Cursor, Copilot and OpenCode load, and proposes one source of truth with pointers.
+**What's new in 2.6.0:** Flow delegates aggressively: independent units of
+substantial work go to parallel native subagents, sized so parallel work pays for its
+start-up cost, and verification depth follows how risky and reversible a change is.
 See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
-Current source version: **2.5.0**. Check the
+Current source version: **2.6.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.5.0](docs/releases/v2.5.0.md) and
+for distribution and the [2.6.0](docs/releases/v2.6.0.md), [2.5.0](docs/releases/v2.5.0.md) and
 [2.4.0 verification records](docs/releases/v2.4.0.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
