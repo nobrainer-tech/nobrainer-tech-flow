@@ -1,35 +1,55 @@
-/* PROVE IT episode block and retro-game look (pixel art from the music video, day palette) */
+/* PROVE IT episode block. The page opens in the classic look; clicking Flo switches to the
+   retro look (html.retro), clicking MC P switches back. Reload returns to classic. */
 .tv { position: relative; width: 100vw; margin: -32px 0 8px calc(50% - 50vw); padding: 30px 16px 0; overflow: hidden; }
-.tv-bg { position: absolute; inset: 0; background: url("/media/horizon-day.png") center bottom / auto 100% repeat-x; image-rendering: pixelated; z-index: -1; }
+.tv-bg { display: none; position: absolute; inset: 0; background: url("/media/horizon-day.png") center bottom / auto 100% repeat-x; image-rendering: pixelated; z-index: -1; }
 .tv-inner { max-width: 880px; margin: 0 auto; }
 .tv-eyebrow { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-weight: 800; font-size: 15px; letter-spacing: 0.04em; color: var(--ink); }
 .tv-eyebrow img { width: 28px; height: 28px; image-rendering: pixelated; }
 .tv-stage { position: relative; }
-.screen { margin: 0; aspect-ratio: 16 / 9; background: #14161c; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 8px 8px 0 var(--ink); overflow: hidden; }
+.screen { margin: 0; aspect-ratio: 16 / 9; background: #14161c; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px rgba(20, 22, 28, 0.14); overflow: hidden; }
 .screen video { display: block; width: 100%; height: 100%; }
-.tv-caption { margin: 18px 0 26px; padding: 12px 16px; font-size: 15px; color: var(--ink); max-width: 640px; background: #fff; border: 2px solid var(--ink); border-radius: 10px; box-shadow: 4px 4px 0 var(--ink); }
-.cast { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; pointer-events: none; }
-.sprite { --s: 1; width: calc(var(--fw) * var(--s) * 1px); height: calc(var(--fh) * var(--s) * 1px); background: var(--idle) no-repeat; background-size: calc(var(--fw) * 8 * var(--s) * 1px) 100%; background-position: calc(var(--f) * var(--fw) * var(--s) * -1px) 0; image-rendering: pixelated; }
-.flo { --fw: 152; --fh: 122; --f: 1; --idle: url("/media/flo-poses.png"); }
-.nobi { --fw: 114; --fh: 57; --f: 0; --s: 2; --idle: url("/media/nobi-poses.png"); }
+.tv-caption { margin: 16px 0 6px; font-size: 15px; color: var(--ink); max-width: 640px; }
+.tv-hint { margin: 0 0 26px; font-size: 14px; color: var(--muted); }
+.cast { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; }
+.sprite { --s: 1; width: calc(var(--fw) * var(--s) * 1px); height: calc(var(--fh) * var(--s) * 1px); padding: 0; border: 0; border-radius: 8px; cursor: pointer; background: var(--idle) no-repeat; background-size: calc(var(--fw) * 8 * var(--s) * 1px) 100%; background-position: calc(var(--f) * var(--fw) * var(--s) * -1px) 0; image-rendering: pixelated; transition: transform 0.15s; }
+.sprite { position: relative; }
+.sprite:hover { transform: translateY(-6px); }
+.sprite .name { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); padding: 4px 9px; font: 800 13px/1 "NoBrainer Sans", system-ui, sans-serif; letter-spacing: 0.04em; color: #fff; background: var(--ink); border-radius: 5px; white-space: nowrap; }
+.retro .sprite .name { box-shadow: 2px 2px 0 var(--orange); }
+.sprite:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
+.flo { --fw: 134; --fh: 126; --f: 0; --idle: url("/media/flo-wave.png"); animation: dance 1.3s steps(8) infinite; }
+.retro .flo { --fw: 152; --fh: 122; --f: 5; --idle: url("/media/flo-poses.png"); animation: none; }
+.mcp { --fw: 116; --fh: 60; --f: 0; --s: 2; --idle: url("/media/mcp-poses.png"); }
 .tv.playing .flo { --fw: 156; --fh: 123; background-image: url("/media/flo-dance.png"); animation: dance 1.951s steps(8) infinite; }
-.tv.playing .nobi { --fw: 102; --fh: 59; background-image: url("/media/nobi-dance.png"); animation: dance 1.951s steps(8) infinite; }
+.tv.playing .mcp { --fw: 118; --fh: 59; background-image: url("/media/mcp-dance.png"); animation: dance 1.951s steps(8) infinite; }
 @keyframes dance { from { background-position: 0 0; } to { background-position: calc(var(--fw) * 8 * var(--s) * -1px) 0; } }
 @media (min-width: 1240px) {
-  .cast { position: absolute; left: -330px; right: -330px; bottom: -6px; margin: 0; }
-  .flo { --s: 2; } .nobi { --s: 3; }
+  .cast { position: absolute; left: -330px; right: -330px; bottom: -6px; margin: 0; pointer-events: none; }
+  .cast .sprite { pointer-events: auto; }
+  .flo { --s: 2; } .mcp { --s: 3; }
 }
-.button, .chip, .tabs button, .copy button, .controls button { border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
-.button.ghost { border: 2px solid var(--ink); }
-.button:hover, .chip:hover, .chip:focus-visible, .tabs button:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--ink); border-color: var(--ink); }
-.button:active, .tabs button:active, .copy button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
-.tabs button[aria-selected="true"] { border-color: var(--blue); box-shadow: 3px 3px 0 var(--blue); }
-.panel, .tool, .checklist { border: 2px solid var(--ink); border-radius: 10px; box-shadow: 5px 5px 0 var(--ink); }
-.console { border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--blue); }
-.hero .copy pre { border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
-.tool.live { border-color: var(--blue); box-shadow: 5px 5px 0 var(--blue); }
-h2::before { content: ""; display: inline-block; width: 0.42em; height: 0.42em; margin-right: 0.4em; background: var(--orange); vertical-align: 0.06em; }
+
+/* Retro look: the video's pixel world and hard-shadow game UI. */
+.retro .tv-bg { display: block; }
+.retro .screen { border: 3px solid var(--ink); border-radius: 12px; box-shadow: 8px 8px 0 var(--ink); }
+.retro .tv-caption { padding: 12px 16px; background: #fff; border: 2px solid var(--ink); border-radius: 10px; box-shadow: 4px 4px 0 var(--ink); }
+.retro .tv-hint { display: inline-block; padding: 2px 8px; background: var(--cream); border-radius: 6px; }
+.retro .button, .retro .chip, .retro .tabs button, .retro .copy button, .retro .controls button { border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.retro .button:hover, .retro .chip:hover, .retro .chip:focus-visible, .retro .tabs button:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--ink); border-color: var(--ink); }
+.retro .button:active, .retro .tabs button:active, .retro .copy button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.retro .tabs button[aria-selected="true"] { border-color: var(--blue); box-shadow: 3px 3px 0 var(--blue); }
+.retro .panel, .retro .tool, .retro .checklist { border: 2px solid var(--ink); border-radius: 10px; box-shadow: 5px 5px 0 var(--ink); }
+.retro .console { border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--blue); }
+.retro .hero .copy pre { border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
+.retro .tool.live { border-color: var(--blue); box-shadow: 5px 5px 0 var(--blue); }
+.retro h2::before { content: ""; display: inline-block; width: 0.42em; height: 0.42em; margin-right: 0.4em; background: var(--orange); vertical-align: 0.06em; }
+
+/* The switch expands as a stepped (pixel-like) circle from the clicked character. */
+::view-transition-old(root) { animation: none; }
+::view-transition-new(root) { animation: look-in 0.7s steps(12) both; }
+@keyframes look-in { from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%)); } to { clip-path: circle(150vmax at var(--vt-x, 50%) var(--vt-y, 50%)); } }
+
 @media (prefers-reduced-motion: reduce) {
-  .tv.playing .flo, .tv.playing .nobi { animation: none; }
-  .button:hover, .button:active, .tabs button:active, .copy button:active { transform: none; }
+  .flo, .tv.playing .flo, .tv.playing .mcp { animation: none; }
+  .sprite:hover, .retro .button:hover, .retro .button:active, .retro .tabs button:active, .retro .copy button:active { transform: none; }
 }
