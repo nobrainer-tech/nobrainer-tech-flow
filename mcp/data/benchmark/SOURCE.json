@@ -1,14 +1,14 @@
 {
   "source_url": "https://nobrainer.tech/ai/benchmark/",
   "source_path": "public_html/ai/benchmark",
-  "website_commit": "f38cb7f0d64d8990d3e78bd0855c9d62f73c93d5",
+  "website_commit": "7c024795335d98952c53688a5bae943eb4884032",
   "website_dirty": false,
-  "snapshot_date": "2026-10-16",
-  "snapshot_sha256": "aaa2fc0ad97e335bef7dad4cafc08e5558f116cfd7ab859cc711f5aac563ee40",
+  "snapshot_date": "2026-10-23",
+  "snapshot_sha256": "8dab56e2a2fe4b3084791a609c47095a7bcbe8ce91a361f93d1fee8a2e96cde9",
   "inputs": {
-    "task-data.json": "5b1d135100ebec31d579429f34113328bf93282ebb487bfe3b11eb6da6f8496f",
-    "task-router-core.js": "cfb2dc580086d689da465619b50fb941ed4e2d4af5a115cb5638f426f3c5bcab",
-    "task-app-defaults.js": "c14a4a1f82176a310630276a55d1a9c0ea0ccc69fba501b19f1ebfccdb57a588",
+    "task-data.json": "17328e0d94178363ebd4973d7d6910ac805c19430210088183856f8f55bd27fc",
+    "task-router-core.js": "ba815adbd3d86ccc40aa4870cd3719fe0c079d6835877a32ce4c258091b9fe68",
+    "task-app-defaults.js": "b48ab17d41a1ffec623c8dc59098cfe2b5e4dc916107374fdab871eaa7755c06",
     "task-model-policy.js": "32d5ce2785b7da143101eda2a0cef81749007eaf68adb4b8986c643e0fe18f71",
     "terminal-bench-LICENSE.txt": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
     "terminal-bench-2-1-LICENSE.txt": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"

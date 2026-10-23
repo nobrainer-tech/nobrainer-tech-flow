@@ -25,7 +25,8 @@ for (const era of ["modern", "legacy"] as const) {
   const done = text(await client.callTool({ name: "check_flow_done", arguments: { token: ev.token } }));
   const handoff = text(await client.callTool({ name: "draft_flow_handoff", arguments: { receipt: done.receipt } }));
   ok(ev.results?.[0]?.verdict === "ACCEPTED" && done.verdict === "DONE" && /## Proof/.test(handoff.markdown ?? ""), `${era}: full run ends DONE with a handoff`);
-  const advice = text(await client.callTool({ name: "recommend_flow_model", arguments: { task: "coding" } }));
+  const advice = text(await client.callTool({ name: "recommend_flow_model", arguments: { task: "Coding" } }));
+  ok(advice.task === "terminal-coding" && Array.isArray(advice.shortlist) && advice.shortlist.length >= 1 && advice.shortlist.length <= 3, `${era}: legacy Coding maps to terminal-coding with a nonempty shortlist`);
   ok(advice.source === "https://nobrainer.tech/ai/benchmark/" && typeof advice.snapshot === "string", `${era}: advisor reports snapshot ${advice.snapshot}`);
   await client.close();
 }

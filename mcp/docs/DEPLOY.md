@@ -110,7 +110,9 @@ The benchmark snapshot expires 14 days after its `fetched_at` (the website's own
 `recommend_flow_model` returns `expired: true` and an empty shortlist. Every deploy should carry a
 snapshot fetched within the last 14 days: `npm run refresh:benchmark -- --source <website>/public_html/ai/benchmark`,
 `npm test`, commit, then build and deploy as in section 2. The snapshot in this release was fetched
-2026-10-16 and expires 2026-10-30.
+2026-10-23 and expires 2026-11-06. The public task enum lists only tasks with measurements;
+the legacy `coding` alias is accepted in any case and returns `task: "terminal-coding"` with
+a Terminal-Bench shortlist. The smoke test checks this mapping through the SDK in both protocol eras.
 
 ## 7. After the first deploy
 

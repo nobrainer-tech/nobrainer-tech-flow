@@ -1,18 +1,31 @@
-// Record the OpenAI review test cases against a local server with the official SDK client.
-// Usage: node scripts/record-transcripts.ts   -> writes docs/review/test-cases.md
+// Record the OpenAI review test cases with the official SDK client.
+// Usage: node scripts/record-transcripts.ts [--in-memory] -> writes docs/review/test-cases.md
 // Tokens are shortened in the transcript; everything else is the server's exact output.
 import { writeFileSync } from "node:fs";
-import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
+import { Client, InMemoryTransport, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { startServer } from "./serve.ts";
 import { createHttpHandler } from "../src/http.ts";
 import { optionsFromEnv } from "../src/config.ts";
-import { SERVER_VERSION } from "../src/server.ts";
+import { buildServer, SERVER_VERSION } from "../src/server.ts";
 
-const server = await startServer(createHttpHandler({ ...optionsFromEnv({}), log: () => {} }), 0);
-const address = server.address();
-const url = new URL(`http://127.0.0.1:${typeof address === "object" && address ? address.port : 0}/mcp`);
-const client = new Client({ name: "review-recorder", version: "1.0.0" }, { versionNegotiation: { mode: { pin: "2026-07-28" } } } as never);
-await client.connect(new StreamableHTTPClientTransport(url));
+const inMemory = process.argv.includes("--in-memory");
+const options = optionsFromEnv({});
+const client = new Client({ name: "review-recorder", version: "1.0.0" }, { versionNegotiation: { mode: inMemory ? "legacy" : { pin: "2026-07-28" } } } as never);
+let closeServer: () => Promise<void>;
+if (inMemory) {
+  const server = buildServer({ ring: options.ring, limiter: options.limiter, now: () => Math.floor(Date.now() / 1000) });
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await server.connect(serverTransport);
+  closeServer = () => server.close();
+  await client.connect(clientTransport);
+} else {
+  const server = await startServer(createHttpHandler({ ...options, log: () => {} }), 0);
+  const address = server.address();
+  const url = new URL(`http://127.0.0.1:${typeof address === "object" && address ? address.port : 0}/mcp`);
+  closeServer = () => new Promise((resolve) => server.close(() => resolve()));
+  await client.connect(new StreamableHTTPClientTransport(url));
+}
+const protocolVersion = client.getNegotiatedProtocolVersion();
 
 const short = (s: string) => s.replace(/(nb[fr]1\.)[A-Za-z0-9_-]{12,}/g, (_, p: string) => `${p}<token>`);
 const lines: string[] = [];
@@ -57,12 +70,13 @@ const p4c = await call("check_flow_done", { token: p4a.token, unchecked: [{ item
 const p4d = await call("draft_flow_handoff", { receipt: p4c.receipt });
 expect("DONE_WITH_GAPS and the handoff lists AC01 proof and AC02 not checked", p4c.verdict === "DONE_WITH_GAPS" && /AC01 test, local, accepted/.test(p4d.markdown) && /## Not checked\n- AC02/.test(p4d.markdown));
 
-header("P5", "Model advice from the benchmark", "With NoBrainer Tech Flow: I use Codex and Claude Code. Which model should I use for a terminal-heavy coding task?", "recommend_flow_model", "A top-3 shortlist with quality, cost and time from the pinned benchmark snapshot, its date and the source URL");
-const p5 = await call("recommend_flow_model", { task: "terminal-coding", have: ["codex", "claude-code"] });
+header("P5", "Model advice from the benchmark", "With NoBrainer Tech Flow: I use Codex and Claude Code. Recommend a model using the legacy task Coding.", "recommend_flow_model", "The case-insensitive legacy Coding alias returns task terminal-coding with a nonempty top-3 shortlist, quality, cost and time from the pinned benchmark snapshot, its date, expiry and the source URL");
+const p5 = await call("recommend_flow_model", { task: "Coding", have: ["codex", "claude-code"] });
+expect("legacy Coding maps to terminal-coding with a nonempty shortlist", p5.task === "terminal-coding" && Array.isArray(p5.shortlist) && p5.shortlist.length >= 1);
 expect("shortlist of 1-3 with snapshot date and source", Array.isArray(p5.shortlist) && p5.shortlist.length >= 1 && p5.shortlist.length <= 3 && typeof p5.snapshot === "string" && p5.source === "https://nobrainer.tech/ai/benchmark/");
 
 await client.close();
-server.close();
+await closeServer();
 
 const negative = [
   "## Negative cases (the model should not call Flow tools)",
@@ -80,8 +94,9 @@ const negative = [
 const doc = [
   "# OpenAI review test cases",
   "",
-  `Recorded with \`npm run transcripts\` against a local server (${SERVER_VERSION}, MCP 2026-07-28, official`,
-  "TypeScript SDK client). Tokens are shortened to `<token>`; all other output is exact. The five positive",
+  `Recorded with \`npm run transcripts${inMemory ? " -- --in-memory" : ""}\` (${SERVER_VERSION}, MCP ${protocolVersion}, official`,
+  `TypeScript SDK client; ${inMemory ? "InMemoryTransport with buildServer, no HTTP listener" : "Streamable HTTP against a local server"}).`,
+  "Tokens are shortened to `<token>`; all other output is exact. The five positive",
   "cases cover all six tools. Paste the prompts and expected results into the portal review form.",
   "",
   "## Summary",
@@ -93,4 +108,4 @@ const doc = [
 ].join("\n");
 writeFileSync(new URL("../docs/review/test-cases.md", import.meta.url), `${doc}\n`);
 console.log(checks.join("\n"));
-if (checks.some((c) => c.includes("FAIL"))) process.exit(1);
+if (checks.some((c) => c.startsWith("- FAIL "))) process.exit(1);

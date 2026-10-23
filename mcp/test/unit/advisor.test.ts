@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { AdvisorInputError, recommendFlowModel, snapshotInfo, EXPIRES_AFTER_DAYS } from '../../src/advisor/index.ts';
+import { recommendInput } from '../../src/advisor/schema.ts';
 
 type Entry = { model: string; effort: string | null; quality: number; cost_usd: number | null; seconds: number | null; eligible?: boolean };
 type Out = { task: string; shortlist: Entry[]; note?: string; expired?: boolean; expires?: string | null; why: string | null; snapshot: string; snapshot_sha: string; source: string; cohort: string | null };
 
-const SNAPSHOT_DAY = new Date('2026-10-17T12:00:00Z');
 const SNAPSHOT_FETCHED: string = JSON.parse(readFileSync(new URL('../../data/benchmark/snapshot.json', import.meta.url), 'utf8')).fetched_at;
+const SNAPSHOT_DAY = new Date(Date.parse(SNAPSHOT_FETCHED) + 3600000);
 const run = (input: unknown, now = SNAPSHOT_DAY) => recommendFlowModel(input, now) as unknown as Out;
 const dataUrl = (name: string) => new URL('../../data/benchmark/' + name, import.meta.url);
 const sourceInfo = JSON.parse(readFileSync(dataUrl('SOURCE.json'), 'utf8')) as { snapshot_date: string; snapshot_sha256: string };
@@ -97,16 +98,19 @@ describe('recommend_flow_model notes', () => {
     assert.match(none.note ?? '', /No available model has qualifying writing data/);
   });
 
-  it('withholds Artificial Analysis-derived scores and points to the site', () => {
+  it('routes legacy coding to released terminal measurements without AA-derived data', () => {
     const coding = run({ task: 'coding', have: ['openai', 'anthropic'] });
-    assert.deepEqual(coding.shortlist, []);
-    assert.match(coding.note ?? '', /Artificial Analysis-derived coding scores are not redistributed here; see https:\/\/nobrainer\.tech\/ai\/benchmark\/\. For a shortlist, use task terminal-coding \(Terminal-Bench\)\./);
+    assert.deepEqual(coding, run({ task: 'terminal-coding', have: ['openai', 'anthropic'] }));
+    assert.equal(coding.task, 'terminal-coding');
+    assert.ok(coding.shortlist.length > 0);
+    assert.match(coding.cohort ?? '', /^terminal-bench(?::|$)/);
     const orch = run({ task: 'orchestration', have: ['openai', 'anthropic'] });
     assert.equal(orch.cohort, 'arena-agent');
-    assert.match(orch.note ?? '', /not redistributed here/);
+    assert.ok(orch.shortlist.length > 0);
+    assert.doesNotMatch(orch.note ?? '', /not redistributed here/);
     const text = readFileSync(dataUrl('snapshot.json'), 'utf8');
     assert.ok(!snapshot.rows.some(r => r[7] === 'aa-aligned-v1'), 'no AA-derived rows');
-    assert.doesNotMatch(text, /"ii"|artificialanalysis\.ai\/models/);
+    assert.doesNotMatch(text, /aa-aligned-v1|"withheld(?:_sources)?"|"ii"|artificialanalysis\.ai\/models/);
   });
 
   it('never invents values: unknown time stays null', () => {
@@ -128,8 +132,15 @@ describe('recommend_flow_model input errors', () => {
     });
   });
 
-  it('accepts a differently cased task from direct callers', () => {
-    assert.equal(run({ task: ' Coding ' }).task, 'coding');
+  it('normalizes coding aliases before schema validation and direct ranking', () => {
+    const expected = run({ task: 'terminal-coding', have: ['openai', 'anthropic'] });
+    assert.ok(expected.shortlist.length > 0);
+    for (const task of ['coding', 'Coding', 'CODING', 'cOdInG', ' Coding ', '\tcOdInG\n']) {
+      const parsed = recommendInput.safeParse({ task, have: ['openai', 'anthropic'] });
+      assert.ok(parsed.success, 'recommendInput accepts ' + JSON.stringify(task));
+      assert.equal(parsed.data.task, 'terminal-coding');
+      assert.deepEqual(run({ task, have: ['openai', 'anthropic'] }), expected, JSON.stringify(task));
+    }
   });
 
   it('rejects unknown fields, oversize lists and tasks without data', () => {

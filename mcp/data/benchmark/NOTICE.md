@@ -19,39 +19,13 @@ transformed; the build script shows every step.
 | Model catalog, routes and list prices | models.dev, https://models.dev/api.json | MIT (https://github.com/sst/models.dev LICENSE, checked 2026-10-20) | Prices feed the reference-workload cost estimates. |
 | Own agent telemetry cost and time | NoBrainer aggregated agent-log metadata | NoBrainer data; no prompts or content | Median seconds and list-price USD per action for a fixed reference task size. |
 
-## Withheld data: Artificial Analysis
+## Snapshot scope
 
-The website's coding, orchestration and research tabs also use AA-aligned
-scores derived from Artificial Analysis model comparisons. These are **not**
-included in this snapshot or in tool responses. For those scores, use
-https://nobrainer.tech/ai/benchmark/. Without them, orchestration and research
-rank on the Arena cohorts, and coding returns no shortlist; terminal-coding
-has Terminal-Bench data.
-
-Reason (terms checked 2026-10-20):
-
-- Artificial Analysis Terms of Use, version 1.0, last revised 2024-04-28,
-  https://artificialanalysis.ai/docs/legal/Terms-of-Use.pdf, section 2.1:
-  "a non-transferable, non-exclusive, revocable, limited license to use and
-  access the Site solely for your own personal, noncommercial use." Section 2.2:
-  "you shall not license, sell, rent, lease, transfer, assign, distribute, host,
-  or otherwise commercially exploit the Site, whether in whole or in part, or any
-  content displayed on the Site".
-- Artificial Analysis Data Platform Terms and Conditions, version 1.1, last
-  revised 2026-08-19, https://artificialanalysiscdn.com/legal/ProDataPlatformTerms.pdf
-  (the API documentation says API use is subject to these terms and the Terms of
-  Use). Section 2.3 (all tiers) allows brief citations only if they "do not
-  reproduce Data in a structured, tabular, or machine-readable format".
-  Section 2.4(c): not "Embed or otherwise make raw Data available through any
-  customer-facing product, API, dashboard, or service". Section 2.5: "Customer
-  shall not use the Data to develop, operate, or improve any product or service
-  made available to third parties whose primary purpose is benchmarking,
-  ranking, comparison, competitive intelligence, or model/provider selection
-  guidance, without Company's prior written consent."
-
-A model-selection MCP tool that returns machine-readable scores falls within
-these restrictions, so the AA-derived cohort stays out unless Artificial
-Analysis gives written consent.
+The public benchmark fetched on 2026-10-23 contains no Artificial Analysis data.
+This snapshot includes only its published Arena and Terminal-Bench quality
+measurements, model catalog metadata and aggregated telemetry. The legacy task
+`coding` (case-insensitive) maps to `terminal-coding`, as on the website; it is
+not a separate task or score cohort.
 
 Cost and time figures are per-task reference estimates, source-harness
 measurements or own telemetry. They are not invoices, quotas or predictions of

@@ -20,7 +20,7 @@ Before recording:
 | 1:30-2:20 | P3 False claim | Paste failing pytest output ending `1 failed, 4 passed` and say the tests pass. Show `FAILED`, then the second record `REJECTED` with `COUNTS_MISMATCH`. Caption: "The server checks the runner summary, not the claim." |
 | 2:20-2:50 | P4 Done gate | Paste passing output for AC01 and ask "Is the task done?". Show `NOT_DONE` with AC02 missing and no receipt. |
 | 2:50-3:20 | P4 Gaps and handoff | "Mark AC02 as not checked: no access to the changelog. Then write the handoff." Show `DONE_WITH_GAPS` and the handoff with AC01 proof and AC02 under "Not checked", and the closing line "the server checked consistency, not truth". |
-| 3:20-3:40 | P5 Model advice | "I use Codex. Which model should I use for a coding task?" Show the top-3 shortlist with quality, cost and time, the snapshot date and the benchmark URL. |
+| 3:20-3:40 | P5 Model advice | Paste the P5 prompt from `test-cases.md`. Show the legacy `task: "Coding"` request, the returned `task: "terminal-coding"`, and a nonempty shortlist of up to three models with quality, cost and time, the snapshot date, expiry and benchmark URL. |
 | 3:40-4:00 | Codex continuity | In Codex, in the demo repository, ask it to read `CONTRACT_TOKEN` from the goal file and call `check_flow_done`. Same verdict as in ChatGPT. Caption: "The same contract continues in another client." |
 | 4:00-4:20 | N1-N3 | Ask the three negative prompts. Show direct answers with no Flow tool call; for "Deploy my app" the model says the plugin does not deploy. |
 | 4:20-4:30 | End card | Privacy and terms URLs, repository URL. |
