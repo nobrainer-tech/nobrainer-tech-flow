@@ -11,6 +11,7 @@
 <link rel="alternate" hreflang="pl" href="https://mcp.nobrainer.tech/pl/">
 <link rel="alternate" hreflang="x-default" href="https://mcp.nobrainer.tech/">
 <link rel="stylesheet" href="https://nobrainer.tech/assets/site-header/site-header.css?v=1e2ad6e86c03">
+<link rel="stylesheet" href="/media/prove-it.css?v=1">
 <script src="https://nobrainer.tech/assets/site-header/site-header.js?v=1e2ad6e86c03" defer></script>
 <style>
   @font-face { font-family: "NoBrainer Sans"; src: url("/fonts/NoBrainerSans-var.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
@@ -117,11 +118,19 @@
     .panel { animation-name: fade-in; }
     @keyframes fade-in { from { opacity: 0; } }
   }
+
 </style>
 </head>
 <body>
 <header data-nb-site-header data-nb-product="mcp" data-nb-locale="en" data-nb-language-mode="path" data-nb-en-url="/" data-nb-pl-url="/pl/" data-nb-theme="light"><a class="fallback-brand" href="https://nobrainer.tech/">nobrainer.tech</a></header>
 <main>
+
+  <section class="tv" aria-labelledby="tv-title"><div class="tv-bg" aria-hidden="true"></div><div class="tv-inner">
+    <p class="tv-eyebrow" id="tv-title"><img src="/media/logo-px.png" alt="" width="28" height="28">Episode 1 · PROVE IT</p>
+    <div class="tv-stage"><figure class="screen"><video controls preload="none" playsinline poster="/media/prove-it-poster.jpg" aria-label="PROVE IT music video" data-tv><source src="/media/prove-it.mp4" type="video/mp4"><a href="/media/prove-it.mp4">Download the video</a></video></figure>
+    <div class="cast" aria-hidden="true"><div class="sprite flo"></div><div class="sprite nobi"></div></div></div>
+    <p class="tv-caption">A two-minute song about AI agents that say “done” too early. The verdicts on screen are real responses from this server. Starring Flo and Nobi.</p>
+  </div></section>
 
   <section class="hero">
     <p class="eyebrow rise">NoBrainer Tech Flow · MCP server</p>
@@ -170,6 +179,9 @@
 </main>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  // The PROVE IT cast dances while the video plays.
+  const tv = document.querySelector('[data-tv]');
+  if (tv) ['play', 'pause', 'ended'].forEach((e) => tv.addEventListener(e, () => tv.closest('.tv').classList.toggle('playing', e === 'play')));
   // The shared nobrainer.tech header links its brand and favicon relative to the host.
   const host = document.querySelector('[data-nb-site-header]');
   const brand = host && host.querySelector('.nb-global-brand');
