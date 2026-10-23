@@ -20,8 +20,9 @@ npx nobrainer-tech-flow@2.6.0 --client codex --undo --apply
 ```
 
 Use claude for Claude Code, opencode or copilot for those clients. Add --home PATH
-for an isolated profile. These commands become available once this version is
-published on npm; a source candidate is not registry availability.
+for an isolated profile. The package is published on
+[npm](https://www.npmjs.com/package/nobrainer-tech-flow); each release lists its
+version there.
 
 Application copies the release files into the chosen home directory's
 .nobrainer-tech-flow-npm/2.6.0 and verifies the copy. That folder sits beside
