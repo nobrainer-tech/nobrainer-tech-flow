@@ -16,6 +16,13 @@ credentials, security-sensitive paths, data migrations and irreversible effects 
 an independent review and stay owner-gated. An agent's approval never counts as the
 owner's.
 
+Flow keeps itself updated by default with one line in the instruction block: once a day on
+first use it updates to the latest verified stable release from the canonical source, with
+a backup, changing nothing else. `install_personalization.py --no-auto-update` writes a
+one-line notify-only rule instead. Existing setups keep their choice: the longer lines
+written before 2.6.0 become the matching short line, so an old notify-only setup stays
+notify-only.
+
 `nobrainer-build` gains two rules: complexity for a speculative race or security edge case
 needs a named failure, its likelihood and its cost first, and in user interfaces taglines,
 helper text and secondary labels that explain a screen are treated as slop: fix the layout

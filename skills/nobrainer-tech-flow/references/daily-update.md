@@ -10,8 +10,11 @@ the client is current. A failed network check is `CHECK_FAILED`, not
 `CURRENT`.
 
 When `UPDATE_AVAILABLE`, tell the user the installed and latest version
-and the verified release link. Upgrade only within the owner's recorded
-standing authorization or after approval of the exact reviewed change.
+and the verified release link. The default instruction line ("Once a day on
+first use, update nobrainer-tech-flow...") authorizes this Flow-only upgrade to a
+verified stable release; the opt-out line ("tell the owner... do not update it
+yourself") does not. Otherwise upgrade only after approval of the exact reviewed
+change.
 Before applying, obtain the new release source at a verified immutable ref,
 compare installation targets, run `validate_skills.py --suite`, then dry-run
 `install_skills.py` and `install_personalization.py`. Preserve foreign

@@ -90,8 +90,7 @@ class PersonalizationInstallerTests(unittest.TestCase):
             self.assertIn("$nobrainer-tech-flow", content)
             self.assertIn("MAIN model and effort", content)
             self.assertNotIn("gpt-6-luna", content.lower())
-            self.assertIn("first `nobrainer-tech-flow` use each calendar day", content)
-            self.assertIn("do not apply them automatically", content)
+            self.assertIn("Once a day on first use, update nobrainer-tech-flow", content)
             self.assertIn("Assess context and checkpoint", content)
             self.assertIn("do not restart or archive automatically", content)
             self.assertIn("locate relevant `index.md` entries", content)
@@ -169,30 +168,115 @@ class PersonalizationInstallerTests(unittest.TestCase):
             self.assertIn("must contain WIKI.md", result.stderr)
             self.assertFalse(target.exists())
 
-    def test_auto_update_is_explicit_and_limited_to_safe_verified_flow_updates(self) -> None:
+    def test_updates_are_on_by_default_and_the_opt_out_is_one_line(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw)
-            target = root / "profile.md"
-            default = self.run_installer(
-                "--client", "agents", "--path", str(target), "--apply"
-            )
+            target = Path(raw) / "profile.md"
+            default = self.run_installer("--client", "agents", "--path", str(target), "--apply")
             self.assertEqual(0, default.returncode, default.stderr)
-            self.assertIn("AUTO_UPDATE: CHECK_AND_NOTIFY", default.stdout)
-            default_content = target.read_text(encoding="utf-8")
-            self.assertIn("do not apply them automatically", default_content)
-            self.assertNotIn("standing authorization", default_content.lower())
+            self.assertIn("AUTO_UPDATE: AUTHORIZED_SAFE_VERIFIED_ONLY", default.stdout)
+            content = target.read_text(encoding="utf-8")
+            self.assertTrue(MODULE.has_rule_line(content, MODULE.AUTO_UPDATE_RULE))
+            self.assertEqual(1, content.count("Once a day on first use"))
+            for word in ("verified stable release", "canonical source", "backup", "change nothing else", "ask if unsure"):
+                self.assertIn(word, MODULE.AUTO_UPDATE_RULE)
+            self.assertNotIn("\n", MODULE.AUTO_UPDATE_RULE)
 
-            authorized = self.run_installer(
+            opted_out = self.run_installer(
+                "--client", "agents", "--path", str(target), "--no-auto-update", "--apply"
+            )
+            self.assertEqual(0, opted_out.returncode, opted_out.stderr)
+            self.assertIn("AUTO_UPDATE: CHECK_AND_NOTIFY", opted_out.stdout)
+            content = target.read_text(encoding="utf-8")
+            self.assertTrue(MODULE.has_rule_line(content, MODULE.NOTIFY_UPDATE_RULE))
+            self.assertFalse(MODULE.has_rule_line(content, MODULE.AUTO_UPDATE_RULE))
+
+            # --auto-update stays accepted for older commands and means the default.
+            compatible = self.run_installer(
                 "--client", "agents", "--path", str(target), "--auto-update", "--apply"
             )
-            self.assertEqual(0, authorized.returncode, authorized.stderr)
+            self.assertEqual(0, compatible.returncode, compatible.stderr)
+            self.assertTrue(MODULE.has_rule_line(target.read_text(encoding="utf-8"), MODULE.AUTO_UPDATE_RULE))
+
+            both = self.run_installer(
+                "--client", "agents", "--path", str(target), "--auto-update", "--no-auto-update"
+            )
+            self.assertEqual(2, both.returncode)
+
+    def test_keep_options_migrates_pre_2_6_update_lines_and_keeps_the_choice(self) -> None:
+        cases = (
+            (MODULE.LEGACY_AUTO_UPDATE_RULE, MODULE.AUTO_UPDATE_RULE, "AUTHORIZED_SAFE_VERIFIED_ONLY", None),
+            (MODULE.LEGACY_NOTIFY_UPDATE_RULE, MODULE.NOTIFY_UPDATE_RULE, "CHECK_AND_NOTIFY", "notify-only updates"),
+            (MODULE.AUTO_UPDATE_RULE + "  ", MODULE.AUTO_UPDATE_RULE, "AUTHORIZED_SAFE_VERIFIED_ONLY", None),
+            # An edited or unknown update line keeps notifying: a grant is never inferred.
+            (MODULE.LEGACY_NOTIFY_UPDATE_RULE + "  ", MODULE.NOTIFY_UPDATE_RULE, "CHECK_AND_NOTIFY", "notify-only updates"),
+            (MODULE.LEGACY_NOTIFY_UPDATE_RULE.replace("supported check", "supported\n  check"),
+             MODULE.NOTIFY_UPDATE_RULE, "CHECK_AND_NOTIFY", "notify-only updates"),
+        )
+        for legacy, current, status, kept in cases:
+            with self.subTest(legacy=legacy[:60]), tempfile.TemporaryDirectory() as raw:
+                target = Path(raw) / "profile.md"
+                old_block = MODULE.build_block(None, True, False).replace(MODULE.AUTO_UPDATE_RULE, legacy)
+                target.write_text("# Mine\n\n" + old_block + "\n", encoding="utf-8")
+                migrated = self.run_installer(
+                    "--client", "agents", "--path", str(target), "--keep-options", "--apply"
+                )
+                self.assertEqual(0, migrated.returncode, migrated.stderr)
+                self.assertIn("AUTO_UPDATE: " + status, migrated.stdout)
+                content = target.read_text(encoding="utf-8")
+                self.assertTrue(MODULE.has_rule_line(content, current))
+                self.assertNotIn(legacy, content)
+                self.assertTrue(content.startswith("# Mine\n"))
+                if kept:
+                    self.assertIn("KEPT_OPTIONS: " + kept, migrated.stdout)
+                else:
+                    self.assertNotIn("KEPT_OPTIONS", migrated.stdout)
+                again = self.run_installer(
+                    "--client", "agents", "--path", str(target), "--keep-options", "--apply"
+                )
+                self.assertEqual(0, again.returncode, again.stderr)
+                self.assertIn("UNCHANGED", again.stdout)
+                self.assertEqual(content, target.read_text(encoding="utf-8"))
+
+    def test_an_edited_update_grant_is_not_kept_and_the_run_says_so(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            target = Path(raw) / "profile.md"
+            edited = MODULE.AUTO_UPDATE_RULE.replace("ask if unsure", "ask when unsure")
+            block = MODULE.build_block(None, True, False).replace(MODULE.AUTO_UPDATE_RULE, edited)
+            target.write_text(block + "\n", encoding="utf-8")
+            result = self.run_installer("--client", "agents", "--path", str(target), "--keep-options", "--apply")
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertIn("AUTO_UPDATE: CHECK_AND_NOTIFY", result.stdout)
+            self.assertIn("pass --auto-update to grant it again", result.stdout)
+            self.assertTrue(MODULE.has_rule_line(target.read_text(encoding="utf-8"), MODULE.NOTIFY_UPDATE_RULE))
+
+    def test_a_preference_quoting_the_notify_wording_does_not_change_the_update_choice(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            target = Path(raw) / "profile.md"
+            preference = "tell the owner when a newer stable nobrainer-tech-flow release exists"
+            first = self.run_installer(
+                "--client", "agents", "--path", str(target), "--preferences", preference, "--apply"
+            )
+            self.assertEqual(0, first.returncode, first.stderr)
+            kept = self.run_installer("--client", "agents", "--path", str(target), "--keep-options", "--apply")
+            self.assertEqual(0, kept.returncode, kept.stderr)
             content = target.read_text(encoding="utf-8")
-            self.assertIn("standing authorization", content)
-            self.assertIn("canonical source/version", content)
-            self.assertIn("reviewing the exact changes", content)
-            self.assertIn("`nobrainer-tech-flow`-only update", content)
-            self.assertIn("If the client is inactive", content)
-            self.assertIn("AUTO_UPDATE: AUTHORIZED_SAFE_VERIFIED_ONLY", authorized.stdout)
+            self.assertTrue(MODULE.has_rule_line(content, MODULE.AUTO_UPDATE_RULE))
+            self.assertIn(preference, content)
+
+    def test_an_explicit_flag_overrides_the_saved_update_choice(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            target = Path(raw) / "profile.md"
+            self.run_installer("--client", "agents", "--path", str(target), "--no-auto-update", "--apply")
+            switched = self.run_installer(
+                "--client", "agents", "--path", str(target), "--keep-options", "--auto-update", "--apply"
+            )
+            self.assertEqual(0, switched.returncode, switched.stderr)
+            self.assertTrue(MODULE.has_rule_line(target.read_text(encoding="utf-8"), MODULE.AUTO_UPDATE_RULE))
+            back = self.run_installer(
+                "--client", "agents", "--path", str(target), "--keep-options", "--no-auto-update", "--apply"
+            )
+            self.assertEqual(0, back.returncode, back.stderr)
+            self.assertTrue(MODULE.has_rule_line(target.read_text(encoding="utf-8"), MODULE.NOTIFY_UPDATE_RULE))
 
     def test_session_restart_authority_is_opt_in_and_evidence_gated(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -465,7 +549,7 @@ class PersonalizationInstallerTests(unittest.TestCase):
                 "--client", "agents", "--path", str(target), "--keep-options", "--apply"
             )
             self.assertEqual(0, kept.returncode, kept.stderr)
-            self.assertIn("KEPT_OPTIONS: auto-update, session-restart, wiki-root", kept.stdout)
+            self.assertIn("KEPT_OPTIONS: session-restart, wiki-root", kept.stdout)
             self.assertIn("UNCHANGED", kept.stdout)
             self.assertEqual(granted, target.read_text(encoding="utf-8"))
 
@@ -473,7 +557,7 @@ class PersonalizationInstallerTests(unittest.TestCase):
             reset = self.run_installer(
                 "--client", "agents", "--path", str(target), "--apply"
             )
-            self.assertIn("AUTO_UPDATE: CHECK_AND_NOTIFY", reset.stdout)
+            self.assertIn("AUTO_UPDATE: AUTHORIZED_SAFE_VERIFIED_ONLY", reset.stdout)
             self.assertNotIn("standing authorization", target.read_text(encoding="utf-8"))
 
     def test_keep_options_drops_a_wiki_that_no_longer_exists_and_accepts_new_grants(self) -> None:
@@ -496,10 +580,10 @@ class PersonalizationInstallerTests(unittest.TestCase):
             )
             self.assertEqual(0, second.returncode, second.stderr)
             self.assertIn("no longer contains WIKI.md", second.stdout)
-            self.assertIn("KEPT_OPTIONS: auto-update", second.stdout)
+            self.assertNotIn("KEPT_OPTIONS", second.stdout)
             content = target.read_text(encoding="utf-8")
             self.assertIn("grants standing authorization for session rotation", content)
-            self.assertIn("standing authorization to apply", content)
+            self.assertTrue(MODULE.has_rule_line(content, MODULE.AUTO_UPDATE_RULE))
             self.assertIn("discover whether a relevant wiki exists", content)
 
     def test_block_has_no_stray_blank_line_with_or_without_a_preference(self) -> None:
@@ -550,7 +634,7 @@ class PersonalizationInstallerTests(unittest.TestCase):
                     )
                     self.assertEqual(0, kept.returncode, kept.stderr)
                     self.assertNotIn("KEPT_OPTIONS", kept.stdout)
-                    self.assertIn("AUTO_UPDATE: CHECK_AND_NOTIFY", kept.stdout + first.stdout)
+                    self.assertIn("AUTO_UPDATE: AUTHORIZED_SAFE_VERIFIED_ONLY", kept.stdout + first.stdout)
                     content = target.read_text(encoding="utf-8")
                     self.assertNotIn("Create the successor, verify exact takeover", content)
                     self.assertNotIn("Never apply destructive, unrelated, or uncertain changes", content)

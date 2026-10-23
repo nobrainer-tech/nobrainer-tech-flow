@@ -736,9 +736,9 @@ class GuidedOnboardingTests(unittest.TestCase):
                 "--preferences", "Answer in Polish.", "--apply",
             )
             self.assertEqual(0, applied.returncode, applied.stderr)
-            self.assertIn("KEPT_OPTIONS: auto-update, session-restart", applied.stdout)
+            self.assertIn("KEPT_OPTIONS: session-restart", applied.stdout)
             content = instruction.read_text(encoding="utf-8")
-            self.assertIn("standing authorization to apply", content)
+            self.assertIn("Once a day on first use, update nobrainer-tech-flow", content)
             self.assertIn("standing authorization for session rotation", content)
             self.assertIn("Answer in Polish.", content)
 

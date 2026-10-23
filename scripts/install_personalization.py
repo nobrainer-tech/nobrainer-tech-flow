@@ -27,10 +27,17 @@ LEGACY_FLOW_INSTRUCTIONS = re.compile(
     r"\bnobrainer-ultra\b|^\s*#{1,6}\s+NoBrainer(?:[ .]?Tech)?\s+Flow\b",
     re.IGNORECASE | re.MULTILINE,
 )
-# The two lines that carry a standing authorization. --keep-options recognises a grant
+# The lines that carry a standing authorization. --keep-options recognises a grant
 # only as one of these exact lines, never as a phrase somewhere in the block, so free
 # text in a preference cannot forge one.
-AUTO_UPDATE_RULE = "- On the first `nobrainer-tech-flow` use each calendar day, check for a safe verified update when this client exposes a supported check. This setting grants standing authorization to apply a `nobrainer-tech-flow`-only update after verifying the canonical source/version, reviewing the exact changes, and making a recoverable backup. Never apply destructive, unrelated, or uncertain changes; ask the owner first. If the client is inactive or cannot check, do not claim a check occurred."
+AUTO_UPDATE_RULE = "- Once a day on first use, update nobrainer-tech-flow to its latest verified stable release from the canonical source, with a backup; change nothing else and ask if unsure."
+# The opt-out written by --no-auto-update.
+NOTIFY_UPDATE_RULE = "- Once a day on first use, tell the owner when a newer stable nobrainer-tech-flow release exists; do not update it yourself."
+# Lines written before 2.6.0. --keep-options maps them to the short rules above and
+# keeps the owner's choice: the old grant stays a grant, the old notify-only default
+# stays notify-only.
+LEGACY_AUTO_UPDATE_RULE = "- On the first `nobrainer-tech-flow` use each calendar day, check for a safe verified update when this client exposes a supported check. This setting grants standing authorization to apply a `nobrainer-tech-flow`-only update after verifying the canonical source/version, reviewing the exact changes, and making a recoverable backup. Never apply destructive, unrelated, or uncertain changes; ask the owner first. If the client is inactive or cannot check, do not claim a check occurred."
+LEGACY_NOTIFY_UPDATE_RULE = "- On the first `nobrainer-tech-flow` use each calendar day, check for available updates when this client exposes a supported check and notify the owner; do not apply them automatically. If the client is inactive or cannot check, do not claim a check occurred."
 AUTO_SESSION_RULE = "- This setting grants standing authorization for session rotation only when the host supports creating a fresh successor, context or checkpoint evidence warrants rotation, and no write is in flight. Create the successor, verify exact takeover by ID/readback, and archive the old session only after that readback. Do not create recursive visible workers or claim a restart when unsupported."
 
 
@@ -55,6 +62,28 @@ def earlier_grant(existing: str, rule: str, phrase: str, label: str, flag: str) 
             f"matches what this installer writes; pass {flag} to grant it again"
         )
     return False
+
+
+# Wording of an update grant, current or pre-2.6, used only to warn that an edited one
+# was not kept.
+UPDATE_GRANT_PHRASES = (
+    "update nobrainer-tech-flow to its latest verified stable release",
+    "grants standing authorization to apply a `nobrainer-tech-flow`-only update",
+)
+
+
+def saved_update_choice(existing: str) -> bool:
+    """True only when an existing block holds an update grant as its own line.
+
+    Anything else, a notify-only line, an edited or unknown one, keeps notifying:
+    an update grant is never inferred. Trailing spaces on the line are ignored, and
+    a preference that quotes the wording is not a line of its own.
+    """
+
+    return any(
+        re.search(r"(?m)^" + re.escape(rule) + r"[ \t]*\r?$", existing) is not None
+        for rule in (AUTO_UPDATE_RULE, LEGACY_AUTO_UPDATE_RULE)
+    )
 
 
 def unsafe_line(value: str) -> bool:
@@ -85,11 +114,7 @@ def build_block(
         if wiki_root is not None
         else "- At project start, discover whether a relevant wiki exists. If one exists, read its `WIKI.md`, locate relevant `index.md` entries with a targeted search, then read only the relevant pages. Ask before creating a wiki unless project rules or prior authorization already settle it."
     )
-    update_rule = (
-        AUTO_UPDATE_RULE
-        if auto_update
-        else "- On the first `nobrainer-tech-flow` use each calendar day, check for available updates when this client exposes a supported check and notify the owner; do not apply them automatically. If the client is inactive or cannot check, do not claim a check occurred."
-    )
+    update_rule = AUTO_UPDATE_RULE if auto_update else NOTIFY_UPDATE_RULE
     session_rule = (
         AUTO_SESSION_RULE
         if auto_session_restart
@@ -356,10 +381,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         help="project wiki root containing WIKI.md; its resolved path is added to the managed instructions",
     )
-    parser.add_argument(
+    updates = parser.add_mutually_exclusive_group()
+    updates.add_argument(
         "--auto-update",
         action="store_true",
-        help="authorize safe, verified nobrainer-tech-flow-only updates; default is check and notify",
+        help="update nobrainer-tech-flow once a day from its verified stable releases (the default)",
+    )
+    updates.add_argument(
+        "--no-auto-update",
+        action="store_true",
+        help="only tell the owner about a newer stable release; never update automatically",
     )
     parser.add_argument(
         "--auto-session-restart",
@@ -374,7 +405,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--keep-options",
         action="store_true",
         help=(
-            "keep the auto-update, session-restart and wiki-root settings already in the "
+            "keep the update, session-restart and wiki-root settings already in the "
             "managed block; flags given on this run are added to them, never removed"
         ),
     )
@@ -429,15 +460,19 @@ def main(argv: list[str] | None = None) -> int:
             saved = SAVED_PREFERENCE.search(existing)
             if saved:
                 preferences = saved.group(1)
-        auto_update = args.auto_update
+        auto_update = not args.no_auto_update
         auto_session_restart = args.auto_session_restart
         if args.keep_options and existing:
             kept: list[str] = []
-            if not auto_update and earlier_grant(
-                existing, AUTO_UPDATE_RULE, "grants standing authorization to apply", "auto-update", "--auto-update"
-            ):
-                auto_update = True
-                kept.append("auto-update")
+            saved_update = saved_update_choice(existing)
+            if not (args.auto_update or args.no_auto_update) and not saved_update:
+                auto_update = False
+                kept.append("notify-only updates")
+                if any(phrase in existing for phrase in UPDATE_GRANT_PHRASES):
+                    print(
+                        "NOTE: an earlier update authorization was not kept because its line no longer "
+                        "matches what this installer writes; pass --auto-update to grant it again"
+                    )
             if not auto_session_restart and earlier_grant(
                 existing,
                 AUTO_SESSION_RULE,

@@ -1,7 +1,7 @@
 """The no-Python installer, scripts/install.sh, against the real scripts and a private home.
 
 It must behave like scripts/install.py: same locations and variables, same conflict
-rule, the same setup record (either one undoes the other), no authorization granted,
+rule, the same setup record (either one undoes the other), no update grant inferred,
 and the instruction block byte for byte what the Python helper writes.
 """
 
@@ -47,7 +47,7 @@ SKILLS_MODULE = load("install_skills_for_shell_tests", ROOT / "scripts" / "insta
 PERSONALIZATION_MODULE = load("personalization_for_shell_tests", PERSONALIZATION)
 SKILLS = sorted(SKILLS_MODULE.CURATED_SKILLS)
 
-DEFAULT_BLOCK = PERSONALIZATION_MODULE.build_block(None, False, False, None)
+DEFAULT_BLOCK = PERSONALIZATION_MODULE.build_block(None, True, False, None)
 # The block an earlier version wrote: the same, with one sentence worded differently.
 STALE_BLOCK = DEFAULT_BLOCK.replace(" Keep coordination in MAIN.", " Keep coordination in MAIN, always.")
 # The default block 2.3.1 wrote, which also named the private nobrainer-ak skill.
@@ -394,6 +394,27 @@ class ShellInstallerTests(unittest.TestCase):
                         self.assertEqual([target], list(skills.iterdir()))
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
+    def test_a_pre_2_6_notify_only_block_is_replaced_and_keeps_notifying(self) -> None:
+        notify = PERSONALIZATION_MODULE.LEGACY_NOTIFY_UPDATE_RULE
+        # The second line was wrapped by hand: no installer recognizes it, so none may grant updates.
+        wrapped = notify.replace("supported check", "supported\n  check")
+        for line, installer in ((notify, "sh"), (notify, "py"), (wrapped, "sh"), (wrapped, "py")):
+            legacy = DEFAULT_BLOCK.replace(PERSONALIZATION_MODULE.AUTO_UPDATE_RULE, line)
+            self.assertNotEqual(legacy, DEFAULT_BLOCK)
+            with self.subTest(installer=installer, wrapped=line is wrapped), tempfile.TemporaryDirectory() as temp:
+                home = Path(temp) / "home"
+                instructions = home / ".claude" / "CLAUDE.md"
+                instructions.parent.mkdir(parents=True)
+                instructions.write_text("# Mine\n\n" + legacy + "\n", encoding="utf-8")
+                flags = ("--client", "claude", "--home", str(home), "--apply")
+                result = run_sh(*flags, home=home) if installer == "sh" else run_py(str(INSTALL_PY), *flags, home=home)
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                content = instructions.read_text(encoding="utf-8")
+                self.assertIn(PERSONALIZATION_MODULE.NOTIFY_UPDATE_RULE + "\n", content)
+                self.assertNotIn(line, content)
+                self.assertNotIn(PERSONALIZATION_MODULE.AUTO_UPDATE_RULE, content)
+                self.assertTrue(content.startswith("# Mine\n"))
+
     def test_the_block_it_writes_is_byte_for_byte_the_python_default(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
@@ -402,7 +423,7 @@ class ShellInstallerTests(unittest.TestCase):
             result = run_sh("--client", "codex", "--home", str(home), "--apply", home=home)
 
             self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-            expected = PERSONALIZATION_MODULE.build_block(None, False, False, None).encode("utf-8")
+            expected = PERSONALIZATION_MODULE.build_block(None, True, False, None).encode("utf-8")
             self.assertEqual(expected, (home / ".codex" / "AGENTS.md").read_bytes())
             again = run_py(str(PERSONALIZATION), "--client", "codex", "--home", str(home), home=home)
             self.assertIn("UNCHANGED: managed block is current", again.stdout)
@@ -418,7 +439,7 @@ class ShellInstallerTests(unittest.TestCase):
             self.assertEqual([], entries(home))
             self.assertIn(f"SKILLS: {len(SKILLS)} to link into", result.stdout)
             self.assertIn(f"+{START}", result.stdout)
-            self.assertIn("AUTO_UPDATE: CHECK_AND_NOTIFY", result.stdout)
+            self.assertIn("AUTO_UPDATE: AUTHORIZED_SAFE_VERIFIED_ONLY", result.stdout)
             self.assertIn("NO_CHANGES:", result.stdout)
             self.assertRegex(result.stdout, r"install with: sh \S*install\.sh --client claude --apply --home ")
 
@@ -1339,13 +1360,13 @@ class ShellInstallerTests(unittest.TestCase):
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
     def test_a_block_that_cannot_be_replaced_without_losing_something_is_left_as_it_is(self) -> None:
         preference = "- Owner-approved setup preference: Answer in Polish.\n"
-        stale_with_grant = PERSONALIZATION_MODULE.build_block(None, True, False, None).replace(
+        stale_with_grant = PERSONALIZATION_MODULE.build_block(None, True, True, None).replace(
             " Keep coordination in MAIN.", " Keep coordination in MAIN, always."
         )
         cases = {
             "a preference": STALE_BLOCK.replace("- Use `nobrainer-writing`", preference + "- Use `nobrainer-writing`").encode(),
             "a standing authorization": stale_with_grant.encode(),
-            "a saved wiki root": PERSONALIZATION_MODULE.build_block(Path("/wiki"), False, False, None).replace(
+            "a saved wiki root": PERSONALIZATION_MODULE.build_block(Path("/wiki"), True, False, None).replace(
                 " Keep coordination in MAIN.", " Keep coordination in MAIN, always."
             ).encode(),
             "a start marker in the middle of a line": b"# Mine\ntext " + START.encode() + b"\nbody\n<!-- NOBRAINER-TECH-FLOW:END -->\n",
@@ -1409,7 +1430,7 @@ class ShellInstallerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
             granted = run_py(
-                str(PERSONALIZATION), "--client", "claude", "--home", str(home), "--auto-update", "--apply", home=home,
+                str(PERSONALIZATION), "--client", "claude", "--home", str(home), "--no-auto-update", "--apply", home=home,
             )
             self.assertEqual(0, granted.returncode, granted.stderr)
             instructions = home / ".claude" / "CLAUDE.md"
@@ -1432,8 +1453,8 @@ class ShellInstallerTests(unittest.TestCase):
             self.assertEqual(0, undone.returncode, undone.stdout + undone.stderr)
             self.assertFalse(skills.exists())
             content = instructions.read_text(encoding="utf-8")
-            # The block the file held before the first setup comes back, grant and all.
-            self.assertIn("grants standing authorization to apply", content)
+            # The block the file held before the first setup comes back, opt-out and all.
+            self.assertIn("tell the owner when a newer stable nobrainer-tech-flow release exists", content)
             self.assertIn("# Mine now", content)
             self.assertEqual(1, content.count(START))
             self.assertNotEqual(original, instructions.read_bytes())

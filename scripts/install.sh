@@ -4,7 +4,8 @@
 # Same flags, locations, conflict rule and setup record as scripts/install.py, so
 # either one can undo what the other did. Every run previews until --apply. The
 # skills are linked to this checkout (never copied), one managed instruction block
-# is added, and no standing authorization is ever granted. A managed block that is
+# is added. Its only standing authorization is the default daily update of Flow itself;
+# an existing block keeps notifying unless it already held that line. A managed block that is
 # already there is replaced by this version's text when it differs, and everything
 # outside the two markers stays byte for byte, as install.py does. One difference: a
 # block that carries options (a standing authorization, a wiki root or a preference)
@@ -47,6 +48,12 @@ SEPARATORS=$(printf '\342\200[\250\251]')
 TAB=$(printf '\t')
 CR=$(printf '\r')
 
+# The update line of the block: on by default; an existing block that only notifies
+# (written with --no-auto-update, or the default before 2.6.0) keeps notifying.
+AUTO_UPDATE_LINE='- Once a day on first use, update nobrainer-tech-flow to its latest verified stable release from the canonical source, with a backup; change nothing else and ask if unsure.'
+NOTIFY_UPDATE_LINE='- Once a day on first use, tell the owner when a newer stable nobrainer-tech-flow release exists; do not update it yourself.'
+update_line=$AUTO_UPDATE_LINE
+
 # The block scripts/install_personalization.py writes without options, byte for byte
 # (a test compares them).
 block() {
@@ -61,7 +68,9 @@ block() {
 - Derive short-term goals from the user's long-term direction (LDD) and define observable completion criteria. At project start, inspect the existing structure and layers, then recommend a fitting approach.
 - At project start, discover whether a relevant wiki exists. If one exists, read its `WIKI.md`, locate relevant `index.md` entries with a targeted search, then read only the relevant pages. Ask before creating a wiki unless project rules or prior authorization already settle it.
 - Assess context and checkpoint at appropriate milestones. Recommend session rotation when it would help; do not restart or archive automatically. When rotation is authorized, use the supported lifecycle, verify exact successor takeover by ID/readback, and archive the old session only after that readback. Do not create recursive visible workers or claim a restart when unsupported.
-- On the first `nobrainer-tech-flow` use each calendar day, check for available updates when this client exposes a supported check and notify the owner; do not apply them automatically. If the client is inactive or cannot check, do not claim a check occurred.
+EOF
+	printf '%s\n' "$update_line"
+	cat <<'EOF'
 - Use `nobrainer-writing` for material writing when available; make technical documentation concrete, source-backed, and technically verified. Preserve facts, use the user's language, and verify at the actual delivery layer.
 <!-- NOBRAINER-TECH-FLOW:END -->
 EOF
@@ -806,6 +815,12 @@ plan_instructions() {
 		die 3 "malformed or duplicated nobrainer-tech-flow managed markers in $target"
 	fi
 	file_status=present
+	# An existing block keeps updating only when it holds the update line as its own line;
+	# a notify-only, edited or unknown line keeps notifying, so no grant is ever inferred.
+	if block_lines "$target" && ! head -n "$block_to" "$target" | tail -n "+$block_from" |
+		LC_ALL=C sed 's/[[:space:]]*$//' | grep -a -q -x -F -e "$AUTO_UPDATE_LINE"; then
+		update_line=$NOTIFY_UPDATE_LINE
+	fi
 	# A block of an earlier version is brought up to date, but only one that can be replaced
 	# without losing anything: its markers stand on lines of their own, and it holds no option.
 	if ! block_is_default && block_lines "$target" && ! block_has_options; then
@@ -827,6 +842,10 @@ block_lines() {
 	[ "$block_from" -lt "$block_to" ]
 }
 
+update_status() {
+	if [ "$update_line" = "$NOTIFY_UPDATE_LINE" ]; then echo CHECK_AND_NOTIFY; else echo AUTHORIZED_SAFE_VERIFIED_ONLY; fi
+}
+
 block_is_default() {
 	block_lines "$target" || return 1
 	_b_text=$(head -n "$block_to" "$target" | tail -n "+$block_from")
@@ -836,7 +855,7 @@ block_is_default() {
 }
 
 # block_has_options: the block block_lines found in $target carries something the owner
-# chose: a standing authorization, a wiki root or a preference. Only install.py and
+# chose: a pre-2.6 standing authorization, a wiki root or a preference. Only install.py and
 # scripts/install_personalization.py --keep-options carry those over to a new block.
 block_has_options() {
 	head -n "$block_to" "$target" | tail -n "+$block_from" |
@@ -873,7 +892,7 @@ preview() {
 		elif [ "$file_status" = refresh ]; then
 			block_lines "$target"
 			say "UPDATE: nobrainer-tech-flow personalization block"
-			say "AUTO_UPDATE: CHECK_AND_NOTIFY"
+			say "AUTO_UPDATE: $(update_status)"
 			say "AUTO_SESSION_RESTART: ASSESS_CHECKPOINT_RECOMMEND"
 			say "PRESERVED: content outside the managed block"
 			say "DIFF:"
@@ -881,7 +900,7 @@ preview() {
 			block | sed 's/^/+/'
 		else
 			say "MISSING: nobrainer-tech-flow personalization block"
-			say "AUTO_UPDATE: CHECK_AND_NOTIFY"
+			say "AUTO_UPDATE: $(update_status)"
 			say "AUTO_SESSION_RESTART: ASSESS_CHECKPOINT_RECOMMEND"
 			say "DIFF:"
 			block | sed 's/^/+/'
