@@ -1,7 +1,7 @@
 {
-  "flow_version": "2.5.0",
-  "tag": "v2.5.0",
-  "commit": "107ebd19ed83741aecc21fc8e7dba14430454650",
+  "flow_version": "2.6.0",
+  "tag": "v2.6.0",
+  "commit": "8979622c28ec3f0149c758913c27385591531b89",
   "repo": "https://github.com/nobrainer-tech/nobrainer-tech-flow",
   "modules": [
     "nobrainer-auto-fine-tune",
@@ -156,6 +156,7 @@
         "Then release only that unit's proven ownership, recompute readiness and dispatch newly ready work without waiting for unrelated slow workers.",
         "A worker's report, exit code or self-score does not accept its artifact.",
         "Do not duplicate a unit after an uncertain send or timeout.",
+        "When a batch partly fails, resend only the failed units with their new evidence; never rerun the accepted ones.",
         "A waiting, suspended or uncertain worker has a stated reason and a bounded next observation in the current tracker."
       ],
       "source": "skills/nobrainer-tech-flow/references/delivery.md#coordinated-team-execution",
@@ -237,9 +238,9 @@
       "rules": [
         "If a missing requirement changes architecture, scope, public behavior or safety, stop at `SPEC_CHANGE_PROPOSED`; do not invent it inside the patch.",
         "A new shared abstraction requires two real current callers or an explicit acceptance contract that needs the boundary.",
+        "Before adding complexity for a speculative race or security edge case, name the concrete failure, its likelihood and the cost; add it only when that case is accepted.",
         "For a behavior change, create a failing proof before implementation when it is feasible and reliable.",
-        "Every fix invalidates earlier evidence for the changed path and must be rechecked.",
-        "Report `FINISHED` only when the approved work unit and required evidence pass."
+        "Every fix invalidates earlier evidence for the changed path and must be rechecked."
       ],
       "source": "skills/nobrainer-build/SKILL.md#nobrainer-build",
       "full": "Full module: install the Flow skills from https://github.com/nobrainer-tech/nobrainer-tech-flow"
