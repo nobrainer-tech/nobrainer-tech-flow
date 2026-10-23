@@ -14,14 +14,16 @@
     "build:content": "node scripts/build-content.ts",
     "check:content": "node scripts/build-content.ts --check",
     "refresh:benchmark": "node scripts/build-benchmark-snapshot.mjs",
-    "test": "npm run typecheck && npm run check:content && node --test \"test/**/*.test.ts\"",
+    "test": "npm run typecheck && npm run check:content && npm run check:landing && node --test \"test/**/*.test.ts\"",
     "serve": "node scripts/serve.ts",
     "smoke": "node scripts/smoke.ts",
     "transcripts": "node scripts/record-transcripts.ts",
     "plugin": "node scripts/build-plugin.ts",
     "check:output": "node scripts/check-output.mjs",
     "conformance": "node scripts/conformance.ts",
-    "check:bundle": "node scripts/check-bundle.mjs"
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "build:landing": "node scripts/build-landing.mjs",
+    "check:landing": "node scripts/build-landing.mjs --check"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.3.1",

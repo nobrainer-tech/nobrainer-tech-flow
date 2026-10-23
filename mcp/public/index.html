@@ -6,6 +6,12 @@
 <title>NoBrainer Tech Flow MCP</title>
 <meta name="description" content="Remote MCP server for NoBrainer Tech Flow: one task contract, evidence check and done gate in every MCP client.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath d='M126 0H476A36 36 0 0 1 512 36V386A126 126 0 0 1 386 512H36A36 36 0 0 1 0 476V126A126 126 0 0 1 126 0Z' fill='%233B65F0'/%3E%3Cpath d='M384 384H121A24 24 0 0 1 97 358A288 288 0 0 1 358 97A24 24 0 0 1 384 121Z' fill='%23FFF7EC'/%3E%3Crect x='240' y='240' width='104' height='104' fill='%23F04A14'/%3E%3C/svg%3E">
+<link rel="canonical" href="https://mcp.nobrainer.tech/">
+<link rel="alternate" hreflang="en" href="https://mcp.nobrainer.tech/">
+<link rel="alternate" hreflang="pl" href="https://mcp.nobrainer.tech/pl/">
+<link rel="alternate" hreflang="x-default" href="https://mcp.nobrainer.tech/">
+<link rel="stylesheet" href="https://nobrainer.tech/assets/site-header/site-header.css?v=ac98a43d8bae">
+<script src="https://nobrainer.tech/assets/site-header/site-header.js?v=ac98a43d8bae" defer></script>
 <style>
   @font-face { font-family: "NoBrainer Sans"; src: url("/fonts/NoBrainerSans-var.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
   :root { --blue: #3B65F0; --orange: #F04A14; --cream: #FFF7EC; --ink: #14161c; --muted: #4a4f5c; --line: #e6e1d8; --green: #1f8a4c; --red: #c0331a; color-scheme: light; }
@@ -13,10 +19,10 @@
   html { scroll-behavior: smooth; }
   body { margin: 0; background: var(--cream); color: var(--ink); font: 16px/1.55 "NoBrainer Sans", system-ui, -apple-system, "Segoe UI", sans-serif; overflow-x: hidden; }
   main { max-width: 880px; margin: 0 auto; padding: 32px 16px 64px; }
-  header { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 18px; }
-  header svg { width: 36px; height: 36px; flex: none; }
-  header span b { color: var(--blue); }
-  .hero { padding: 48px 0 8px; }
+  .fallback-brand { display: block; max-width: 880px; margin: 0 auto; padding: 16px; font-weight: 800; color: var(--ink); text-decoration: none; }
+  .nb-global-theme { display: none !important; }
+  .eyebrow { margin: 0 0 14px; font-weight: 700; font-size: 15px; color: var(--blue); letter-spacing: 0.02em; }
+  .hero { padding: 32px 0 8px; }
   .hero h1 { font-size: clamp(36px, 7vw, 64px); line-height: 1.02; letter-spacing: -0.03em; margin: 0; }
   .hero h1 .done { display: inline-block; position: relative; }
   .hero h1 .prove { color: var(--blue); background: linear-gradient(var(--orange), var(--orange)) no-repeat 0 92% / 0% 8px; animation: underline 0.9s 0.6s ease-out forwards; }
@@ -114,10 +120,11 @@
 </style>
 </head>
 <body>
+<header data-nb-site-header data-nb-product="mcp" data-nb-locale="en" data-nb-language-mode="path" data-nb-en-url="/" data-nb-pl-url="/pl/" data-nb-theme="light"><a class="fallback-brand" href="https://nobrainer.tech/">nobrainer.tech</a></header>
 <main>
-  <header><svg viewBox="0 0 512 512" aria-hidden="true"><path d="M126 0H476A36 36 0 0 1 512 36V386A126 126 0 0 1 386 512H36A36 36 0 0 1 0 476V126A126 126 0 0 1 126 0Z" fill="#3B65F0"/><path d="M384 384H121A24 24 0 0 1 97 358A288 288 0 0 1 358 97A24 24 0 0 1 384 121Z" fill="#FFF7EC"/><rect x="240" y="240" width="104" height="104" fill="#F04A14"/></svg><span>NoBrainer Tech Flow <b>MCP server</b></span></header>
 
   <section class="hero">
+    <p class="eyebrow rise">NoBrainer Tech Flow · MCP server</p>
     <h1 class="rise">Your agent says <span class="done">“Done.”</span><br><span class="prove">Now it has to prove it.</span></h1>
     <p class="rise">One task contract, one evidence check and one done gate, the same in every MCP client. Free and stateless: no accounts, no stored task content, no AI model.</p>
     <div class="rise"><span class="tag">Endpoint</span> Streamable HTTP, no sign-in<div class="copy"><pre><code>https://mcp.nobrainer.tech/mcp</code></pre><button type="button" data-copy>Copy</button></div></div>
@@ -162,7 +169,18 @@
   <footer><a href="https://nobrainer.tech/flow/privacy/">Privacy</a> &middot; <a href="https://nobrainer.tech/flow/terms/">Terms</a> &middot; <a href="https://github.com/nobrainer-tech/nobrainer-tech-flow">Source (MIT)</a></footer>
 </main>
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+  // The shared nobrainer.tech header links its brand and favicon relative to the host.
+  const host = document.querySelector('[data-nb-site-header]');
+  const brand = host && host.querySelector('.nb-global-brand');
+  if (brand) brand.href = 'https://nobrainer.tech/';
+  const icon = host && host.querySelector('.nb-global-favicon');
+  if (icon) icon.src = 'https://nobrainer.tech/favicon.svg';
+  const product = host && host.querySelector('.nb-global-product');
+  if (product) product.href = document.documentElement.lang === 'pl' ? '/pl/' : '/';
+});
 (() => {
+  const L = { open: 'open', waiting: 'waiting', FAILED: 'failed', ACCEPTED: 'accepted', UNCHECKED: 'not checked', NOT_DONE: 'not done', DONE_WITH_GAPS: 'done, with gaps', copy: 'Copy', copied: 'Copied', select: 'Select and copy' };
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const tabs = [...document.querySelectorAll('[role="tab"]')];
   const select = (tab) => {
@@ -195,9 +213,9 @@
   for (const button of document.querySelectorAll('[data-copy]')) {
     button.addEventListener('click', async () => {
       const text = button.previousElementSibling.textContent;
-      try { await navigator.clipboard.writeText(text); button.textContent = 'Copied'; button.classList.add('ok'); }
-      catch { button.textContent = 'Select and copy'; }
-      setTimeout(() => { button.textContent = 'Copy'; button.classList.remove('ok'); }, 1600);
+      try { await navigator.clipboard.writeText(text); button.textContent = L.copied; button.classList.add('ok'); }
+      catch { button.textContent = L.select; }
+      setTimeout(() => { button.textContent = L.copy; button.classList.remove('ok'); }, 1600);
     });
   }
 
@@ -216,7 +234,7 @@
     ['bad', '  NOT_DONE · missing: AC02 · no receipt', null, () => verdict('NOT_DONE')],
     ['who', 'you › No access to the changelog. Mark AC02 as not checked.'],
     ['call', '→ check_flow_done  unchecked: AC02 (no access to the repository changelog)', 'check_flow_done'],
-    ['warn', '  DONE_WITH_GAPS · unchecked: AC02 · receipt issued', null, () => { pill('AC02', 'UNCHECKED', 'not checked'); verdict('DONE_WITH_GAPS', 'done, with gaps'); }],
+    ['warn', '  DONE_WITH_GAPS · unchecked: AC02 · receipt issued', null, () => { pill('AC02', 'UNCHECKED'); verdict('DONE_WITH_GAPS'); }],
     ['call', '→ draft_flow_handoff', 'draft_flow_handoff'],
     ['ok', '  Proof: AC01 accepted · Not checked: AC02 · "the server checked consistency, not truth"'],
   ];
@@ -226,8 +244,8 @@
     el.className = 'pill ' + cls; el.textContent = text;
     el.classList.add('bump'); setTimeout(() => el.classList.remove('bump'), 300);
   };
-  const pill = (id, cls, text) => bump(document.querySelector('[data-ac="' + id + '"]'), cls, text || cls.toLowerCase());
-  const verdict = (cls, text) => bump(document.querySelector('[data-verdict]'), cls, text || cls.replace(/_/g, ' ').toLowerCase());
+  const pill = (id, cls) => bump(document.querySelector('[data-ac="' + id + '"]'), cls, L[cls]);
+  const verdict = (cls) => bump(document.querySelector('[data-verdict]'), cls, L[cls]);
   const live = (name) => {
     for (const t of document.querySelectorAll('.tool')) t.classList.toggle('live', t.dataset.tool === name);
   };
@@ -236,8 +254,8 @@
     timers.forEach(clearTimeout); timers = [];
     consoleEl.textContent = '';
     set('[data-contract]', '…');
-    for (const id of ['AC01', 'AC02']) { const el = document.querySelector('[data-ac="' + id + '"]'); el.className = 'pill'; el.textContent = 'open'; }
-    const v = document.querySelector('[data-verdict]'); v.className = 'pill'; v.textContent = 'waiting';
+    for (const id of ['AC01', 'AC02']) { const el = document.querySelector('[data-ac="' + id + '"]'); el.className = 'pill'; el.textContent = L.open; }
+    const v = document.querySelector('[data-verdict]'); v.className = 'pill'; v.textContent = L.waiting;
     live(null);
   };
   const run = () => {
