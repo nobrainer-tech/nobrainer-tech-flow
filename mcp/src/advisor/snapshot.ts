@@ -49,7 +49,7 @@ export type Snapshot = {
     default_providers: string[];
   };
   jobs: Record<string, string>;
-  tasks: Record<string, { label: string; scale: string; span: Record<string, number>; withheld?: boolean }>;
+  tasks: Record<string, { label: string; scale: string; span: Record<string, number> }>;
   retired: string[];
   models: SnapshotModel[];
   rows: RawRow[];

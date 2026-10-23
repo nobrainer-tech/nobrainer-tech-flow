@@ -1,15 +1,19 @@
 import * as z from 'zod';
 import { SNAPSHOT } from './snapshot.ts';
 
-// The site's task ids that this snapshot can answer: tasks with rows, or whose scores are
-// withheld for licensing (the note then points to the site).
+// Advertise only task ids with qualifying measurements in this snapshot.
 export const TASKS = Object.keys(SNAPSHOT.tasks)
-  .filter(t => SNAPSHOT.tasks[t]?.withheld || SNAPSHOT.table.some(r => r.task === t)) as [string, ...string[]];
+  .filter(t => SNAPSHOT.table.some(r => r.task === t)) as [string, ...string[]];
 // The site's public priorities (PRIORITIES in task-router-core.js): g, b, e.
 export const PRIORITY_CODES = { quality: 'g', balanced: 'b', efficient: 'e' } as const;
 
 export const recommendInput = z.object({
-  task: z.enum(TASKS),
+  // Normalize before validation for both MCP and direct callers; advertise canonical tasks only.
+  task: z.preprocess(value => {
+    if (typeof value !== 'string') return value;
+    const task = value.trim().toLowerCase();
+    return task === 'coding' ? 'terminal-coding' : SNAPSHOT.jobs[task] ?? task;
+  }, z.enum(TASKS)).meta({ type: 'string', enum: TASKS }),
   have: z.array(z.string().min(1).max(64)).max(30).optional().describe('Providers, models or client apps you can use'),
   priority: z.enum(['quality', 'balanced', 'efficient']).optional(),
   role: z.enum(['main', 'worker']).optional()
@@ -41,13 +45,7 @@ const PROBLEMS: Record<string, string> = { invalid_value: 'unsupported value', i
   too_small: 'empty value', unrecognized_keys: 'unknown field' };
 
 export function parseInput(input: unknown): RecommendInput {
-  // Direct callers may send "Coding" or a site job alias ("agentic"); the published schema stays exact.
-  let raw = input;
-  if (input && typeof input === 'object' && typeof (input as { task?: unknown }).task === 'string') {
-    const task = (input as { task: string }).task.trim().toLowerCase();
-    raw = { ...input, task: SNAPSHOT.jobs[task] && !TASKS.includes(task) ? SNAPSHOT.jobs[task] : task };
-  }
-  const parsed = recommendInput.safeParse(raw);
+  const parsed = recommendInput.safeParse(input);
   if (parsed.success) return parsed.data;
   const issue = parsed.error.issues[0];
   const field = issue?.path.join('.') || 'input';

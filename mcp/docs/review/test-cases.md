@@ -1,7 +1,8 @@
 # OpenAI review test cases
 
-Recorded with `npm run transcripts` against a local server (1.0.0+flow.2.4.1, MCP 2026-07-28, official
-TypeScript SDK client). Tokens are shortened to `<token>`; all other output is exact. The five positive
+Recorded with `npm run transcripts -- --in-memory` (1.0.0+flow.2.5.0, MCP 2025-11-25, official
+TypeScript SDK client; InMemoryTransport with buildServer, no HTTP listener).
+Tokens are shortened to `<token>`; all other output is exact. The five positive
 cases cover all six tools. Paste the prompts and expected results into the portal review form.
 
 ## Summary
@@ -11,6 +12,7 @@ cases cover all six tools. Paste the prompts and expected results into the porta
 - PASS FAILED then REJECTED COUNTS_MISMATCH
 - PASS NOT_DONE with AC02 missing and no receipt
 - PASS DONE_WITH_GAPS and the handoff lists AC01 proof and AC02 not checked
+- PASS legacy Coding maps to terminal-coding with a nonempty shortlist
 - PASS shortlist of 1-3 with snapshot date and source
 
 ## P1. Start a contract
@@ -44,8 +46,8 @@ Result
 ```json
 {
  "path": "QUICK",
- "flow_version": "2.4.1",
- "contract": "85c3e544",
+ "flow_version": "2.5.0",
+ "contract": "5227193c",
  "items": [
   {
    "id": "AC01",
@@ -94,7 +96,7 @@ Result
 ```json
 {
  "card": "event:blocked",
- "flow_version": "2.4.1",
+ "flow_version": "2.5.0",
  "rules": [
   "Before saying BLOCKED, identify the exact failed operation and the acceptance item it prevents.",
   "If the preferred method is technically unavailable, try a relevant permitted alternative within the same scope.",
@@ -284,7 +286,7 @@ Result
 ```json
 {
  "verdict": "DONE_WITH_GAPS",
- "markdown": "## Delivered\n<one sentence: the observable outcome>\n\n## Proof\n- AC01 test, local, accepted (digest 13848f53): <command and result>\n\n## Not checked\n- AC02: <reason>\n\n## Decisions left to you\n<owner decisions, or 'None'>\n\n## Next action\n<one action, or 'None'>\n\nContract 85c3e544, Flow 2.4.1. Evidence was reported by the agent; the server checked consistency, not truth."
+ "markdown": "## Delivered\n<one sentence: the observable outcome>\n\n## Proof\n- AC01 test, local, accepted (digest 13848f53): <command and result>\n\n## Not checked\n- AC02: <reason>\n\n## Decisions left to you\n<owner decisions, or 'None'>\n\n## Next action\n<one action, or 'None'>\n\nContract 5227193c, Flow 2.5.0. Evidence was reported by the agent; the server checked consistency, not truth."
 }
 ```
 
@@ -292,17 +294,17 @@ Check: PASS - DONE_WITH_GAPS and the handoff lists AC01 proof and AC02 not check
 
 ## P5. Model advice from the benchmark
 
-Prompt: "With NoBrainer Tech Flow: I use Codex and Claude Code. Which model should I use for a terminal-heavy coding task?"
+Prompt: "With NoBrainer Tech Flow: I use Codex and Claude Code. Recommend a model using the legacy task Coding."
 
 Expected tools: recommend_flow_model
 
-Expected result: A top-3 shortlist with quality, cost and time from the pinned benchmark snapshot, its date and the source URL
+Expected result: The case-insensitive legacy Coding alias returns task terminal-coding with a nonempty top-3 shortlist, quality, cost and time from the pinned benchmark snapshot, its date, expiry and the source URL
 
 Call `recommend_flow_model`
 
 ```json
 {
- "task": "terminal-coding",
+ "task": "Coding",
  "have": [
   "codex",
   "claude-code"
@@ -318,7 +320,7 @@ Result
  "priority": "balanced",
  "role": "worker",
  "expired": false,
- "expires": "2026-10-30",
+ "expires": "2026-11-06",
  "cohort": "terminal-bench",
  "scale": "Task success, %",
  "shortlist": [
@@ -372,11 +374,13 @@ Result
  ],
  "why": "Equal ordinal ranks of quality lower bound, cost and time within the normal quality band. Comparable harness and evidence kinds after plan order; a policy heuristic.",
  "note": "Cost and time are per-task reference figures, not invoices.",
- "snapshot": "2026-10-16",
- "snapshot_sha": "aaa2fc0a",
+ "snapshot": "2026-10-23",
+ "snapshot_sha": "8dab56e2",
  "source": "https://nobrainer.tech/ai/benchmark/"
 }
 ```
+
+Check: PASS - legacy Coding maps to terminal-coding with a nonempty shortlist
 
 Check: PASS - shortlist of 1-3 with snapshot date and source
 

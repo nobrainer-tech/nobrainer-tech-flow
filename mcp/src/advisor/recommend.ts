@@ -107,9 +107,7 @@ export function recommendFlowModel(input: unknown, now: Date = new Date()): Reco
   const shortlist = [...result.pool, ...fill].filter(r => !seen.has(r.model) && Boolean(seen.add(r.model))).slice(0, SHORTLIST);
 
   const taskRows = S.table.filter(r => r.task === task);
-  if (S.tasks[task]?.withheld) notes.push('Artificial Analysis-derived ' + task + ' scores are not redistributed here; see ' + S.source + '.' +
-    (taskRows.length ? '' : task === 'coding' ? ' For a shortlist, use task terminal-coding (Terminal-Bench).' : ''));
-  else if (!taskRows.length) notes.push('No current ' + task + ' measurements in this snapshot.');
+  if (!taskRows.length) notes.push('No current ' + task + ' measurements in this snapshot.');
   if (taskRows.length && !shortlist.length) notes.push('No available model has qualifying ' + task + ' data in this snapshot.');
   if (matched.length) {
     const { routeFor, roleAllowed } = routing(S, state);

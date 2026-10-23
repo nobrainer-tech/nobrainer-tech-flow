@@ -19,7 +19,7 @@ client, plus guidance quoted from the pinned Flow release and a model advisor ba
 | `check_flow_evidence` | Checks one to four evidence records: exit codes, the test-runner summary (pytest, unittest, node:test, Vitest, Jest, Mocha, Playwright, Go, cargo, RSpec, PHPUnit, dotnet), claimed counts, evidence level, URL host and status, file hashes. Marks earlier test results stale when a registered file changes, and returns `REPEATED_DEFECT` after a second failure. |
 | `check_flow_done` | `DONE` only when every item has accepted, current evidence; `DONE_WITH_GAPS` when the rest are listed as unchecked with a reason; otherwise `NOT_DONE` with the exact missing items. |
 | `draft_flow_handoff` | A final-report skeleton built only from the done receipt. |
-| `recommend_flow_model` | A top-3 model shortlist for a task type (`orchestration`, `instructions`, `frontend`, `research`, `writing`, `terminal-coding`, `coding`) from a pinned, dated benchmark snapshot, filtered by the providers, models or client apps you have (`have`), with an optional priority (quality, balanced, efficient) and role. Never invents scores and says when data is missing. Like the website, it refuses once the snapshot is 14 days past its fetch time (`expired: true`, `expires` date in every response). Artificial Analysis-derived scores are not redistributed (their terms forbid it), so `coding` points to `terminal-coding` and the website. |
+| `recommend_flow_model` | A top-3 model shortlist for a data-backed task type (`orchestration`, `instructions`, `frontend`, `research`, `writing`, `terminal-coding`) from a pinned, dated benchmark snapshot, filtered by the providers, models or client apps you have (`have`), with an optional priority (quality, balanced, efficient) and role. The legacy `coding` alias is accepted case-insensitively (for example, `Coding`) and returns `task: "terminal-coding"` with a Terminal-Bench shortlist. Never invents scores and says when data is missing. Like the website, it refuses once the snapshot is 14 days past its fetch time (`expired: true`, `expires` date in every response). |
 
 All six tools are read-only (`readOnlyHint: true`, `openWorldHint: false`). Results are one compact
 JSON text block. Responses never echo your free text: only IDs, enums, digests and canonical Flow text.
@@ -111,6 +111,7 @@ npm test                 # type check, content pin, unit, protocol, security and
 npm run conformance      # official MCP conformance suite (2025-11-25) with test/conformance-baseline.yml
 npm run smoke -- http://127.0.0.1:8787/mcp
 npm run transcripts      # rewrites docs/review/test-cases.md
+npm run transcripts -- --in-memory  # SDK tool calls without an HTTP listener; transport is recorded
 npm run plugin           # dist/nobrainer-tech-flow-<version>.zip for the OpenAI portal
 ```
 

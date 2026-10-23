@@ -12,10 +12,6 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SITE_URL = 'https://nobrainer.tech/ai/benchmark/';
-// Cohorts whose terms do not allow redistribution through an API or MCP server (see NOTICE.md).
-const WITHHELD = {
-  'aa-aligned-v1': 'Artificial Analysis Data Platform Terms v1.1 (2026-08-19) s2.3-2.5 forbid machine-readable redistribution and model-selection products without written consent.'
-};
 const LICENCES = ['terminal-bench-LICENSE.txt', 'terminal-bench-2-1-LICENSE.txt'];
 const MODULES = ['task-router-core.js', 'task-app-defaults.js', 'task-model-policy.js'];
 const DAY = 86400000;
@@ -85,7 +81,7 @@ export function build(source) {
   };
   const effortOk = (r, m) => ['none', 'default'].includes(r.effort) || !(m.efforts || []).length || m.efforts.includes(r.effort);
   const scored = D.measurements.filter(r => taskIds.includes(r.task) && finite(r.score));
-  const rows = scored.filter(r => !WITHHELD[r.qualitySource] && current.has(r.modelId) && reachable.has(r.modelId) && ageOk(r) && effortOk(r, byId.get(r.modelId)) &&
+  const rows = scored.filter(r => current.has(r.modelId) && reachable.has(r.modelId) && ageOk(r) && effortOk(r, byId.get(r.modelId)) &&
     !(r.costKind === 'observed' && r.successRate === 0))
     .map(r => [r.id, r.modelId, r.task, r.effort, r.score, finite(r.lower) ? r.lower : r.score, finite(r.upper) ? r.upper : r.score,
       r.qualitySource, positive(r.cost) ? r.cost : null, r.costKind, positive(r.time) ? r.time : null, r.timeKind,
@@ -93,12 +89,11 @@ export function build(source) {
   // Quality-band span per task cohort: every current model's scored row, as in rank().
   const tasks = Object.fromEntries(D.tasks.map(t => {
     const span = {};
-    for (const src of [...new Set(scored.filter(r => r.task === t.id && !WITHHELD[r.qualitySource]).map(r => r.qualitySource))].sort()) {
+    for (const src of [...new Set(scored.filter(r => r.task === t.id).map(r => r.qualitySource))].sort()) {
       const s = scored.filter(r => r.task === t.id && r.qualitySource === src && current.has(r.modelId)).map(r => r.score);
       if (s.length) span[src] = Math.max(...s) - Math.min(...s);
     }
-    const withheld = scored.some(r => r.task === t.id && WITHHELD[r.qualitySource]);
-    return [t.id, { label: ascii(t.label), scale: ascii(t.qualityLabel), span, ...(withheld ? { withheld: true } : {}) }];
+    return [t.id, { label: ascii(t.label), scale: ascii(t.qualityLabel), span }];
   }));
   const used = new Set(rows.map(r => r[7]));
   const sources = Object.fromEntries(D.sources.filter(s => used.has(s.id)).map(s => [s.id,
@@ -107,18 +102,18 @@ export function build(source) {
     schema: 'nobrainer-flow-benchmark-snapshot/1', source: SITE_URL, as_of: D.fetchedAt.slice(0, 10),
     fetched_at: D.fetchedAt, compiled_at: D.compiledAt || null, data_snapshot_id: D.snapshotId || null,
     policy: { quality_band_fraction: D.policy.qualityBandFraction, max_source_age_days: D.policy.maxSourceAgeDays,
-      source_priority: D.policy.qualitySourcePriority.filter(id => !WITHHELD[id]), route_order: AP.routeOrder, apps: A.APPS,
+      source_priority: D.policy.qualitySourcePriority, route_order: AP.routeOrder, apps: A.APPS,
       native_routes: { codex: ['openai'], claude: ['anthropic'], copilot: ['copilot'] },
       default_providers: R.DEFAULT.have, providers: A.ROUTES, api_access_note: ascii(A.API_ACCESS_NOTE) },
-    jobs: R.JOBS, tasks, sources, withheld_sources: WITHHELD, retired, models,
+    jobs: R.JOBS, tasks, sources, retired, models,
     row_fields: ['id', 'model', 'task', 'effort', 'score', 'lower', 'upper', 'source', 'cost', 'cost_kind', 'time', 'time_kind', 'harness', 'success_cost'],
     rows,
     attribution: [
       'Derived by NoBrainer from released third-party data; the source publishers do not endorse these recommendations.',
-      'Not included: AA-aligned scores derived from Artificial Analysis data; their terms do not permit this redistribution. See ' + SITE_URL + '.',
       'Arena ratings: lmarena-ai leaderboard-dataset, CC BY 4.0; values filtered and transformed.',
       'Terminal-Bench submissions: harbor-framework terminal-bench and terminal-bench-2-1, Apache 2.0; licence copies included.',
-      'Model catalog and prices: models.dev, MIT.'
+      'Model catalog and prices: models.dev, MIT.',
+      'Own agent telemetry: NoBrainer aggregated metadata; no prompts or content.'
     ]
   };
   const json = JSON.stringify(snapshot) + '\n';
