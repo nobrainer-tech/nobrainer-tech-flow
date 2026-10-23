@@ -52,8 +52,9 @@ Project file `.mcp.json`:
 {"mcpServers": {"nobrainer-tech-flow": {"type": "http", "url": "https://mcp.nobrainer.tech/mcp"}}}
 ```
 
-Claude.ai and Claude Desktop (not verified): Customize > Connectors > Add custom connector, name
-`NoBrainer Tech Flow`, URL `https://mcp.nobrainer.tech/mcp`, no sign-in.
+Claude.ai and Claude Desktop (not verified): Customize > Connectors > Add > Add custom connector,
+name `NoBrainer Tech Flow`, URL `https://mcp.nobrainer.tech/mcp`, No sign-in. On Team and Enterprise an
+Owner adds it under Organization settings > Connectors first.
 
 Codex CLI and IDE, `~/.codex/config.toml` (or `codex mcp add nobrainer-tech-flow --url https://mcp.nobrainer.tech/mcp`):
 
@@ -62,8 +63,9 @@ Codex CLI and IDE, `~/.codex/config.toml` (or `codex mcp add nobrainer-tech-flow
 url = "https://mcp.nobrainer.tech/mcp"
 ```
 
-ChatGPT (not verified): install "NoBrainer Tech Flow" from the plugin directory after approval. Before
-approval, a workspace admin can add it as a custom MCP connection with the same URL.
+ChatGPT (not verified): open ChatGPT Plugins (`chatgpt.com/plugins`), select + > Add custom MCP
+server, name it `NoBrainer Tech Flow`, enter the URL under Connection, choose no authentication and
+select Create as a plugin. Workspace policies decide who can add custom MCP servers.
 
 Cursor, `.cursor/mcp.json` or `~/.cursor/mcp.json` (not verified):
 
