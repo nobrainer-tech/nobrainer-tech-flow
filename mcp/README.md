@@ -36,7 +36,8 @@ one (`http://127.0.0.1:8787/mcp`, see "Run locally").
 |---|---|
 | Claude Code | Verified 2026-10-20 against the local server (Claude Code 2.1.303): connected over MCP 2026-07-28 and listed the six tools. |
 | Codex CLI | Verified 2026-10-20 against the local server (codex-cli 0.163.0): connected over MCP 2025-06-18 and listed the six tools through the app server. |
-| Claude.ai / Claude Desktop, ChatGPT, Cursor, VS Code / Copilot, Gemini CLI, Cline | Not verified yet. Snippets follow each client's documentation. |
+| OpenCode | Verified 2026-10-23 against the public endpoint (OpenCode 2.0.32): `opencode mcp list` shows it connected. |
+| Claude.ai / Claude Desktop, ChatGPT, Cursor, VS Code / Copilot, Gemini CLI, Cline, Windsurf, Zed | Not verified yet. Snippets follow each client's documentation. |
 
 Claude Code:
 
@@ -52,8 +53,9 @@ Project file `.mcp.json`:
 {"mcpServers": {"nobrainer-tech-flow": {"type": "http", "url": "https://mcp.nobrainer.tech/mcp"}}}
 ```
 
-Claude.ai and Claude Desktop (not verified): Customize > Connectors > Add custom connector, name
-`NoBrainer Tech Flow`, URL `https://mcp.nobrainer.tech/mcp`, no sign-in.
+Claude.ai and Claude Desktop (not verified): Customize > Connectors > Add > Add custom connector,
+name `NoBrainer Tech Flow`, URL `https://mcp.nobrainer.tech/mcp`, No sign-in. On Team and Enterprise an
+Owner adds it under Organization settings > Connectors first.
 
 Codex CLI and IDE, `~/.codex/config.toml` (or `codex mcp add nobrainer-tech-flow --url https://mcp.nobrainer.tech/mcp`):
 
@@ -62,8 +64,9 @@ Codex CLI and IDE, `~/.codex/config.toml` (or `codex mcp add nobrainer-tech-flow
 url = "https://mcp.nobrainer.tech/mcp"
 ```
 
-ChatGPT (not verified): install "NoBrainer Tech Flow" from the plugin directory after approval. Before
-approval, a workspace admin can add it as a custom MCP connection with the same URL.
+ChatGPT (not verified): open ChatGPT Plugins (`chatgpt.com/plugins`), select + > Add custom MCP
+server, name it `NoBrainer Tech Flow`, enter the URL under Connection, choose no authentication and
+select Create as a plugin. Workspace policies decide who can add custom MCP servers.
 
 Cursor, `.cursor/mcp.json` or `~/.cursor/mcp.json` (not verified):
 
@@ -89,6 +92,24 @@ Cline, `cline_mcp_settings.json` (not verified; set `type`, because a missing ty
 
 ```json
 {"mcpServers": {"nobrainer-tech-flow": {"type": "streamableHttp", "url": "https://mcp.nobrainer.tech/mcp"}}}
+```
+
+OpenCode (verified 2026-10-23 against the public endpoint, OpenCode 2.0.32: `opencode mcp list` shows it connected):
+
+```bash
+opencode mcp add nobrainer-tech-flow --url https://mcp.nobrainer.tech/mcp --global
+```
+
+Windsurf, `~/.codeium/windsurf/mcp_config.json`, then Refresh in Manage MCPs (not verified):
+
+```json
+{"mcpServers": {"nobrainer-tech-flow": {"serverUrl": "https://mcp.nobrainer.tech/mcp"}}}
+```
+
+Zed, Settings > AI > MCP Servers > Add Remote Server, or `settings.json` (not verified):
+
+```json
+{"context_servers": {"nobrainer-tech-flow": {"url": "https://mcp.nobrainer.tech/mcp"}}}
 ```
 
 ### Using it with local Flow skills
