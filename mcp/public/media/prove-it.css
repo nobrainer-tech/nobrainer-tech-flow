@@ -23,8 +23,8 @@
 .tv.playing .flo { --fw: 156; --fh: 123; background-image: url("/media/flo-dance.png"); animation: dance 1.951s steps(8) infinite; }
 .tv.playing .mcp { --fw: 118; --fh: 59; background-image: url("/media/mcp-dance.png"); animation: dance 1.951s steps(8) infinite; }
 @keyframes dance { from { background-position: 0 0; } to { background-position: calc(var(--fw) * 8 * var(--s) * -1px) 0; } }
-@media (min-width: 1240px) {
-  .cast { position: absolute; left: -330px; right: -330px; bottom: -6px; margin: 0; pointer-events: none; }
+@media (min-width: 1360px) {
+  .cast { position: absolute; left: calc(-1 * min(330px, (100vw - 880px) / 2)); right: calc(-1 * min(330px, (100vw - 880px) / 2)); bottom: -6px; margin: 0; pointer-events: none; }
   .cast .sprite { pointer-events: auto; }
   .flo { --s: 2; } .mcp { --s: 3; }
 }
