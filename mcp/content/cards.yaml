@@ -187,13 +187,13 @@
     - "For a behavior change, create a failing proof before implementation when it is feasible and reliable."
     - "Every fix invalidates earlier evidence for the changed path and must be rechecked."
     - "Report `FINISHED` only when the approved work unit and required evidence pass."
-"module:nobrainer-codex-context":
+"module:nobrainer-context":
   rules:
-    - "The normal candidates are `AGENTS.override.md` and `AGENTS.md`; configured fallback names are considered after them."
-    - "Do not put credentials, private machine paths, mutable runtime state, guessed commands or model names in the block."
-    - "Do not create a `CODEX_CONTEXT.md` file and call it automatically loaded."
-    - "Never replace a whole `AGENTS.md` because it is long, old or from another client."
-    - "Do not claim `RUNTIME_VERIFIED` from a file read, probe exit code or installed skill."
+    - "Findings are evidence to report, not permission to edit."
+    - "Only those documented behaviours count; anything marked `UNVERIFIED` there is reported as unknown, never as a limit."
+    - "This step is report-only."
+    - "Apply only inside the project."
+    - "A probe exit code or an installed module does not prove a client followed the instructions."
 "module:nobrainer-decide":
   rules:
     - "For STANDARD and HIGH produce at least three mechanisms, not parameter variants."
