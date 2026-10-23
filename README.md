@@ -260,8 +260,10 @@ sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude --apply   # link th
 `--client` is `claude`, `codex`, `opencode` or `copilot`. Cursor, Gemini CLI, Pi and Kimi Code
 use a plugin or extension instead: see their sections in
 [docs/INSTALL.md](docs/INSTALL.md#client-channels). The script links all eighteen skills and adds
-one instruction block, shows the exact text first, refuses anything that is not its own, grants
-no authorization and undoes itself with `--undo --apply`. To update, run `git pull` in
+one instruction block, shows the exact text first, refuses anything that is not its own and
+undoes itself with `--undo --apply`. The block lets Flow update itself to verified stable
+releases once a day; `install_personalization.py --no-auto-update` turns that into a
+notification only. No other authorization is granted. To update, run `git pull` in
 `~/.nobrainer-tech-flow` and the same two commands again, or paste the prompt again. With Python,
 `python3 scripts/install.py` takes the same flags.
 
@@ -303,7 +305,8 @@ next command.
 `install.py`, like `scripts/install.sh` without Python, links all eighteen skills
 and adds one managed instruction block for `claude`, `codex`, `opencode` or
 `copilot`. The preview shows the exact text it would write, a target that is not
-its own link is refused, no authorization is ever granted, and
+its own link is refused, the only standing authorization is the default daily Flow
+update (opt out with `install_personalization.py --no-auto-update`), and
 `python3 scripts/install.py --client codex --undo --apply` reverses it. It needs
 symbolic links (Windows: Developer Mode). For a subset, a copy install, the shared
 `agents` folder or another client, use the individual scripts in
@@ -531,14 +534,15 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-**What's new in 2.5.0:** `nobrainer-context` (`nb-context`) keeps one set of project
-instructions for every coding agent: it shows what Codex, Claude Code, Gemini CLI,
-Cursor, Copilot and OpenCode load, and proposes one source of truth with pointers.
+**What's new in 2.6.0:** Flow delegates aggressively: independent units of
+substantial work go to parallel native subagents, sized so parallel work pays for its
+start-up cost, verification depth follows how risky and reversible a change is, and one
+line in the instruction block keeps Flow updated by default (`--no-auto-update` opts out).
 See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
-Current source version: **2.5.0**. Check the
+Current source version: **2.6.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.5.0](docs/releases/v2.5.0.md) and
+for distribution and the [2.6.0](docs/releases/v2.6.0.md), [2.5.0](docs/releases/v2.5.0.md) and
 [2.4.0 verification records](docs/releases/v2.4.0.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not

@@ -134,7 +134,7 @@ class OneCommandInstallerTests(unittest.TestCase):
             # The person consents to the exact text that will be written.
             self.assertIn("DIFF:", result.stdout)
             self.assertIn(f"+{START}", result.stdout)
-            self.assertIn("AUTO_UPDATE: CHECK_AND_NOTIFY", result.stdout)
+            self.assertIn("AUTO_UPDATE: AUTHORIZED_SAFE_VERIFIED_ONLY", result.stdout)
             self.assertIn("AUTO_SESSION_RESTART: ASSESS_CHECKPOINT_RECOMMEND", result.stdout)
             self.assertIn("NO_CHANGES:", result.stdout)
             self.assertIn(f"scripts/install.py --client claude --apply --home {home}", result.stdout)
@@ -388,22 +388,23 @@ class OneCommandInstallerTests(unittest.TestCase):
             self.assertEqual([], self.entries(here))
 
     @unittest.skipUnless(symlinks_work(), "this account cannot create symbolic links")
-    def test_an_authorization_granted_earlier_is_kept_and_none_is_ever_added(self) -> None:
+    def test_an_earlier_update_opt_out_is_kept_and_no_authorization_is_ever_added(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
-            granted = subprocess.run(
+            opted_out = subprocess.run(
                 [sys.executable, str(PERSONALIZATION), "--client", "claude", "--home", str(home),
-                 "--auto-update", "--apply"],
+                 "--no-auto-update", "--apply"],
                 cwd=ROOT, text=True, capture_output=True, check=False, stdin=subprocess.DEVNULL,
             )
-            self.assertEqual(0, granted.returncode, granted.stderr)
+            self.assertEqual(0, opted_out.returncode, opted_out.stderr)
 
             result = self.run_install("--client", "claude", "--home", str(home), "--apply")
 
             self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-            self.assertIn("KEPT_OPTIONS: auto-update", result.stdout)
+            self.assertIn("KEPT_OPTIONS: notify-only updates", result.stdout)
             content = (home / ".claude" / "CLAUDE.md").read_text(encoding="utf-8")
-            self.assertIn("grants standing authorization to apply", content)
+            self.assertIn("tell the owner when a newer stable nobrainer-tech-flow release exists", content)
+            self.assertNotIn("Once a day on first use, update nobrainer-tech-flow", content)
             self.assertNotIn("grants standing authorization for session rotation", content)
 
     def test_it_never_asks_the_helpers_for_a_standing_authorization_or_a_preference(self) -> None:
@@ -509,12 +510,12 @@ class OneCommandInstallerTests(unittest.TestCase):
             self.assertEqual(before, instructions.read_bytes())
             self.assertFalse((home / ".claude" / "skills").exists())
 
-    def test_the_preview_shows_an_authorization_that_apply_would_keep(self) -> None:
+    def test_the_preview_shows_an_update_opt_out_that_apply_would_keep(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             home = Path(temp) / "home"
             earlier = subprocess.run(
                 [sys.executable, str(PERSONALIZATION), "--client", "claude", "--home", str(home),
-                 "--auto-update", "--apply"],
+                 "--no-auto-update", "--apply"],
                 cwd=ROOT, text=True, capture_output=True, check=False, stdin=subprocess.DEVNULL,
             )
             self.assertEqual(0, earlier.returncode, earlier.stderr)
@@ -522,9 +523,9 @@ class OneCommandInstallerTests(unittest.TestCase):
             preview = self.install(home)
 
             self.assertEqual(0, preview.returncode, preview.stdout + preview.stderr)
-            self.assertIn("KEPT_OPTIONS: auto-update", preview.stdout)
+            self.assertIn("KEPT_OPTIONS: notify-only updates", preview.stdout)
             self.assertIn("UNCHANGED: managed block is current", preview.stdout)
-            self.assertNotIn("CHECK_AND_NOTIFY", preview.stdout)
+            self.assertNotIn("AUTHORIZED_SAFE_VERIFIED_ONLY", preview.stdout)
 
     def test_an_explicit_home_wins_over_the_client_variable_in_the_preview(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

@@ -14,9 +14,9 @@ upgraded merely because the new source is installed nearby.
 Node 18+ and Python 3.11+ are prerequisites. Preview the setup first:
 
 ```sh
-npx nobrainer-tech-flow@2.5.0 --client codex
-npx nobrainer-tech-flow@2.5.0 --client codex --apply
-npx nobrainer-tech-flow@2.5.0 --client codex --undo --apply
+npx nobrainer-tech-flow@2.6.0 --client codex
+npx nobrainer-tech-flow@2.6.0 --client codex --apply
+npx nobrainer-tech-flow@2.6.0 --client codex --undo --apply
 ```
 
 Use claude for Claude Code, opencode or copilot for those clients. Add --home PATH
@@ -24,7 +24,7 @@ for an isolated profile. These commands become available once this version is
 published on npm; a source candidate is not registry availability.
 
 Application copies the release files into the chosen home directory's
-.nobrainer-tech-flow-npm/2.5.0 and verifies the copy. That folder sits beside
+.nobrainer-tech-flow-npm/2.6.0 and verifies the copy. That folder sits beside
 ~/.nobrainer-tech-flow, where the Git installation suggests a clone, so cleaning
 the clone cannot delete the files the skill links point to. Releases before 2.3.2
 kept their copy in .nobrainer-tech-flow/npm; undo such a setup with the command of
@@ -106,14 +106,18 @@ flags). The two share the setup record, so either one undoes what the other did.
 - Running `--apply` again when nothing needs to change prints `UP TO DATE` and no
   restart hint. `INSTALLED` and the restart hint appear only when a link or the
   instruction file was written.
-- It never grants a standing authorization. When the block in the instruction file
-  is the text of an earlier version, both scripts replace it with this version's
-  text, keep everything outside the two markers byte for byte and save the file as
-  it was as a `.bak` copy first. `install.py` also keeps earlier auto-update,
-  session-restart and wiki-root settings in the block as `--keep-options` keeps
-  them; `install.sh` leaves a block that carries one of those options, or whose
-  markers do not stand on lines of their own, exactly as it is and says so. Change
-  options with `install_personalization.py`.
+- The only standing authorization it writes is the default one-line daily update of
+  Flow itself to a verified stable release; session rotation still needs its own
+  opt-in. When the block in the instruction file is the text of an earlier version,
+  both scripts replace it with this version's text, keep everything outside the two
+  markers byte for byte and save the file as it was as a `.bak` copy first. Both keep
+  the update choice: an existing block updates itself again only when it holds the
+  update line as its own line, and a notify-only, edited or unknown update line is
+  replaced by the one-line notify-only rule. `install.py` also keeps session-restart
+  and wiki-root settings as `--keep-options` keeps them; `install.sh` leaves a block
+  that carries one of those options or a preference, or whose markers do not stand on
+  lines of their own, exactly as it is and says so. Change options with
+  `install_personalization.py`.
 - `--undo` (a preview until `--apply` is added) removes exactly the links the setup
   created and puts the managed block back as it was before the first setup:
   removed, or the block that was there before. The rest of the instruction file
@@ -276,17 +280,24 @@ the instructions. A guided setup recorded earlier for the Codex file asks for an
 undo before it writes the Claude file. `agents` needs an explicit verified
 `--path`. For a resolved global wiki,
 pass `--wiki-root PATH` pointing at a directory containing `WIKI.md`; this
-records the actual location in the personalization block. `--auto-update`
-opts into safe checked `nobrainer-tech-flow`-only upgrades where standing owner
-authorization exists, and `--auto-session-restart` opts into evidence-gated
-session rotation. A later run without those flags writes the default block
-again; add `--keep-options` to keep the update, session-restart and wiki-root
-settings already in the block (the guided setup always does). A grant counts
+records the actual location in the personalization block. Since 2.6.0 the
+block keeps Flow updated by default with one line: once a day on first use,
+update to the latest verified stable release from the canonical source, with a
+backup, changing nothing else. `--no-auto-update` writes a one-line notify-only
+rule instead; `--auto-update` is still accepted and means the default. With
+`--keep-options` an opt-out already in the block stays, and the longer update
+lines written before 2.6.0 become the matching short line (an old grant stays a
+grant, the old notify-only default stays notify-only). An update line that is
+neither recognized grant becomes the notify-only line: updates are never inferred. `--auto-session-restart`
+opts into evidence-gated session rotation. A later run without those flags
+writes the default block again; add `--keep-options` to keep the update choice,
+session-restart and wiki-root settings already in the block (the guided setup
+always does). A grant counts
 only as the exact line the installer writes for it, so wording quoted in a
 `--preferences` value never becomes one, and a preference or wiki path must be
 one printable line. A grant line that was edited is not kept, and the run says so
-and names the flag that grants it again. Without the
-update opt-in, the first active `nobrainer-tech-flow` use each day checks and
+and names the flag that grants it again. With the
+notify-only line, the first active `nobrainer-tech-flow` use each day checks and
 notifies. Use a scheduler separately if updates must be checked on inactive days.
 
 A newer release must be obtained at a verified immutable ref before any

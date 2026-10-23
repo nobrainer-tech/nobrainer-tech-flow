@@ -4,7 +4,9 @@
 Every run is a dry run until --apply. The skills are linked and the managed
 instruction block is written by the same helpers as the manual and guided setups,
 and --undo uses the guided setup's rollback state (as scripts/install.sh does), so
-every path reverses the same way. This command never grants a standing authorization.
+every path reverses the same way. The only standing authorization it writes is the
+default daily update of Flow itself, and an existing block keeps notifying unless it
+already held that update line.
 """
 
 from __future__ import annotations
