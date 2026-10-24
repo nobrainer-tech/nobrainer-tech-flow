@@ -5,14 +5,14 @@
     {
       "id": "suite-full-run-2.5.0",
       "metric": "reliability",
-      "claim": "Full deterministic suite at 2.5.0: 544 tests, exit 1 with two failures and five skips. Both failures came from a stale extracted plugin in an ignored backup directory, not from the source.",
+      "claim": "Full deterministic suite at 2.5.0: 544 tests, exit 1 with two failures and five skips. The record says both failures came from an old extracted plugin in the ignored backup directory.",
       "source": "docs/releases/v2.5.0.md",
       "quote": "The final full run executed 544 tests in 1081.229 seconds and returned exit 1"
     },
     {
       "id": "suite-rerun-2.5.0",
       "metric": "reliability",
-      "claim": "The two failed tests passed on rerun with no source change, after the stale directory was moved out of the checkout.",
+      "claim": "Only the two failed tests were rerun after the old directory was moved out of the checkout: both passed, exit 0, with no source change in between.",
       "source": "docs/releases/v2.5.0.md",
       "quote": "both passed, exit 0, in 396.922 seconds"
     },
@@ -24,47 +24,103 @@
       "quote": "caught 30 of 34 mutants of `install.sh`"
     },
     {
+      "id": "behavior-promotion-final5-1.3.0",
+      "metric": "quality",
+      "claim": "1.3.0 evaluator-integrity candidate: promoted on a sealed holdout. With two blinded judges calibrated on known-good and known-bad controls, the candidate scored 8/8 in 3 of 3 paired repetitions and the baseline in 2 of 3. Three repetitions is the minimum the repository asks for a borderline promotion claim, so this is a small sample.",
+      "source": "docs/evals/v1.3.0-autoimprove-integrity-2026-09-01.md",
+      "quote": [
+        "Candidate scored 8/8 in 3/3 repetitions from both judges; baseline scored 8/8 in 2/3 from both.",
+        "PROMOTION: PROMOTED"
+      ]
+    },
+    {
       "id": "behavior-promotion-rejected-1.6.1",
       "metric": "quality",
-      "claim": "Behavior evaluation of the 1.6.1 candidate against the 1.6.0 baseline ended in a rejected promotion. Paired simulations scored 95/96 (baseline) and 94/96 (candidate); the sealed holdout scored 15/16 and 14/16. This is a recorded null result, not a quality gain.",
+      "claim": "Behavior evaluation of the 1.6.1 candidate against the 1.6.0 baseline ended in a rejected promotion. Three paired four-case response simulations scored 95/96 (baseline) and 94/96 (candidate); one sealed two-case simulation scored 15/16 and 14/16. The record says these results support no quality, token-savings or model-equivalence claim.",
       "source": "docs/releases/v1.6.1.md",
-      "quote": "**Measured promotion is rejected.**"
+      "quote": [
+        "**Measured promotion is rejected.**",
+        "support no quality, token-savings or model-equivalence claim"
+      ]
     },
     {
       "id": "behavior-scores-1.6.1",
       "metric": "quality",
       "claim": "Scores behind the rejected promotion (baseline, candidate).",
       "source": "docs/releases/v1.6.1.md",
-      "quote": "95/96; 1/3 runs pass all gates | 94/96; 1/3 runs pass all gates",
+      "quote": [
+        "95/96; 1/3 runs pass all gates | 94/96; 1/3 runs pass all gates",
+        "15/16, gates pass | 14/16, completion-label gate fails"
+      ],
       "display": false
+    },
+    {
+      "id": "structural-promotions-2026-08-29",
+      "metric": "quality",
+      "claim": "The 2026-08-29 portfolio audit promoted three skills on a four-point structural check (0/4 to 4/4). The record calls the points literal contract assertions, not a model score.",
+      "source": "docs/evals/portfolio-autoimprove-2026-08-29.md",
+      "quote": "The points are literal contract assertions, not a subjective model score"
     },
     {
       "id": "tokens-per-call-1.6.1",
       "metric": "cost",
-      "claim": "Only token receipts on record: about 11.6 thousand input tokens per simulation call, for both the baseline and the candidate.",
+      "claim": "1.6.1 response simulations: development input was 11,586 tokens per baseline call and 11,646 per candidate call. The record calls these usage receipts, not a cost comparison.",
       "source": "docs/releases/v1.6.1.md",
-      "quote": "Development input was 11,586 tokens per baseline call and 11,646 per candidate call"
+      "quote": [
+        "Development input was 11,586 tokens per baseline call and 11,646 per candidate call",
+        "not peak context size, RAM measurements or a cost comparison"
+      ]
     },
     {
       "id": "tokens-actual-execution-1.6.1",
       "metric": "cost",
-      "claim": "One actual execution turn reported 64,216 cumulative input tokens, 48,128 of them cached, across tool turns. Not peak context, not a cost comparison.",
-      "source": "docs/releases/v1.6.1.md",
-      "quote": "64,216 cumulative input tokens, including 48,128 cached"
+      "claim": "1.6.1 actual execution (one local CSV repair): the receipt reports 64,216 input tokens, 48,128 of them cached, and 1,133 output tokens (473 more are listed as reasoning output), in 29.9 s.",
+      "source": "docs/evals/artifacts/v1.6.1/runtime/receipt.json",
+      "quote": [
+        "\"input_tokens\": 64216",
+        "\"cached_input_tokens\": 48128",
+        "\"output_tokens\": 1133",
+        "\"reasoning_output_tokens\": 473",
+        "\"elapsed_seconds\": 29.89"
+      ]
+    },
+    {
+      "id": "tokens-smoke-1.6.0",
+      "metric": "cost",
+      "claim": "1.6.0 smoke receipts: four single trials across two requested models reported 70,987 to 111,655 input tokens (52,480 to 90,880 cached) and 441 to 902 output tokens each. The file sets no comparison claim.",
+      "source": "docs/evals/artifacts/v1.6.0/smoke-receipts.json",
+      "quote": [
+        "\"input_tokens\": 111655",
+        "\"input_tokens\": 70987",
+        "\"input_tokens\": 71488",
+        "\"input_tokens\": 81127",
+        "\"cached_input_tokens\": 90880",
+        "\"cached_input_tokens\": 52480",
+        "\"output_tokens\": 441",
+        "\"output_tokens\": 902",
+        "\"comparison_claim\": \"NONE; single bounded trials, different tool/context paths\""
+      ]
+    },
+    {
+      "id": "description-shortening-1.6.0",
+      "metric": "cost",
+      "claim": "One recorded Codex run warned that skill descriptions were shortened to fit the skills context budget, so a host can show less than the description bytes Flow ships.",
+      "source": "docs/evals/artifacts/v1.6.0/holdout/verdict.json",
+      "quote": "Skill descriptions were shortened to fit the skills context budget."
     },
     {
       "id": "single-runs-reliability",
       "metric": "reliability",
-      "claim": "The repository's own rule: a single model run says nothing about reliability.",
+      "claim": "The 2.2.0 record: single runs do not estimate reliability.",
       "source": "docs/releases/v2.2.0.md",
       "quote": "Single runs do not estimate reliability."
     },
     {
       "id": "no-speed-claim-2.3.0",
       "metric": "speed",
-      "claim": "No release has a measured speed or token saving; 2.3.0 states it explicitly.",
+      "claim": "The 2.3.0 record states that no runtime benchmark was run for that release and that no measured speed or token saving is claimed.",
       "source": "docs/releases/v2.3.0.md",
-      "quote": "No runtime benchmark was run for this release."
+      "quote": "No measured speed or token saving is claimed."
     }
   ]
 }
