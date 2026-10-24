@@ -52,6 +52,11 @@
 .retro .hero .copy pre { border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
 .retro .tool.live { border-color: var(--blue); box-shadow: 5px 5px 0 var(--blue); }
 .retro h2::before { content: ""; display: inline-block; width: 0.42em; height: 0.42em; margin-right: 0.4em; background: var(--orange); vertical-align: 0.06em; }
+.retro .newsletter { border: 2px solid var(--ink); border-radius: 10px; box-shadow: 5px 5px 0 var(--ink); }
+.retro .newsletter-form [data-form] .emailoctopus-form input[type="email"] { border: 2px solid var(--ink); border-radius: 8px; }
+.retro .newsletter-form [data-form] .emailoctopus-form input[type="submit"] { border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.retro .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--ink); }
+.retro .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
 
 /* MC P's night look: the music video's neon world with gold accents from his chain. */
 html.night { --cream: #120B3A; --ink: #F6F3EE; --muted: #C7C2EA; --line: #3B2F7E; --card: #1E1A55; --gold: #FFC83D; color-scheme: dark; }
@@ -71,6 +76,11 @@ html.night .tv-hint { background: var(--card); color: var(--muted); }
 html.night .sprite .name { color: var(--gold); background: #0E0930; box-shadow: 2px 2px 0 #FF6FD8; }
 html.night .mcp { --f: 7; }
 html.night .tv-eyebrow { color: var(--ink); }
+html.night .newsletter { background: var(--card); border-color: var(--gold); box-shadow: 5px 5px 0 var(--gold); }
+html.night .newsletter-form [data-form] .emailoctopus-form input[type="email"] { color: var(--ink); background: var(--cream); border-color: var(--gold); }
+html.night .newsletter-form [data-form] .emailoctopus-form input[type="submit"] { box-shadow: 3px 3px 0 var(--gold); }
+html.night .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:hover { box-shadow: 5px 5px 0 var(--gold); }
+html.night .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:active { box-shadow: 1px 1px 0 var(--gold); }
 
 /* Flo's switch expands as a stepped (pixel-like) circle from the clicked spot. */
 ::view-transition-old(root) { animation: none; }
@@ -87,5 +97,5 @@ html.night .tv-eyebrow { color: var(--ink); }
   /* The cast loops are small in-place pixel animations that only run around a video the visitor
      started, so they stay on; only page-wide effects, hover lifts and the countdown pop stop. */
   .countdown.on span { animation: none; }
-  .sprite:hover, .retro .button:hover, .retro .chip:hover, .retro .chip:focus-visible, .retro .tabs button:hover, .retro .button:active, .retro .tabs button:active, .retro .copy button:active { transform: none; }
+  .sprite:hover, .retro .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:hover, .retro .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:active, .retro .button:hover, .retro .chip:hover, .retro .chip:focus-visible, .retro .tabs button:hover, .retro .button:active, .retro .tabs button:active, .retro .copy button:active { transform: none; }
 }
