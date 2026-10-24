@@ -18,10 +18,16 @@
 .sprite .name { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); padding: 4px 9px; font: 800 13px/1 "NoBrainer Sans", system-ui, sans-serif; letter-spacing: 0.04em; color: #fff; background: var(--ink); border-radius: 5px; white-space: nowrap; }
 .retro .sprite .name { box-shadow: 2px 2px 0 var(--orange); }
 .sprite:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
-/* Flo points at the video while it is not playing and shows OK while it plays (frames 0-3 point, 4-7 OK). */
+/* Flo points at the video while it is not playing; when it starts she shows OK (frames 4-7) and then dances. */
 .flo { --fw: 162; --fh: 128; --f: 0; --idle: url("/media/flo-point-ok.png"); animation: flo-point 1.1s steps(4) infinite; }
 .mcp { --fw: 116; --fh: 60; --f: 0; --s: 2; --idle: url("/media/mcp-poses.png"); }
-.tv.playing .flo { animation: flo-ok 1.6s steps(4) infinite; }
+.tv.playing .flo { animation: flo-ok 0.8s steps(4) 2 both; }
+.tv.playing.dancing .flo { --fw: 156; --fh: 123; background-image: url("/media/flo-dance.png"); animation: dance 1.951s steps(8) infinite; }
+/* Clicking Flo shows a game-style 3-2-1 over the video, then it plays. */
+.countdown { position: absolute; inset: 0; z-index: 2; display: none; place-items: center; pointer-events: none; background: rgba(20, 22, 28, 0.35); font: 900 clamp(72px, 16vw, 180px)/1 "NoBrainer Sans", system-ui, sans-serif; color: #fff; text-shadow: 6px 6px 0 var(--orange); }
+.countdown.on { display: grid; }
+.countdown.on span { animation: count-pop 1s steps(6) both; }
+@keyframes count-pop { from { transform: scale(1.6); opacity: 0; } 30% { transform: scale(1); opacity: 1; } to { transform: scale(0.92); opacity: 0.9; } }
 .tv.playing .mcp { --fw: 118; --fh: 59; background-image: url("/media/mcp-dance.png"); animation: dance 1.951s steps(8) infinite; }
 @keyframes flo-point { from { background-position: 0 0; } to { background-position: calc(var(--fw) * 4 * var(--s) * -1px) 0; } }
 @keyframes flo-ok { from { background-position: calc(var(--fw) * 4 * var(--s) * -1px) 0; } to { background-position: calc(var(--fw) * 8 * var(--s) * -1px) 0; } }
@@ -59,7 +65,7 @@
 @keyframes look-in { from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%)); } to { clip-path: circle(150vmax at var(--vt-x, 50%) var(--vt-y, 50%)); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .flo, .tv.playing .flo, .tv.playing .mcp { animation: none; }
+  .flo, .tv.playing .flo, .tv.playing.dancing .flo, .tv.playing .mcp, .countdown.on span { animation: none; }
   .tv.playing .flo { background-position: calc(var(--fw) * 4 * var(--s) * -1px) 0; }
   .sprite:hover, .retro .button:hover, .retro .chip:hover, .retro .chip:focus-visible, .retro .tabs button:hover, .retro .button:active, .retro .tabs button:active, .retro .copy button:active { transform: none; }
 }
