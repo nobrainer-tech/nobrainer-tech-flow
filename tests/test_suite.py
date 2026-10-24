@@ -381,7 +381,7 @@ class SuiteTests(unittest.TestCase):
         section = long_run.split("## New owner requests", 1)[1].split("\n## ", 1)[0]
         rule = " ".join(section.split())
         for contract in (
-            "record each new owner request or idea before starting it, even mid-run",
+            "record each new owner request or idea as soon as it arrives, before continuing any work, even when it is deferred",
             "quotes the owner's words, minus any secret, with the date",
             "status `PENDING`, or `READY`",
             "backfill rows for earlier unfinished requests",

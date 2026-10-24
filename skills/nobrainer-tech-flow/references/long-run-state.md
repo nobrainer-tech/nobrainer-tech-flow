@@ -77,12 +77,12 @@ row, evidence and next safe action before starting another unit.
 ## New owner requests
 
 A request held only in the transcript can be lost to compaction. While the ledger
-is active, record each new owner request or idea before starting it, even mid-run:
-append a row whose `Outcome` quotes the owner's words, minus any secret, with the
-date (`YYYY-MM-DD`) and status `PENDING`, or `READY` when nothing blocks it. When
-the gate first passes mid-conversation, backfill rows for earlier unfinished
-requests. A request that changes an earlier decision also applies
-`OWNER_DECISION_CHANGED`.
+is active, record each new owner request or idea as soon as it arrives, before
+continuing any work, even when it is deferred: append a row whose `Outcome` quotes
+the owner's words, minus any secret, with the date (`YYYY-MM-DD`) and status
+`PENDING`, or `READY` when nothing blocks it. When the gate first passes
+mid-conversation, backfill rows for earlier unfinished requests. A request that
+changes an earlier decision also applies `OWNER_DECISION_CHANGED`.
 
 At every checkpoint, after compaction and at closeout, reconcile each row against
 current evidence. No row is silently dropped: closeout leaves each one `ACCEPTED`,
