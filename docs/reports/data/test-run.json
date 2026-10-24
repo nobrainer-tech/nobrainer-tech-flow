@@ -1,16 +1,17 @@
 {
  "schema": "nobrainer-flow-test-run/1",
  "exit_code": 0,
- "tests": 563,
- "seconds": 743.567,
+ "tests": 575,
+ "seconds": 1190.625,
  "failures": 0,
  "errors": 0,
- "skipped": 11,
+ "skipped": 5,
  "failed_tests": [],
- "summary": "OK (skipped=11)",
- "python": "3.13.17",
- "system": "Linux",
- "cpus": 4,
- "commit": "e19c6251905f6af7f139002d608ec63c967055cc",
- "note": "One run on one machine; wall time depends on load, and the suite includes a recursive archive acceptance test. Two earlier runs on a shallow clone failed (3 tests, then 1): the second was the portfolio test that needs full git history, and the three names of the first run were not captured. The run above is on a full clone."
+ "summary": "OK (skipped=5)",
+ "python": "3.14.5",
+ "system": "Darwin",
+ "cpus": 10,
+ "commit": "aa2c32ff6d8e6a325cc55a5f9bf7a3eb688b301f",
+ "dirty": false,
+ "note": "One run on one machine. Wall time depends on load; the suite runs a recursive archive acceptance test."
 }
