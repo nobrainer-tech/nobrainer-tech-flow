@@ -26,7 +26,7 @@
 /* Clicking Flo shows a game-style 3-2-1 over the video, then it plays. */
 .countdown { position: absolute; inset: 0; z-index: 2; display: none; place-items: center; pointer-events: none; background: rgba(20, 22, 28, 0.35); font: 900 clamp(72px, 16vw, 180px)/1 "NoBrainer Sans", system-ui, sans-serif; color: #fff; text-shadow: 6px 6px 0 var(--orange); }
 .countdown.on { display: grid; }
-.countdown.on span { animation: count-pop 1s steps(6) both; }
+.countdown.on span { animation: count-pop 0.45s steps(5) both; }
 @keyframes count-pop { from { transform: scale(1.6); opacity: 0; } 30% { transform: scale(1); opacity: 1; } to { transform: scale(0.92); opacity: 0.9; } }
 .tv.playing .mcp { --fw: 118; --fh: 59; background-image: url("/media/mcp-dance.png"); animation: dance 1.951s steps(8) infinite; }
 @keyframes flo-point { from { background-position: 0 0; } to { background-position: calc(var(--fw) * 4 * var(--s) * -1px) 0; } }

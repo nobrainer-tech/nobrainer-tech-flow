@@ -1,5 +1,5 @@
 // PROVE IT block. The page starts retro; MC P switches to classic with a CRT effect, Flo or playing
-// the video switches back with a pixel circle. Clicking Flo also counts 3-2-1 over the video and plays
+// the video switches back with a pixel circle. Clicking Flo also counts a quick 3-2-1 over the video and plays
 // it; Flo points at the video while it is not playing, shows OK when it starts, then dances.
 // Nothing is stored, so a reload is retro again.
 document.addEventListener('DOMContentLoaded', () => {
@@ -43,10 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!video.paused) return;
       stopCount();
       count.classList.add('on');
-      [3, 2, 1].forEach((n, i) => timers.push(setTimeout(() => { count.innerHTML = `<span>${n}</span>`; }, i * 1000)));
-      // The click still counts as a user gesture three seconds later in current browsers;
+      const STEP = 450;
+      [3, 2, 1].forEach((n, i) => timers.push(setTimeout(() => { count.innerHTML = `<span>${n}</span>`; }, i * STEP)));
+      // The click still counts as a user gesture this soon after in current browsers;
       // if sound is refused, start muted rather than not at all.
-      timers.push(setTimeout(() => { stopCount(); video.play().catch(() => { video.muted = true; return video.play(); }).catch(() => {}); }, 3000));
+      timers.push(setTimeout(() => { stopCount(); video.play().catch(() => { video.muted = true; return video.play(); }).catch(() => {}); }, 3 * STEP));
     });
     // Fetch the dance sheets early so the cast does not blank out on the first play.
     ['/media/flo-dance.png', '/media/mcp-dance.png'].forEach((src) => { new Image().src = src; });
