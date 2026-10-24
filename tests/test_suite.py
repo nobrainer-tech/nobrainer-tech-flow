@@ -799,8 +799,7 @@ class SuiteTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         for term in (
             "CAPABILITY_GAP",
-            "npx skills find",
-            "npx skills use",
+            "skills.sh",
             "nobrainer-dispatcher",
             "nobrainer-sessions",
             "MAIN",
@@ -813,6 +812,35 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("ACCEPTANCE", reference)
         self.assertIn("canonical plan", text.lower())
         self.assertNotIn("execution map", text.lower())
+
+    def test_team_external_skill_lookup_is_read_only_and_owner_gated(self) -> None:
+        team = SKILLS / "nobrainer-team"
+        sources = {
+            path: path.read_text(encoding="utf-8")
+            for path in (
+                team / "SKILL.md",
+                team / "references" / "team-plan.md",
+                SKILLS / "nobrainer-tech-flow" / "references" / "routing.md",
+                SKILLS / "nobrainer-tech-flow" / "references" / "setup.md",
+            )
+        }
+        runner = re.compile(
+            r"\b(?:npx|pnpx|bunx|pnpm dlx|yarn dlx|npm exec)\b|`skills\s+(?:add|use|find)\b"
+        )
+        shell_pipe = re.compile(
+            r"\|\s*(?:sudo\s+)?(?:(?:ba|z|da)?sh|python3?|node|perl|ruby)\b(?!\s*\|)"
+        )
+        for path, text in sources.items():
+            with self.subTest(path=path.relative_to(ROOT).as_posix()):
+                self.assertIsNone(runner.search(text), "external lookup must not execute a package")
+                self.assertIsNone(shell_pipe.search(text), "no remote content piped to an interpreter")
+        text = " ".join(sources[team / "SKILL.md"].split())
+        self.assertIn("read-only", text)
+        for field in ("review packet", "publisher", "license", "commit SHA", "SHA-256"):
+            self.assertIn(field, text)
+        gate = next(p for p in sources[team / "SKILL.md"].split("\n\n") if "explicit approval" in p)
+        for term in ("install", "code review", "BUDDY"):
+            self.assertIn(term, gate)
 
     def test_dispatcher_contract_schedules_without_stealing_other_owners(self) -> None:
         text = (SKILLS / "nobrainer-dispatcher" / "SKILL.md").read_text(

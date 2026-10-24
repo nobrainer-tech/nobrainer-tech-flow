@@ -44,9 +44,11 @@ visible MAIN may coordinate many native workers under
 [team execution](../../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
 Record unknown estimates as `UNKNOWN`; they do not block eligible dispatch.
 
-For each external candidate record exact source/ref, discovered name, inspected
-files, scripts not run, permissions, network/credential behavior, trigger
-overlap, license, temporary-use method and removal/rollback.
+For each external candidate record skill ID, source URL, publisher, license,
+commit SHA, install count, inspected files with SHA-256, scripts not run,
+permissions, network/credential behavior, persistence, trigger overlap, use
+method (task-local instructions, or installation with the owner's explicit
+approval reference) and removal/rollback.
 # Capability coverage for durable plans
 
 Use the existing plan to record: needed capability, applicable dimension,

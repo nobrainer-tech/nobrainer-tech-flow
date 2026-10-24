@@ -597,10 +597,12 @@ actually exposes and passes that integration.
 
 The eighteen curated skills are the stable base. When a concrete work unit still
 has a capability gap, `nobrainer-team` first inventories installed/project
-capabilities, then may evaluate one external skill temporarily. Source/ref,
-scripts, permissions, credentials, network behavior, trigger overlap and
-rollback must be inspected before use. Persistent or global installation is an
-owner gate.
+capabilities, then may look up external skills on skills.sh read-only and
+review one candidate at a pinned commit. Source, publisher, license, scripts,
+permissions, credentials, network behavior, persistence, trigger overlap and
+rollback are reviewed as data; nothing from the candidate is executed. Team
+never installs an external skill: installation needs the owner's explicit
+approval after a code review of the exact files.
 
 ## Readback and acceptance
 

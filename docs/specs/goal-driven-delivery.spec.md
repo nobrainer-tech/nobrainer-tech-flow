@@ -67,7 +67,8 @@ name is `nobrainer-tech-flow`; `nb-flow` and `nb-ultra` remain input aliases.
    remain agent work. A late novel consequence needs a new scoped decision.
 3. Bind one whole-SDD goal; partition all acceptance IDs into milestones. Show TODO.
 4. Compute ready work. Team resolves skill gaps from installed/project capabilities
-   or skills.sh. Inspect source/ref, scripts and permission scope before use.
+   or a read-only skills.sh review of source/ref, scripts and permission scope.
+   Installing an external skill needs the owner's explicit approval.
 5. Dispatch up to min(verified effective host/model capacity, useful ready
    units), including all live descendants and review workers in the accounting.
    MAIN continues integration or dependency work. Unknown spawn results count as
