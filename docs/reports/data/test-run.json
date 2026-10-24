@@ -1,0 +1,17 @@
+{
+ "schema": "nobrainer-flow-test-run/1",
+ "exit_code": 0,
+ "tests": 581,
+ "seconds": 761.665,
+ "failures": 0,
+ "errors": 0,
+ "skipped": 5,
+ "failed_tests": [],
+ "summary": "OK (skipped=5)",
+ "python": "3.14.5",
+ "system": "Darwin",
+ "cpus": 10,
+ "commit": "a37bdaeea0dd79311859beb8e4eda32d2b26faa5",
+ "dirty": false,
+ "note": "One run on one machine. Wall time depends on load; the suite runs a recursive archive acceptance test."
+}
