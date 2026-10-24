@@ -33,6 +33,23 @@ test("six tool definitions fit 1,500 o200k_base tokens; each description <= 300 
   assert.ok((sizes.recommend_flow_model ?? 0) <= 300, "advisor definition <= 300 tokens");
 });
 
+test("contract, receipt and DoD fields carry a description", async () => {
+  const { tools } = await client.listTools();
+  const schema = (name: string) => tools.find((t) => t.name === name)!.inputSchema as Record<string, any>;
+  const start = schema("start_flow_task").properties;
+  const fields: Record<string, unknown> = {
+    "dod[].text": start.dod.items.properties.text,
+    "dod[].proof": start.dod.items.properties.proof,
+    "dod[].level": start.dod.items.properties.level,
+    risks: start.risks,
+    "check_flow_done.token": schema("check_flow_done").properties.token,
+    "draft_flow_handoff.receipt": schema("draft_flow_handoff").properties.receipt,
+  };
+  for (const [name, field] of Object.entries(fields)) {
+    assert.ok(typeof (field as { description?: unknown }).description === "string", `${name} description`);
+  }
+});
+
 test("server instructions <= 120 tokens and self-contained in 512 characters", async () => {
   assert.equal(client.getInstructions(), INSTRUCTIONS);
   assert.ok(INSTRUCTIONS.length <= 512, String(INSTRUCTIONS.length));

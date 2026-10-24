@@ -69,6 +69,31 @@ for (const era of ["modern", "legacy", "v1"] as const) {
       await fullRun(c);
     });
 
+    test("resume with the contract token returns a goal block to save", async () => {
+      const start = body(await c.callTool({
+        name: "start_flow_task",
+        arguments: { outcome: "parse() rejects 2026-02-30", dod: [{ text: "new unit test passes", proof: "test" }, { text: "CHANGELOG.md has the entry", proof: "file" }], risks: ["multi_session"] },
+      }));
+      const ev = body(await c.callTool({
+        name: "check_flow_evidence",
+        arguments: { token: start.token, evidence: [{ item: "AC01", kind: "test", cmd: "pytest -q", exit: 0, out: PYTEST, passed: 4 }] },
+      }));
+      const step = body(await c.callTool({ name: "get_flow_step", arguments: { token: ev.token, event: "resume" } }));
+      assert.equal(step.card, "event:resume");
+      assert.equal(step.rules.length, 2);
+      const lines = String(step.goal_block).split("\n");
+      assert.equal(lines[0], `GOAL_ID: flow-${start.contract}`);
+      assert.deepEqual(lines.filter((l) => l.startsWith("- AC")), ["- AC01 test, local: ACCEPTED", "- AC02 file, static: OPEN"]);
+      assert.ok(lines.some((l) => /^CHECKPOINT: 1 of 2 accepted, contract expires \d{4}-\d{2}-\d{2}$/.test(l)));
+      const saved = lines.at(-1)!.replace(/^FLOW_CONTRACT: /, "");
+      assert.match(saved, /^nbf1\./);
+      const notDone = body(await c.callTool({ name: "check_flow_done", arguments: { token: saved } }));
+      assert.deepEqual(notDone.missing.map((m: any) => m.item), ["AC02"]);
+      const plain = body(await c.callTool({ name: "get_flow_step", arguments: { event: "resume" } }));
+      assert.equal(plain.goal_block, undefined);
+      assert.equal(plain.rules.length, 4);
+    });
+
     test("tool errors are isError results with code, why and fix", async () => {
       const r = (await c.callTool({ name: "check_flow_done", arguments: { token: "nbf1.AAAA" } })) as any;
       assert.equal(r.isError, true);

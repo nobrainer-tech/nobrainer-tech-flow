@@ -1,11 +1,11 @@
 # Terms of Use: NoBrainer Tech Flow MCP server
 
-Version 1.0. Effective date: [EFFECTIVE DATE].
+Version 1.0. Effective date: 21 October 2026.
 Published at https://nobrainer.tech/flow/terms/
 
 ## 1. Operator and acceptance
 
-The NoBrainer Tech Flow MCP server (the server at mcp.nobrainer.tech; planned endpoint https://mcp.nobrainer.tech/mcp) is operated by mastalerz.it Arkadiusz Mastalerz, a Polish sole trader registered in CEIDG, ul. Krasnowolska 18E, 02-849 Warszawa, Poland; hello@nobrainer.tech. By calling the server, or by adding it to an AI client, you accept these terms. See also the Privacy Policy at https://nobrainer.tech/flow/privacy/.
+The NoBrainer Tech Flow MCP server (the server at mcp.nobrainer.tech; endpoint https://mcp.nobrainer.tech/mcp) is operated by mastalerz.it Arkadiusz Mastalerz, a Polish sole trader registered in CEIDG, ul. Krasnowolska 18E, 02-849 Warszawa, Poland; hello@nobrainer.tech. By calling the server, or by adding it to an AI client, you accept these terms. See also the Privacy Policy at https://nobrainer.tech/flow/privacy/.
 
 ## 2. The service
 

@@ -11,11 +11,15 @@ import type { ToolDef } from "./common.ts";
 const input = z.strictObject({
   outcome: z.string().max(300).describe("Observable result and who sees it"),
   dod: z
-    .array(z.strictObject({ text: z.string().max(160), proof: z.enum(PROOFS), level: z.enum(LEVELS).optional() }))
+    .array(z.strictObject({
+      text: z.string().max(160).describe("One checkable acceptance item"),
+      proof: z.enum(PROOFS).describe("Evidence kind that proves it"),
+      level: z.enum(LEVELS).optional().describe("Evidence level needed; default per proof"),
+    }))
     .min(1)
     .max(10),
   non_goals: z.array(z.string().max(120)).max(5).optional(),
-  risks: z.array(z.enum(RISKS)).max(6).optional(),
+  risks: z.array(z.enum(RISKS)).max(6).optional().describe("Risks that add Flow modules and owner gates"),
   local_flow: z.string().max(20).optional().describe("Version of a locally loaded Flow skill, if any"),
 });
 
@@ -23,7 +27,7 @@ export const startTool: ToolDef<typeof input> = {
   name: "start_flow_task",
   title: "Start a Flow task",
   description:
-    "Use at the start of a non-trivial task. Checks your proposed outcome and definition of done (DoD) against Flow's contract rules, chooses the quick or full path, and returns DoD item IDs, a signed contract token and the first step. Computes only; stores nothing.",
+    "Use at the start of a non-trivial task. Checks your proposed outcome and definition of done (DoD) against Flow's contract rules, chooses the quick or full path, and returns DoD item IDs, a signed contract token and the first step. Computes only; stores nothing. Save the token in your goal file.",
   input,
   run(args, ctx) {
     const outcome = normaliseText(args.outcome);
