@@ -40,7 +40,7 @@ UI tools, scheduling and telemetry are optional capability adapters.
 |---|---|---|
 | Flow / delivery | Overarching goal, BUDDY, TODO, milestone acceptance and continuation | Owner outcome |
 | SDD | Requirements, acceptance IDs, scope changes | Inspected requirements |
-| Team | Installed inventory, inspected external skills, bounded specialist assignment | Ready work and capability gaps |
+| Team | Installed inventory, task-local specialist briefs, bounded specialist assignment | Ready work and capability gaps |
 | Dispatcher | Ready set, parallel batches, capacity and write conflict checks | Accepted dependencies and Team plan |
 | Build | Implementation and focused repair | Authorized work unit |
 | Review / Security | Concrete findings and risk-appropriate verification | Exact artifact and acceptance |
@@ -67,7 +67,8 @@ name is `nobrainer-tech-flow`; `nb-flow` and `nb-ultra` remain input aliases.
    remain agent work. A late novel consequence needs a new scoped decision.
 3. Bind one whole-SDD goal; partition all acceptance IDs into milestones. Show TODO.
 4. Compute ready work. Team resolves skill gaps from installed/project capabilities
-   or skills.sh. Inspect source/ref, scripts and permission scope before use.
+   or a task-local specialist brief for a native worker; it never searches for,
+   installs or runs third-party skills.
 5. Dispatch up to min(verified effective host/model capacity, useful ready
    units), including all live descendants and review workers in the accounting.
    MAIN continues integration or dependency work. Unknown spawn results count as
@@ -96,7 +97,7 @@ Real security/acceptance blockers cannot be waived by a review-count limit.
 | Available tool fallback before manual handoff | AC05 | CLI unavailable, permitted authenticated UI available | Behavioral |
 | Denial and physical MFA retain real boundaries | AC06 | Denied action not rerouted; independent tests continue | Behavioral |
 | Team capacity globally <=15 and actual host limit | AC07 | Capacity 4, unknown spawn, nested reservations | Behavioral |
-| Skills.sh source becomes scoped specialist | AC08 | Candidate inspection and no-trusted-candidate fallback | Behavioral |
+| Capability gap becomes a task-local specialist | AC08 | Brief from project docs or verified sources; no third-party skill fetched or installed | Behavioral |
 | Review converges without dropping blockers | AC09 | Repeated review with auth defect and independent slice | Behavioral |
 | Concise progress retains exact human unblock action | AC10 | Blocker includes action, destination and resume condition | Behavioral |
 | Canonical naming, stable IDs, historical evidence | AC11 | Maintained source scan and protected history checks | Source |
