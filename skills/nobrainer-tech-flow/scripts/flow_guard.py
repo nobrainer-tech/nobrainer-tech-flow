@@ -19,6 +19,7 @@ https://code.claude.com/docs/en/hooks.
 
 from __future__ import annotations
 
+import fnmatch
 import itertools
 import json
 import os
@@ -75,12 +76,14 @@ STOP_REASON = (
 # A goal file as nobrainer-context's context_inventory.goal_state finds it: Markdown with a
 # GOAL_ID line whose first STATUS is not COMPLETE, in the project root or one or two levels
 # into tasks/, docs/ or .nobrainer/. tests/test_flow_guard.py checks that both agree.
+# Unlike goal_state, the guard follows no symlink, so it never reads outside the project,
+# and stops after MAX_ENTRIES folder entries or MAX_READS files, so it stays fast.
 GOAL_ID = re.compile(r"^GOAL_ID:\s*\S", re.MULTILINE)
 GOAL_STATUS = re.compile(r"^STATUS:\s*([A-Z_]+)", re.MULTILINE)
 GOAL_DIRS = ("", "tasks", "docs", ".nobrainer")
 GOAL_MAX_BYTES = 256 * 1024
-# Bounds that keep the hook fast in a large repository; goal_state has no such limit.
-GOAL_MATCHES_PER_PATTERN = 500
+MAX_ENTRIES = 5000
+MAX_READS = 200
 # The goal file is repository content, so none of its text reaches the context: only a
 # STATUS from references/long-run-state.md, and only a path made of these characters.
 KNOWN_STATUSES = ("ACTIVE", "BLOCKED", "OWNER_DECISION_REQUIRED")
@@ -261,29 +264,59 @@ def project_root(cwd: Path) -> Path:
 
 
 def goal_text(path: Path) -> str | None:
-    """The text of a regular file up to GOAL_MAX_BYTES, or None for anything else."""
+    """The text of a regular file of at most GOAL_MAX_BYTES; None for anything else.
 
-    try:
-        # A device or FIFO is never opened; one swapped in after this check cannot block
-        # the non-blocking open and fails the second check.
-        if not stat.S_ISREG(os.stat(path).st_mode):
-            return None
-        with os.fdopen(os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0)), "rb") as handle:
-            if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
-                return None
-            data = handle.read(GOAL_MAX_BYTES + 1)
-    except OSError:
+    A symlink, device or FIFO is never opened. Errors propagate: the caller says nothing.
+    """
+
+    if not stat.S_ISREG(os.lstat(path).st_mode):
         return None
+    # Non-blocking and no-follow, so a FIFO or link swapped in after the check fails below.
+    flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
+    with os.fdopen(os.open(path, flags), "rb") as handle:
+        if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
+            return None
+        data = handle.read(GOAL_MAX_BYTES + 1)
     return data.decode("utf-8", errors="replace") if len(data) <= GOAL_MAX_BYTES else None
 
 
 def active_goals(root: Path) -> list[tuple[Path, str]]:
-    """(path, STATUS) of each active goal file, in goal_state order."""
+    """(path, STATUS) of each active goal file, in goal_state order, within the bounds."""
+
+    budget = {"entries": MAX_ENTRIES, "reads": MAX_READS}
+
+    def listing(folder: Path) -> list[os.DirEntry]:
+        """FOLDER's entries other than symlinks, up to what is left of the entry budget."""
+
+        if not os.path.isdir(folder):
+            return []
+        found = []
+        with os.scandir(folder) as entries:
+            for entry in entries:
+                if budget["entries"] <= 0:
+                    break
+                budget["entries"] -= 1
+                if not entry.is_symlink():
+                    found.append(entry)
+        return sorted(found, key=lambda entry: entry.name)
+
+    def markdown(folder: Path, entries: list[os.DirEntry]) -> list[Path]:
+        return [folder / entry.name for entry in entries if fnmatch.fnmatchcase(entry.name, "*.md")]
 
     goals = []
     for sub in GOAL_DIRS:
-        for pattern in ("*.md", "*/*.md") if sub else ("*.md",):
-            for path in sorted(itertools.islice((root / sub).glob(pattern), GOAL_MATCHES_PER_PATTERN)):
+        folder = root / sub
+        # The project root is where the session is; a linked tasks/, docs/ or .nobrainer/ is not.
+        entries = [] if sub and os.path.islink(folder) else listing(folder)
+        groups = [markdown(folder, entries)]
+        if sub:
+            folders = [folder / entry.name for entry in entries if entry.is_dir(follow_symlinks=False)]
+            groups.append([path for inner in folders for path in markdown(inner, listing(inner))])
+        for group in groups:
+            for path in sorted(group):
+                if budget["reads"] <= 0:
+                    return goals
+                budget["reads"] -= 1
                 text = goal_text(path)
                 if text is None or not GOAL_ID.search(text):
                     continue
@@ -310,6 +343,9 @@ def shown_path(path: Path, cwd: Path) -> str | None:
 def session(payload: dict) -> dict | None:
     cwd = payload.get("cwd")
     folder = Path(cwd) if isinstance(cwd, str) and os.path.isabs(cwd) else Path.cwd()
+    # A session folder that is missing or cannot be listed is an error, so nothing is said.
+    with os.scandir(folder):
+        pass
     goals = active_goals(project_root(folder))
     if not goals:
         return None
@@ -336,9 +372,14 @@ def main(argv: list[str] | None = None) -> int:
             payload = json.loads(sys.stdin.read())
             result = session(payload) if isinstance(payload, dict) else None
             if result is not None:
-                print(json.dumps(result))
+                sys.stdout.write(json.dumps(result) + "\n")
+                sys.stdout.flush()
         except Exception:
-            pass
+            # Output that could not be written must not fail again when Python exits.
+            try:
+                os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+            except (OSError, ValueError):
+                pass
         return 0
     try:
         payload = json.loads(sys.stdin.read())

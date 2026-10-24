@@ -458,9 +458,10 @@ Opt-in hooks in your Claude Code user `settings.json`, never in the plugin:
 - after compaction, resume or clear, the agent is told to re-read up to three
   active Flow goal files (a `GOAL_ID:` line and a `STATUS` other than `COMPLETE`,
   in the project root, `tasks/`, `docs/` or `.nobrainer/`). It prints only each
-  path and a known `STATUS` word, never other goal-file text, skips names with
-  characters other than letters, digits, `.`, `-` and `_`, and prints nothing on
-  any error.
+  path and a known `STATUS` word, never other goal-file text; it follows no
+  symlink, skips names with characters other than letters, digits, `.`, `-` and
+  `_`, stops after 5,000 folder entries or 200 files, and prints nothing on any
+  error.
 
 This is a seatbelt, not a security boundary. It reads the command text, so
 `sh -c`, a variable or an alias gets past it, and a risky phrase inside a quoted
