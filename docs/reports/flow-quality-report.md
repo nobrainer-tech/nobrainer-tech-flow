@@ -41,7 +41,7 @@ CI snapshot of the `Validate` workflow, captured 2026-10-23 from the GitHub Acti
 
 A failed run on a pull-request branch can be the gate catching a problem before merge, so the pull-request rate is not a defect rate; the snapshot does not record why a run failed. The `main` row covers runs after merge. The snapshot keeps only the final attempt of each run.
 
-Local full suite (`Darwin`, Python 3.14.5, 10 CPUs): **575 tests, exit 0** (0 failures, 0 errors, 5 skipped) in 1191 s on commit `aa2c32ff6d` (clean tree); the report files were regenerated after the run. One run on one machine. Wall time depends on load; the suite runs a recursive archive acceptance test.
+Local full suite (`Darwin`, Python 3.14.5, 10 CPUs): **580 tests, exit 0** (0 failures, 0 errors, 5 skipped) in 919 s on commit `51a46e58f4` (clean tree); the report files were regenerated after the run. One run on one machine. Wall time depends on load; the suite runs a recursive archive acceptance test.
 
 - Full deterministic suite at 2.5.0: 544 tests, exit 1 with two failures and five skips. The record says both failures came from an old extracted plugin in the ignored backup directory. ([docs/releases/v2.5.0.md](../../docs/releases/v2.5.0.md))
 - Only the two failed tests were rerun after the old directory was moved out of the checkout: both passed, exit 0, with no source change in between. ([docs/releases/v2.5.0.md](../../docs/releases/v2.5.0.md))
@@ -122,7 +122,7 @@ Each entry stores excerpts of an existing record, and the script fails when a st
 ```bash
 python3 scripts/flow_report.py --check     # fail if this file is stale
 python3 scripts/flow_report.py --write     # regenerate it
-python3 scripts/flow_report.py --run-tests --write   # also re-run the full suite (the recorded run took about 20 minutes)
+python3 scripts/flow_report.py --run-tests --write   # also re-run the full suite (the recorded run took about 15 minutes)
 ```
 
 The CI snapshot is stored in `docs/reports/data/ci-validate-runs.json` and has to be refreshed from the GitHub Actions API by hand; the script never touches the network.
