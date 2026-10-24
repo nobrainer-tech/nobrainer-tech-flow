@@ -1,20 +1,28 @@
 {
   "schema": "nobrainer-flow-evidence-ledger/1",
-  "note": "Figures quoted from existing repository records. scripts/flow_report.py fails when a quote no longer appears in its source, so a figure cannot drift silently.",
+  "note": "Figures quoted from existing repository records. Each entry stores excerpts of its source. scripts/flow_report.py fails when a stored excerpt no longer appears in its source file, so a removed or reworded source is detected. The script does not recompute the figures in a claim: the stored excerpts are the evidence, and a claim that adds a figure must store an excerpt that contains it.",
   "entries": [
     {
       "id": "suite-full-run-2.5.0",
       "metric": "reliability",
       "claim": "Full deterministic suite at 2.5.0: 544 tests, exit 1 with two failures and five skips. The record says both failures came from an old extracted plugin in the ignored backup directory.",
       "source": "docs/releases/v2.5.0.md",
-      "quote": "The final full run executed 544 tests in 1081.229 seconds and returned exit 1"
+      "quote": [
+        "The final full run executed 544 tests in 1081.229 seconds and returned exit 1",
+        "(two failures, five skips)",
+        "old extracted plugin in the ignored backup directory"
+      ]
     },
     {
       "id": "suite-rerun-2.5.0",
       "metric": "reliability",
       "claim": "Only the two failed tests were rerun after the old directory was moved out of the checkout: both passed, exit 0, with no source change in between.",
       "source": "docs/releases/v2.5.0.md",
-      "quote": "both passed, exit 0, in 396.922 seconds"
+      "quote": [
+        "Only the two failed tests were rerun",
+        "both passed, exit 0, in 396.922 seconds",
+        "No source changed between the failed run and this rerun"
+      ]
     },
     {
       "id": "mutation-install-sh",
@@ -26,10 +34,13 @@
     {
       "id": "behavior-promotion-final5-1.3.0",
       "metric": "quality",
-      "claim": "1.3.0 evaluator-integrity candidate: promoted on a sealed holdout. With two blinded judges calibrated on known-good and known-bad controls, the candidate scored 8/8 in 3 of 3 paired repetitions and the baseline in 2 of 3. Three repetitions is the minimum the repository asks for a borderline promotion claim, so this is a small sample.",
+      "claim": "1.3.0 evaluator-integrity candidate: promoted on a sealed holdout. With two blinded judges calibrated on known-good and known-bad controls, the candidate scored 8/8 in 3 of 3 paired repetitions and the baseline in 2 of 3. The record has three paired repetitions.",
       "source": "docs/evals/v1.3.0-autoimprove-integrity-2026-09-01.md",
       "quote": [
         "Candidate scored 8/8 in 3/3 repetitions from both judges; baseline scored 8/8 in 2/3 from both.",
+        "Both independent blinded judges calibrated on known-good and known-bad controls.",
+        "Sealed holdout:",
+        "Three paired repetitions",
         "PROMOTION: PROMOTED"
       ]
     },
@@ -59,7 +70,12 @@
       "metric": "quality",
       "claim": "The 2026-08-29 portfolio audit promoted three skills on a four-point structural check (0/4 to 4/4). The record calls the points literal contract assertions, not a model score.",
       "source": "docs/evals/portfolio-autoimprove-2026-08-29.md",
-      "quote": "The points are literal contract assertions, not a subjective model score"
+      "quote": [
+        "`nobrainer-ultra` `0/4 -> 4/4`",
+        "`nobrainer-review` `0/4 -> 4/4`",
+        "`nobrainer-autoimprove` `0/4 -> 4/4`",
+        "The points are literal contract assertions, not a subjective model score"
+      ]
     },
     {
       "id": "tokens-per-call-1.6.1",
@@ -98,7 +114,9 @@
         "\"cached_input_tokens\": 52480",
         "\"output_tokens\": 441",
         "\"output_tokens\": 902",
-        "\"comparison_claim\": \"NONE; single bounded trials, different tool/context paths\""
+        "\"comparison_claim\": \"NONE; single bounded trials, different tool/context paths\"",
+        "\"model_requested\": \"gpt-6-astra\"",
+        "\"model_requested\": \"gpt-5.6-luna\""
       ]
     },
     {

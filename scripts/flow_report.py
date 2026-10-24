@@ -66,15 +66,22 @@ def minutes(seconds: float) -> str:
 
 # --- repository files ------------------------------------------------------
 
-def files_under(rel: str) -> list[Path]:
-    """Files under a repository directory: the tracked ones when git knows them, else a plain walk.
+def own_checkout() -> bool:
+    """True when ROOT is the top level of a git checkout, so `git ls-files` describes exactly this tree."""
+    top = git("rev-parse", "--show-toplevel")
+    return bool(top) and Path(top).resolve() == ROOT.resolve()
 
-    Tracked files only, so untracked scratch files and bytecode caches left by a local run never change
-    the report for a given commit (a new file counts once it is added to the index). Outside a git
-    checkout, such as an extracted archive, the walk skips bytecode caches.
+
+def files_under(rel: str) -> list[Path]:
+    """Files under a repository directory: the tracked ones in a git checkout, else a plain walk.
+
+    In a checkout only tracked files count (an empty listing is an empty answer), so untracked scratch
+    files and bytecode caches left by a local run never change the report for a given commit; a new
+    file counts once it is added to the index. Outside a checkout, such as an extracted archive, the
+    walk skips bytecode caches.
     """
-    listed = [x for x in git("ls-files", "-z", "--", rel).split("\0") if x]
-    if listed:
+    if own_checkout():
+        listed = [x for x in git("ls-files", "-z", "--", rel).split("\0") if x]
         return sorted(p for p in (ROOT / x for x in listed) if p.is_file())
     return sorted(p for p in (ROOT / rel).rglob("*")
                   if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc")
@@ -86,8 +93,8 @@ def shipped_size(path: Path) -> int:
 
 
 def history() -> bool:
-    """True when this checkout has full history and version tags, which the cadence and workflow dates need."""
-    return git("rev-parse", "--is-shallow-repository") == "false" and bool(git("tag", "--list", "v[0-9]*"))
+    """True when this is a git checkout with full history, which the release cadence and workflow dates need."""
+    return own_checkout() and git("rev-parse", "--is-shallow-repository") == "false"
 
 
 # --- quality ---------------------------------------------------------------
@@ -166,19 +173,28 @@ def ci_stats(snapshot: dict | None) -> dict | None:
 
 
 def release_cadence() -> dict | None:
-    """Stable version tags per month; `None` without full history and tags (see `history`)."""
+    """Release records (`docs/releases/vX.Y.Z.md`) by month of the commit that first added them.
+
+    Derived from commit history alone, so it does not depend on which tags a clone has fetched.
+    `None` without full history (see `history`).
+    """
     if not history():
         return None
+    first_added: dict[str, str] = {}
+    day = ""
+    for line in git("log", "--diff-filter=A", "--name-only", "--format=@@%ad", "--date=short", "--", "docs/releases").splitlines():
+        if line.startswith("@@"):
+            day = line[2:]
+        elif re.fullmatch(r"docs/releases/v\d+\.\d+\.\d+\.md", line.strip()):
+            first_added[line.strip()] = day  # git lists newest first, so the last assignment is the oldest add
     months: dict[str, int] = {}
-    for line in git("for-each-ref", "--format=%(refname:short) %(creatordate:short)", "refs/tags").splitlines():
-        tag, _, day = line.partition(" ")
-        if re.fullmatch(r"v\d+\.\d+\.\d+", tag):
-            months[day[:7]] = months.get(day[:7], 0) + 1
-    return {"releases": sum(months.values()), "months": dict(sorted(months.items()))} if months else None
+    for added in first_added.values():
+        months[added[:7]] = months.get(added[:7], 0) + 1
+    return {"records": len(first_added), "months": dict(sorted(months.items()))} if first_added else None
 
 
 def workflow_change_dates() -> list[str] | None:
-    """Days on which the CI workflow file changed; `None` without full history and tags (see `history`)."""
+    """Days on which the CI workflow file changed; `None` without full history (see `history`)."""
     if not history():
         return None
     days = git("log", "--format=%ad", "--date=short", "--", ".github/workflows/validate.yml").splitlines()
@@ -289,8 +305,8 @@ def render(include_tests: dict | None) -> tuple[str, bool]:
         a, m = ci["all"], ci["main_push"]
         add(f"| Reliability | CI pass rate of the `Validate` workflow, cancelled runs excluded | PARTIAL | {a['pass_rate']} of {a['success'] + a['failure']} finished runs "
             f"(`main` pushes {m['pass_rate']} of {m['success'] + m['failure']}) |")
-        add(f"| Speed | Wall time of a green `Validate` run, and version tags per month | PARTIAL | latest month median {minutes(list(ci['monthly'].values())[-1][1])}, p90 {minutes(list(ci['monthly'].values())[-1][2])}"
-            + (f"; {cadence['releases']} version tags" if cadence else "; version tags `NOT_RUN` here") + " |")
+        add(f"| Speed | Wall time of a green `Validate` run, and release records per month | PARTIAL | latest month median {minutes(list(ci['monthly'].values())[-1][1])}, p90 {minutes(list(ci['monthly'].values())[-1][2])}"
+            + (f"; {cadence['records']} release records added" if cadence else "; release records per month `NOT_RUN` here") + " |")
     else:
         add("| Reliability | CI pass rate | NOT_RUN | no CI snapshot in `docs/reports/data/` |")
         add("| Speed | CI wall time | NOT_RUN | no CI snapshot |")
@@ -344,7 +360,7 @@ def render(include_tests: dict | None) -> tuple[str, bool]:
         add("Green `Validate` runs, start to last update of the whole workflow run, so every job the workflow had at the time. "
             "The workflow file and the suite changed over this period"
             + (f" (the workflow file changed on {', '.join(workflow_days)})" if workflow_days
-               else " (workflow change dates: `NOT_RUN` here, a full clone with tags is needed)")
+               else " (workflow change dates: `NOT_RUN` here, a git checkout with full history is needed)")
             + ", and this report does not attribute the differences to any change, so compare within a month only. p90 is a nearest-rank estimate.")
         add("")
         add("| Month | Green runs | Median | p90 |")
@@ -353,11 +369,11 @@ def render(include_tests: dict | None) -> tuple[str, bool]:
             add(f"| {month} | {n} | {minutes(med)} | {minutes(p90)} |")
     add("")
     if cadence:
-        add(f"Stable version tags per month: "
+        add(f"Release records (`docs/releases/vX.Y.Z.md`) by month of the commit that first added them: "
             + ", ".join(f"{m}: {n}" for m, n in cadence["months"].items())
-            + f" ({cadence['releases']} in total). The date is the tag date for an annotated tag and the commit date for a lightweight tag.")
+            + f" ({cadence['records']} in total). This counts documented releases, not delivered value.")
     else:
-        add("Stable version tags per month: `NOT_RUN` here; this needs a full clone with tags.")
+        add("Release records by month: `NOT_RUN` here; this needs a git checkout with full history.")
     add("")
     for e in ledger:
         if e["metric"] == "speed":
@@ -388,7 +404,8 @@ def render(include_tests: dict | None) -> tuple[str, bool]:
     add("")
     add("## Evidence ledger")
     add("")
-    add("Each figure quoted above is copied from an existing record. The script re-checks that the quote is still in its source.")
+    add("Each entry stores excerpts of an existing record, and the script fails when a stored excerpt no longer appears in its source. "
+        "It does not recompute the figures in a claim: the excerpts are the evidence for them.")
     add("")
     add("| Entry | Metric | Source | Quote still present |")
     add("|---|---|---|---|")
@@ -416,7 +433,7 @@ def main() -> int:
     args = ap.parse_args()
 
     if (args.write or args.check) and not history():
-        print("error: the report needs a full clone with version tags (git fetch --unshallow --tags); refusing to write or check a degraded report",
+        print("error: the report needs a git checkout with full history (git fetch --unshallow); refusing to write or check a degraded report",
               file=sys.stderr)
         return 2
     tests = None
@@ -425,6 +442,9 @@ def main() -> int:
         DATA.mkdir(parents=True, exist_ok=True)
         (DATA / "test-run.json").write_text(json.dumps(tests, indent=1) + "\n", encoding="utf-8")
     text, ok = render(tests)
+    if tests and tests["exit_code"] != 0:
+        print(f"suite failed: {tests['summary']}", file=sys.stderr)
+        ok = False
     if args.check:
         current = REPORT.read_text(encoding="utf-8") if REPORT.exists() else ""
         if current != text:

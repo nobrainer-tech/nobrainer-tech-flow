@@ -12,18 +12,18 @@ Each metric on the scoreboard carries a status: `MEASURED`, `PARTIAL` (a real nu
 
 | Metric | Definition | Status | Headline |
 |---|---|---|---|
-| Quality | Whether Flow's own gates hold, plus recorded behavior evaluations | PARTIAL | validators pass; 575 test cases in 37 files; installer mutation catch 30 of 34; behavior evaluations quoted below: one measured promotion (3 paired repetitions), one rejected (1.6.1) |
+| Quality | Whether Flow's own gates hold, plus recorded behavior evaluations | PARTIAL | validators pass; 580 test cases in 37 files; installer mutation catch 30 of 34; behavior evaluations quoted below: one measured promotion (3 paired repetitions), one rejected (1.6.1) |
 | Reliability | CI pass rate of the `Validate` workflow, cancelled runs excluded | PARTIAL | 90.9% of 198 finished runs (`main` pushes 98.6% of 70) |
-| Speed | Wall time of a green `Validate` run, and version tags per month | PARTIAL | latest month median 15.4 min, p90 19.9 min; 34 version tags |
+| Speed | Wall time of a green `Validate` run, and release records per month | PARTIAL | latest month median 15.4 min, p90 19.9 min; 35 release records added |
 | Cost | Context Flow adds before any work starts, and recorded token receipts | PARTIAL | up to ~1,723 tokens shipped for session start (estimate); no dollars-per-task figure |
 
 ## Quality
 
 - Structure validators (`validate_skills.py`, `--suite`): pass on this checkout.
-- Test suite: 575 test cases defined across 37 files (counted statically, one per class and method name, which is how unittest discovery counts them; the run result is under Reliability).
+- Test suite: 580 test cases defined across 37 files (counted statically, one per class and method name, which is how unittest discovery counts them; the run result is under Reliability).
 - Records: 35 release records and 7 evaluation records in `docs/`.
 - Mutation check of the shell installer tests: 30 of 34 mutants caught. The release record says why the other four were not. ([docs/TESTING.md](../../docs/TESTING.md))
-- 1.3.0 evaluator-integrity candidate: promoted on a sealed holdout. With two blinded judges calibrated on known-good and known-bad controls, the candidate scored 8/8 in 3 of 3 paired repetitions and the baseline in 2 of 3. Three repetitions is the minimum the repository asks for a borderline promotion claim, so this is a small sample. ([docs/evals/v1.3.0-autoimprove-integrity-2026-09-01.md](../../docs/evals/v1.3.0-autoimprove-integrity-2026-09-01.md))
+- 1.3.0 evaluator-integrity candidate: promoted on a sealed holdout. With two blinded judges calibrated on known-good and known-bad controls, the candidate scored 8/8 in 3 of 3 paired repetitions and the baseline in 2 of 3. The record has three paired repetitions. ([docs/evals/v1.3.0-autoimprove-integrity-2026-09-01.md](../../docs/evals/v1.3.0-autoimprove-integrity-2026-09-01.md))
 - Behavior evaluation of the 1.6.1 candidate against the 1.6.0 baseline ended in a rejected promotion. Three paired four-case response simulations scored 95/96 (baseline) and 94/96 (candidate); one sealed two-case simulation scored 15/16 and 14/16. The record says these results support no quality, token-savings or model-equivalence claim. ([docs/releases/v1.6.1.md](../../docs/releases/v1.6.1.md))
 - The 2026-08-29 portfolio audit promoted three skills on a four-point structural check (0/4 to 4/4). The record calls the points literal contract assertions, not a model score. ([docs/evals/portfolio-autoimprove-2026-08-29.md](../../docs/evals/portfolio-autoimprove-2026-08-29.md))
 - **Not measured:** whether work done with Flow is more correct, more complete or better verified than work done without it.
@@ -58,7 +58,7 @@ Green `Validate` runs, start to last update of the whole workflow run, so every 
 | 2026-09 | 94 | 0.5 min | 1.8 min |
 | 2026-10 | 52 | 15.4 min | 19.9 min |
 
-Stable version tags per month: 2026-08: 4, 2026-09: 19, 2026-10: 11 (34 in total). The date is the tag date for an annotated tag and the commit date for a lightweight tag.
+Release records (`docs/releases/vX.Y.Z.md`) by month of the commit that first added them: 2026-08: 5, 2026-09: 19, 2026-10: 11 (35 in total). This counts documented releases, not delivered value.
 
 - The 2.3.0 record states that no runtime benchmark was run for that release and that no measured speed or token saving is claimed. ([docs/releases/v2.3.0.md](../../docs/releases/v2.3.0.md))
 - **Not measured:** time from request to verified delivery with and without Flow, or any gain from delegation.
@@ -99,7 +99,7 @@ Flow's standing cost is context. Sizes below are bytes of text; tokens are bytes
 
 ## Evidence ledger
 
-Each figure quoted above is copied from an existing record. The script re-checks that the quote is still in its source.
+Each entry stores excerpts of an existing record, and the script fails when a stored excerpt no longer appears in its source. It does not recompute the figures in a claim: the excerpts are the evidence for them.
 
 | Entry | Metric | Source | Quote still present |
 |---|---|---|---|

@@ -104,6 +104,64 @@ class FlowReportTests(unittest.TestCase):
             with mock.patch.object(flow_report, "ROOT", root):
                 self.assertEqual(flow_report.test_inventory(), {"files": 1, "defined_cases": 1})
 
+    @unittest.skipUnless(shutil.which("git"), "git is needed to build a checkout fixture")
+    def test_a_checkout_with_no_tracked_files_under_a_path_counts_none(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "docs" / "evals").mkdir(parents=True)
+            (root / "docs" / "evals" / "scratch.md").write_text("untracked\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            with mock.patch.object(flow_report, "ROOT", root):
+                self.assertEqual(flow_report.files_under("docs/evals"), [])
+
+    @unittest.skipUnless(shutil.which("git"), "git is needed to build a checkout fixture")
+    def test_a_tree_inside_someone_elses_repository_is_walked_not_listed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outer = Path(tmp)
+            subprocess.run(["git", "init", "-q", str(outer)], check=True)
+            inner = outer / "extracted"
+            (inner / "skills" / "demo").mkdir(parents=True)
+            (inner / "skills" / "demo" / "SKILL.md").write_text("x\n", encoding="utf-8")
+            with mock.patch.object(flow_report, "ROOT", inner):
+                self.assertFalse(flow_report.own_checkout())
+                self.assertEqual([p.name for p in flow_report.files_under("skills")], ["SKILL.md"])
+
+    def test_release_cadence_counts_records_by_the_month_they_were_first_added(self):
+        log = "\n".join(["@@2026-10-02", "docs/releases/v2.0.0.md", "", "@@2026-09-30", "docs/releases/v1.9.0.md",
+                          "docs/releases/v1.9.1.md", "docs/releases/v1.9.1-readback.md", "",
+                          "@@2026-08-31", "docs/releases/v1.9.0.md"])
+        with mock.patch.object(flow_report, "history", return_value=True), mock.patch.object(flow_report, "git", return_value=log):
+            cadence = flow_report.release_cadence()
+        self.assertEqual(cadence, {"records": 3, "months": {"2026-08": 1, "2026-09": 1, "2026-10": 1}})
+
+    def test_a_failing_fresh_suite_fails_the_command(self):
+        failed = {"schema": "s", "exit_code": 1, "tests": 3, "seconds": 1.0, "failures": 1, "errors": 0, "skipped": 0,
+                  "failed_tests": ["t.C.test_x"], "summary": "FAILED (failures=1)", "python": "3", "system": "Linux",
+                  "cpus": 1, "commit": "0123456789abcdef", "dirty": False, "note": "n"}
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(flow_report, "DATA", Path(tmp) / "data"), \
+                mock.patch.object(flow_report, "run_suite", return_value=failed), \
+                mock.patch.object(flow_report, "validators", return_value={"skills": True, "suite": True}), \
+                mock.patch.object(sys, "argv", ["flow_report.py", "--run-tests"]), \
+                mock.patch.object(sys, "stdout", io.StringIO()), redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(flow_report.main(), 1)
+            self.assertTrue((Path(tmp) / "data" / "test-run.json").exists())
+        self.assertIn("suite failed", err.getvalue())
+
+    def test_run_suite_records_a_dirty_tree_and_the_commit(self):
+        done = mock.Mock(returncode=0, stderr="Ran 3 tests in 1.5s\n\nOK (skipped=1)\n")
+
+        def fake_git(*args):
+            return {"rev-parse": "0123456789abcdef", "status": " M scripts/flow_report.py"}[args[0]]
+
+        with mock.patch.object(flow_report.subprocess, "run", return_value=done), mock.patch.object(flow_report, "git", side_effect=fake_git):
+            run = flow_report.run_suite()
+        self.assertEqual((run["tests"], run["skipped"], run["exit_code"], run["dirty"], run["commit"]),
+                         (3, 1, 0, True, "0123456789abcdef"))
+        with mock.patch.object(flow_report.subprocess, "run", return_value=done), \
+                mock.patch.object(flow_report, "git", side_effect=lambda *a: "" if a[0] == "status" else "0123456789abcdef"):
+            self.assertFalse(flow_report.run_suite()["dirty"])
+
     def test_size_counts_crlf_as_lf(self):
         with tempfile.TemporaryDirectory() as tmp:
             lf, crlf = Path(tmp) / "lf.md", Path(tmp) / "crlf.md"
@@ -115,6 +173,7 @@ class FlowReportTests(unittest.TestCase):
         self.assertEqual(flow_report.percentile([1, 2, 3, 4, 5, 6], 0.9), 6)
         self.assertEqual(flow_report.percentile([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0.9), 9)
         self.assertEqual(flow_report.percentile([7], 0.9), 7)
+        self.assertEqual(flow_report.percentile([6, 1, 5, 2, 4, 3], 0.9), 6)
 
     def test_failed_test_ids_are_not_doubled(self):
         err = ("FAIL: test_a (test_mod.Case.test_a)\nERROR: test_b (tests.test_mod.Case.test_b)\n"
@@ -132,12 +191,12 @@ class FlowReportTests(unittest.TestCase):
     def test_without_full_history_the_report_says_not_run_and_will_not_be_written(self):
         with mock.patch.object(flow_report, "history", return_value=False):
             text, _ = render_without_validators()
-            self.assertIn("Stable version tags per month: `NOT_RUN` here", text)
-            self.assertIn("version tags `NOT_RUN` here", text)
+            self.assertIn("Release records by month: `NOT_RUN` here", text)
+            self.assertIn("release records per month `NOT_RUN` here", text)
             err = io.StringIO()
             with mock.patch.object(sys, "argv", ["flow_report.py", "--write"]), redirect_stderr(err):
                 self.assertEqual(flow_report.main(), 2)
-            self.assertIn("full clone", err.getvalue())
+            self.assertIn("full history", err.getvalue())
 
     def test_report_is_deterministic_and_states_what_is_not_measured(self):
         first, _ = flow_report.render(None)
