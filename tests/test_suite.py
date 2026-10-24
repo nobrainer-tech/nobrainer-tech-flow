@@ -369,6 +369,53 @@ class SuiteTests(unittest.TestCase):
         for name in CANONICAL:
             self.assertIn(name, routing)
 
+    def test_ledger_captures_owner_requests_added_in_one_long_conversation(self) -> None:
+        flow = SKILLS / "nobrainer-tech-flow"
+        skill = " ".join((flow / "SKILL.md").read_text(encoding="utf-8").split())
+        self.assertIn("Otherwise a multi-component task", skill)
+        gate = skill[skill.index("Use a detailed ledger only when") : skill.index("Otherwise a multi-component task")]
+        self.assertIn("the owner keeps adding requests mid-run in one long conversation", gate)
+
+        long_run = (flow / "references" / "long-run-state.md").read_text(encoding="utf-8")
+        self.assertIn("## New owner requests", long_run)
+        section = long_run.split("## New owner requests", 1)[1].split("\n## ", 1)[0]
+        rule = " ".join(section.split())
+        for contract in (
+            "record each new owner request or idea as soon as it arrives, before continuing any work, even when it is deferred",
+            "quotes the owner's words, minus any secret, with the date",
+            "status `PENDING`, or `READY`",
+            "backfill rows for earlier unfinished requests",
+            "at every checkpoint, after compaction and at closeout, reconcile each row",
+            "no row is silently dropped",
+        ):
+            self.assertIn(contract.lower(), rule.lower())
+        states = re.search(r"Useful states are (.+?)\. A report", " ".join(long_run.split()))
+        self.assertIsNotNone(states)
+        allowed = set(re.findall(r"`([A-Z_]+)`", states.group(1))) | {"OWNER_DECISION_CHANGED"}
+        used = set(re.findall(r"`([A-Z_]+)`", section))
+        self.assertLessEqual({"ACCEPTED", "STOPPED", "OWNER_DECISION_REQUIRED"}, used)
+        self.assertLessEqual(used, allowed)
+
+        self.assertIn("by default `.nobrainer/goal.md`", " ".join(long_run.split()))
+        inventory = SKILLS / "nobrainer-context" / "scripts" / "context_inventory.py"
+        with tempfile.TemporaryDirectory() as raw:
+            root = (Path(raw) / "repo").resolve()
+            (root / ".git").mkdir(parents=True)
+            (root / ".nobrainer").mkdir()
+            (root / ".nobrainer" / "goal.md").write_text(
+                "GOAL_ID: g-1\nOUTCOME: ship\nSTATUS: ACTIVE\n", encoding="utf-8"
+            )
+            result = subprocess.run(
+                ["python3", str(inventory), "--cwd", str(root), "--codex-config",
+                 str(root / "missing.toml"), "--client", "codex", "--json"],
+                cwd=ROOT, capture_output=True, text=True, check=False,
+            )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(
+            [{"path": ".nobrainer/goal.md", "status": "ACTIVE"}],
+            json.loads(result.stdout)["goal"]["goal_files"],
+        )
+
     def test_model_routing_contract_is_explicit(self) -> None:
         policy = (
             SKILLS / "nobrainer-tech-flow" / "references" / "model-routing.md"

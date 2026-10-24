@@ -7,7 +7,9 @@ ordinary single-session work.
 ## One canonical ledger
 
 Use the project's existing Markdown tracker when suitable. Otherwise create one
-small task-local Markdown artifact. It is the only mutable owner of execution state;
+small task-local Markdown `GOAL_FILE`, by default `.nobrainer/goal.md`, which the
+context inventory already searches; do not commit it to a public repository.
+It is the only mutable owner of execution state;
 specifications define required truth, reports provide evidence, and the wiki
 stores durable knowledge.
 
@@ -71,6 +73,21 @@ transcript summary, cached plan or native goal never overrides newer file state.
 The same file owns the outcome-level TODO rows; health gates may checkpoint them
 but cannot mark work complete. On every material transition, update the current
 row, evidence and next safe action before starting another unit.
+
+## New owner requests
+
+A request held only in the transcript can be lost to compaction. While the ledger
+is active, record each new owner request or idea as soon as it arrives, before
+continuing any work, even when it is deferred: append a row whose `Outcome` quotes
+the owner's words, minus any secret, with the date (`YYYY-MM-DD`) and status
+`PENDING`, or `READY` when nothing blocks it. When the gate first passes
+mid-conversation, backfill rows for earlier unfinished requests. A request that
+changes an earlier decision also applies `OWNER_DECISION_CHANGED`.
+
+At every checkpoint, after compaction and at closeout, reconcile each row against
+current evidence. No row is silently dropped: closeout leaves each one `ACCEPTED`,
+`STOPPED` with the owner decision that stopped it, or visibly open as `BLOCKED` or
+`OWNER_DECISION_REQUIRED` with its next step named in the final report.
 
 ## Recovery card
 

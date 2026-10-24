@@ -142,16 +142,16 @@ commands, errors, numbers and negations; expand when brevity risks ambiguity.
 Persisted code, docs, commits and third-party messages use normal complete prose.
 The checklist views the canonical TODO; accept evidence, not worker reports.
 A stale summary never authorizes a successor.
-Use a detailed ledger only when at least one condition is true:
+Use a detailed ledger only when any condition holds:
 
 - work crosses sessions or must resume safely after context loss;
+- the owner keeps adding requests mid-run in one long conversation;
 - dependencies, multiple writers or a delegated queue control readiness;
 - a consequential external effect requires auditable gates and recovery;
 - the owner explicitly requests a durable execution record.
 
-Otherwise the detailed ledger is unnecessary ceremony; a multi-component task
-that still fits one coherent session does not pass this gate. When the gate passes,
-use [references/long-run-state.md](references/long-run-state.md) and keep the
+Otherwise a multi-component task that fits one coherent session does not pass this gate.
+When it passes, use [references/long-run-state.md](references/long-run-state.md) and keep the
 owner-facing Progress checklist concise.
 
 ## Readiness and method routing
