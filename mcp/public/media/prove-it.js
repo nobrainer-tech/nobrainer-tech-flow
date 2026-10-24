@@ -1,4 +1,5 @@
-// PROVE IT block: the cast dances while the video plays, and switches the page look.
+// PROVE IT block: Flo points at the video until it plays, then shows OK while MC P dances;
+// the cast also switches the page look.
 // Playing the video or clicking Flo turns the retro look on; MC P turns it off.
 // Nothing is stored, so a reload is classic again.
 document.addEventListener('DOMContentLoaded', () => {
@@ -26,8 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
     ['pause', 'ended', 'waiting', 'emptied'].forEach((e) => video.addEventListener(e, () => box.classList.remove('playing')));
     video.addEventListener('error', () => box.classList.remove('playing'), true);
     video.addEventListener('play', () => setLook(true, video));
-    // Fetch the dance sheets early so the cast does not blank out on the first play.
-    ['/media/flo-dance.png', '/media/mcp-dance.png'].forEach((src) => { new Image().src = src; });
+    // Fetch MC P's dance sheet early so he does not blank out on the first play.
+    new Image().src = '/media/mcp-dance.png';
   }
   sync();
 });

@@ -17,11 +17,13 @@
 .sprite .name { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); padding: 4px 9px; font: 800 13px/1 "NoBrainer Sans", system-ui, sans-serif; letter-spacing: 0.04em; color: #fff; background: var(--ink); border-radius: 5px; white-space: nowrap; }
 .retro .sprite .name { box-shadow: 2px 2px 0 var(--orange); }
 .sprite:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
-.flo { --fw: 134; --fh: 126; --f: 0; --idle: url("/media/flo-wave.png"); animation: dance 1.3s steps(8) infinite; }
-.retro .flo { --fw: 152; --fh: 122; --f: 5; --idle: url("/media/flo-poses.png"); animation: none; }
+/* Flo points at the video while it is not playing and shows OK while it plays (frames 0-3 point, 4-7 OK). */
+.flo { --fw: 162; --fh: 128; --f: 0; --idle: url("/media/flo-point-ok.png"); animation: flo-point 1.1s steps(4) infinite; }
 .mcp { --fw: 116; --fh: 60; --f: 0; --s: 2; --idle: url("/media/mcp-poses.png"); }
-.tv.playing .flo { --fw: 156; --fh: 123; background-image: url("/media/flo-dance.png"); animation: dance 1.951s steps(8) infinite; }
+.tv.playing .flo { animation: flo-ok 1.6s steps(4) infinite; }
 .tv.playing .mcp { --fw: 118; --fh: 59; background-image: url("/media/mcp-dance.png"); animation: dance 1.951s steps(8) infinite; }
+@keyframes flo-point { from { background-position: 0 0; } to { background-position: calc(var(--fw) * 4 * var(--s) * -1px) 0; } }
+@keyframes flo-ok { from { background-position: calc(var(--fw) * 4 * var(--s) * -1px) 0; } to { background-position: calc(var(--fw) * 8 * var(--s) * -1px) 0; } }
 @keyframes dance { from { background-position: 0 0; } to { background-position: calc(var(--fw) * 8 * var(--s) * -1px) 0; } }
 @media (min-width: 1360px) {
   .cast { position: absolute; left: calc(-1 * min(330px, (100vw - 880px) / 2)); right: calc(-1 * min(330px, (100vw - 880px) / 2)); bottom: -6px; margin: 0; pointer-events: none; }
@@ -51,5 +53,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .flo, .tv.playing .flo, .tv.playing .mcp { animation: none; }
+  .tv.playing .flo { background-position: calc(var(--fw) * 4 * var(--s) * -1px) 0; }
   .sprite:hover, .retro .button:hover, .retro .chip:hover, .retro .chip:focus-visible, .retro .tabs button:hover, .retro .button:active, .retro .tabs button:active, .retro .copy button:active { transform: none; }
 }
