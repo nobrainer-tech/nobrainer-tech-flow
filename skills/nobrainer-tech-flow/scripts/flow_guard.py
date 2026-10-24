@@ -84,6 +84,9 @@ GOAL_DIRS = ("", "tasks", "docs", ".nobrainer")
 GOAL_MAX_BYTES = 256 * 1024
 MAX_ENTRIES = 5000
 MAX_READS = 200
+FOLDER_FLAGS = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+# Non-blocking, so a FIFO swapped in for a goal file cannot hang the hook.
+FILE_FLAGS = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
 # The goal file is repository content, so none of its text reaches the context: only a
 # STATUS from references/long-run-state.md, and only a path made of these characters.
 KNOWN_STATUSES = ("ACTIVE", "BLOCKED", "OWNER_DECISION_REQUIRED")
@@ -258,72 +261,99 @@ def stop(payload: dict) -> dict | None:
 
 
 def project_root(cwd: Path) -> Path:
-    """The nearest folder holding .git, where context_inventory looks too; else CWD."""
+    """The nearest folder holding .git, where context_inventory looks too; else CWD.
 
-    return next((folder for folder in (cwd, *cwd.parents) if (folder / ".git").exists()), cwd)
-
-
-def goal_text(path: Path) -> str | None:
-    """The text of a regular file of at most GOAL_MAX_BYTES; None for anything else.
-
-    A symlink, device or FIFO is never opened. Errors propagate: the caller says nothing.
+    Only a missing .git moves the search up; any other error propagates.
     """
 
-    if not stat.S_ISREG(os.lstat(path).st_mode):
-        return None
-    # Non-blocking and no-follow, so a FIFO or link swapped in after the check fails below.
-    flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
-    with os.fdopen(os.open(path, flags), "rb") as handle:
+    for folder in (cwd, *cwd.parents):
+        try:
+            os.stat(folder / ".git")
+        except FileNotFoundError:
+            continue
+        return folder
+    return cwd
+
+
+def goal_status(folder: int, name: str) -> str | None:
+    """The STATUS of goal file NAME in the open FOLDER, UNKNOWN when it names none.
+
+    None when NAME is not a regular file of at most GOAL_MAX_BYTES with a GOAL_ID line.
+    """
+
+    with os.fdopen(os.open(name, FILE_FLAGS, dir_fd=folder), "rb") as handle:
         if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
             return None
         data = handle.read(GOAL_MAX_BYTES + 1)
-    return data.decode("utf-8", errors="replace") if len(data) <= GOAL_MAX_BYTES else None
+    text = data.decode("utf-8", errors="replace")
+    if len(data) > GOAL_MAX_BYTES or not GOAL_ID.search(text):
+        return None
+    status = GOAL_STATUS.search(text)
+    return status.group(1) if status else "UNKNOWN"
 
 
 def active_goals(root: Path) -> list[tuple[Path, str]]:
-    """(path, STATUS) of each active goal file, in goal_state order, within the bounds."""
+    """(path, STATUS) of each active goal file, in goal_state order, within the bounds.
+
+    Every folder and file is opened relative to its open parent and never through a
+    symlink, so nothing outside ROOT is listed or read even if the tree changes meanwhile.
+    Errors propagate, so the caller says nothing.
+    """
 
     budget = {"entries": MAX_ENTRIES, "reads": MAX_READS}
+    goals: list[tuple[Path, str]] = []
 
-    def listing(folder: Path) -> list[os.DirEntry]:
-        """FOLDER's entries other than symlinks, up to what is left of the entry budget."""
-
-        if not os.path.isdir(folder):
-            return []
+    def listing(folder: int) -> list[os.DirEntry]:
         found = []
-        with os.scandir(folder) as entries:
-            for entry in entries:
-                if budget["entries"] <= 0:
-                    break
-                budget["entries"] -= 1
-                if not entry.is_symlink():
-                    found.append(entry)
+        if budget["entries"] > 0:
+            with os.scandir(folder) as entries:
+                for entry in entries:
+                    budget["entries"] -= 1
+                    if not entry.is_symlink():
+                        found.append(entry)
+                    if budget["entries"] <= 0:
+                        break
         return sorted(found, key=lambda entry: entry.name)
 
-    def markdown(folder: Path, entries: list[os.DirEntry]) -> list[Path]:
-        return [folder / entry.name for entry in entries if fnmatch.fnmatchcase(entry.name, "*.md")]
+    def walk(folder: int, path: Path, nested: bool) -> None:
+        # Files first, then each subfolder in name order: the order goal_state sorts into.
+        entries = listing(folder)
+        for entry in entries:
+            if not fnmatch.fnmatchcase(entry.name, "*.md") or not entry.is_file(follow_symlinks=False):
+                continue
+            if budget["reads"] <= 0:
+                return
+            budget["reads"] -= 1
+            status = goal_status(folder, entry.name)
+            if status is not None and status != "COMPLETE":
+                goals.append((path / entry.name, status))
+        for entry in entries if nested else ():
+            if entry.is_dir(follow_symlinks=False) and budget["entries"] > 0:
+                inner = os.open(entry.name, FOLDER_FLAGS, dir_fd=folder)
+                try:
+                    walk(inner, path / entry.name, False)
+                finally:
+                    os.close(inner)
 
-    goals = []
-    for sub in GOAL_DIRS:
-        folder = root / sub
-        # The project root is where the session is; a linked tasks/, docs/ or .nobrainer/ is not.
-        entries = [] if sub and os.path.islink(folder) else listing(folder)
-        groups = [markdown(folder, entries)]
-        if sub:
-            folders = [folder / entry.name for entry in entries if entry.is_dir(follow_symlinks=False)]
-            groups.append([path for inner in folders for path in markdown(inner, listing(inner))])
-        for group in groups:
-            for path in sorted(group):
-                if budget["reads"] <= 0:
-                    return goals
-                budget["reads"] -= 1
-                text = goal_text(path)
-                if text is None or not GOAL_ID.search(text):
-                    continue
-                status = GOAL_STATUS.search(text)
-                status = status.group(1) if status else "UNKNOWN"
-                if status != "COMPLETE":
-                    goals.append((path, status))
+    top = os.open(root, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        for sub in GOAL_DIRS:
+            if not sub:
+                walk(top, root, False)
+                continue
+            try:
+                mode = os.stat(sub, dir_fd=top, follow_symlinks=False).st_mode
+            except FileNotFoundError:
+                continue
+            # A tasks/, docs/ or .nobrainer/ that is a symlink or a file is not looked into.
+            if stat.S_ISDIR(mode) and budget["entries"] > 0:
+                folder = os.open(sub, FOLDER_FLAGS, dir_fd=top)
+                try:
+                    walk(folder, root / sub, True)
+                finally:
+                    os.close(folder)
+    finally:
+        os.close(top)
     return goals
 
 

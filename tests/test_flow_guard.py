@@ -488,6 +488,27 @@ class SessionTests(unittest.TestCase):
         self.goal(".nobrainer/goal.md", "GOAL_ID: g-1\nSTATUS: ACTIVE\n")
         self.assertEqual(["- .nobrainer/goal.md (STATUS: ACTIVE)"], self.listed(self.session()))
 
+    def test_a_folder_swapped_for_a_symlink_mid_walk_is_not_followed(self) -> None:
+        outside = self.root.parent / "outside"
+        self.goal("docs/inner/real.md", "GOAL_ID: g-1\nSTATUS: ACTIVE\n")
+        (outside / "inner").mkdir(parents=True)
+        (outside / "inner" / "real.md").write_text("GOAL_ID: outside\nSTATUS: BLOCKED\n", encoding="utf-8")
+        guard = load_guard()
+        scandir, calls = os.scandir, []
+
+        def swap_docs_once_open(target):
+            # The second listing is docs/, already open: replace it with a link outside.
+            calls.append(target)
+            if len(calls) == 2:
+                (self.root / "docs").rename(self.root / "docs-moved")
+                (self.root / "docs").symlink_to(outside, target_is_directory=True)
+            return scandir(target)
+
+        with mock.patch.object(guard.os, "scandir", side_effect=swap_docs_once_open):
+            found = guard.active_goals(self.root)
+        self.assertEqual(3, len(calls))
+        self.assertEqual([(self.root / "docs" / "inner" / "real.md", "ACTIVE")], found)
+
     def test_the_walk_stops_at_its_entry_and_read_bounds(self) -> None:
         for index in range(20):
             self.goal(f"docs/note{index:02}.md", "# a note\n")
@@ -497,6 +518,36 @@ class SessionTests(unittest.TestCase):
         for name in ("MAX_ENTRIES", "MAX_READS"):
             with self.subTest(bound=name), mock.patch.object(guard, name, 10):
                 self.assertEqual([], guard.active_goals(self.root))
+
+    def test_the_entry_bound_is_exact_and_only_regular_files_count_as_reads(self) -> None:
+        # .git and tasks/ in the root, then tasks/GOAL.md: three entries in all.
+        self.goal("tasks/GOAL.md", "GOAL_ID: g-1\nSTATUS: ACTIVE\n")
+        guard = load_guard()
+        for bound, found in ((2, 0), (3, 1)):
+            with self.subTest(entries=bound), mock.patch.object(guard, "MAX_ENTRIES", bound):
+                self.assertEqual(found, len(guard.active_goals(self.root)))
+        for name in ("a.md", "b.md"):
+            (self.root / "tasks" / "dirs" / name).mkdir(parents=True)
+        (self.root / "tasks" / "dirs" / "z.md").write_text("GOAL_ID: g-2\nSTATUS: ACTIVE\n", encoding="utf-8")
+        with mock.patch.object(guard, "MAX_READS", 2):
+            self.assertEqual(2, len(guard.active_goals(self.root)))
+
+    def test_a_failing_metadata_probe_propagates_instead_of_skipping(self) -> None:
+        self.goal("GOAL.md", "GOAL_ID: g-1\nSTATUS: ACTIVE\n")
+        self.goal("docs/plan.md", "GOAL_ID: g-2\nSTATUS: ACTIVE\n")
+        guard = load_guard()
+        stat = os.stat
+
+        def refuse_docs(path, *args, **kwargs):
+            if os.fspath(path) in ("docs", os.fspath(self.root / ".git")):
+                raise PermissionError(13, "Permission denied", os.fspath(path))
+            return stat(path, *args, **kwargs)
+
+        with mock.patch.object(guard.os, "stat", side_effect=refuse_docs):
+            with self.assertRaises(PermissionError):
+                guard.active_goals(self.root)
+            with self.assertRaises(PermissionError):
+                guard.project_root(self.root)
 
     def test_a_large_folder_stays_fast(self) -> None:
         (self.root / "docs").mkdir()
@@ -515,6 +566,11 @@ class SessionTests(unittest.TestCase):
         self.addCleanup(locked.chmod, 0o644)
         self.assertEqual("", self.session().stdout)
         locked.chmod(0o644)
+        self.goal("GOAL.md", "GOAL_ID: g-root\nSTATUS: ACTIVE\n")
+        (self.root / "tasks").chmod(0)
+        self.addCleanup((self.root / "tasks").chmod, 0o755)
+        self.assertEqual("", self.session().stdout)
+        (self.root / "tasks").chmod(0o755)
         (self.root / "app").mkdir()
         (self.root / "app").chmod(0)
         self.addCleanup((self.root / "app").chmod, 0o755)
