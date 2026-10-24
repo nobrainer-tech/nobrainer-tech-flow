@@ -65,7 +65,8 @@
 @keyframes look-in { from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%)); } to { clip-path: circle(150vmax at var(--vt-x, 50%) var(--vt-y, 50%)); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .flo, .tv.playing .flo, .tv.playing.dancing .flo, .tv.playing .mcp, .countdown.on span { animation: none; }
-  .tv.playing .flo { background-position: calc(var(--fw) * 4 * var(--s) * -1px) 0; }
+  /* The cast loops are small in-place pixel animations that only run around a video the visitor
+     started, so they stay on; only page-wide effects, hover lifts and the countdown pop stop. */
+  .countdown.on span { animation: none; }
   .sprite:hover, .retro .button:hover, .retro .chip:hover, .retro .chip:focus-visible, .retro .tabs button:hover, .retro .button:active, .retro .tabs button:active, .retro .copy button:active { transform: none; }
 }
