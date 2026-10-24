@@ -15,7 +15,7 @@ client, plus guidance quoted from the pinned Flow release and a model advisor ba
 | Tool | What it does |
 |---|---|
 | `start_flow_task` | Checks the outcome and definition of done (DoD), picks the quick or full path, lints vague items, routes Flow modules and owner gates, and returns item IDs (`AC01`...) with an HMAC-signed contract token to save in your goal file. |
-| `get_flow_step` | Up to six rules for one stage, event or module, quoted verbatim from the pinned Flow release, with the source anchor. Works without a token. With a contract token and `event: "resume"` it returns two rules plus `goal_block`, ready to paste into the goal file: `GOAL_ID`, one DoD row per item (`- AC01 test, local: ACCEPTED`; statuses `OPEN`, `ACCEPTED`, `FAILED`, `STALE`), `STATUS`, `CHECKPOINT`, `NEXT_SAFE_ACTION` and the renewed token as `FLOW_CONTRACT`. `OUTCOME` and `NON_GOALS` stay placeholders because the server never repeats your text. |
+| `get_flow_step` | Up to six rules for one stage, event or module, quoted verbatim from the pinned Flow release, with the source anchor. Works without a token. With a contract token and `event: "resume"` it returns two rules plus `goal_block` for the goal file: `GOAL_ID`, one DoD row per item (`- AC01 test, local: ACCEPTED`; statuses `OPEN`, `ACCEPTED`, `FAILED`, `STALE`), `STATUS`, `CHECKPOINT`, `NEXT_SAFE_ACTION` and the renewed token as `FLOW_CONTRACT`. `OUTCOME`, `NON_GOALS` and the DoD wording stay placeholders because the server never repeats your text. |
 | `check_flow_evidence` | Checks one to four evidence records: exit codes, the test-runner summary (pytest, unittest, node:test, Vitest, Jest, Mocha, Playwright, Go, cargo, RSpec, PHPUnit, dotnet), claimed counts, evidence level, URL host and status, file hashes. Marks earlier test results stale when a registered file changes, and returns `REPEATED_DEFECT` after a second failure. |
 | `check_flow_done` | `DONE` only when every item has accepted, current evidence; `DONE_WITH_GAPS` when the rest are listed as unchecked with a reason; otherwise `NOT_DONE` with the exact missing items. |
 | `draft_flow_handoff` | A final-report skeleton built only from the done receipt. |
@@ -121,10 +121,12 @@ the response says that gate rules follow the server's version.
 
 In repository work, save the contract token in the Flow goal file as `FLOW_CONTRACT: nbf1...` so
 another session or client can continue. To resume, call `get_flow_step` with that token and
-`event: "resume"`: paste the returned `goal_block` into the goal file, fill in `OUTCOME` and
-`NON_GOALS` yourself, and continue from `NEXT_SAFE_ACTION`. Its `FLOW_CONTRACT` line is the renewed
-token. Each `check_flow_evidence` call or resume renews a token for 30 days, up to 90 days after
-`start_flow_task`.
+`event: "resume"`. Merge the returned `goal_block` into the goal file by item ID: update each DoD
+row's status, `CHECKPOINT`, `NEXT_SAFE_ACTION` and `FLOW_CONTRACT` (the renewed token), and keep
+your own `OUTCOME`, `NON_GOALS`, DoD wording, evidence pointers and other fields. Without a goal
+file yet, start one from the block and fill in those placeholders. Then continue from
+`NEXT_SAFE_ACTION`. Each `check_flow_evidence` call or resume renews a token for 30 days, up to
+90 days after `start_flow_task`.
 
 ## Run locally
 

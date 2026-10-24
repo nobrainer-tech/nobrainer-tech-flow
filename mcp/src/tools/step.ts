@@ -35,8 +35,9 @@ const NEXT_SAFE_ACTION: Record<StateCard, string> = {
 };
 
 /**
- * Goal-file block built from token state only. The server never repeats user text, so OUTCOME
- * and NON_GOALS stay placeholders; the renewed contract travels as FLOW_CONTRACT.
+ * Goal-file block built from token state only. The server never repeats user text, so OUTCOME,
+ * NON_GOALS and the DoD wording stay with the client, which merges rows by item ID; the renewed
+ * contract travels as FLOW_CONTRACT.
  */
 export function goalBlock(state: TokenState, ctx: ToolContext): string {
   const renewed = renew(state, ctx.now());
@@ -48,9 +49,9 @@ export function goalBlock(state: TokenState, ctx: ToolContext): string {
   const expires = new Date(renewed.expires * 1000).toISOString().slice(0, 10);
   return [
     `GOAL_ID: flow-${contractId(state)}`,
-    "OUTCOME: <your outcome; the server does not keep it>",
-    "NON_GOALS: <your non-goals, or NONE>",
-    "DOD:",
+    "OUTCOME: <keep yours; never stored here>",
+    "NON_GOALS: <keep yours, or NONE>",
+    "DOD: <merge by ID; keep your text and evidence>",
     ...rows,
     "STATUS: ACTIVE",
     `CHECKPOINT: ${accepted} of ${state.items.length} accepted, contract expires ${expires}`,

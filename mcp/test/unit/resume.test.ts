@@ -65,7 +65,7 @@ test("resume with a token returns a goal block matching the contract and item st
   assert.equal(b.lines[0], `GOAL_ID: flow-${start.json.contract}`);
   assert.match(b.lines[1]!, /^OUTCOME: <.+>$/);
   assert.match(b.lines[2]!, /^NON_GOALS: <.+>$/);
-  assert.equal(b.lines[3], "DOD:");
+  assert.match(b.lines[3]!, /^DOD: <.+>$/);
   assert.deepEqual(b.rows, [
     "- AC01 test, local: ACCEPTED",
     "- AC02 file, static: ACCEPTED",
