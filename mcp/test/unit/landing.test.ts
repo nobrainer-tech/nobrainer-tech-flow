@@ -32,10 +32,10 @@ for (const [lang, html] of Object.entries(pages)) {
     assert.ok(s.includes('<a href="https://nobrainer.tech/newsletter/">'), "fallback link");
     assert.ok(s.includes('<a href="https://nobrainer.tech/privacy/">'), "privacy link");
     assert.ok(s.includes("reCAPTCHA") && s.includes("https://policies.google.com/privacy") && s.includes("https://policies.google.com/terms"));
-    for (const attr of ["data-email-label", "data-submit", "data-consent", "data-confirmation"]) {
+    for (const attr of ["data-email-label", "data-submit", "data-consent", "data-confirmation", "data-error-email", "data-error-consent", "data-error-other"]) {
       assert.match(s, new RegExp(`${attr}="[^"]+"`), attr);
     }
-    // The provider script is ~540 KB: the page must not load it eagerly.
+    // The provider script is ~540 KB (~90 KB gzipped) plus reCAPTCHA: the page must not load it eagerly.
     assert.doesNotMatch(html, /<script[^>]+eocampaign1\.com/);
     assert.match(html, /<script src="\/media\/newsletter\.js\?v=\d+" defer><\/script>/);
     assert.doesNotMatch(s, /—/, "plain hyphens only");
@@ -53,8 +53,10 @@ test("pl: newsletter copy is translated and says the newsletter is in English", 
     'data-consent="Chcę otrzymywać od nobrainer.tech',
     "Jeśli formularz się nie wczyta,",
     "Formularz jest chroniony przez reCAPTCHA.",
+    'data-error-email="Podaj poprawny adres e-mail."',
+    'data-error-other="Coś poszło nie tak.',
   ]) assert.ok(s.includes(text), text);
-  assert.doesNotMatch(s, /Follow Flo|No spam|Privacy policy|I want practical/);
+  assert.doesNotMatch(s, /Follow Flo|No spam|Privacy policy|I want practical|Something went wrong|Tick the consent/);
 });
 
 test("newsletter script exists and waits for the section to near the viewport", () => {

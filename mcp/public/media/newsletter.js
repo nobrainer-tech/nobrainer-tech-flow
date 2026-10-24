@@ -1,8 +1,9 @@
-// Newsletter signup with the shared nobrainer.tech EmailOctopus form. The provider script is large, so
-// it loads only after the page has loaded and the section nears the viewport. Its display copy (email
-// label, consent wording, button, confirmation) comes from the section's data attributes, which the
-// Polish page translates. EmailOctopus owns reCAPTCHA, submission and the result; the fallback link
-// under the form stays visible in case the provider never loads.
+// Newsletter signup with the shared nobrainer.tech EmailOctopus form. The provider script (about 90 KB
+// gzipped, plus reCAPTCHA) stays off the critical path: it loads after the window load event, once the
+// section is within 600px of the viewport. The section sits under the video, so on most screens that
+// is right after load. The display copy (email label, consent wording, button, confirmation, errors)
+// comes from the section's data attributes, which the Polish page translates. EmailOctopus owns
+// reCAPTCHA, submission and the result; the fallback link under the form stays visible throughout.
 (() => {
   const section = document.querySelector('[data-newsletter]');
   const box = section && section.querySelector('[data-eo-form]');
@@ -10,6 +11,14 @@
   const text = section.dataset;
   const id = box.dataset.eoForm;
   const action = `https://eocampaign1.com/form/${id}`;
+  // The provider's English error wording, mapped to the section's (translated) texts; any other error,
+  // such as a failed request or a bot check, gets the generic text that points to the fallback link.
+  const errorKey = {
+    'Your email address is required.': 'errorEmail',
+    'Your email address looks incorrect, please try again.': 'errorEmail',
+    'Please check the checkbox to indicate your consent.': 'errorConsent',
+  };
+  const ownErrors = () => [text.errorEmail, text.errorConsent, text.errorOther];
   let confirmed = false;
 
   // Runs on every change inside the box; each step writes only when the value differs, so its own
@@ -40,9 +49,15 @@
     const error = box.querySelector('.emailoctopus-error-message');
     if (success && !success.hasAttribute('role')) success.setAttribute('role', 'status');
     if (error && !error.hasAttribute('role')) error.setAttribute('role', 'alert');
+    if (error && error.textContent && !ownErrors().includes(error.textContent)) {
+      error.textContent = text[errorKey[error.textContent] || 'errorOther'];
+    }
     if (confirmed && success && success.textContent && success.textContent !== text.confirmation) {
       success.textContent = text.confirmation;
       if (error && error.textContent) error.textContent = '';
+      // The provider hides the form under the focused button; keep keyboard focus on the result.
+      success.tabIndex = -1;
+      success.focus({ preventScroll: true });
     }
     section.dataset.formReady = 'true';
   };

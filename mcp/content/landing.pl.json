@@ -74,5 +74,8 @@
   ["New episodes and practical notes on making AI prove its work. No spam, unsubscribe any time.", "Nowe odcinki i praktyczne notatki o tym, jak sprawić, żeby AI pokazywało dowody swojej pracy. Newsletter jest po angielsku. Bez spamu, wypiszesz się w każdej chwili."],
   ["If the form does not load, <a href=\"https://nobrainer.tech/newsletter/\">sign up on the nobrainer.tech newsletter page</a>.", "Jeśli formularz się nie wczyta, <a href=\"https://nobrainer.tech/newsletter/\">zapisz się na stronie newslettera nobrainer.tech</a>."],
   ["<a href=\"https://nobrainer.tech/privacy/\">Privacy policy</a>. This form uses reCAPTCHA. Google <a href=\"https://policies.google.com/privacy\">Privacy Policy</a> and <a href=\"https://policies.google.com/terms\">Terms of Service</a> apply.", "<a href=\"https://nobrainer.tech/privacy/\">Polityka prywatności (po angielsku)</a>. Formularz jest chroniony przez reCAPTCHA. Obowiązują <a href=\"https://policies.google.com/privacy\">Polityka prywatności Google</a> i <a href=\"https://policies.google.com/terms\">Warunki korzystania z usług Google</a>."],
-  ["The form needs JavaScript. Enable it to sign up.", "Formularz zapisu wymaga JavaScript. Włącz go, aby się zapisać."]
+  ["The form needs JavaScript. Enable it to sign up.", "Formularz zapisu wymaga JavaScript. Włącz go, aby się zapisać."],
+  ["data-error-email=\"Please enter a valid email address.\"", "data-error-email=\"Podaj poprawny adres e-mail.\""],
+  ["data-error-consent=\"Tick the consent box to subscribe.\"", "data-error-consent=\"Zaznacz zgodę, żeby się zapisać.\""],
+  ["data-error-other=\"Something went wrong. Try again later or use the newsletter page link below.\"", "data-error-other=\"Coś poszło nie tak. Spróbuj później albo skorzystaj z linku do strony newslettera poniżej.\""]
 ]
