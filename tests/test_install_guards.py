@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -73,6 +74,9 @@ class InstallGuardsTests(unittest.TestCase):
                 self.assertIn(str(self.settings), preview.stdout)
                 self.assertIn("PreToolUse", preview.stdout)
                 self.assertIn(f"{self.guard} pre-tool", preview.stdout)
+                self.assertIn("add 4 hooks", preview.stdout)
+                self.assertIn(f"SessionStart (matcher compact|resume|clear): if [ -f {self.guard} ]", preview.stdout)
+                self.assertIn(f"{self.guard} session", preview.stdout)
                 self.assertNotIn("my-lint", preview.stdout)
                 self.assertNotIn("Bash(ls:*)", preview.stdout)
                 self.assertIn("not a security boundary", preview.stdout)
@@ -99,6 +103,9 @@ class InstallGuardsTests(unittest.TestCase):
         self.assertTrue(mine["PreToolUse"][0].endswith("pre-tool || true; fi"))
         self.assertEqual(1, len(mine["Stop"]))
         self.assertEqual(1, len(mine["SubagentStop"]))
+        self.assertEqual(1, len(mine["SessionStart"]))
+        self.assertTrue(mine["SessionStart"][0].endswith("session || true; fi"))
+        self.assertEqual("compact|resume|clear", settings["hooks"]["SessionStart"][0]["matcher"])
         [backup] = self.backups()
         self.assertEqual(before, backup.read_bytes())
         self.assertIn(f"BACKUP: {backup}", applied.stdout)
@@ -119,6 +126,8 @@ class InstallGuardsTests(unittest.TestCase):
         preview = self.run_script("--undo")
         self.assertIn("NO_CHANGES", preview.stdout)
         self.assertIn(f"if [ -f {self.guard} ]; then python3 {self.guard} stop || true; fi", preview.stdout)
+        self.assertIn("remove 4 hooks", preview.stdout)
+        self.assertIn(f"{self.guard} session", preview.stdout)
         self.assertNotIn("my-format", preview.stdout)
         undone = self.run_script("--undo", "--apply")
         self.assertEqual(0, undone.returncode, undone.stderr)
@@ -154,9 +163,40 @@ class InstallGuardsTests(unittest.TestCase):
             event: sum("flow_guard.py" in hook["command"] for group in groups for hook in group["hooks"])
             for event, groups in settings["hooks"].items()
         }
-        self.assertEqual({"PreToolUse": 1, "PostToolUse": 0, "Stop": 1, "SubagentStop": 1}, mine)
+        self.assertEqual({"PreToolUse": 1, "PostToolUse": 0, "Stop": 1, "SubagentStop": 1, "SessionStart": 1}, mine)
         undone = self.run_script("--undo", "--apply")
         self.assertIn("REMOVED", undone.stdout)
+        self.assertEqual(OTHER_HOOKS, json.loads(self.settings.read_text(encoding="utf-8")))
+
+    def test_an_install_from_the_three_hook_version_is_an_update(self) -> None:
+        def hook(mode: str) -> dict:
+            guard = shlex.quote(str(self.guard))
+            return {"type": "command", "command": f"if [ -f {guard} ]; then python3 {guard} {mode} || true; fi", "timeout": 10}
+
+        settings = json.loads(json.dumps(OTHER_HOOKS))
+        settings["hooks"]["PreToolUse"].append({"matcher": "Bash", "hooks": [hook("pre-tool")]})
+        settings["hooks"]["Stop"] = [{"hooks": [hook("stop")]}]
+        settings["hooks"]["SubagentStop"] = [{"hooks": [hook("stop")]}]
+        before = self.write_settings(settings)
+        preview = self.run_script()
+        self.assertEqual(0, preview.returncode, preview.stderr)
+        self.assertNotIn("UP TO DATE", preview.stdout)
+        self.assertIn("update the Flow guards", preview.stdout)
+        self.assertIn("3 hooks now, 4 after", preview.stdout)
+        self.assertIn(f"{self.guard} session", preview.stdout)
+        self.assertIn("NO_CHANGES: preview only; update them with", preview.stdout)
+        self.assertEqual(before, self.settings.read_bytes())
+        applied = self.run_script("--apply")
+        self.assertEqual(0, applied.returncode, applied.stderr)
+        self.assertIn("UPDATED", applied.stdout)
+        updated = json.loads(self.settings.read_text(encoding="utf-8"))
+        self.assertEqual({event: 1 for event in ("PreToolUse", "Stop", "SubagentStop", "SessionStart")},
+                         {event: len(commands) for event, commands in self.ours(updated).items() if commands})
+        self.assertEqual(OTHER_HOOKS["hooks"]["PostToolUse"], updated["hooks"]["PostToolUse"])
+        [backup] = self.backups()
+        self.assertEqual(before, backup.read_bytes())
+        self.assertIn("UP TO DATE", self.run_script("--apply").stdout)
+        self.run_script("--undo", "--apply")
         self.assertEqual(OTHER_HOOKS, json.loads(self.settings.read_text(encoding="utf-8")))
 
     def test_undo_keeps_other_hooks_that_mention_the_guard_path(self) -> None:
@@ -247,9 +287,21 @@ class InstallGuardsTests(unittest.TestCase):
         asked = subprocess.run(["sh", "-c", command], input=payload, text=True, capture_output=True, check=False)
         self.assertEqual(0, asked.returncode)
         self.assertEqual("ask", json.loads(asked.stdout)["hookSpecificOutput"]["permissionDecision"])
+        project = self.home / "project"
+        (project / ".git").mkdir(parents=True)
+        (project / "tasks").mkdir()
+        (project / "tasks" / "GOAL.md").write_text("GOAL_ID: g-1\nSTATUS: ACTIVE\n", encoding="utf-8")
+        session = settings["hooks"]["SessionStart"][-1]["hooks"][0]["command"]
+        start = json.dumps({"hook_event_name": "SessionStart", "source": "compact", "cwd": str(project)})
+        named = subprocess.run(["sh", "-c", session], input=start, text=True, capture_output=True, check=False, cwd=project)
+        self.assertEqual(0, named.returncode)
+        context = json.loads(named.stdout)["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("- tasks/GOAL.md (STATUS: ACTIVE)", context)
         (self.config / "skills" / "nobrainer-tech-flow").unlink()
         silent = subprocess.run(["sh", "-c", command], input=payload, text=True, capture_output=True, check=False)
         self.assertEqual((0, ""), (silent.returncode, silent.stdout))
+        quiet = subprocess.run(["sh", "-c", session], input=start, text=True, capture_output=True, check=False, cwd=project)
+        self.assertEqual((0, "", ""), (quiet.returncode, quiet.stdout, quiet.stderr))
 
     def test_install_py_delegates_for_claude_only(self) -> None:
         preview = self.run_script("--client", "claude", "--guards", script=INSTALL)

@@ -5,6 +5,9 @@
 shell command; it never denies. ``stop`` reads a Stop or SubagentStop payload and
 blocks the stop once when a turn that edited files or ran commands ends without a
 proof line. Both fail open: input they cannot read is allowed, with a note on stderr.
+``session`` reads a SessionStart payload and, when the project has active Flow goal
+files, tells the agent to re-read them. It prints only their paths and a known STATUS
+word, never other goal-file text, and prints nothing at all on any error.
 
 This is a seatbelt, not a security boundary. It reads the command text, so a
 command hidden behind ``sh -c``, a variable or an alias can pass unnoticed, and a
@@ -16,10 +19,12 @@ https://code.claude.com/docs/en/hooks.
 
 from __future__ import annotations
 
+import itertools
 import json
 import os
 import re
 import shlex
+import stat
 import sys
 import tempfile
 from pathlib import Path
@@ -66,6 +71,26 @@ STOP_REASON = (
     "Flow guard: this turn changed files or ran commands, but the final message has no "
     "proof. Add a line starting with 'Proof:' or 'Checked:' that names the command, test "
     "or readback showing the result, or say UNVERIFIED and what is missing."
+)
+# A goal file as nobrainer-context's context_inventory.goal_state finds it: Markdown with a
+# GOAL_ID line whose first STATUS is not COMPLETE, in the project root or one or two levels
+# into tasks/, docs/ or .nobrainer/. tests/test_flow_guard.py checks that both agree.
+GOAL_ID = re.compile(r"^GOAL_ID:\s*\S", re.MULTILINE)
+GOAL_STATUS = re.compile(r"^STATUS:\s*([A-Z_]+)", re.MULTILINE)
+GOAL_DIRS = ("", "tasks", "docs", ".nobrainer")
+GOAL_MAX_BYTES = 256 * 1024
+# Bounds that keep the hook fast in a large repository; goal_state has no such limit.
+GOAL_MATCHES_PER_PATTERN = 500
+# The goal file is repository content, so none of its text reaches the context: only a
+# STATUS from references/long-run-state.md, and only a path made of these characters.
+KNOWN_STATUSES = ("ACTIVE", "BLOCKED", "OWNER_DECISION_REQUIRED")
+PATH_PART = re.compile(r"[A-Za-z0-9._-]+")
+MAX_PATH_CHARS = 200
+MAX_GOALS_SHOWN = 3
+SESSION_INTRO = (
+    "Flow guard: the context was compacted, resumed or cleared. Before continuing, re-read "
+    "these active Flow goal files from disk and check GOAL_ID, STATUS, CHECKPOINT and "
+    "NEXT_SAFE_ACTION against the repository. Only paths and known STATUS words are shown here."
 )
 
 
@@ -229,11 +254,92 @@ def stop(payload: dict) -> dict | None:
     return {"decision": "block", "reason": STOP_REASON}
 
 
+def project_root(cwd: Path) -> Path:
+    """The nearest folder holding .git, where context_inventory looks too; else CWD."""
+
+    return next((folder for folder in (cwd, *cwd.parents) if (folder / ".git").exists()), cwd)
+
+
+def goal_text(path: Path) -> str | None:
+    """The text of a regular file up to GOAL_MAX_BYTES, or None for anything else."""
+
+    try:
+        # A device or FIFO is never opened; one swapped in after this check cannot block
+        # the non-blocking open and fails the second check.
+        if not stat.S_ISREG(os.stat(path).st_mode):
+            return None
+        with os.fdopen(os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0)), "rb") as handle:
+            if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
+                return None
+            data = handle.read(GOAL_MAX_BYTES + 1)
+    except OSError:
+        return None
+    return data.decode("utf-8", errors="replace") if len(data) <= GOAL_MAX_BYTES else None
+
+
+def active_goals(root: Path) -> list[tuple[Path, str]]:
+    """(path, STATUS) of each active goal file, in goal_state order."""
+
+    goals = []
+    for sub in GOAL_DIRS:
+        for pattern in ("*.md", "*/*.md") if sub else ("*.md",):
+            for path in sorted(itertools.islice((root / sub).glob(pattern), GOAL_MATCHES_PER_PATTERN)):
+                text = goal_text(path)
+                if text is None or not GOAL_ID.search(text):
+                    continue
+                status = GOAL_STATUS.search(text)
+                status = status.group(1) if status else "UNKNOWN"
+                if status != "COMPLETE":
+                    goals.append((path, status))
+    return goals
+
+
+def shown_path(path: Path, cwd: Path) -> str | None:
+    """PATH relative to CWD when every part is plain and the whole is short, else None."""
+
+    relative = os.path.relpath(path, cwd)
+    parts = relative.split(os.sep)
+    named = list(itertools.dropwhile(lambda part: part == "..", parts))
+    if len(relative) > MAX_PATH_CHARS or not named:
+        return None
+    if not all(PATH_PART.fullmatch(part) and part not in (".", "..") for part in named):
+        return None
+    return "/".join(parts)
+
+
+def session(payload: dict) -> dict | None:
+    cwd = payload.get("cwd")
+    folder = Path(cwd) if isinstance(cwd, str) and os.path.isabs(cwd) else Path.cwd()
+    goals = active_goals(project_root(folder))
+    if not goals:
+        return None
+    lines = []
+    for path, status in goals:
+        name = shown_path(path, folder)
+        if name is None or len(lines) == MAX_GOALS_SHOWN:
+            continue
+        lines.append(f"- {name} (STATUS: {status})" if status in KNOWN_STATUSES else f"- {name} (STATUS not shown)")
+    if len(goals) > len(lines):
+        lines.append(f"- {len(goals) - len(lines)} more active goal file(s) not listed")
+    context = "\n".join((SESSION_INTRO, *lines))
+    return {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    if len(argv) != 1 or argv[0] not in ("pre-tool", "stop"):
-        print("usage: flow_guard.py pre-tool|stop  (reads the hook payload on stdin)", file=sys.stderr)
+    if len(argv) != 1 or argv[0] not in ("pre-tool", "stop", "session"):
+        print("usage: flow_guard.py pre-tool|stop|session  (reads the hook payload on stdin)", file=sys.stderr)
         return 1
+    if argv[0] == "session":
+        # Whatever goes wrong, a session must start with no guard text and no error notice.
+        try:
+            payload = json.loads(sys.stdin.read())
+            result = session(payload) if isinstance(payload, dict) else None
+            if result is not None:
+                print(json.dumps(result))
+        except Exception:
+            pass
+        return 0
     try:
         payload = json.loads(sys.stdin.read())
     except ValueError as exc:
