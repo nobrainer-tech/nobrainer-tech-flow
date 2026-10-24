@@ -1,5 +1,6 @@
-/* PROVE IT episode block. The page opens in the classic look; clicking Flo switches to the
-   retro look (html.retro), clicking MC P switches back. Reload returns to classic. */
+/* PROVE IT episode block. The page opens in the retro look (html.retro, set in <head>); MC P
+   switches to the classic look with a CRT power-off effect, Flo or playing the video brings retro
+   back with a stepped pixel circle. Reload returns to retro. */
 .tv { position: relative; width: 100vw; margin: -32px 0 8px calc(50% - 50vw); padding: 30px 16px 0; overflow: hidden; }
 .tv-bg { display: none; position: absolute; inset: 0; background: url("/media/horizon-day.png") center bottom / auto 100% repeat-x; image-rendering: pixelated; z-index: -1; }
 .tv-inner { max-width: 880px; margin: 0 auto; }
@@ -46,9 +47,15 @@
 .retro .tool.live { border-color: var(--blue); box-shadow: 5px 5px 0 var(--blue); }
 .retro h2::before { content: ""; display: inline-block; width: 0.42em; height: 0.42em; margin-right: 0.4em; background: var(--orange); vertical-align: 0.06em; }
 
-/* The switch expands as a stepped (pixel-like) circle from the clicked character. */
+/* Flo's switch expands as a stepped (pixel-like) circle from the clicked spot. */
 ::view-transition-old(root) { animation: none; }
 ::view-transition-new(root) { animation: look-in 0.7s steps(12) both; }
+/* MC P's switch turns the old page off like a CRT: it collapses to a bright line, then the new look fades in. */
+:root[data-vt="crt"]::view-transition { background: #14161c; }
+:root[data-vt="crt"]::view-transition-old(root) { animation: crt-off 0.42s ease-in both; }
+:root[data-vt="crt"]::view-transition-new(root) { animation: crt-on 0.3s 0.4s ease-out both; }
+@keyframes crt-off { 0% { transform: none; filter: brightness(1); } 65% { transform: scale(1, 0.006); filter: brightness(2.5); } 100% { transform: scale(0, 0.006); filter: brightness(4); } }
+@keyframes crt-on { from { opacity: 0; filter: brightness(1.8) saturate(0); } to { opacity: 1; filter: none; } }
 @keyframes look-in { from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%)); } to { clip-path: circle(150vmax at var(--vt-x, 50%) var(--vt-y, 50%)); } }
 
 @media (prefers-reduced-motion: reduce) {
