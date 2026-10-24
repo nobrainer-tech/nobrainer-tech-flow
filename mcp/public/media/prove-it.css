@@ -1,0 +1,101 @@
+/* PROVE IT episode block. The page opens in Flo's day retro look (html.retro, set in <head>). MC P
+   switches to his night look (html.retro.night: the video's neon world, gold accents) with a CRT
+   power-off effect; Flo brings the day back with a stepped pixel circle. Reload returns to day. */
+.tv { position: relative; width: 100vw; margin: -32px 0 8px calc(50% - 50vw); padding: 30px 16px 0; overflow: hidden; }
+.tv-bg { display: none; position: absolute; inset: 0; background: url("/media/horizon-day.png") center bottom / auto 100% repeat-x; image-rendering: pixelated; z-index: -1; }
+.tv-inner { max-width: 880px; margin: 0 auto; }
+.tv-eyebrow { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-weight: 800; font-size: 15px; letter-spacing: 0.04em; color: var(--ink); }
+.tv-eyebrow img { width: 28px; height: 28px; image-rendering: pixelated; }
+.tv-stage { position: relative; }
+.screen { position: relative; z-index: 1; margin: 0; aspect-ratio: 16 / 9; background: #14161c; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px rgba(20, 22, 28, 0.14); overflow: hidden; }
+.screen video { display: block; width: 100%; height: 100%; }
+.tv-caption { margin: 16px 0 6px; font-size: 15px; color: var(--ink); max-width: 640px; }
+.tv-hint { margin: 0 0 26px; font-size: 14px; color: var(--muted); }
+.cast { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; }
+.sprite { --s: 1; width: calc(var(--fw) * var(--s) * 1px); height: calc(var(--fh) * var(--s) * 1px); padding: 0; border: 0; border-radius: 8px; cursor: pointer; background: var(--idle) no-repeat; background-size: calc(var(--fw) * 8 * var(--s) * 1px) 100%; background-position: calc(var(--f) * var(--fw) * var(--s) * -1px) 0; image-rendering: pixelated; transition: transform 0.15s; }
+.sprite { position: relative; }
+.sprite:hover { transform: translateY(-6px); }
+.sprite .name { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); padding: 4px 9px; font: 800 13px/1 "NoBrainer Sans", system-ui, sans-serif; letter-spacing: 0.04em; color: #fff; background: var(--ink); border-radius: 5px; white-space: nowrap; }
+.retro .sprite .name { box-shadow: 2px 2px 0 var(--orange); }
+.sprite:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
+/* Flo points at the video while it is not playing; when it starts she shows OK (frames 4-7) and then dances. */
+.flo { --fw: 162; --fh: 128; --f: 0; --idle: url("/media/flo-point-ok.png"); animation: flo-point 1.1s steps(4) infinite; }
+.mcp { --fw: 116; --fh: 60; --f: 0; --s: 2; --idle: url("/media/mcp-poses.png"); }
+.tv.playing .flo { animation: flo-ok 0.8s steps(4) 2 both; }
+.tv.playing.dancing .flo { --fw: 156; --fh: 123; background-image: url("/media/flo-dance.png"); animation: dance 1.951s steps(8) infinite; }
+/* Clicking Flo shows a game-style 3-2-1 over the video, then it plays. */
+.countdown { position: absolute; inset: 0; z-index: 2; display: none; place-items: center; pointer-events: none; background: rgba(20, 22, 28, 0.35); font: 900 clamp(72px, 16vw, 180px)/1 "NoBrainer Sans", system-ui, sans-serif; color: #fff; text-shadow: 6px 6px 0 var(--orange); }
+.countdown.on { display: grid; }
+.countdown.on span { animation: count-pop 0.45s steps(5) both; }
+@keyframes count-pop { from { transform: scale(1.6); opacity: 0; } 30% { transform: scale(1); opacity: 1; } to { transform: scale(0.92); opacity: 0.9; } }
+.tv.playing .mcp { --fw: 118; --fh: 59; background-image: url("/media/mcp-dance.png"); animation: dance 1.951s steps(8) infinite; }
+@keyframes flo-point { from { background-position: 0 0; } to { background-position: calc(var(--fw) * 4 * var(--s) * -1px) 0; } }
+@keyframes flo-ok { from { background-position: calc(var(--fw) * 4 * var(--s) * -1px) 0; } to { background-position: calc(var(--fw) * 8 * var(--s) * -1px) 0; } }
+@keyframes dance { from { background-position: 0 0; } to { background-position: calc(var(--fw) * 8 * var(--s) * -1px) 0; } }
+@media (min-width: 1360px) {
+  .cast { position: absolute; left: calc(-1 * min(330px, (100vw - 880px) / 2)); right: calc(-1 * min(330px, (100vw - 880px) / 2)); bottom: -6px; margin: 0; pointer-events: none; }
+  .cast .sprite { pointer-events: auto; }
+  .flo { --s: 2; } .mcp { --s: 3; }
+}
+
+/* Retro look: the video's pixel world and hard-shadow game UI. */
+.retro .tv-bg { display: block; }
+.retro .screen { border: 3px solid var(--ink); border-radius: 12px; box-shadow: 8px 8px 0 var(--ink); }
+.retro .tv-caption { padding: 12px 16px; background: #fff; border: 2px solid var(--ink); border-radius: 10px; box-shadow: 4px 4px 0 var(--ink); }
+.retro .tv-hint { display: inline-block; padding: 2px 8px; background: var(--cream); border-radius: 6px; }
+.retro .button, .retro .button.ghost, .retro .chip, .retro .tabs button, .retro .copy button, .retro .controls button { border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.retro .button:hover, .retro .chip:hover, .retro .chip:focus-visible, .retro .tabs button:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--ink); border-color: var(--ink); }
+.retro .button:active, .retro .tabs button:active, .retro .copy button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.retro .tabs button[aria-selected="true"] { border-color: var(--blue); box-shadow: 3px 3px 0 var(--blue); }
+.retro .panel, .retro .tool, .retro .checklist { border: 2px solid var(--ink); border-radius: 10px; box-shadow: 5px 5px 0 var(--ink); }
+.retro .console { border: 2px solid var(--ink); box-shadow: 5px 5px 0 var(--blue); }
+.retro .hero .copy pre { border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
+.retro .tool.live { border-color: var(--blue); box-shadow: 5px 5px 0 var(--blue); }
+.retro h2::before { content: ""; display: inline-block; width: 0.42em; height: 0.42em; margin-right: 0.4em; background: var(--orange); vertical-align: 0.06em; }
+.retro .newsletter { border: 2px solid var(--ink); border-radius: 10px; box-shadow: 5px 5px 0 var(--ink); }
+.retro .newsletter-form [data-form] .emailoctopus-form input[type="email"] { border: 2px solid var(--ink); border-radius: 8px; }
+.retro .newsletter-form [data-form] .emailoctopus-form input[type="submit"] { border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.retro .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--ink); }
+.retro .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+
+/* MC P's night look: the music video's neon world with gold accents from his chain. */
+html.night { --cream: #120B3A; --ink: #F6F3EE; --muted: #C7C2EA; --line: #3B2F7E; --card: #1E1A55; --gold: #FFC83D; color-scheme: dark; }
+html.night [data-nb-site-header] { --nb-header-paper: #0E0930; --nb-header-ink: #F6F3EE; --nb-header-muted: #C7C2EA; --nb-header-link: #9DB7FF;
+  --nb-header-edge: #FFC83D; --nb-header-line: #3B2F7E; --nb-header-selected: #2A2C9C; }
+html.night .chip svg, html.night .tabs button svg, html.night h3 svg { padding: 2px; background: #F6F3EE; border-radius: 5px; }
+html.night a, html.night .hero h1 .prove { color: #9DB7FF; }
+html.night .tv-bg { background-image: url("/media/horizon-night.png"); }
+html.night .chip, html.night .tabs button, html.night .panel, html.night .tool, html.night .checklist, html.night pre,
+html.night .copy button, html.night .controls button, html.night .button.ghost, html.night .tv-caption { background: var(--card); color: var(--ink); border-color: var(--gold); }
+html.night .button, html.night .chip, html.night .tabs button, html.night .copy button, html.night .controls button, html.night .hero .copy pre { box-shadow: 3px 3px 0 var(--gold); }
+html.night .panel, html.night .tool, html.night .checklist, html.night .tv-caption { box-shadow: 5px 5px 0 var(--gold); }
+html.night .screen, html.night .console { border-color: var(--gold); box-shadow: 8px 8px 0 var(--gold); }
+html.night .tabs button[aria-selected="true"], html.night .tool.live { border-color: #FF6FD8; box-shadow: 4px 4px 0 #FF6FD8; }
+html.night h2::before { background: var(--gold); }
+html.night .tv-hint { background: var(--card); color: var(--muted); }
+html.night .sprite .name { color: var(--gold); background: #0E0930; box-shadow: 2px 2px 0 #FF6FD8; }
+html.night .mcp { --f: 7; }
+html.night .tv-eyebrow { color: var(--ink); }
+html.night .newsletter { background: var(--card); border-color: var(--gold); box-shadow: 5px 5px 0 var(--gold); }
+html.night .newsletter-form [data-form] .emailoctopus-form input[type="email"] { color: var(--ink); background: var(--cream); border-color: var(--gold); }
+html.night .newsletter-form [data-form] .emailoctopus-form input[type="submit"] { box-shadow: 3px 3px 0 var(--gold); }
+html.night .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:hover { box-shadow: 5px 5px 0 var(--gold); }
+html.night .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:active { box-shadow: 1px 1px 0 var(--gold); }
+
+/* Flo's switch expands as a stepped (pixel-like) circle from the clicked spot. */
+::view-transition-old(root) { animation: none; }
+::view-transition-new(root) { animation: look-in 0.7s steps(12) both; }
+/* MC P's switch turns the old page off like a CRT: it collapses to a bright line, then the new look fades in. */
+:root[data-vt="crt"]::view-transition { background: #14161c; }
+:root[data-vt="crt"]::view-transition-old(root) { animation: crt-off 0.42s ease-in both; }
+:root[data-vt="crt"]::view-transition-new(root) { animation: crt-on 0.3s 0.4s ease-out both; }
+@keyframes crt-off { 0% { transform: none; filter: brightness(1); } 65% { transform: scale(1, 0.006); filter: brightness(2.5); } 100% { transform: scale(0, 0.006); filter: brightness(4); } }
+@keyframes crt-on { from { opacity: 0; filter: brightness(1.8) saturate(0); } to { opacity: 1; filter: none; } }
+@keyframes look-in { from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%)); } to { clip-path: circle(150vmax at var(--vt-x, 50%) var(--vt-y, 50%)); } }
+
+@media (prefers-reduced-motion: reduce) {
+  /* The cast loops are small in-place pixel animations that only run around a video the visitor
+     started, so they stay on; only page-wide effects, hover lifts and the countdown pop stop. */
+  .countdown.on span { animation: none; }
+  .sprite:hover, .retro .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:hover, .retro .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:active, .retro .button:hover, .retro .chip:hover, .retro .chip:focus-visible, .retro .tabs button:hover, .retro .button:active, .retro .tabs button:active, .retro .copy button:active { transform: none; }
+}

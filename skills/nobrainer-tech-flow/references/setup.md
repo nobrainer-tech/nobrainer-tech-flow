@@ -138,10 +138,8 @@ data and cost scope is authorized. Without process tools use the existing
 project instruction/tracker as the preference store.
 
 Use `nobrainer-team` to compare the eighteen curated skills, project-native tools
-and active runtime. A missing specialist may be evaluated temporarily through
-the open skills ecosystem only after source/ref, instructions, scripts, license,
-permissions, network/credential behavior, trigger overlap and rollback are
-reviewed. Persistent/global installation is an owner gate.
+and active runtime. For a missing specialist, Team writes a task-local brief for
+a native worker; it never searches for, installs or runs third-party skills.
 
 ## 5. Choose justified artifacts and sessions
 
