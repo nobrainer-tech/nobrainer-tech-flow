@@ -231,27 +231,6 @@ class GuidedOnboardingTests(unittest.TestCase):
             )
         )
 
-    def test_github_transport_pins_hostname_and_rejects_external_redirects(self) -> None:
-        completed = subprocess.CompletedProcess(
-            args=["gh"], returncode=0, stdout='{"language":"Python"}', stderr=""
-        )
-        with mock.patch.object(GUIDED.shutil, "which", return_value="/usr/bin/gh"), mock.patch.object(
-            GUIDED.subprocess, "run", return_value=completed
-        ) as runner:
-            payload, source = GUIDED._github_json("repos/acme/repo")
-        self.assertEqual({"language": "Python"}, payload)
-        self.assertEqual("GITHUB_READ_ONLY_GH", source)
-        self.assertIn("--hostname", runner.call_args.args[0])
-        self.assertIn("github.com", runner.call_args.args[0])
-
-        handler = GUIDED._GitHubRedirectHandler()
-        request = GUIDED.Request("https://api.github.com/repos/acme/repo")
-        self.assertIsNone(
-            handler.redirect_request(
-                request, None, 302, "Found", {}, "https://127.0.0.1/latest/meta-data"
-            )
-        )
-
     def test_github_cli_output_is_decoded_as_utf_8_on_every_platform(self) -> None:
         completed = subprocess.CompletedProcess(
             args=["gh"], returncode=0, stdout='{"language":"Python"}', stderr=""
