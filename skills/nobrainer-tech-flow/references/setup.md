@@ -138,10 +138,8 @@ data and cost scope is authorized. Without process tools use the existing
 project instruction/tracker as the preference store.
 
 Use `nobrainer-team` to compare the eighteen curated skills, project-native tools
-and active runtime. For a missing specialist, Team may look up skills.sh
-read-only and review one candidate at a pinned commit; nothing from it is
-executed. Installing an external skill is never automatic: it needs the owner's
-explicit approval after a code review of the exact files.
+and active runtime. For a missing specialist, Team writes a task-local brief for
+a native worker; it never searches for, installs or runs third-party skills.
 
 ## 5. Choose justified artifacts and sessions
 

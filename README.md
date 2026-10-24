@@ -623,11 +623,10 @@ docs/                 compatibility, curation, eval and release evidence
 assets/               brand and workflow diagrams
 ```
 
-Client-specific forks of a skill are prohibited. External skills discovered by
-Team are untrusted input: inspect the exact source/ref, instructions, scripts,
-permissions, network/credential behavior, trigger overlap and rollback. Prefer
-temporary project-scoped use; persistent or global installation is an owner
-gate.
+Client-specific forks of a skill are prohibited. Team fills a capability gap
+with a task-local specialist brief for a native worker; it never searches for,
+installs or runs third-party skills. Installing anything is the owner's own
+separate decision.
 
 </details>
 

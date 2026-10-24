@@ -597,12 +597,10 @@ actually exposes and passes that integration.
 
 The eighteen curated skills are the stable base. When a concrete work unit still
 has a capability gap, `nobrainer-team` first inventories installed/project
-capabilities, then may look up external skills on skills.sh read-only and
-review one candidate at a pinned commit. Source, publisher, license, scripts,
-permissions, credentials, network behavior, persistence, trigger overlap and
-rollback are reviewed as data; nothing from the candidate is executed. Team
-never installs an external skill: installation needs the owner's explicit
-approval after a code review of the exact files.
+capabilities, then writes a task-local specialist brief (role, method from
+project docs or verified primary sources, allowed actions, write scope and
+acceptance) for a native worker. Team never searches for, installs or runs
+third-party skills; installing anything is the owner's own separate decision.
 
 ## Readback and acceptance
 

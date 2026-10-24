@@ -32,7 +32,7 @@ WORK_UNITS
     ROLLBACK:
 
 CAPABILITY_GAPS:
-EXTERNAL_SKILL_AUDITS:
+SPECIALIST_BRIEFS:
 REJECTED_ROLES_AND_REASON:
 EXPECTED_CRITICAL_PATH_GAIN:
 COORDINATION_COST:
@@ -44,16 +44,15 @@ visible MAIN may coordinate many native workers under
 [team execution](../../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
 Record unknown estimates as `UNKNOWN`; they do not block eligible dispatch.
 
-For each external candidate record skill ID, source URL, publisher, license,
-commit SHA, install count, inspected files with SHA-256, scripts not run,
-permissions, network/credential behavior, persistence, trigger overlap, use
-method (task-local instructions, or installation with the owner's explicit
-approval reference) and removal/rollback.
+For each task-local specialist record its role, method sources (project docs or
+verified primary sources), allowed actions, write scope, acceptance and where the
+brief lives in the plan. Team never searches for, installs or runs third-party
+skills.
 # Capability coverage for durable plans
 
 Use the existing plan to record: needed capability, applicable dimension,
-searched candidate IDs, selected ID/source/ref, rejected IDs with reasons,
-reviewed-file hashes, evidence and unresolved gap. Record `UNKNOWN` for a need
+checked capabilities, selected skill, tool or specialist brief, rejected options
+with reasons, evidence and unresolved gap. Record `UNKNOWN` for a need
 not yet checked, `CAPABILITY_GAP` for a checked need with no suitable capability,
 and `NOT_APPLICABLE` for a dimension deliberately excluded. Review architecture,
 runtime, framework, domain, data, integrations, tests, security, UX, operations and maintenance when
