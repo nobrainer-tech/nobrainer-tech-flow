@@ -119,3 +119,17 @@ a Terminal-Bench shortlist. The smoke test checks this mapping through the SDK i
 - Run MCP Inspector against production and call each tool with valid and invalid input.
 - Connect each client from the README and record the result there.
 - Rescan in the OpenAI portal after each deploy that changes tools.
+
+## 8. Link preview card
+
+`public/media/og-card.png` (1200x630) is the image in the `og:image` and `twitter:image` tags of both
+landing pages. It is committed, not built, and Vercel serves it as a static file from `public/`. To
+change it, edit `scripts/render-og-card.mjs`, run `node scripts/render-og-card.mjs` (needs Chrome or
+Chromium; set `CHROME_BIN` if it is not in a standard place) and commit the PNG. X, Facebook and
+LinkedIn cache previews by image URL, so if the card changes after the link was shared, give the file
+a new name and update the tags.
+
+After a deploy: `curl -s https://mcp.nobrainer.tech/ | grep -E 'og:|twitter:'` (and the same for
+`/pl/`), `curl -sI https://mcp.nobrainer.tech/media/og-card.png` (200, `content-type: image/png`),
+then refresh the cached preview in the Facebook Sharing Debugger and the LinkedIn Post Inspector and
+paste the URL into an X draft post to see the card.
