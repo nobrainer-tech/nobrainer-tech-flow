@@ -210,6 +210,7 @@ def failed_ids(stderr: str) -> list[str]:
 
 
 def run_suite() -> dict:
+    here = own_checkout()  # commit and tree state mean something only for the checkout the suite ran in
     start = time.monotonic()
     proc = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", "tests"],
                           capture_output=True, text=True, cwd=ROOT)
@@ -227,8 +228,8 @@ def run_suite() -> dict:
         "summary": tail[-1] if tail else "",
         "python": platform.python_version(), "system": platform.system(),
         "cpus": os.cpu_count(),
-        "commit": git("rev-parse", "HEAD"),
-        "dirty": bool(git("status", "--porcelain")),
+        "commit": git("rev-parse", "HEAD") if here else None,
+        "dirty": bool(git("status", "--porcelain")) if here else None,
         "note": "One run on one machine. Wall time depends on load; the suite runs a recursive archive acceptance test.",
     }
 
@@ -343,8 +344,10 @@ def render(include_tests: dict | None) -> tuple[str, bool]:
         add("`NOT_RUN`: no CI snapshot is stored.")
     add("")
     if tests:
+        where = (f"commit `{tests['commit'][:10]}` ({TREE_STATE[tests.get('dirty')]})" if tests.get("commit")
+                 else "a tree that is not a git checkout (commit and tree state not recorded)")
         add(f"Local full suite (`{tests['system']}`, Python {tests['python']}, {tests.get('cpus', '?')} CPUs): **{tests['tests']} tests, exit {tests['exit_code']}** "
-            f"({tests['failures']} failures, {tests['errors']} errors, {tests['skipped']} skipped) in {tests['seconds']:.0f} s on commit `{tests['commit'][:10]}` ({TREE_STATE[tests.get('dirty')]}); "
+            f"({tests['failures']} failures, {tests['errors']} errors, {tests['skipped']} skipped) in {tests['seconds']:.0f} s on {where}; "
             f"the report files were regenerated after the run. {tests['note']}")
     else:
         add("Local full suite: `NOT_RUN` for this report. Run `python3 scripts/flow_report.py --run-tests` to record it.")

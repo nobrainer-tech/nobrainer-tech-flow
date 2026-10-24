@@ -51,19 +51,10 @@
       "source": "docs/releases/v1.6.1.md",
       "quote": [
         "**Measured promotion is rejected.**",
-        "support no quality, token-savings or model-equivalence claim"
+        "support no quality, token-savings or model-equivalence claim",
+        "| Three paired four-case response simulations | 95/96; 1/3 runs pass all gates | 94/96; 1/3 runs pass all gates |",
+        "| One sealed two-case response simulation | 15/16, gates pass | 14/16, completion-label gate fails |"
       ]
-    },
-    {
-      "id": "behavior-scores-1.6.1",
-      "metric": "quality",
-      "claim": "Scores behind the rejected promotion (baseline, candidate).",
-      "source": "docs/releases/v1.6.1.md",
-      "quote": [
-        "95/96; 1/3 runs pass all gates | 94/96; 1/3 runs pass all gates",
-        "15/16, gates pass | 14/16, completion-label gate fails"
-      ],
-      "display": false
     },
     {
       "id": "structural-promotions-2026-08-29",

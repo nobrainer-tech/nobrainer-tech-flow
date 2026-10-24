@@ -12,7 +12,7 @@ Each metric on the scoreboard carries a status: `MEASURED`, `PARTIAL` (a real nu
 
 | Metric | Definition | Status | Headline |
 |---|---|---|---|
-| Quality | Whether Flow's own gates hold, plus recorded behavior evaluations | PARTIAL | validators pass; 580 test cases in 37 files; installer mutation catch 30 of 34; behavior evaluations quoted below: one measured promotion (3 paired repetitions), one rejected (1.6.1) |
+| Quality | Whether Flow's own gates hold, plus recorded behavior evaluations | PARTIAL | validators pass; 581 test cases in 37 files; installer mutation catch 30 of 34; behavior evaluations quoted below: one measured promotion (3 paired repetitions), one rejected (1.6.1) |
 | Reliability | CI pass rate of the `Validate` workflow, cancelled runs excluded | PARTIAL | 90.9% of 198 finished runs (`main` pushes 98.6% of 70) |
 | Speed | Wall time of a green `Validate` run, and release records per month | PARTIAL | latest month median 15.4 min, p90 19.9 min; 35 release records added |
 | Cost | Context Flow adds before any work starts, and recorded token receipts | PARTIAL | up to ~1,723 tokens shipped for session start (estimate); no dollars-per-task figure |
@@ -20,7 +20,7 @@ Each metric on the scoreboard carries a status: `MEASURED`, `PARTIAL` (a real nu
 ## Quality
 
 - Structure validators (`validate_skills.py`, `--suite`): pass on this checkout.
-- Test suite: 580 test cases defined across 37 files (counted statically, one per class and method name, which is how unittest discovery counts them; the run result is under Reliability).
+- Test suite: 581 test cases defined across 37 files (counted statically, one per class and method name, which is how unittest discovery counts them; the run result is under Reliability).
 - Records: 35 release records and 7 evaluation records in `docs/`.
 - Mutation check of the shell installer tests: 30 of 34 mutants caught. The release record says why the other four were not. ([docs/TESTING.md](../../docs/TESTING.md))
 - 1.3.0 evaluator-integrity candidate: promoted on a sealed holdout. With two blinded judges calibrated on known-good and known-bad controls, the candidate scored 8/8 in 3 of 3 paired repetitions and the baseline in 2 of 3. The record has three paired repetitions. ([docs/evals/v1.3.0-autoimprove-integrity-2026-09-01.md](../../docs/evals/v1.3.0-autoimprove-integrity-2026-09-01.md))
@@ -108,7 +108,6 @@ Each entry stores excerpts of an existing record, and the script fails when a st
 | `mutation-install-sh` | quality | `docs/TESTING.md` | yes |
 | `behavior-promotion-final5-1.3.0` | quality | `docs/evals/v1.3.0-autoimprove-integrity-2026-09-01.md` | yes |
 | `behavior-promotion-rejected-1.6.1` | quality | `docs/releases/v1.6.1.md` | yes |
-| `behavior-scores-1.6.1` | quality | `docs/releases/v1.6.1.md` | yes |
 | `structural-promotions-2026-08-29` | quality | `docs/evals/portfolio-autoimprove-2026-08-29.md` | yes |
 | `tokens-per-call-1.6.1` | cost | `docs/releases/v1.6.1.md` | yes |
 | `tokens-actual-execution-1.6.1` | cost | `docs/evals/artifacts/v1.6.1/runtime/receipt.json` | yes |

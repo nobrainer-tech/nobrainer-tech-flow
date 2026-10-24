@@ -154,13 +154,22 @@ class FlowReportTests(unittest.TestCase):
         def fake_git(*args):
             return {"rev-parse": "0123456789abcdef", "status": " M scripts/flow_report.py"}[args[0]]
 
-        with mock.patch.object(flow_report.subprocess, "run", return_value=done), mock.patch.object(flow_report, "git", side_effect=fake_git):
+        with mock.patch.object(flow_report.subprocess, "run", return_value=done), mock.patch.object(flow_report, "git", side_effect=fake_git), \
+                mock.patch.object(flow_report, "own_checkout", return_value=True):
             run = flow_report.run_suite()
         self.assertEqual((run["tests"], run["skipped"], run["exit_code"], run["dirty"], run["commit"]),
                          (3, 1, 0, True, "0123456789abcdef"))
-        with mock.patch.object(flow_report.subprocess, "run", return_value=done), \
+        with mock.patch.object(flow_report.subprocess, "run", return_value=done), mock.patch.object(flow_report, "own_checkout", return_value=True), \
                 mock.patch.object(flow_report, "git", side_effect=lambda *a: "" if a[0] == "status" else "0123456789abcdef"):
             self.assertFalse(flow_report.run_suite()["dirty"])
+
+    def test_a_suite_run_outside_its_own_checkout_records_no_commit(self):
+        done = mock.Mock(returncode=0, stderr="Ran 3 tests in 1.5s\n\nOK\n")
+        with mock.patch.object(flow_report.subprocess, "run", return_value=done), mock.patch.object(flow_report, "own_checkout", return_value=False), \
+                mock.patch.object(flow_report, "git", return_value="the-commit-of-some-other-repository"):
+            run = flow_report.run_suite()
+        self.assertEqual((run["commit"], run["dirty"]), (None, None))
+        self.assertIn("not a git checkout", render_without_validators(run)[0])
 
     def test_size_counts_crlf_as_lf(self):
         with tempfile.TemporaryDirectory() as tmp:
