@@ -29,7 +29,7 @@ Rules taken from [TESTING.md](../TESTING.md): keep development cases separate fr
 
 72 agent runs (12 tasks x 2 arms x 3 repetitions), 72 judge calls and about 12 calibration calls (84 judge-side calls).
 
-The measured anchors in the repository are all single small runs, and the report lists them under [Cost](flow-quality-report.md#cost): one local repair with tools reported 64,216 input tokens (48,128 cached, 75%) and 1,133 output tokens ([v1.6.1 receipt](../evals/artifacts/v1.6.1/runtime/receipt.json)), and four smoke trials reported 70,987 to 111,655 input and 441 to 902 output tokens ([v1.6.0 receipts](../evals/artifacts/v1.6.0/smoke-receipts.json)). Nothing larger has been measured. Every size below is an **assumption** for budgeting, except that the small input figure is rounded from the 64,216 receipt. The pilot replaces the assumptions with measurements.
+The token receipts the report cites under [Cost](flow-quality-report.md#cost) are all single small runs: one local repair with tools reported 64,216 input tokens (48,128 cached, 75%) and 1,133 output tokens ([v1.6.1 receipt](../evals/artifacts/v1.6.1/runtime/receipt.json)), and four smoke trials reported 70,987 to 111,655 input and 441 to 902 output tokens ([v1.6.0 receipts](../evals/artifacts/v1.6.0/smoke-receipts.json)). They do not establish usage for the medium and large tasks proposed here. Every size below is an **assumption** for budgeting, except that the small input figure is rounded from the 64,216 receipt. The pilot replaces the assumptions with measurements.
 
 Size classes are assigned to the 12 tasks when the task set is frozen: four small, four medium, four large.
 

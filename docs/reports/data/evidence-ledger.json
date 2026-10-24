@@ -74,7 +74,7 @@
     {
       "id": "tokens-actual-execution-1.6.1",
       "metric": "cost",
-      "claim": "1.6.1 actual execution (one local CSV repair): the receipt reports 64,216 input tokens, 48,128 of them cached, and 1,133 output tokens (473 more are listed as reasoning output), in 29.9 s.",
+      "claim": "1.6.1 actual execution (one local CSV repair): the receipt reports 64,216 input tokens, 48,128 of them cached, and 1,133 output tokens; it also lists 473 reasoning output tokens. It took 29.9 s.",
       "source": "docs/evals/artifacts/v1.6.1/runtime/receipt.json",
       "quote": [
         "\"input_tokens\": 64216",

@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import math
 import os
 import platform
 import re
@@ -30,6 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "docs" / "reports" / "data"
 REPORT = ROOT / "docs" / "reports" / "flow-quality-report.md"
 BYTES_PER_TOKEN = 4  # rough heuristic for English text; an estimate, not billing
+TREE_STATE = {False: "clean tree", True: "uncommitted changes in the tree", None: "tree state not recorded"}
 
 
 def read_json(path: Path):
@@ -53,12 +55,39 @@ def pct(part: int, whole: int) -> str:
 
 
 def percentile(values: list[float], q: float) -> float:
+    """Nearest-rank percentile: the smallest value with at least a fraction `q` of the values at or below it."""
     ordered = sorted(values)
-    return ordered[min(len(ordered) - 1, round(q * (len(ordered) - 1)))]
+    return ordered[max(0, math.ceil(q * len(ordered)) - 1)]
 
 
 def minutes(seconds: float) -> str:
     return f"{seconds / 60:.1f} min"
+
+
+# --- repository files ------------------------------------------------------
+
+def files_under(rel: str) -> list[Path]:
+    """Files under a repository directory: the tracked ones when git knows them, else a plain walk.
+
+    Tracked files only, so untracked scratch files and bytecode caches left by a local run never change
+    the report for a given commit (a new file counts once it is added to the index). Outside a git
+    checkout, such as an extracted archive, the walk skips bytecode caches.
+    """
+    listed = [x for x in git("ls-files", "-z", "--", rel).split("\0") if x]
+    if listed:
+        return sorted(p for p in (ROOT / x for x in listed) if p.is_file())
+    return sorted(p for p in (ROOT / rel).rglob("*")
+                  if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc")
+
+
+def shipped_size(path: Path) -> int:
+    """Bytes of a text file with CRLF counted as LF, so a Windows checkout reports the same size."""
+    return len(path.read_bytes().replace(b"\r\n", b"\n"))
+
+
+def history() -> bool:
+    """True when this checkout has full history and version tags, which the cadence and workflow dates need."""
+    return git("rev-parse", "--is-shallow-repository") == "false" and bool(git("tag", "--list", "v[0-9]*"))
 
 
 # --- quality ---------------------------------------------------------------
@@ -78,7 +107,7 @@ def test_inventory() -> dict:
     A method name defined twice in one class is shadowed by the later definition and never runs,
     so it is counted once.
     """
-    files = sorted((ROOT / "tests").glob("test_*.py"))
+    files = [p for p in files_under("tests") if p.parent == ROOT / "tests" and p.match("test_*.py")]
     cases: set[tuple[str, str, str]] = set()
     for path in files:
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
@@ -89,10 +118,11 @@ def test_inventory() -> dict:
 
 
 def eval_records() -> dict:
+    evals, releases = ROOT / "docs" / "evals", ROOT / "docs" / "releases"
     return {
-        "eval_records": len(list((ROOT / "docs" / "evals").glob("*.md"))),
-        "release_records": len([p for p in (ROOT / "docs" / "releases").glob("v*.md")
-                                if re.fullmatch(r"v\d+\.\d+\.\d+\.md", p.name)]),
+        "eval_records": len([p for p in files_under("docs/evals") if p.parent == evals and p.suffix == ".md"]),
+        "release_records": len([p for p in files_under("docs/releases")
+                                if p.parent == releases and re.fullmatch(r"v\d+\.\d+\.\d+\.md", p.name)]),
     }
 
 
@@ -136,8 +166,8 @@ def ci_stats(snapshot: dict | None) -> dict | None:
 
 
 def release_cadence() -> dict | None:
-    """Stable version tags per month; `None` in a shallow clone, where tags and dates are unreliable."""
-    if git("rev-parse", "--is-shallow-repository") != "false":
+    """Stable version tags per month; `None` without full history and tags (see `history`)."""
+    if not history():
         return None
     months: dict[str, int] = {}
     for line in git("for-each-ref", "--format=%(refname:short) %(creatordate:short)", "refs/tags").splitlines():
@@ -148,11 +178,19 @@ def release_cadence() -> dict | None:
 
 
 def workflow_change_dates() -> list[str] | None:
-    """Days on which the CI workflow file changed; `None` in a shallow clone, where history is partial."""
-    if git("rev-parse", "--is-shallow-repository") != "false":
+    """Days on which the CI workflow file changed; `None` without full history and tags (see `history`)."""
+    if not history():
         return None
     days = git("log", "--format=%ad", "--date=short", "--", ".github/workflows/validate.yml").splitlines()
     return sorted(set(days)) or None
+
+
+def failed_ids(stderr: str) -> list[str]:
+    """Dotted ids of failed or errored tests from unittest output (the format differs across Python versions)."""
+    ids = set()
+    for name, where in re.findall(r"^(?:FAIL|ERROR): (\S+) \(([\w.]+)", stderr, re.M):
+        ids.add(where if where.endswith("." + name) else f"{where}.{name}")
+    return sorted(ids)
 
 
 def run_suite() -> dict:
@@ -169,38 +207,27 @@ def run_suite() -> dict:
         "seconds": float(ran.group(2)) if ran else round(time.monotonic() - start, 1),
         "failures": int(counts.get("failures", 0)), "errors": int(counts.get("errors", 0)),
         "skipped": int(counts.get("skipped", 0)),
-        "failed_tests": sorted({f"{mod}.{name}" for name, mod in re.findall(r"^(?:FAIL|ERROR): (\S+) \(([\w.]+)", proc.stderr, re.M)}),
+        "failed_tests": failed_ids(proc.stderr),
         "summary": tail[-1] if tail else "",
         "python": platform.python_version(), "system": platform.system(),
         "cpus": os.cpu_count(),
         "commit": git("rev-parse", "HEAD"),
+        "dirty": bool(git("status", "--porcelain")),
         "note": "One run on one machine. Wall time depends on load; the suite runs a recursive archive acceptance test.",
     }
 
 
 # --- cost ------------------------------------------------------------------
 
-def skill_files(skill_dir: Path) -> list[Path]:
-    """Files a skill ships: the tracked ones when git knows them, else everything but bytecode caches.
-
-    A plain directory walk would also count `__pycache__` and other untracked files that a local
-    test run leaves behind, so the same commit would report different sizes on different machines.
-    """
-    tracked = [ROOT / p for p in git("ls-files", "--", skill_dir.relative_to(ROOT).as_posix()).splitlines()]
-    if tracked:
-        return [p for p in tracked if p.is_file()]
-    return [p for p in skill_dir.rglob("*") if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"]
-
-
 def footprint() -> dict:
     skills = []
-    for skill in sorted((ROOT / "skills").glob("*/SKILL.md")):
+    for skill in [p for p in files_under("skills") if p.name == "SKILL.md" and p.parent.parent == ROOT / "skills"]:
         text = skill.read_text(encoding="utf-8")
         desc = re.search(r'^description:\s*"(.*)"\s*$', text, re.M)
-        refs = sum(p.stat().st_size for p in skill_files(skill.parent) if p != skill)
+        refs = sum(shipped_size(p) for p in files_under(f"skills/{skill.parent.name}") if p != skill)
         skills.append({"name": skill.parent.name, "skill_md": len(text.encode()), "description": len((desc.group(1) if desc else "").encode()),
                        "on_demand_files": refs})
-    bootstrap = (ROOT / "adapters" / "bootstrap.md").stat().st_size
+    bootstrap = shipped_size(ROOT / "adapters" / "bootstrap.md")
     always = bootstrap + sum(s["description"] for s in skills)
     return {"skills": skills, "bootstrap": bootstrap, "always_visible_bytes": always,
             "largest": max(skills, key=lambda s: s["skill_md"])}
@@ -263,11 +290,11 @@ def render(include_tests: dict | None) -> tuple[str, bool]:
         add(f"| Reliability | CI pass rate of the `Validate` workflow, cancelled runs excluded | PARTIAL | {a['pass_rate']} of {a['success'] + a['failure']} finished runs "
             f"(`main` pushes {m['pass_rate']} of {m['success'] + m['failure']}) |")
         add(f"| Speed | Wall time of a green `Validate` run, and version tags per month | PARTIAL | latest month median {minutes(list(ci['monthly'].values())[-1][1])}, p90 {minutes(list(ci['monthly'].values())[-1][2])}"
-            + (f"; {cadence['releases']} version tags" if cadence else "") + " |")
+            + (f"; {cadence['releases']} version tags" if cadence else "; version tags `NOT_RUN` here") + " |")
     else:
         add("| Reliability | CI pass rate | NOT_RUN | no CI snapshot in `docs/reports/data/` |")
         add("| Speed | CI wall time | NOT_RUN | no CI snapshot |")
-    add(f"| Cost | Context Flow adds before any work starts, and recorded token receipts | PARTIAL | {tokens(foot['always_visible_bytes'])} tokens shipped for every session (estimate); no dollars-per-task figure |")
+    add(f"| Cost | Context Flow adds before any work starts, and recorded token receipts | PARTIAL | up to {tokens(foot['always_visible_bytes'])} tokens shipped for session start (estimate); no dollars-per-task figure |")
     add("")
     add("## Quality")
     add("")
@@ -301,7 +328,7 @@ def render(include_tests: dict | None) -> tuple[str, bool]:
     add("")
     if tests:
         add(f"Local full suite (`{tests['system']}`, Python {tests['python']}, {tests.get('cpus', '?')} CPUs): **{tests['tests']} tests, exit {tests['exit_code']}** "
-            f"({tests['failures']} failures, {tests['errors']} errors, {tests['skipped']} skipped) in {tests['seconds']:.0f} s on commit `{tests['commit'][:10]}`; "
+            f"({tests['failures']} failures, {tests['errors']} errors, {tests['skipped']} skipped) in {tests['seconds']:.0f} s on commit `{tests['commit'][:10]}` ({TREE_STATE[tests.get('dirty')]}); "
             f"the report files were regenerated after the run. {tests['note']}")
     else:
         add("Local full suite: `NOT_RUN` for this report. Run `python3 scripts/flow_report.py --run-tests` to record it.")
@@ -314,21 +341,24 @@ def render(include_tests: dict | None) -> tuple[str, bool]:
     add("## Speed")
     add("")
     if ci:
-        add("Green `Validate` runs, start to last update of the whole workflow run (every job of the workflow, on Linux, macOS and Windows runners). "
+        add("Green `Validate` runs, start to last update of the whole workflow run, so every job the workflow had at the time. "
             "The workflow file and the suite changed over this period"
-            + (f" (the workflow file changed on {', '.join(workflow_days)})" if workflow_days else " (see `git log` for `.github/workflows/validate.yml`)")
+            + (f" (the workflow file changed on {', '.join(workflow_days)})" if workflow_days
+               else " (workflow change dates: `NOT_RUN` here, a full clone with tags is needed)")
             + ", and this report does not attribute the differences to any change, so compare within a month only. p90 is a nearest-rank estimate.")
         add("")
         add("| Month | Green runs | Median | p90 |")
         add("|---|---|---|---|")
         for month, (n, med, p90) in ci["monthly"].items():
             add(f"| {month} | {n} | {minutes(med)} | {minutes(p90)} |")
+    add("")
     if cadence:
-        add("")
         add(f"Stable version tags per month: "
             + ", ".join(f"{m}: {n}" for m, n in cadence["months"].items())
             + f" ({cadence['releases']} in total). The date is the tag date for an annotated tag and the commit date for a lightweight tag.")
-        add("")
+    else:
+        add("Stable version tags per month: `NOT_RUN` here; this needs a full clone with tags.")
+    add("")
     for e in ledger:
         if e["metric"] == "speed":
             add(f"- {e['claim']} ([{e['source']}](../../{e['source']}))")
@@ -338,9 +368,10 @@ def render(include_tests: dict | None) -> tuple[str, bool]:
     add("")
     add(f"Flow's standing cost is context. Sizes below are bytes of text; tokens are bytes divided by {BYTES_PER_TOKEN}, a rough English-text heuristic, **not** a tokenizer count or a bill.")
     add("")
-    add(f"- Shipped for every session: the session bootstrap ({foot['bootstrap']:,} B) plus the {len(foot['skills'])} skill descriptions ({sum(s['description'] for s in foot['skills']):,} B) = "
-        f"{foot['always_visible_bytes']:,} B, {tokens(foot['always_visible_bytes'])} tokens. This is visible at session start only on hosts that inject the bootstrap and list skill descriptions "
-        "(observed on Claude Code and Codex in [docs/COMPATIBILITY.md](../../docs/COMPATIBILITY.md)); a host may shorten descriptions, so this is the size Flow ships, not a measure of what any host shows.")
+    add(f"- Shipped for session start: the session bootstrap ({foot['bootstrap']:,} B) plus the {len(foot['skills'])} skill descriptions ({sum(s['description'] for s in foot['skills']):,} B) = "
+        f"{foot['always_visible_bytes']:,} B, up to {tokens(foot['always_visible_bytes'])} tokens. Hosts differ "
+        "([docs/COMPATIBILITY.md](../../docs/COMPATIBILITY.md)): Claude Code delivered the bootstrap through a session-start hook and listed the skills in the recorded readback, "
+        "while Codex lists skills through native discovery and has no bootstrap hook. A host may also shorten descriptions, so this is the size Flow ships, not a measure of what any host shows.")
     add(f"- Loaded when a skill triggers: `SKILL.md` per skill, from {min(s['skill_md'] for s in foot['skills']):,} B to {foot['largest']['skill_md']:,} B (`{foot['largest']['name']}`), "
         f"{tokens(sum(s['skill_md'] for s in foot['skills']))} tokens if all {len(foot['skills'])} loaded at once, an upper bound rather than expected use. Reference files load on demand; "
         "the last column counts the files git tracks in each skill directory.")
@@ -384,6 +415,10 @@ def main() -> int:
     ap.add_argument("--run-tests", action="store_true", help="run the full suite and record docs/reports/data/test-run.json")
     args = ap.parse_args()
 
+    if (args.write or args.check) and not history():
+        print("error: the report needs a full clone with version tags (git fetch --unshallow --tags); refusing to write or check a degraded report",
+              file=sys.stderr)
+        return 2
     tests = None
     if args.run_tests:
         tests = run_suite()

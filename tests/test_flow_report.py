@@ -2,12 +2,23 @@
 
 from __future__ import annotations
 
+import io
+import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 from unittest import mock
 
 from scripts import flow_report
+
+
+def render_without_validators(tests=None):
+    """Render the report with the two validator subprocesses stubbed out; only the text under test matters."""
+    with mock.patch.object(flow_report, "validators", return_value={"skills": True, "suite": True}):
+        return flow_report.render(tests)
 
 
 class FlowReportTests(unittest.TestCase):
@@ -69,7 +80,7 @@ class FlowReportTests(unittest.TestCase):
             with mock.patch.object(flow_report, "ROOT", Path(tmp)):
                 self.assertEqual(flow_report.test_inventory(), {"files": 1, "defined_cases": 3})
 
-    def test_skill_size_ignores_bytecode_caches_outside_git(self):
+    def test_files_outside_git_skip_bytecode_caches(self):
         with tempfile.TemporaryDirectory() as tmp:
             skill = Path(tmp) / "skills" / "demo"
             (skill / "scripts" / "__pycache__").mkdir(parents=True)
@@ -77,8 +88,56 @@ class FlowReportTests(unittest.TestCase):
             (skill / "scripts" / "helper.py").write_text("x = 1\n", encoding="utf-8")
             (skill / "scripts" / "__pycache__" / "helper.cpython-313.pyc").write_bytes(b"0" * 500)
             with mock.patch.object(flow_report, "ROOT", Path(tmp)):
-                names = sorted(p.name for p in flow_report.skill_files(skill))
+                names = sorted(p.name for p in flow_report.files_under("skills/demo"))
             self.assertEqual(names, ["SKILL.md", "helper.py"])
+
+    @unittest.skipUnless(shutil.which("git"), "git is needed to build a tracked-files fixture")
+    def test_inventories_count_tracked_files_not_untracked_ones(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "tests").mkdir()
+            for name in ("test_a.py", "test_b.py"):
+                (root / "tests" / name).write_text("import unittest\nclass T(unittest.TestCase):\n    def test_x(self): pass\n",
+                                                   encoding="utf-8")
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(["git", "-C", str(root), "add", "tests/test_a.py"], check=True)
+            with mock.patch.object(flow_report, "ROOT", root):
+                self.assertEqual(flow_report.test_inventory(), {"files": 1, "defined_cases": 1})
+
+    def test_size_counts_crlf_as_lf(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            lf, crlf = Path(tmp) / "lf.md", Path(tmp) / "crlf.md"
+            lf.write_bytes(b"one\ntwo\n")
+            crlf.write_bytes(b"one\r\ntwo\r\n")
+            self.assertEqual(flow_report.shipped_size(lf), flow_report.shipped_size(crlf))
+
+    def test_percentile_is_nearest_rank(self):
+        self.assertEqual(flow_report.percentile([1, 2, 3, 4, 5, 6], 0.9), 6)
+        self.assertEqual(flow_report.percentile([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0.9), 9)
+        self.assertEqual(flow_report.percentile([7], 0.9), 7)
+
+    def test_failed_test_ids_are_not_doubled(self):
+        err = ("FAIL: test_a (test_mod.Case.test_a)\nERROR: test_b (tests.test_mod.Case.test_b)\n"
+               "FAIL: test_c (test_mod.Case)\n")
+        self.assertEqual(flow_report.failed_ids(err),
+                         ["test_mod.Case.test_a", "test_mod.Case.test_c", "tests.test_mod.Case.test_b"])
+
+    def test_recorded_run_states_whether_the_tree_was_clean(self):
+        run = {"system": "Linux", "python": "3.13", "cpus": 2, "tests": 1, "exit_code": 0, "failures": 0, "errors": 0,
+               "skipped": 0, "seconds": 60.0, "commit": "0123456789abcdef", "note": "n"}
+        self.assertIn("(clean tree)", render_without_validators({**run, "dirty": False})[0])
+        self.assertIn("(uncommitted changes in the tree)", render_without_validators({**run, "dirty": True})[0])
+        self.assertIn("(tree state not recorded)", render_without_validators(run)[0])
+
+    def test_without_full_history_the_report_says_not_run_and_will_not_be_written(self):
+        with mock.patch.object(flow_report, "history", return_value=False):
+            text, _ = render_without_validators()
+            self.assertIn("Stable version tags per month: `NOT_RUN` here", text)
+            self.assertIn("version tags `NOT_RUN` here", text)
+            err = io.StringIO()
+            with mock.patch.object(sys, "argv", ["flow_report.py", "--write"]), redirect_stderr(err):
+                self.assertEqual(flow_report.main(), 2)
+            self.assertIn("full clone", err.getvalue())
 
     def test_report_is_deterministic_and_states_what_is_not_measured(self):
         first, _ = flow_report.render(None)
@@ -88,7 +147,7 @@ class FlowReportTests(unittest.TestCase):
         self.assertNotIn("/home/", first)
 
     def test_cost_section_does_not_claim_a_host_shows_what_flow_ships(self):
-        text, _ = flow_report.render(None)
+        text, _ = render_without_validators()
         self.assertIn("not a measure of what any host shows", text)
         self.assertNotIn("always visible", text.lower())
 

@@ -12,15 +12,15 @@ Each metric on the scoreboard carries a status: `MEASURED`, `PARTIAL` (a real nu
 
 | Metric | Definition | Status | Headline |
 |---|---|---|---|
-| Quality | Whether Flow's own gates hold, plus recorded behavior evaluations | PARTIAL | validators pass; 569 test cases in 37 files; installer mutation catch 30 of 34; behavior evaluations quoted below: one measured promotion (3 paired repetitions), one rejected (1.6.1) |
+| Quality | Whether Flow's own gates hold, plus recorded behavior evaluations | PARTIAL | validators pass; 575 test cases in 37 files; installer mutation catch 30 of 34; behavior evaluations quoted below: one measured promotion (3 paired repetitions), one rejected (1.6.1) |
 | Reliability | CI pass rate of the `Validate` workflow, cancelled runs excluded | PARTIAL | 90.9% of 198 finished runs (`main` pushes 98.6% of 70) |
 | Speed | Wall time of a green `Validate` run, and version tags per month | PARTIAL | latest month median 15.4 min, p90 19.9 min; 34 version tags |
-| Cost | Context Flow adds before any work starts, and recorded token receipts | PARTIAL | ~1,723 tokens shipped for every session (estimate); no dollars-per-task figure |
+| Cost | Context Flow adds before any work starts, and recorded token receipts | PARTIAL | up to ~1,723 tokens shipped for session start (estimate); no dollars-per-task figure |
 
 ## Quality
 
 - Structure validators (`validate_skills.py`, `--suite`): pass on this checkout.
-- Test suite: 569 test cases defined across 37 files (counted statically, one per class and method name, which is how unittest discovery counts them; the run result is under Reliability).
+- Test suite: 575 test cases defined across 37 files (counted statically, one per class and method name, which is how unittest discovery counts them; the run result is under Reliability).
 - Records: 35 release records and 7 evaluation records in `docs/`.
 - Mutation check of the shell installer tests: 30 of 34 mutants caught. The release record says why the other four were not. ([docs/TESTING.md](../../docs/TESTING.md))
 - 1.3.0 evaluator-integrity candidate: promoted on a sealed holdout. With two blinded judges calibrated on known-good and known-bad controls, the candidate scored 8/8 in 3 of 3 paired repetitions and the baseline in 2 of 3. Three repetitions is the minimum the repository asks for a borderline promotion claim, so this is a small sample. ([docs/evals/v1.3.0-autoimprove-integrity-2026-09-01.md](../../docs/evals/v1.3.0-autoimprove-integrity-2026-09-01.md))
@@ -41,7 +41,7 @@ CI snapshot of the `Validate` workflow, captured 2026-10-23 from the GitHub Acti
 
 A failed run on a pull-request branch can be the gate catching a problem before merge, so the pull-request rate is not a defect rate; the snapshot does not record why a run failed. The `main` row covers runs after merge. The snapshot keeps only the final attempt of each run.
 
-Local full suite (`Linux`, Python 3.13.17, 4 CPUs): **563 tests, exit 0** (0 failures, 0 errors, 11 skipped) in 744 s on commit `e19c625190`; the report files were regenerated after the run. One run on one machine; wall time depends on load, and the suite includes a recursive archive acceptance test. Two earlier runs on a shallow clone failed (3 tests, then 1): the second was the portfolio test that needs full git history, and the three names of the first run were not captured. The run above is on a full clone.
+Local full suite (`Linux`, Python 3.13.17, 4 CPUs): **563 tests, exit 0** (0 failures, 0 errors, 11 skipped) in 744 s on commit `e19c625190` (tree state not recorded); the report files were regenerated after the run. One run on one machine; wall time depends on load, and the suite includes a recursive archive acceptance test. Two earlier runs on a shallow clone failed (3 tests, then 1): the second was the portfolio test that needs full git history, and the three names of the first run were not captured. The run above is on a full clone.
 
 - Full deterministic suite at 2.5.0: 544 tests, exit 1 with two failures and five skips. The record says both failures came from an old extracted plugin in the ignored backup directory. ([docs/releases/v2.5.0.md](../../docs/releases/v2.5.0.md))
 - Only the two failed tests were rerun after the old directory was moved out of the checkout: both passed, exit 0, with no source change in between. ([docs/releases/v2.5.0.md](../../docs/releases/v2.5.0.md))
@@ -50,7 +50,7 @@ Local full suite (`Linux`, Python 3.13.17, 4 CPUs): **563 tests, exit 0** (0 fai
 
 ## Speed
 
-Green `Validate` runs, start to last update of the whole workflow run (every job of the workflow, on Linux, macOS and Windows runners). The workflow file and the suite changed over this period (the workflow file changed on 2026-08-28, 2026-08-29, 2026-09-02, 2026-09-29, 2026-10-19, 2026-10-21), and this report does not attribute the differences to any change, so compare within a month only. p90 is a nearest-rank estimate.
+Green `Validate` runs, start to last update of the whole workflow run, so every job the workflow had at the time. The workflow file and the suite changed over this period (the workflow file changed on 2026-08-28, 2026-08-29, 2026-09-02, 2026-09-29, 2026-10-19, 2026-10-21), and this report does not attribute the differences to any change, so compare within a month only. p90 is a nearest-rank estimate.
 
 | Month | Green runs | Median | p90 |
 |---|---|---|---|
@@ -67,7 +67,7 @@ Stable version tags per month: 2026-08: 4, 2026-09: 19, 2026-10: 11 (34 in total
 
 Flow's standing cost is context. Sizes below are bytes of text; tokens are bytes divided by 4, a rough English-text heuristic, **not** a tokenizer count or a bill.
 
-- Shipped for every session: the session bootstrap (1,685 B) plus the 18 skill descriptions (5,208 B) = 6,893 B, ~1,723 tokens. This is visible at session start only on hosts that inject the bootstrap and list skill descriptions (observed on Claude Code and Codex in [docs/COMPATIBILITY.md](../../docs/COMPATIBILITY.md)); a host may shorten descriptions, so this is the size Flow ships, not a measure of what any host shows.
+- Shipped for session start: the session bootstrap (1,685 B) plus the 18 skill descriptions (5,208 B) = 6,893 B, up to ~1,723 tokens. Hosts differ ([docs/COMPATIBILITY.md](../../docs/COMPATIBILITY.md)): Claude Code delivered the bootstrap through a session-start hook and listed the skills in the recorded readback, while Codex lists skills through native discovery and has no bootstrap hook. A host may also shorten descriptions, so this is the size Flow ships, not a measure of what any host shows.
 - Loaded when a skill triggers: `SKILL.md` per skill, from 5,788 B to 14,543 B (`nobrainer-writing`), ~41,680 tokens if all 18 loaded at once, an upper bound rather than expected use. Reference files load on demand; the last column counts the files git tracks in each skill directory.
 
 | Skill | `SKILL.md` (B) | Description (B) | On-demand files (B) |
@@ -92,7 +92,7 @@ Flow's standing cost is context. Sizes below are bytes of text; tokens are bytes
 | `nobrainer-context` | 5,788 | 386 | 35,745 |
 
 - 1.6.1 response simulations: development input was 11,586 tokens per baseline call and 11,646 per candidate call. The record calls these usage receipts, not a cost comparison. ([docs/releases/v1.6.1.md](../../docs/releases/v1.6.1.md))
-- 1.6.1 actual execution (one local CSV repair): the receipt reports 64,216 input tokens, 48,128 of them cached, and 1,133 output tokens (473 more are listed as reasoning output), in 29.9 s. ([docs/evals/artifacts/v1.6.1/runtime/receipt.json](../../docs/evals/artifacts/v1.6.1/runtime/receipt.json))
+- 1.6.1 actual execution (one local CSV repair): the receipt reports 64,216 input tokens, 48,128 of them cached, and 1,133 output tokens; it also lists 473 reasoning output tokens. It took 29.9 s. ([docs/evals/artifacts/v1.6.1/runtime/receipt.json](../../docs/evals/artifacts/v1.6.1/runtime/receipt.json))
 - 1.6.0 smoke receipts: four single trials across two requested models reported 70,987 to 111,655 input tokens (52,480 to 90,880 cached) and 441 to 902 output tokens each. The file sets no comparison claim. ([docs/evals/artifacts/v1.6.0/smoke-receipts.json](../../docs/evals/artifacts/v1.6.0/smoke-receipts.json))
 - One recorded Codex run warned that skill descriptions were shortened to fit the skills context budget, so a host can show less than the description bytes Flow ships. ([docs/evals/artifacts/v1.6.0/holdout/verdict.json](../../docs/evals/artifacts/v1.6.0/holdout/verdict.json))
 - **Not measured:** tokens or dollars per finished task, with or without Flow, and how much delegation changes either.
