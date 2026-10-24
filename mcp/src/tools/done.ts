@@ -5,7 +5,7 @@ import { CONTRACT_PREFIX, RECEIPT_PREFIX, encodeToken, itemId, renew } from "../
 import { checkItems, itemField, openToken, tokenField, type ToolDef } from "./common.ts";
 
 const input = z.strictObject({
-  token: tokenField,
+  token: tokenField.describe("Latest contract token"),
   unchecked: z.array(z.strictObject({ item: itemField, reason: z.string().min(10).max(200) })).max(10).optional(),
 });
 

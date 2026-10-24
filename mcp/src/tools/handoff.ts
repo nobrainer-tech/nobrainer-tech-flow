@@ -4,7 +4,7 @@ import { RECEIPT_PREFIX, hex8, itemId, type Item } from "../token.ts";
 import { FLOW_VERSION } from "../content/cards.ts";
 import { openToken, tokenField, type ToolDef } from "./common.ts";
 
-const input = z.strictObject({ receipt: tokenField });
+const input = z.strictObject({ receipt: tokenField.describe("Receipt from check_flow_done") });
 
 const PLACEHOLDER: Record<string, string> = {
   test: "<command and result>",

@@ -5,7 +5,7 @@ It gives an AI agent one task contract, one evidence check and one done gate, th
 client, plus guidance quoted from the pinned Flow release and a model advisor based on the
 [NoBrainer AI benchmark](https://nobrainer.tech/ai/benchmark/).
 
-- Endpoint (planned): `https://mcp.nobrainer.tech/mcp`, Streamable HTTP, no sign-in.
+- Endpoint: `https://mcp.nobrainer.tech/mcp`, Streamable HTTP, no sign-in.
 - Stores nothing, runs no AI model, makes no outbound requests from tools.
 - Protocol: MCP `2026-07-28` (stateless, `server/discover`) and 2025-era clients (`2025-11-25`,
   `2025-06-18`, ...) through a stateless JSON-only fallback on the same endpoint.
@@ -14,8 +14,8 @@ client, plus guidance quoted from the pinned Flow release and a model advisor ba
 
 | Tool | What it does |
 |---|---|
-| `start_flow_task` | Checks the outcome and definition of done (DoD), picks the quick or full path, lints vague items, routes Flow modules and owner gates, and returns item IDs (`AC01`...) with an HMAC-signed contract token. |
-| `get_flow_step` | Up to six rules for one stage, event or module, quoted verbatim from the pinned Flow release, with the source anchor. Works without a token. |
+| `start_flow_task` | Checks the outcome and definition of done (DoD), picks the quick or full path, lints vague items, routes Flow modules and owner gates, and returns item IDs (`AC01`...) with an HMAC-signed contract token to save in your goal file. |
+| `get_flow_step` | Up to six rules for one stage, event or module, quoted verbatim from the pinned Flow release, with the source anchor. Works without a token. With a contract token and `event: "resume"` it returns two rules plus `goal_block`, ready to paste into the goal file: `GOAL_ID`, one DoD row per item (`- AC01 test, local: ACCEPTED`; statuses `OPEN`, `ACCEPTED`, `FAILED`, `STALE`), `STATUS`, `CHECKPOINT`, `NEXT_SAFE_ACTION` and the renewed token as `FLOW_CONTRACT`. `OUTCOME` and `NON_GOALS` stay placeholders because the server never repeats your text. |
 | `check_flow_evidence` | Checks one to four evidence records: exit codes, the test-runner summary (pytest, unittest, node:test, Vitest, Jest, Mocha, Playwright, Go, cargo, RSpec, PHPUnit, dotnet), claimed counts, evidence level, URL host and status, file hashes. Marks earlier test results stale when a registered file changes, and returns `REPEATED_DEFECT` after a second failure. |
 | `check_flow_done` | `DONE` only when every item has accepted, current evidence; `DONE_WITH_GAPS` when the rest are listed as unchecked with a reason; otherwise `NOT_DONE` with the exact missing items. |
 | `draft_flow_handoff` | A final-report skeleton built only from the done receipt. |
@@ -29,8 +29,8 @@ the agent. Every handoff says so.
 
 ## Install
 
-Server name: `nobrainer-tech-flow`. Until the public endpoint is live, replace the URL with a local
-one (`http://127.0.0.1:8787/mcp`, see "Run locally").
+Server name: `nobrainer-tech-flow`. To try a local build instead, replace the URL with
+`http://127.0.0.1:8787/mcp` (see "Run locally").
 
 | Client | Status |
 |---|---|
@@ -117,8 +117,14 @@ Zed, Settings > AI > MCP Servers > Add Remote Server, or `settings.json` (not ve
 The server leads the gates; guidance already in context leads the guidance. If Flow skills are
 installed locally, keep using them for stage guidance and call `get_flow_step` only for cards you
 have not loaded. Pass your local Flow version as `local_flow`; when it is older than the server's,
-the response says that gate rules follow the server's version. In repository work, write the
-contract token into the Flow goal file (`CONTRACT_TOKEN: nbf1...`) so another client can continue.
+the response says that gate rules follow the server's version.
+
+In repository work, save the contract token in the Flow goal file as `FLOW_CONTRACT: nbf1...` so
+another session or client can continue. To resume, call `get_flow_step` with that token and
+`event: "resume"`: paste the returned `goal_block` into the goal file, fill in `OUTCOME` and
+`NON_GOALS` yourself, and continue from `NEXT_SAFE_ACTION`. Its `FLOW_CONTRACT` line is the renewed
+token. Each `check_flow_evidence` call or resume renews a token for 30 days, up to 90 days after
+`start_flow_task`.
 
 ## Run locally
 
@@ -152,7 +158,7 @@ src/token.ts        176-byte max binary token, HMAC-SHA-256 (128-bit tag), key r
 src/evidence/       runner parsers, verdicts, staleness, failure budget, secret screening
 src/rules/          levels, quick/full path, lint, module routing, owner gates
 src/advisor/        model advisor over data/benchmark/snapshot.json
-content/            SOURCE.json pin (tag v2.4.1, commit, file hashes) and cards.yaml
+content/            SOURCE.json pin (tag, commit, file hashes) and cards.yaml
 src/generated/      cards.json built by scripts/build-content.ts from the git tag
 plugin/             OpenAI submission manifests (plugin.json, mcp.json)
 ```
@@ -180,7 +186,7 @@ for provenance and third-party licences.
 
 - [Deployment](docs/DEPLOY.md): build, checks, environment variables, rate limits, spend guard.
 - [Security](docs/SECURITY.md): threat model and controls.
-- [Privacy policy](docs/PRIVACY.md) and [terms](docs/TERMS.md), to be published at
+- [Privacy policy](docs/PRIVACY.md) and [terms](docs/TERMS.md), published at
   `https://nobrainer.tech/flow/privacy/` and `https://nobrainer.tech/flow/terms/`.
 - [Review test cases](docs/review/test-cases.md) and [demo recording script](docs/review/demo-script.md).
 

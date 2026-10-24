@@ -9,6 +9,7 @@ import { TOOLS } from "../../src/tools/index.ts";
 import { memoryLimiter } from "../../src/ratelimit.ts";
 import { MODULES, cardIds, getCard } from "../../src/content/cards.ts";
 import { PROOFS, REACHABLE, RISKS } from "../../src/rules/levels.ts";
+import { CONTRACT_PREFIX, LIFETIME_S, MAX_FILES, MAX_ITEMS, STATUS, encodeToken, type Item, type TokenState } from "../../src/token.ts";
 import type { ToolContext } from "../../src/tools/common.ts";
 
 const ctx: ToolContext = { ring: TEST_RING, now: () => Math.floor(Date.now() / 1000), limiter: memoryLimiter(1e9) };
@@ -119,4 +120,48 @@ test("contract token stays <= 180 tokens at maximum size", async () => {
   const n = tokens(t);
   console.log(`TOKEN_TOKENS ${n} chars=${t.length}`);
   assert.ok(n <= 180, String(n));
+});
+
+// The largest contract token the server can issue: 10 items and 8 registered files.
+function maxState(items: Item[]): TokenState {
+  const now = ctx.now();
+  return {
+    kid: TEST_RING.signer, full: true, verdict: "NONE", risks: [...RISKS], contract: Buffer.alloc(8, 0xab),
+    created: now, expires: now + LIFETIME_S, flow: [255, 255, 255], epoch: 3, items,
+    files: Array.from({ length: MAX_FILES }, (_, i) => ({ path: Buffer.alloc(4, i), hash: Buffer.alloc(4, 255 - i) })),
+  };
+}
+
+test("resume goal block with 10 items and a maximum-size token fits 600 tokens and 1,500 bytes", async () => {
+  // Longest proof/level label and status; one failed item selects the longest next safe action.
+  const measured: Record<string, { tokens: number; bytes: number }> = {};
+  for (const failing of [0, 1, 2]) {
+    const items: Item[] = Array.from({ length: MAX_ITEMS }, (_, i) => ({
+      proof: "observation", level: "user", failures: i < failing ? 1 : 0, status: i < failing ? "FAILED" : "ACCEPTED",
+      kind: "observation", unchecked: false, epoch: 3, digest: Buffer.alloc(4, 7),
+    }));
+    const token = encodeToken(maxState(items), CONTRACT_PREFIX, TEST_RING);
+    assert.equal(token.length, 240);
+    const r = await run("get_flow_step", { token, event: "resume" });
+    assert.equal(r.isError, false, r.text.slice(0, 200));
+    measured[`failing${failing}`] = { tokens: check(`resume ${failing} failing`, r.text, 600), bytes: Buffer.byteLength(r.text) };
+    assert.equal(r.json.rules.length, 2);
+    assert.equal((r.json.goal_block as string).split("\n").filter((l) => l.startsWith("- AC")).length, 10);
+    assert.match(r.json.goal_block, /\nFLOW_CONTRACT: nbf1\.[A-Za-z0-9_-]+$/);
+  }
+  console.log(`RESUME_SIZES ${JSON.stringify(measured)}`);
+});
+
+test("fuzz: resume with any reachable 10-item state stays within 600 tokens and 1,500 bytes", async () => {
+  const item = fc.constantFrom(...PROOFS).chain((proof) => fc.record({
+    proof: fc.constant(proof), level: fc.constantFrom(...REACHABLE[proof]), failures: fc.integer({ min: 0, max: 3 }),
+    status: fc.constantFrom(...STATUS), kind: fc.constantFrom(null, proof), unchecked: fc.constant(false),
+    epoch: fc.integer({ min: 0, max: 3 }), digest: fc.constant(Buffer.alloc(4, 1)),
+  }));
+  await fc.assert(fc.asyncProperty(fc.array(item, { minLength: MAX_ITEMS, maxLength: MAX_ITEMS }), async (items) => {
+    const r = await run("get_flow_step", { token: encodeToken(maxState(items), CONTRACT_PREFIX, TEST_RING), event: "resume" });
+    assert.equal(r.isError, false, r.text.slice(0, 200));
+    check("fuzz resume", r.text, 600);
+    assert.match(r.json.goal_block, /^GOAL_ID: flow-abababab\n/);
+  }), { numRuns: 150 });
 });

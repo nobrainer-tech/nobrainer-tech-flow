@@ -133,6 +133,7 @@ test("sentinels in every input field never reach logs, console or responses", as
       { item: "AC02", kind: "observation", note: `${S} the user confirmed the page reads well` },
     ] }));
     const d = body(await go("check_flow_done", { token: ev.token, unchecked: [{ item: "AC01", reason: `${S} reason text` }] }));
+    await go("get_flow_step", { token: ev.token, event: "resume" });
     await go("draft_flow_handoff", { receipt: d.receipt });
     await go("recommend_flow_model", { task: "coding", models: [`${S}-model`] });
     await go("get_flow_step", { module: `nobrainer-${S.toLowerCase().replace(/[0-9]/g, "")}` });
@@ -142,7 +143,7 @@ test("sentinels in every input field never reach logs, console or responses", as
   }
   const all = [...responses, ...captured, JSON.stringify(local.logs)].join("\n").toLowerCase();
   const at = all.indexOf("sentinelq"); assert.ok(at < 0, "a sentinel leaked: " + all.slice(Math.max(0, at - 200), at + 60));
-  assert.equal(responses.length, 6);
+  assert.equal(responses.length, 7);
 });
 
 test("no tool handler makes an outbound request (global fetch stubbed to throw)", async () => {
