@@ -63,7 +63,7 @@
   ["aria-label=\"PROVE IT music video\"", "aria-label=\"Teledysk PROVE IT\""],
   [">Download the video<", ">Pobierz film<"],
   ["A two-minute song about AI agents that say “done” too early. The verdicts on screen are real responses from this server. Starring Flo and MC P.", "Dwuminutowa piosenka o agentach AI, które za wcześnie mówią „done”. Werdykty na ekranie to prawdziwe odpowiedzi tego serwera. Występują Flo i MC P."],
-  ["aria-label=\"Flo: retro look\"", "aria-label=\"Flo: wygląd retro\""],
-  ["aria-label=\"MC P: classic look\"", "aria-label=\"MC P: wygląd klasyczny\""],
-  ["Click MC P for the classic look, Flo to bring the retro one back.", "Kliknij MC P, żeby przełączyć na wygląd klasyczny, albo Flo, żeby wrócić do retro."]
+  ["aria-label=\"Flo: day look\"", "aria-label=\"Flo: wygląd dzienny\""],
+  ["aria-label=\"MC P: night look\"", "aria-label=\"MC P: wygląd nocny\""],
+  ["Click MC P for his night look, Flo to bring the day back.", "Kliknij MC P, żeby włączyć jego nocny wygląd, albo Flo, żeby wrócić do dnia."]
 ]

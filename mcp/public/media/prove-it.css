@@ -1,6 +1,6 @@
-/* PROVE IT episode block. The page opens in the retro look (html.retro, set in <head>); MC P
-   switches to the classic look with a CRT power-off effect, Flo or playing the video brings retro
-   back with a stepped pixel circle. Reload returns to retro. */
+/* PROVE IT episode block. The page opens in Flo's day retro look (html.retro, set in <head>). MC P
+   switches to his night look (html.retro.night: the video's neon world, gold accents) with a CRT
+   power-off effect; Flo brings the day back with a stepped pixel circle. Reload returns to day. */
 .tv { position: relative; width: 100vw; margin: -32px 0 8px calc(50% - 50vw); padding: 30px 16px 0; overflow: hidden; }
 .tv-bg { display: none; position: absolute; inset: 0; background: url("/media/horizon-day.png") center bottom / auto 100% repeat-x; image-rendering: pixelated; z-index: -1; }
 .tv-inner { max-width: 880px; margin: 0 auto; }
@@ -52,6 +52,25 @@
 .retro .hero .copy pre { border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
 .retro .tool.live { border-color: var(--blue); box-shadow: 5px 5px 0 var(--blue); }
 .retro h2::before { content: ""; display: inline-block; width: 0.42em; height: 0.42em; margin-right: 0.4em; background: var(--orange); vertical-align: 0.06em; }
+
+/* MC P's night look: the music video's neon world with gold accents from his chain. */
+html.night { --cream: #120B3A; --ink: #F6F3EE; --muted: #C7C2EA; --line: #3B2F7E; --card: #1E1A55; --gold: #FFC83D; color-scheme: dark; }
+html.night [data-nb-site-header] { --nb-header-paper: #0E0930; --nb-header-ink: #F6F3EE; --nb-header-muted: #C7C2EA; --nb-header-link: #9DB7FF;
+  --nb-header-edge: #FFC83D; --nb-header-line: #3B2F7E; --nb-header-selected: #2A2C9C; }
+html.night .chip svg, html.night .tabs button svg, html.night h3 svg { padding: 2px; background: #F6F3EE; border-radius: 5px; }
+html.night a, html.night .hero h1 .prove { color: #9DB7FF; }
+html.night .tv-bg { background-image: url("/media/horizon-night.png"); }
+html.night .chip, html.night .tabs button, html.night .panel, html.night .tool, html.night .checklist, html.night pre,
+html.night .copy button, html.night .controls button, html.night .button.ghost, html.night .tv-caption { background: var(--card); color: var(--ink); border-color: var(--gold); }
+html.night .button, html.night .chip, html.night .tabs button, html.night .copy button, html.night .controls button, html.night .hero .copy pre { box-shadow: 3px 3px 0 var(--gold); }
+html.night .panel, html.night .tool, html.night .checklist, html.night .tv-caption { box-shadow: 5px 5px 0 var(--gold); }
+html.night .screen, html.night .console { border-color: var(--gold); box-shadow: 8px 8px 0 var(--gold); }
+html.night .tabs button[aria-selected="true"], html.night .tool.live { border-color: #FF6FD8; box-shadow: 4px 4px 0 #FF6FD8; }
+html.night h2::before { background: var(--gold); }
+html.night .tv-hint { background: var(--card); color: var(--muted); }
+html.night .sprite .name { color: var(--gold); background: #0E0930; box-shadow: 2px 2px 0 #FF6FD8; }
+html.night .mcp { --f: 7; }
+html.night .tv-eyebrow { color: var(--ink); }
 
 /* Flo's switch expands as a stepped (pixel-like) circle from the clicked spot. */
 ::view-transition-old(root) { animation: none; }

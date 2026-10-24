@@ -1,24 +1,25 @@
-// PROVE IT block. The page starts retro; MC P switches to classic with a CRT effect, Flo or playing
-// the video switches back with a pixel circle. Clicking Flo also counts a quick 3-2-1 over the video and plays
+// PROVE IT block. The page starts in Flo's day retro look; MC P switches to his night look with a CRT
+// effect, Flo switches back to day with a pixel circle. Clicking Flo also counts a quick 3-2-1 over the video and plays
 // it; Flo points at the video while it is not playing, shows OK when it starts, then dances.
-// Nothing is stored, so a reload is retro again.
+// Nothing is stored, so a reload is day again.
 document.addEventListener('DOMContentLoaded', () => {
   const root = document.documentElement;
   const buttons = document.querySelectorAll('[data-look]');
-  const sync = () => buttons.forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.look === 'retro') === root.classList.contains('retro'))));
+  const sync = () => buttons.forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.look === 'night') === root.classList.contains('night'))));
 
-  const setLook = (retro, origin) => {
-    if (retro === root.classList.contains('retro')) return;
-    const apply = () => { root.classList.toggle('retro', retro); sync(); };
+  const setLook = (night, origin) => {
+    root.classList.add('retro');
+    if (night === root.classList.contains('night')) return;
+    const apply = () => { root.classList.toggle('night', night); sync(); };
     if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return apply();
     const r = origin.getBoundingClientRect();
     root.style.setProperty('--vt-x', `${r.left + r.width / 2}px`);
     root.style.setProperty('--vt-y', `${r.top + r.height / 2}px`);
-    root.dataset.vt = retro ? 'pixel' : 'crt';
+    root.dataset.vt = night ? 'crt' : 'pixel';
     document.startViewTransition(apply).finished.finally(() => { delete root.dataset.vt; });
   };
 
-  buttons.forEach((button) => button.addEventListener('click', () => setLook(button.dataset.look === 'retro', button)));
+  buttons.forEach((button) => button.addEventListener('click', () => setLook(button.dataset.look === 'night', button)));
 
   const video = document.querySelector('[data-tv]');
   if (video) {
@@ -33,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
       stopCount();
       box.classList.add('playing');
       timers.push(setTimeout(() => box.classList.add('dancing'), 1600));
-      setLook(true, video);
     });
     const stop = () => { stopCount(); box.classList.remove('playing', 'dancing'); };
     ['pause', 'ended', 'emptied'].forEach((e) => video.addEventListener(e, stop));
