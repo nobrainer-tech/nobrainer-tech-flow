@@ -65,5 +65,14 @@
   ["A two-minute song about AI agents that say “done” too early. The verdicts on screen are real responses from this server. Starring Flo and MC P.", "Dwuminutowa piosenka o agentach AI, które za wcześnie mówią „done”. Werdykty na ekranie to prawdziwe odpowiedzi tego serwera. Występują Flo i MC P."],
   ["aria-label=\"Flo: day look\"", "aria-label=\"Flo: wygląd dzienny\""],
   ["aria-label=\"MC P: night look\"", "aria-label=\"MC P: wygląd nocny\""],
-  ["Click MC P for his night look, Flo to bring the day back.", "Kliknij MC P, żeby włączyć jego nocny wygląd, albo Flo, żeby wrócić do dnia."]
+  ["Click MC P for his night look, Flo to bring the day back.", "Kliknij MC P, żeby włączyć jego nocny wygląd, albo Flo, żeby wrócić do dnia."],
+  ["data-email-label=\"Email address\"", "data-email-label=\"Adres e-mail\""],
+  ["data-submit=\"Subscribe\"", "data-submit=\"Zapisz się\""],
+  ["data-consent=\"I want practical AI, software quality and automation notes, product updates, and relevant offers from nobrainer.tech. I can unsubscribe at any time.\"", "data-consent=\"Chcę otrzymywać od nobrainer.tech praktyczne notatki o AI, jakości oprogramowania i automatyzacji, aktualności o produktach i dopasowane oferty. Mogę wypisać się w każdej chwili.\""],
+  ["data-confirmation=\"Check your inbox and confirm your email address to finish signing up.\"", "data-confirmation=\"Sprawdź skrzynkę i potwierdź adres e-mail, żeby dokończyć zapis.\""],
+  [">Follow Flo and MC P</h2>", ">Śledź Flo i MC P</h2>"],
+  ["New episodes and practical notes on making AI prove its work. No spam, unsubscribe any time.", "Nowe odcinki i praktyczne notatki o tym, jak sprawić, żeby AI pokazywało dowody swojej pracy. Newsletter jest po angielsku. Bez spamu, wypiszesz się w każdej chwili."],
+  ["If the form does not load, <a href=\"https://nobrainer.tech/newsletter/\">sign up on the nobrainer.tech newsletter page</a>.", "Jeśli formularz się nie wczyta, <a href=\"https://nobrainer.tech/newsletter/\">zapisz się na stronie newslettera nobrainer.tech</a>."],
+  ["<a href=\"https://nobrainer.tech/privacy/\">Privacy policy</a>. This form uses reCAPTCHA. Google <a href=\"https://policies.google.com/privacy\">Privacy Policy</a> and <a href=\"https://policies.google.com/terms\">Terms of Service</a> apply.", "<a href=\"https://nobrainer.tech/privacy/\">Polityka prywatności (po angielsku)</a>. Formularz jest chroniony przez reCAPTCHA. Obowiązują <a href=\"https://policies.google.com/privacy\">Polityka prywatności Google</a> i <a href=\"https://policies.google.com/terms\">Warunki korzystania z usług Google</a>."],
+  ["The form needs JavaScript. Enable it to sign up.", "Formularz zapisu wymaga JavaScript. Włącz go, aby się zapisać."]
 ]

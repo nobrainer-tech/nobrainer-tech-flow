@@ -11,8 +11,9 @@
 <link rel="alternate" hreflang="pl" href="https://mcp.nobrainer.tech/pl/">
 <link rel="alternate" hreflang="x-default" href="https://mcp.nobrainer.tech/">
 <link rel="stylesheet" href="https://nobrainer.tech/assets/site-header/site-header.css?v=1e2ad6e86c03">
-<link rel="stylesheet" href="/media/prove-it.css?v=15"><script>document.documentElement.classList.add('retro')</script>
+<link rel="stylesheet" href="/media/prove-it.css?v=16"><script>document.documentElement.classList.add('retro')</script>
 <script src="/media/prove-it.js?v=13" defer></script>
+<script src="/media/newsletter.js?v=1" defer></script>
 <script src="https://nobrainer.tech/assets/site-header/site-header.js?v=1e2ad6e86c03" defer></script>
 <style>
   @font-face { font-family: "NoBrainer Sans"; src: url("/fonts/NoBrainerSans-var.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
@@ -103,7 +104,29 @@
   .tool p { margin: 6px 0 0; font-size: 15px; }
   .tool.live { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59, 101, 240, 0.15); transform: translateY(-2px); }
   footer { margin-top: 48px; font-size: 15px; }
-  @media (max-width: 720px) { .demo { grid-template-columns: 1fr; } .tabs { grid-template-columns: repeat(3, 1fr); } .tools { grid-template-columns: 1fr; } }
+  /* Newsletter: the shared nobrainer.tech EmailOctopus form, loaded by /media/newsletter.js. The
+     selectors start with .newsletter-form [data-form] to outrank the provider's scoped styles. */
+  .newsletter { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 28px; align-items: start; margin: 0 0 8px; padding: 22px; background: #fff; border: 1px solid var(--line); border-radius: 14px; scroll-margin-top: 16px; }
+  .newsletter h2 { margin: 0 0 10px; }
+  .newsletter-copy p { margin: 0; font-size: 17px; }
+  .newsletter-form { min-height: 208px; }
+  .newsletter-fine { margin: 10px 0 0; font-size: 13px; line-height: 1.5; }
+  .newsletter-form [data-form] { --text-colour: var(--ink); font-family: inherit; color: var(--ink); }
+  .newsletter-form [data-form] .emailoctopus-form-wrapper { margin: 0 !important; padding: 0 !important; }
+  .newsletter-form [data-form] .main-form, .newsletter-form [data-form] [eo-form-fields-container] { display: block; }
+  .newsletter-form [data-form] .emailoctopus-form-row { margin: 0 0 12px !important; }
+  .newsletter-form [data-form] .emailoctopus-form-row--componentized, .newsletter-form [data-form] .mastfoot { display: none !important; }
+  .newsletter-form [data-form] .emailoctopus-form label { display: block; margin: 0 0 6px; font-family: inherit; font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--ink); }
+  .newsletter-form [data-form] .emailoctopus-form input[type="email"] { width: 100%; height: auto; min-height: 46px; padding: 10px 12px; font-family: inherit; font-size: 16px; line-height: 1.4; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+  .newsletter-form [data-form] .emailoctopus-form input[type="email"]:focus { outline: 2px solid var(--blue); outline-offset: 2px; box-shadow: none; }
+  .newsletter-form [data-form] .emailoctopus-form .emailoctopus-form-row-consent { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 14px !important; }
+  .newsletter-form [data-form] .emailoctopus-form .emailoctopus-form-row-consent input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--blue); }
+  .newsletter-form [data-form] .emailoctopus-form .emailoctopus-form-row-consent label { margin: 0; font-size: 14px; font-weight: 400; line-height: 1.5; color: var(--muted); }
+  .newsletter-form [data-form] .emailoctopus-form input[type="submit"] { display: block; width: 100%; margin: 0; padding: 12px 18px; font-family: inherit; font-size: 16px; font-weight: 700; line-height: 1.2; color: #fff; background: var(--blue); border: 1px solid var(--blue); border-radius: 12px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+  .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+  .newsletter-form [data-form] .emailoctopus-form input[type="submit"]:disabled { cursor: wait; opacity: 0.7; }
+  .newsletter-form [data-form] .emailoctopus-success-message:not(:empty), .newsletter-form [data-form] .emailoctopus-error-message:not(:empty) { margin: 0 0 12px; font-size: 15px; text-align: left; overflow-wrap: anywhere; }
+  @media (max-width: 720px) { .demo, .newsletter { grid-template-columns: 1fr; } .newsletter { padding: 18px; } .tabs { grid-template-columns: repeat(3, 1fr); } .tools { grid-template-columns: 1fr; } }
   @media (max-width: 460px) { .tabs { grid-template-columns: repeat(2, 1fr); } }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
@@ -133,6 +156,19 @@
     <p class="tv-caption">A two-minute song about AI agents that say “done” too early. The verdicts on screen are real responses from this server. Starring Flo and MC P.</p>
     <p class="tv-hint">Click MC P for his night look, Flo to bring the day back.</p>
   </div></section>
+
+  <section class="newsletter" id="newsletter" aria-labelledby="newsletter-title" data-newsletter data-email-label="Email address" data-submit="Subscribe" data-consent="I want practical AI, software quality and automation notes, product updates, and relevant offers from nobrainer.tech. I can unsubscribe at any time." data-confirmation="Check your inbox and confirm your email address to finish signing up.">
+    <div class="newsletter-copy">
+      <h2 id="newsletter-title">Follow Flo and MC P</h2>
+      <p>New episodes and practical notes on making AI prove its work. No spam, unsubscribe any time.</p>
+    </div>
+    <div class="newsletter-signup">
+      <div class="newsletter-form" data-eo-form="8b8c07c6-adbf-11f1-aace-2317bc0d803d" data-eo-src="https://eocampaign1.com/form/8b8c07c6-adbf-11f1-aace-2317bc0d803d.js?rev=20260926-powered-by-disabled"></div>
+      <p class="newsletter-fine">If the form does not load, <a href="https://nobrainer.tech/newsletter/">sign up on the nobrainer.tech newsletter page</a>.</p>
+      <p class="newsletter-fine"><a href="https://nobrainer.tech/privacy/">Privacy policy</a>. This form uses reCAPTCHA. Google <a href="https://policies.google.com/privacy">Privacy Policy</a> and <a href="https://policies.google.com/terms">Terms of Service</a> apply.</p>
+      <noscript><p class="newsletter-fine">The form needs JavaScript. Enable it to sign up.</p></noscript>
+    </div>
+  </section>
 
   <section class="hero">
     <p class="eyebrow rise">NoBrainer Tech Flow · MCP server</p>
