@@ -18,6 +18,16 @@ EXCLUDED = {"__pycache__", ".DS_Store", "node_modules"}
 ARCHIVES = {".zip", ".tgz", ".tar", ".gz"}
 # Exact shape required by OpenAI for Codex packages: one remote server, url only.
 MCP_CONFIG = {"mcpServers": {"nobrainer-tech-flow": {"url": "https://mcp.nobrainer.tech/mcp"}}}
+# Fixed entry metadata keeps the ZIP byte-identical across builds of the same source.
+FIXED_TIME = (1980, 1, 1, 0, 0, 0)
+
+
+def entry(name: str, executable: bool = False) -> zipfile.ZipInfo:
+    info = zipfile.ZipInfo(name, FIXED_TIME)
+    info.compress_type = zipfile.ZIP_DEFLATED
+    info.create_system = 3
+    info.external_attr = (0o100755 if executable else 0o100644) << 16
+    return info
 
 
 def build(output: Path) -> None:
@@ -42,14 +52,14 @@ def build(output: Path) -> None:
         raise ValueError("output already exists; choose a fresh path")
     with zipfile.ZipFile(output, "x", compression=zipfile.ZIP_DEFLATED) as archive:
         for path in files:
-            archive.write(path, path.relative_to(ROOT).as_posix())
-        archive.writestr(".mcp.json", json.dumps(MCP_CONFIG, indent=2) + "\n")
+            archive.writestr(entry(path.relative_to(ROOT).as_posix(), bool(path.stat().st_mode & 0o111)), path.read_bytes())
+        archive.writestr(entry(".mcp.json"), json.dumps(MCP_CONFIG, indent=2) + "\n")
         overlay = json.loads((ROOT / ".codex-plugin/plugin.json").read_text())
         overlay["mcpServers"] = "./.mcp.json"
-        archive.writestr(".codex-plugin/plugin.json", json.dumps(overlay, indent=2) + "\n")
+        archive.writestr(entry(".codex-plugin/plugin.json"), json.dumps(overlay, indent=2) + "\n")
         claude = json.loads((ROOT / ".claude-plugin/plugin.json").read_text())
         claude.pop("hooks", None)
-        archive.writestr(".claude-plugin/plugin.json", json.dumps(claude, indent=2) + "\n")
+        archive.writestr(entry(".claude-plugin/plugin.json"), json.dumps(claude, indent=2) + "\n")
     print(f"PLUGIN_READY: {output.name}; version={version}; skills=18; hooks=none; mcpServers=1; bytes={output.stat().st_size}")
 
 

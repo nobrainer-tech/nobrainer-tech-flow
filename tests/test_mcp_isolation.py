@@ -32,6 +32,16 @@ class McpIsolationTests(unittest.TestCase):
         self.assertGreater(len(files), 50)
         self.assertEqual([], [path for path in files if path == "mcp" or path.startswith("mcp/")])
 
+    def test_plugin_zip_is_byte_identical_across_builds(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            digests = []
+            for name in ("first.zip", "second.zip"):
+                output = Path(tmp) / name
+                subprocess.run([sys.executable, str(ROOT / "scripts" / "build_plugin.py"), "--output", str(output)],
+                               check=True, capture_output=True, text=True)
+                digests.append(output.read_bytes())
+            self.assertEqual(digests[0], digests[1])
+
     def test_plugin_zip_contains_no_mcp_files(self):
         with tempfile.TemporaryDirectory(prefix="flow-mcp-isolation-") as folder:
             output = Path(folder) / "plugin.zip"
