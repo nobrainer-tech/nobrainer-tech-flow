@@ -76,6 +76,18 @@ class McpIsolationTests(unittest.TestCase):
             "mcpServers": {"nobrainer-tech-flow": {"type": "streamable-http", "url": "https://mcp.nobrainer.tech/mcp"}},
         }, portable_mcp)
         self.assertFalse((ROOT / "mcp.json").exists())
+        review = portable["extensions"]["com.openai"]["review"]
+        self.assertEqual(5, len(review["test_cases"]["positive"]))
+        self.assertEqual(3, len(review["test_cases"]["negative"]))
+        for case in review["test_cases"]["positive"]:
+            self.assertTrue(all(case.get(key) for key in ("description", "prompt", "tools_triggered", "expected_behavior")))
+        tools = {"start_flow_task", "get_flow_step", "check_flow_evidence", "check_flow_done",
+                 "draft_flow_handoff", "recommend_flow_model"}
+        named = {name.strip() for case in review["test_cases"]["positive"] for name in case["tools_triggered"].split(",")}
+        self.assertEqual(tools, named)
+        self.assertTrue(review["demo_recording_url"].startswith("https://"))
+        self.assertNotIn("test_credentials", review)
+        self.assertNotIn("reviewer_instructions", review)
         self.assertEqual({"mcpServers": {"nobrainer-tech-flow": {"url": "https://mcp.nobrainer.tech/mcp"}}}, config)
         self.assertEqual("./.mcp.json", codex["mcpServers"])
         self.assertNotIn("mcpServers", claude)
