@@ -38,7 +38,7 @@ class TypedDecisionTests(unittest.TestCase):
             self.assertEqual(result["reason"], expected)
             self.assertNotIn("synthetic secret", str(result))
 
-    def test_key_is_read_only_from_the_named_variable(self):
+    def test_helper_reads_no_credential_from_the_environment(self):
         from unittest.mock import patch
         seen = []
 
@@ -46,30 +46,62 @@ class TypedDecisionTests(unittest.TestCase):
             seen.append((json.loads(input)["key"], kwargs["env"]))
             return subprocess.CompletedProcess(command, 0, stdout=json.dumps({"error": "MISSING_TYPESAFE_API_KEY"}))
 
-        environment = {"TYPESAFE_API_KEY": "synthetic-default", "MY_TS_KEY": "synthetic-named", "PATH": "/bin"}
+        environment = {"TYPESAFE_API_KEY": "synthetic-default", "TYPESAFE_AUTH": "synthetic-auth",
+                       "FOO": "synthetic-foo", "PATH": "/bin", "https_proxy": "http://proxy.invalid:3128"}
         with patch.dict(runtime.os.environ, environment, clear=True), patch.object(runtime.subprocess, "run", fake_run):
             runtime.invoke("jev", "jev-latest", REQUEST, 1)
-            runtime.invoke("jev", "jev-latest", REQUEST, 1, key_env="MY_TS_KEY")
-            runtime.invoke("laya", "model", REQUEST, 1, key_env="MY_TS_KEY")
-        self.assertEqual([None, "synthetic-named", None], [key for key, _ in seen])
+            runtime.invoke("jev", "jev-latest", REQUEST, 1, key="synthetic-piped")
+            runtime.invoke("laya", "model", REQUEST, 1, key="synthetic-piped")
+        self.assertEqual([None, "synthetic-piped", None], [key for key, _ in seen])
         for _, env in seen:
-            self.assertEqual({"PATH": "/bin"}, env)
+            self.assertEqual({"PATH": "/bin", "https_proxy": "http://proxy.invalid:3128"}, env)
         self.assertEqual("MISSING_TYPESAFE_API_KEY", runtime.worker("jev", "jev-latest", REQUEST)["error"])
+        source = (ROOT / "typed_decisions.py").read_text()
+        self.assertNotIn("environ.get", source)
+        self.assertNotIn("getenv", source)
 
-    def test_named_variable_never_reaches_the_worker_environment(self):
+    def test_piped_key_is_one_bounded_line(self):
+        import io
+        self.assertEqual("synthetic-key", runtime.read_piped_key(io.StringIO("synthetic-key\nrest\n")))
+        self.assertIsNone(runtime.read_piped_key(io.StringIO("")))
+        self.assertIsNone(runtime.read_piped_key(io.StringIO("\n")))
+        self.assertIsNone(runtime.read_piped_key(io.StringIO("x" * (runtime.KEY_LIMIT + 1))))
+
+    def test_cli_key_stdin_reaches_only_the_jev_worker(self):
+        import tempfile
         from unittest.mock import patch
-        for name in ("TYPESAFE_AUTH", "FOO"):
+        with tempfile.TemporaryDirectory() as folder:
+            requests = Path(folder) / "requests.json"
+            requests.write_text(json.dumps([REQUEST]))
+            config = Path(folder) / "flow.json"
             seen = []
 
-            def fake_run(command, input, **kwargs):
-                seen.append((json.loads(input)["key"], kwargs["env"]))
-                return subprocess.CompletedProcess(command, 0, stdout="{}")
+            def fake_invoke(provider, model, request, timeout, key=None):
+                seen.append(key)
+                return RESPONSE
 
-            with patch.dict(runtime.os.environ, {name: "synthetic-value", "PATH": "/bin"}, clear=True), \
-                    patch.object(runtime.subprocess, "run", fake_run):
-                runtime.invoke("jev", "jev-latest", REQUEST, 1, key_env=name)
-            self.assertEqual("synthetic-value", seen[0][0], name)
-            self.assertNotIn(name, seen[0][1], name)
+            def run(argv, stdin):
+                import contextlib
+                import io
+                out = io.StringIO()
+                with patch.object(sys, "argv", ["typed_decisions.py", *argv]), \
+                        patch.object(sys, "stdin", io.StringIO(stdin)), \
+                        patch.object(runtime, "invoke", fake_invoke), \
+                        patch.object(runtime, "read", lambda path: configuration()), \
+                        contextlib.redirect_stdout(out):
+                    code = runtime.main()
+                return code, json.loads(out.getvalue())
+
+            code, result = run(["--config", str(config), "--request", str(requests), "--approved-data",
+                                "--key-stdin"], "synthetic-piped\n")
+            self.assertEqual(0, code)
+            self.assertEqual(["synthetic-piped"], seen)
+            self.assertNotIn("synthetic-piped", json.dumps(result))
+            code, result = run(["--key-stdin", "--approved-data"], json.dumps([REQUEST]))
+            self.assertEqual((2, "INVALID_INPUT"), (code, result["reason"]))
+            code, result = run(["--request", str(requests), "--key-env", "TYPESAFE_API_KEY"], "")
+            self.assertEqual((2, "KEY_ENV_REMOVED_USE_KEY_STDIN"), (code, result["reason"]))
+            self.assertEqual(["synthetic-piped"], seen)
 
     def test_off_and_unapproved_never_touch_provider(self):
         def forbidden(*args):

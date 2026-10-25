@@ -158,7 +158,7 @@ default. Add another field only when it changes triage or implementation.
 
 Surface proof has a copyable artifact shape:
 
-- **API:** put the complete redacted request in a fenced `bash` block as a
+- **API:** put the complete redacted request in its own fenced code block as a
   `curl` command, including method, URL, all captured headers and body. Put the
   observed response in a separate fenced `http` block with status, all captured
   headers and body. Redact sensitive values without changing the request's

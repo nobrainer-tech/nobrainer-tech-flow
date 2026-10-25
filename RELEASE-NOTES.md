@@ -1,5 +1,17 @@
 # nobrainer-tech-flow release notes
 
+## v2.7.3 - 2026-10-25
+
+Clears the automatic-check warnings that the Claude plugin directory showed. The optional
+Jev classifier helper (`typed_decisions.py`) no longer reads a credential from the
+machine: the TypeSafe key is piped on stdin with `--key-stdin`, and the old `--key-env`
+flag now stops with `KEY_ENV_REMOVED_USE_KEY_STDIN` without reading any variable. The
+helper's worker gets only an allowlist of non-secret environment variables. The writing
+skill describes the API proof as a `curl` command in a fenced code block instead of a
+`bash` block, which the directory read as a download-and-run command. The distribution
+repository now ships only `docs/CHAT_PLUGINS.md` and `docs/PRIVACY.md` from `docs/`; its
+README links the canonical guides. See the [2.7.3 record](docs/releases/v2.7.3.md).
+
 ## v2.7.2 - 2026-10-25
 
 The plugin ZIP now also declares the remote MCP server in a root `mcp.json`. Its root
@@ -886,9 +898,9 @@ Git ref recorded by the project; do not delete a shared skills directory.
 
 Moved from the README. Each entry links to its verification record.
 
-At source version **2.7.2**, check the
+At source version **2.7.3**, check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.7.2](docs/releases/v2.7.2.md), [2.7.1](docs/releases/v2.7.1.md) and
+for distribution and the [2.7.3](docs/releases/v2.7.3.md), [2.7.2](docs/releases/v2.7.2.md), [2.7.1](docs/releases/v2.7.1.md) and
 [2.7.0 verification records](docs/releases/v2.7.0.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not

@@ -123,23 +123,34 @@ def worker(provider, model, request, key=None):
     return result
 
 
-def invoke(provider, model, request, timeout, key_env=None):
-    # The child gets no credential from the environment. The TypeSafe key is read only
-    # from the variable the caller names with --key-env, and passed on stdin.
-    env = {k: v for k, v in os.environ.items()
-           if not any(part in k.upper() for part in ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL"))}
-    if key_env:
-        # The named variable may not look like a credential (TYPESAFE_AUTH, FOO); drop it anyway.
-        # Windows treats variable names without regard to case.
-        for name in [k for k in env if k == key_env or (os.name == "nt" and k.upper() == key_env.upper())]:
-            del env[name]
-    key = os.environ.get(key_env) if provider == "jev" and key_env else None
+# The worker child gets only these variables (compared in upper case: Windows names
+# ignore case and proxies are often lower case). Nothing else from the environment
+# reaches it, so neither a key nor any other secret can be forwarded by accident.
+CHILD_ENV = {"PATH", "PATHEXT", "SYSTEMROOT", "WINDIR", "COMSPEC", "HOME", "USERPROFILE",
+             "TMPDIR", "TEMP", "TMP", "LANG", "LC_ALL", "LC_CTYPE", "PYTHONPATH", "PYTHONHOME",
+             "VIRTUAL_ENV", "XDG_CACHE_HOME", "HF_HOME", "HF_HUB_CACHE",
+             "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "SSL_CERT_FILE", "SSL_CERT_DIR"}
+KEY_LIMIT = 4096
+
+
+def invoke(provider, model, request, timeout, key=None):
+    # The TypeSafe key comes only from the caller (piped with --key-stdin) and reaches
+    # the child on stdin, only for Jev. The helper itself never reads a credential.
+    env = {k: v for k, v in os.environ.items() if k.upper() in CHILD_ENV}
     process = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--worker", provider, model],
-                             input=json.dumps({"request": request, "key": key}), capture_output=True, text=True,
-                             timeout=timeout, env=env)
+                             input=json.dumps({"request": request, "key": key if provider == "jev" else None}),
+                             capture_output=True, text=True, timeout=timeout, env=env)
     if process.returncode:
         raise ValueError("provider_failed")
     return json.loads(process.stdout)
+
+
+def read_piped_key(stream):
+    """Return the first line of a piped key, or None when nothing usable was piped."""
+    line = stream.readline(KEY_LIMIT + 1).strip()
+    if not line or len(line) > KEY_LIMIT:
+        return None
+    return line
 
 
 def evaluate(requests, configuration, approved=False, call=invoke):
@@ -202,14 +213,23 @@ def main():
     parser.add_argument("--config", type=Path, default=Path(".nobrainer/flow.json"))
     parser.add_argument("--request", type=Path, help="JSON array of requests; otherwise stdin")
     parser.add_argument("--approved-data", action="store_true", help="Only with existing approval for this data and provider")
-    parser.add_argument("--key-env", metavar="NAME",
-                        help="Jev only: the environment variable that holds your TypeSafe key; nothing is read without it")
+    parser.add_argument("--key-stdin", action="store_true",
+                        help="Jev only: read your TypeSafe key from the first line of stdin (pipe it from your "
+                             "secret manager); requires --request")
+    # Removed in 2.7.3: the helper no longer reads a key from the environment.
+    parser.add_argument("--key-env", help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.key_env is not None:
+        print(json.dumps({"status": "CORE_FALLBACK", "reason": "KEY_ENV_REMOVED_USE_KEY_STDIN"}))
+        return 2
     try:
+        if args.key_stdin and not args.request:
+            raise ValueError("key_stdin_requires_request")
+        key = read_piped_key(sys.stdin) if args.key_stdin else None
         data = json.loads(args.request.read_text()) if args.request else json.load(sys.stdin)
         if not isinstance(data, list) or len(data) > 100:
             raise ValueError("batch")
-        call = functools.partial(invoke, key_env=args.key_env)
+        call = functools.partial(invoke, key=key)
         print(json.dumps(evaluate(data, read(args.config), args.approved_data, call), ensure_ascii=False))
         return 0
     except (OSError, ValueError, TypeError):

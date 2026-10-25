@@ -130,7 +130,7 @@ know a value; do not replace a missing value with a guess.
 
 Proof must match the affected surface:
 
-- **API:** include a complete redacted `curl` request in one fenced `bash` block
+- **API:** include a complete redacted `curl` request in one fenced code block
   and the response in a separate fenced `http` block. Keep method, URL, all
   captured headers, body, status and response body; redact sensitive values
   without changing the request's material shape.
