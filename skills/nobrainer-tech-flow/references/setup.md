@@ -59,7 +59,7 @@ placeholders with verified paths/commands and remove duplicate lines:
 - Read the actual checkout, instructions, relevant wiki knowledge and tests first.
 - Use one short requirements gate, freeze the minimum change and run the
   approved scope autonomously. Show a compact Progress checklist at meaningful
-  transitions. Keep one canonical TODO owner.
+  transitions. Keep one canonical TODO owner, visible in the host's plan or todo tool when it has one.
 - Use a detailed ledger only for multi-session, dependency-rich,
   consequential or explicitly resumable work, or when the owner keeps adding
   requests in one long conversation; ordinary single-session work keeps the

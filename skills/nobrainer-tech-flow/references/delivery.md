@@ -20,8 +20,11 @@ the whole goal open while a required item remains, and choose the next ready
 unit as each stage closes. Do not invent an LDD method when the acronym or
 source is unresolved.
 
-A native goal is separate: create it only when explicitly requested and supported
-under the host tool contract. Reuse an existing goal; never replace an unfinished
+When the host offers a native goal, set the outcome and DoD there for substantial
+work under the host tool contract, so the owner can see whether the goal is running,
+paused or stopped. Keep the TODO visible too: mirror the canonical TODO in the
+host's plan or todo tool when it has one, otherwise show the Progress checklist.
+Reuse an existing goal; never replace an unfinished
 goal or invent a token budget. Read back native goal creation before claiming it.
 A Markdown goal does not promise scheduled continuation or automatically press
 START. When START is owner-only, explain that requirement once; never claim it
@@ -265,6 +268,6 @@ selects the next ready work without waiting for a new user prompt. Independent
 milestones may run together up to the target concurrency in
 [coordinated team execution](#coordinated-team-execution). Keep one overarching goal open
 until every required milestone and integrated DoD passes. Do not complete and
-replace the native goal for each milestone. Native goals are optional mirrors;
-Markdown remains the portable record. Host pauses or quotas can suspend execution,
+replace the native goal for each milestone. Native goals mirror the DoD where the host
+offers them; Markdown remains the portable record. Host pauses or quotas can suspend execution,
 so preserve the next action without promising an automatic wakeup.

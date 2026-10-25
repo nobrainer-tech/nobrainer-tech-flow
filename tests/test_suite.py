@@ -471,6 +471,10 @@ class SuiteTests(unittest.TestCase):
             "goal readback",
             "show every field above",
             "detailed-ledger decision",
+            "show the owner what done means",
+            "set it as the host-native goal where supported",
+            "one canonical todo owner stays visible",
+            "the host's plan or todo tool, else the progress checklist",
             "structure first",
             "selected contracts in full",
             "large documents or data",
@@ -539,6 +543,9 @@ class SuiteTests(unittest.TestCase):
             "unless the instruction is an explicit owner rule",
             "names a deliberate migration",
             "list each disagreement in the final report",
+            "include the exact edit that would bring the stale instruction file in line",
+            "apply it only as the project's `LEARNING_WRITE_POLICY` allows",
+            "name the code change it requires instead",
             "Owner rules on safety, authority and workflow always apply",
         ):
             with self.subTest(clause=clause):
@@ -1348,6 +1355,46 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("one canonical owner", hooks)
         self.assertIn("under `ASK`, prepare the exact single-store diff", hooks)
         self.assertIn("under `OFF`, keep the prevention candidate", hooks)
+        flat_hooks = " ".join(hooks.split())
+        for safeguard in (
+            "This standing policy never authorizes global instructions",
+            "within their existing classification/write rules",
+            "Preserve managed blocks",
+        ):
+            with self.subTest(safeguard=safeguard):
+                self.assertIn(safeguard, flat_hooks)
+        state = " ".join(
+            (SKILLS / "nobrainer-tech-flow" / "references" / "long-run-state.md")
+            .read_text(encoding="utf-8")
+            .split()
+        )
+        for clause in (
+            "CURRENT_MILESTONE:",
+            "derived from `OUTCOME` and the open request rows",
+            "without waiting for the owner",
+            "set the next milestone from the open rows and continue",
+            "accepting a milestone never closes `OUTCOME`",
+            "re-derive the milestone at once",
+        ):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, state)
+        decision = flat_hooks.split("### `OWNER_DECISION_CHANGED`", 1)[1].split("### ", 1)[0]
+        for term in (
+            "as soon as the change arrives",
+            "goal-file row",
+            "instruction file",
+            "controlled stop",
+            "re-derive the current short-term milestone",
+        ):
+            with self.subTest(term=term):
+                self.assertIn(term, decision)
+        for bound_action in (
+            "under `AUTO_SCOPED`, edit it",
+            "under `ASK`, prepare its exact diff and ask once",
+            "under `OFF`, name the stale line",
+        ):
+            with self.subTest(bound_action=bound_action):
+                self.assertIn(bound_action, decision)
         self.assertIn("do not\n     create or modify `tasks/lessons.md`", hooks)
 
         self.assertIn("`AUTO_SCOPED` may persist", readme)

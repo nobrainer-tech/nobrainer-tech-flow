@@ -434,7 +434,7 @@ configured limits. Missing optional telemetry lowers the health claim and still
 allows bounded safe work. An explicitly required hard budget must be enforceable.
 `RUNTIME_RELEASE` concerns actual task-owned workers; a completed result does not
 prove they stopped. `GOAL_FILE` is optional Markdown recovery state. A native goal
-is used only when available and authorized; the file alone suffices.
+mirrors the DoD where the host offers one; the file alone suffices.
 
 Autopilot works with one visible MAIN coordinator and bounded native workers.
 Ordinary native assignments use the compact packet in the delegation contract,
@@ -563,18 +563,21 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-**What's new in 2.7.0:** Flow delegates only where it pays: one MAIN loop with skills does
+**What's new in 2.7.0:** before substantial work the agent shows what done means and sets
+it as the host's native goal where one exists, and the TODO stays visible. Flow delegates only where it pays: one MAIN loop with skills does
 the work, and a unit goes to a native worker only for parallel work, context isolation,
 independent review or specialization. When the owner keeps adding requests in one long conversation,
 Flow records each one in the goal file as it arrives instead of leaving it only in the
-transcript, where compaction can drop it. The optional Claude Code guards point the agent back to the active goal file
+transcript, where compaction can drop it; a changed decision updates the goal file at once
+and, as the project's learning policy allows, the instruction-file lines that still state
+the old rule. The optional Claude Code guards point the agent back to the active goal file
 after compaction, resume or clear, and `nobrainer-team` fills a capability gap with a
 task-local specialist brief instead of third-party skills. A security review needs a second
 independent pass before it can report a clean result. After fixing a defect that was public
 or reachable before the fix, the agent checks for exploitation during that window or reports
 it as untested. When docs and code disagree on a coding convention, `nobrainer-build`
 follows the code unless an owner rule or a deliberate migration says otherwise, and reports
-each disagreement. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+each disagreement, with the edit that fixes a stale file when the code wins. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 Current source version: **2.7.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
