@@ -1087,6 +1087,7 @@ class SuiteTests(unittest.TestCase):
             ROOT / "CONTRIBUTING.md",
             ROOT / "RELEASE-NOTES.md",
             ROOT / "docs" / "INSTALL.md",
+            ROOT / "docs" / "HOW_IT_WORKS.md",
             ROOT / "docs" / "SKILL_CURATION.md",
             *[path for name in CANONICAL for path in (SKILLS / name).rglob("*.md")],
         ]
@@ -1397,9 +1398,10 @@ class SuiteTests(unittest.TestCase):
                 self.assertIn(bound_action, decision)
         self.assertIn("do not\n     create or modify `tasks/lessons.md`", hooks)
 
-        self.assertIn("`AUTO_SCOPED` may persist", readme)
-        self.assertIn("`ASK` prepares one exact diff", readme)
-        self.assertIn("`OFF` keeps it\n  task-local without a durable diff", readme)
+        guide = (ROOT / "docs" / "HOW_IT_WORKS.md").read_text(encoding="utf-8")
+        self.assertIn("`AUTO_SCOPED` may persist", guide)
+        self.assertIn("`ASK` prepares one exact diff", guide)
+        self.assertIn("`OFF` keeps it\n  task-local without a durable diff", guide)
         for term in (
             "Minimum sufficient change",
             "NON_GOALS",
@@ -1696,7 +1698,8 @@ class SuiteTests(unittest.TestCase):
         self.assertEqual("PASS", evidence["INSTALL_READBACK"])
 
     def test_v1_1_release_readback_remains_explicit(self) -> None:
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        # The rollback history moved from the README to RELEASE-NOTES.md.
+        readme = (ROOT / "RELEASE-NOTES.md").read_text(encoding="utf-8")
         release_notes = (ROOT / "RELEASE-NOTES.md").read_text(encoding="utf-8")
         normalized_notes = " ".join(release_notes.split())
         release_evidence = (
@@ -1781,7 +1784,8 @@ class SuiteTests(unittest.TestCase):
         self.assertEqual("PASS", evidence["INSTALL_READBACK"])
 
     def test_v1_2_0_readback_records_archive_acceptance_failure(self) -> None:
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        # The rollback history moved from the README to RELEASE-NOTES.md.
+        readme = (ROOT / "RELEASE-NOTES.md").read_text(encoding="utf-8")
         release_notes = (ROOT / "RELEASE-NOTES.md").read_text(encoding="utf-8")
         release_evidence = (
             ROOT / "docs" / "releases" / "v1.2.0.md"
@@ -1921,7 +1925,8 @@ class SuiteTests(unittest.TestCase):
         )
 
     def test_v1_2_1_release_readback_remains_explicit(self) -> None:
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        # The rollback history moved from the README to RELEASE-NOTES.md.
+        readme = (ROOT / "RELEASE-NOTES.md").read_text(encoding="utf-8")
         release_notes = (ROOT / "RELEASE-NOTES.md").read_text(encoding="utf-8")
         release_evidence = (
             ROOT / "docs" / "releases" / "v1.2.1.md"
@@ -2034,7 +2039,8 @@ class SuiteTests(unittest.TestCase):
         self.assertEqual("PASS", evidence["ACCEPTANCE"])
 
     def test_v1_3_candidate_and_publication_readbacks_are_explicit(self) -> None:
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        # The rollback history moved from the README to RELEASE-NOTES.md.
+        readme = (ROOT / "RELEASE-NOTES.md").read_text(encoding="utf-8")
         release_notes = (ROOT / "RELEASE-NOTES.md").read_text(encoding="utf-8")
         release_evidence = (
             ROOT / "docs" / "releases" / "v1.3.0.md"
@@ -2260,7 +2266,8 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("docs/releases/v1.3.0-publication-readback.md", readme)
 
     def test_v1_3_1_publication_readback_is_explicit(self) -> None:
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        # The rollback history moved from the README to RELEASE-NOTES.md.
+        readme = (ROOT / "RELEASE-NOTES.md").read_text(encoding="utf-8")
         release_notes = (ROOT / "RELEASE-NOTES.md").read_text(encoding="utf-8")
         compatibility = (ROOT / "docs" / "COMPATIBILITY.md").read_text(
             encoding="utf-8"
@@ -2486,7 +2493,9 @@ class SuiteTests(unittest.TestCase):
         ]
         self.assertEqual([], exposed)
     def test_v1_5_publication_readback_is_explicit(self) -> None:
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        # The rollback history moved to RELEASE-NOTES.md, the Astra section to the guide.
+        readme = (ROOT / "RELEASE-NOTES.md").read_text(encoding="utf-8")
+        guide = (ROOT / "docs" / "HOW_IT_WORKS.md").read_text(encoding="utf-8")
         compatibility = (ROOT / "docs" / "COMPATIBILITY.md").read_text(
             encoding="utf-8"
         )
@@ -2501,8 +2510,8 @@ class SuiteTests(unittest.TestCase):
         publication = (
             ROOT / "docs" / "releases" / "v1.5.0-publication-readback.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("Astra Ready, portable by design", readme)
-        self.assertIn("model-neutral", readme)
+        self.assertIn("Astra Ready, portable by design", guide)
+        self.assertIn("model-neutral", guide)
         self.assertIn("WORKFLOW_READY", compatibility)
         self.assertIn("GPT-6 Astra", compatibility)
         self.assertIn("model policy", candidate.lower())
@@ -2654,7 +2663,6 @@ class SuiteTests(unittest.TestCase):
 
     def test_install_snippets_require_one_literal_reviewed_commit(self) -> None:
         documents = (
-            (ROOT / "README.md", "## Install safely"),
             (ROOT / "docs" / "INSTALL.md", "## Safe default"),
         )
         for path, heading in documents:
