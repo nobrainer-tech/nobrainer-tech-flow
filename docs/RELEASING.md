@@ -17,7 +17,12 @@ when each channel reads back that version, or the gap is reported:
 4. `nobrainer-tech/nobrainer-tech-flow-plugin`: export the release ZIP there
    through a PR without `.mcp.json` or the root `mcp.json`, and remove the `mcpServers` field from the
    copied `.codex-plugin/plugin.json` (Claude's validator rejects a remote server
-   without `type`, which OpenAI's required shape forbids). Update `SOURCE.json`, run
+   without `type`, which OpenAI's required shape forbids). From `docs/` keep only
+   `CHAT_PLUGINS.md` and `PRIVACY.md`, the two files its README and manifests link: the
+   other guides and `docs/releases/` stay here, and the Claude directory's automatic
+   checks flag the install commands and image references in them. Keep the
+   repository's own Claude presentation fields and its `.claude-plugin/icon.png`
+   (no `icon` field), as its README describes. Update `SOURCE.json`, run
    its unmodified `_maintainers/verify_release.py`, then release it. It is the hook-free copy that
    the Claude directory tracks, not a second project to promote.
 5. Claude directory (claude.ai/directory/manage) picks up that repository's

@@ -106,9 +106,9 @@ Then start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer
 **npm** (Node 18+ and Python 3.11+); `--client` is `codex`, `claude`, `opencode` or `copilot`:
 
 ```sh
-npx nobrainer-tech-flow@2.7.2 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.7.2 --client codex --apply    # install
-npx nobrainer-tech-flow@2.7.2 --client codex --undo --apply
+npx nobrainer-tech-flow@2.7.3 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.7.3 --client codex --apply    # install
+npx nobrainer-tech-flow@2.7.3 --client codex --undo --apply
 ```
 
 **Any coding agent** (Git install with preview and undo; macOS, Linux and Windows, no
@@ -235,12 +235,13 @@ flowchart TD
 What each one owns and its trigger aliases:
 [skill table](docs/HOW_IT_WORKS.md#eighteen-skills-distinct-ownership).
 
-## What's new in 2.7.2
+## What's new in 2.7.3
 
-The plugin ZIP for plugin directories declares the optional remote MCP server in both the
-Codex and the portable format and links its privacy policy; the Git marketplace and npm
-installs stay skills-only. Skills do not change.
-See the [2.7.2 verification record](docs/releases/v2.7.2.md).
+The optional Jev classifier helper no longer reads a credential from your machine: pipe the
+TypeSafe key on stdin with `--key-stdin` (the old `--key-env` flag is removed). The writing
+skill's API proof wording and the plugin-repository export changed so the Claude plugin
+directory's automatic checks pass. Other skills and workflow guidance do not change.
+See the [2.7.3 verification record](docs/releases/v2.7.3.md).
 
 ## What's new in 2.7.0
 
