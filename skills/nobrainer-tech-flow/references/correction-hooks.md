@@ -22,10 +22,15 @@ secrets, commits, pushes or unrelated semantic rewrites.
 Trigger only when the owner explicitly replaces a requirement, preference,
 constraint or decision.
 
-1. Quote or point to the new decision and identify the superseded statement.
+1. Act as soon as the change arrives, before continuing other work. Quote or
+   point to the new decision and identify the superseded statement.
 2. Update the one canonical owner: spec, decision record, plan or project
-   instruction. Mark the old value `SUPERSEDED`; do not preserve two active
-   truths.
+   instruction, and the goal-file row when a ledger is active. Mark the old value
+   `SUPERSEDED`; do not preserve two active truths. When the new decision
+   contradicts a line in another project instruction file, such as `AGENTS.md`,
+   `CLAUDE.md` or a rules file, keep that line from carrying the old rule: under
+   `AUTO_SCOPED`, edit it; under `ASK`, prepare its exact diff and ask once; under
+   `OFF`, name the stale line in the final report.
 3. Remove every affected not-started row from the ready set, mark it `STOPPED`,
    and keep its dependants `PENDING` or `BLOCKED`. Invalidate all evidence made
    under the old assumption. Set `REPLAN_REQUIRED` when the critical path,

@@ -539,6 +539,8 @@ class SuiteTests(unittest.TestCase):
             "unless the instruction is an explicit owner rule",
             "names a deliberate migration",
             "list each disagreement in the final report",
+            "with the exact edit that would bring the instruction file in line",
+            "Apply that edit only as the project's `LEARNING_WRITE_POLICY` allows",
             "Owner rules on safety, authority and workflow always apply",
         ):
             with self.subTest(clause=clause):
@@ -1348,6 +1350,16 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("one canonical owner", hooks)
         self.assertIn("under `ASK`, prepare the exact single-store diff", hooks)
         self.assertIn("under `OFF`, keep the prevention candidate", hooks)
+        flat_hooks = " ".join(hooks.split())
+        for clause in (
+            "Act as soon as the change arrives, before continuing other work",
+            "the goal-file row when a ledger is active",
+            "contradicts a line in another project instruction file",
+            "under `AUTO_SCOPED`, edit it; under `ASK`, prepare its exact diff and ask once; "
+            "under `OFF`, name the stale line in the final report",
+        ):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, flat_hooks)
         self.assertIn("do not\n     create or modify `tasks/lessons.md`", hooks)
 
         self.assertIn("`AUTO_SCOPED` may persist", readme)

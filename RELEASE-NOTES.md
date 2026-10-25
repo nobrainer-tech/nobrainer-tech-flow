@@ -17,7 +17,11 @@ goal file and record each new request in it as it arrives, before continuing any
 even when the request is deferred. Each row quotes the owner's words with the date and a
 status. While the ledger is active, rows are reconciled at every checkpoint, after
 compaction and at closeout, and none may be silently dropped. The default goal file is
-`.nobrainer/goal.md`.
+`.nobrainer/goal.md`. When the owner changes a decision, the agent updates the goal file
+at once, before continuing other work, and keeps instruction files from carrying the old
+rule: it edits a contradicting line in `AGENTS.md`, `CLAUDE.md` or a rules file when the
+project's learning policy is `AUTO_SCOPED`, prepares the exact diff under `ASK`, and names
+the stale line under `OFF`.
 
 The optional Claude Code guards gain a fourth hook: after compaction, resume or clear it
 tells the agent to re-read up to three active goal files. It prints only their paths and
@@ -43,7 +47,8 @@ recording, before and after where possible, because unit tests alone do not prov
 When instruction files or docs describe a coding convention that the existing code does not
 follow, `nobrainer-build` no longer picks one silently: it follows the code, unless the
 instruction is an explicit owner rule or names a deliberate migration, and lists each
-disagreement in its final report.
+disagreement in its final report with the exact edit that would bring the instruction file
+in line, applied only as the learning policy allows.
 
 The README now lists the free remote MCP server as an install channel, the docs say the
 npm package is published, and an intermittent bounded-runner test failure is fixed.

@@ -219,7 +219,7 @@ proof and must be re-tested and re-reviewed.
 
 Apply corrections immediately:
 
-- `OWNER_DECISION_CHANGED`: supersede the old decision, move affected
+- `OWNER_DECISION_CHANGED`: supersede the old decision at once, move affected
   not-started `READY` rows to `STOPPED`, block dependants and invalidate
   only their evidence before re-planning.
 - `AGENT_ERROR_CORRECTED`: fix the active result and classify one minimal

@@ -149,7 +149,7 @@ runtime, deployed runtime, production behavior, external delivery and user
 usefulness distinct. Partial output, timeout, stale state, dead session, failed
 test or missing required access is not success.
 
-When the owner changes a decision, supersede the old requirement and invalidate
+When the owner changes a decision, supersede the old requirement at once and invalidate
 only dependent work and evidence. A verified review failure returns to Build;
 rerun affected proof and review. Stop blind retries after the same failure and
 route causal uncertainty to RCA.

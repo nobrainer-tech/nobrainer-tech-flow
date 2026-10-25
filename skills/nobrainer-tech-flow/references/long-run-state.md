@@ -82,7 +82,8 @@ continuing any work, even when it is deferred: append a row whose `Outcome` quot
 the owner's words, minus any secret, with the date (`YYYY-MM-DD`) and status
 `PENDING`, or `READY` when nothing blocks it. When the gate first passes
 mid-conversation, backfill rows for earlier unfinished requests. A request that
-changes an earlier decision also applies `OWNER_DECISION_CHANGED`.
+changes an earlier decision also applies `OWNER_DECISION_CHANGED` at once, including
+any instruction-file line that still states the old decision.
 
 At every checkpoint, after compaction and at closeout, reconcile each row against
 current evidence. No row is silently dropped: closeout leaves each one `ACCEPTED`,

@@ -567,14 +567,15 @@ and [Testing](docs/TESTING.md) for acceptance evidence.
 the work, and a unit goes to a native worker only for parallel work, context isolation,
 independent review or specialization. When the owner keeps adding requests in one long conversation,
 Flow records each one in the goal file as it arrives instead of leaving it only in the
-transcript, where compaction can drop it. The optional Claude Code guards point the agent back to the active goal file
+transcript, where compaction can drop it; a changed decision updates the goal file at once
+and the instruction-file lines that still state the old rule. The optional Claude Code guards point the agent back to the active goal file
 after compaction, resume or clear, and `nobrainer-team` fills a capability gap with a
 task-local specialist brief instead of third-party skills. A security review needs a second
 independent pass before it can report a clean result. After fixing a defect that was public
 or reachable before the fix, the agent checks for exploitation during that window or reports
 it as untested. When docs and code disagree on a coding convention, `nobrainer-build`
 follows the code unless an owner rule or a deliberate migration says otherwise, and reports
-each disagreement. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+each disagreement with the edit that fixes the stale file. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 Current source version: **2.7.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
