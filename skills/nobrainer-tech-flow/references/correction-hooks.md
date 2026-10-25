@@ -22,10 +22,15 @@ secrets, commits, pushes or unrelated semantic rewrites.
 Trigger only when the owner explicitly replaces a requirement, preference,
 constraint or decision.
 
-1. Quote or point to the new decision and identify the superseded statement.
+1. Act as soon as the change arrives, before continuing other work. Quote or
+   point to the new decision and identify the superseded statement.
 2. Update the one canonical owner: spec, decision record, plan or project
-   instruction. Mark the old value `SUPERSEDED`; do not preserve two active
-   truths.
+   instruction, and the goal-file row when a ledger is active. Mark the old value
+   `SUPERSEDED`; do not preserve two active truths. When the new decision
+   contradicts a line in another project instruction file, such as `AGENTS.md`,
+   `CLAUDE.md` or a rules file, keep that line from carrying the old rule: under
+   `AUTO_SCOPED`, edit it; under `ASK`, prepare its exact diff and ask once; under
+   `OFF`, name the stale line in the final report.
 3. Remove every affected not-started row from the ready set, mark it `STOPPED`,
    and keep its dependants `PENDING` or `BLOCKED`. Invalidate all evidence made
    under the old assumption. Set `REPLAN_REQUIRED` when the critical path,
@@ -38,8 +43,9 @@ constraint or decision.
    correctly classified. Under `ASK`, prepare the exact diff; under `OFF`, keep
    it task-local. Replace or annotate stale knowledge instead of appending a
    contradiction.
-6. Rebuild the affected path under a new plan fingerprint. Only then recompute
-   readiness from all gates and resume AUTOPILOT. Ask again only if the new
+6. Rebuild the affected path under a new plan fingerprint and re-derive the
+   current short-term milestone from the changed decision. Only then recompute
+   readiness from all gates and resume AUTOPILOT on that milestone. Ask again only if the new
    decision creates a real owner gate.
 
 ### `AGENT_ERROR_CORRECTED`

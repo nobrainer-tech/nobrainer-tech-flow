@@ -137,6 +137,11 @@ constraint, deployment setting, parser behavior or version fact that would make
 the path unreachable. Reject generic hardening, style preferences, stale
 advisories for another version and speculative chains missing a necessary step.
 
+One model pass samples the scope; it does not prove coverage. Before `CLEAN`,
+run at least one more independent pass that starts from a different entry point,
+trust boundary or data-flow direction. Stop when a pass adds no new verified
+finding, and report how many passes ran.
+
 ## Handoff and remediation
 
 Security review ends with evidence and a fix contract. If remediation is in
@@ -145,6 +150,11 @@ a failing regression, allowed write scope and rollback. Then repeat the relevant
 security trace with fresh evidence. Consequential fixes still require an
 independent `nobrainer-review` or release gate; self-authored code is not
 self-approved.
+
+A fix closes the path; it does not show the path was never used. When the
+defect was public or reachable before the fix, check the available logs or
+other evidence for exploitation during that exposure window. If that evidence
+is unavailable, list the window under `UNTESTED_OR_INACCESSIBLE_SURFACE`.
 
 ## Final report
 

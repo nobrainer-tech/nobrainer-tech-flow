@@ -369,6 +369,53 @@ class SuiteTests(unittest.TestCase):
         for name in CANONICAL:
             self.assertIn(name, routing)
 
+    def test_ledger_captures_owner_requests_added_in_one_long_conversation(self) -> None:
+        flow = SKILLS / "nobrainer-tech-flow"
+        skill = " ".join((flow / "SKILL.md").read_text(encoding="utf-8").split())
+        self.assertIn("Otherwise a multi-component task", skill)
+        gate = skill[skill.index("Use a detailed ledger only when") : skill.index("Otherwise a multi-component task")]
+        self.assertIn("the owner keeps adding requests mid-run in one long conversation", gate)
+
+        long_run = (flow / "references" / "long-run-state.md").read_text(encoding="utf-8")
+        self.assertIn("## New owner requests", long_run)
+        section = long_run.split("## New owner requests", 1)[1].split("\n## ", 1)[0]
+        rule = " ".join(section.split())
+        for contract in (
+            "record each new owner request or idea as soon as it arrives, before continuing any work, even when it is deferred",
+            "quotes the owner's words, minus any secret, with the date",
+            "status `PENDING`, or `READY`",
+            "backfill rows for earlier unfinished requests",
+            "at every checkpoint, after compaction and at closeout, reconcile each row",
+            "no row is silently dropped",
+        ):
+            self.assertIn(contract.lower(), rule.lower())
+        states = re.search(r"Useful states are (.+?)\. A report", " ".join(long_run.split()))
+        self.assertIsNotNone(states)
+        allowed = set(re.findall(r"`([A-Z_]+)`", states.group(1))) | {"OWNER_DECISION_CHANGED"}
+        used = set(re.findall(r"`([A-Z_]+)`", section))
+        self.assertLessEqual({"ACCEPTED", "STOPPED", "OWNER_DECISION_REQUIRED"}, used)
+        self.assertLessEqual(used, allowed)
+
+        self.assertIn("by default `.nobrainer/goal.md`", " ".join(long_run.split()))
+        inventory = SKILLS / "nobrainer-context" / "scripts" / "context_inventory.py"
+        with tempfile.TemporaryDirectory() as raw:
+            root = (Path(raw) / "repo").resolve()
+            (root / ".git").mkdir(parents=True)
+            (root / ".nobrainer").mkdir()
+            (root / ".nobrainer" / "goal.md").write_text(
+                "GOAL_ID: g-1\nOUTCOME: ship\nSTATUS: ACTIVE\n", encoding="utf-8"
+            )
+            result = subprocess.run(
+                ["python3", str(inventory), "--cwd", str(root), "--codex-config",
+                 str(root / "missing.toml"), "--client", "codex", "--json"],
+                cwd=ROOT, capture_output=True, text=True, check=False,
+            )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(
+            [{"path": ".nobrainer/goal.md", "status": "ACTIVE"}],
+            json.loads(result.stdout)["goal"]["goal_files"],
+        )
+
     def test_model_routing_contract_is_explicit(self) -> None:
         policy = (
             SKILLS / "nobrainer-tech-flow" / "references" / "model-routing.md"
@@ -424,6 +471,10 @@ class SuiteTests(unittest.TestCase):
             "goal readback",
             "show every field above",
             "detailed-ledger decision",
+            "show the owner what done means",
+            "set it as the host-native goal where supported",
+            "one canonical todo owner stays visible",
+            "the host's plan or todo tool, else the progress checklist",
             "structure first",
             "selected contracts in full",
             "large documents or data",
@@ -485,6 +536,20 @@ class SuiteTests(unittest.TestCase):
             "nobrainer-review",
         ):
             self.assertIn(term, text)
+        flat = " ".join(text.split())
+        for clause in (
+            "does not follow, do not pick one silently",
+            "Follow the convention the code uses",
+            "unless the instruction is an explicit owner rule",
+            "names a deliberate migration",
+            "list each disagreement in the final report",
+            "include the exact edit that would bring the stale instruction file in line",
+            "apply it only as the project's `LEARNING_WRITE_POLICY` allows",
+            "name the code change it requires instead",
+            "Owner rules on safety, authority and workflow always apply",
+        ):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, flat)
         self.assertIn("incidental similarity", text)
         self.assertIn("not a mandate for object-oriented ceremony", text)
         normalized = " ".join(text.lower().split())
@@ -791,6 +856,17 @@ class SuiteTests(unittest.TestCase):
         ):
             self.assertIn(term, text)
         self.assertIn("Do not test a live target", text)
+        flat = " ".join(text.split())
+        for clause in (
+            "One model pass samples the scope; it does not prove coverage",
+            "Before `CLEAN`, run at least one more independent pass",
+            "Stop when a pass adds no new verified finding",
+            "report how many passes ran",
+            "check the available logs or other evidence for exploitation",
+            "list the window under `UNTESTED_OR_INACCESSIBLE_SURFACE`",
+        ):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, flat)
 
     def test_team_contract_builds_minimum_capability_roster(self) -> None:
         text = (SKILLS / "nobrainer-team" / "SKILL.md").read_text(encoding="utf-8")
@@ -1279,6 +1355,46 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("one canonical owner", hooks)
         self.assertIn("under `ASK`, prepare the exact single-store diff", hooks)
         self.assertIn("under `OFF`, keep the prevention candidate", hooks)
+        flat_hooks = " ".join(hooks.split())
+        for safeguard in (
+            "This standing policy never authorizes global instructions",
+            "within their existing classification/write rules",
+            "Preserve managed blocks",
+        ):
+            with self.subTest(safeguard=safeguard):
+                self.assertIn(safeguard, flat_hooks)
+        state = " ".join(
+            (SKILLS / "nobrainer-tech-flow" / "references" / "long-run-state.md")
+            .read_text(encoding="utf-8")
+            .split()
+        )
+        for clause in (
+            "CURRENT_MILESTONE:",
+            "derived from `OUTCOME` and the open request rows",
+            "without waiting for the owner",
+            "set the next milestone from the open rows and continue",
+            "accepting a milestone never closes `OUTCOME`",
+            "re-derive the milestone at once",
+        ):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, state)
+        decision = flat_hooks.split("### `OWNER_DECISION_CHANGED`", 1)[1].split("### ", 1)[0]
+        for term in (
+            "as soon as the change arrives",
+            "goal-file row",
+            "instruction file",
+            "controlled stop",
+            "re-derive the current short-term milestone",
+        ):
+            with self.subTest(term=term):
+                self.assertIn(term, decision)
+        for bound_action in (
+            "under `AUTO_SCOPED`, edit it",
+            "under `ASK`, prepare its exact diff and ask once",
+            "under `OFF`, name the stale line",
+        ):
+            with self.subTest(bound_action=bound_action):
+                self.assertIn(bound_action, decision)
         self.assertIn("do not\n     create or modify `tasks/lessons.md`", hooks)
 
         self.assertIn("`AUTO_SCOPED` may persist", readme)
@@ -1306,11 +1422,11 @@ class SuiteTests(unittest.TestCase):
         for term in (
             "Expected files",
             "Done clean",
-            "Delegate every independent ready unit promptly",
-            "native capacity and quota",
-            "coordinates, integrates, verifies and refills slots",
+            "Work in one MAIN loop",
+            "delegate only qualifying units",
+            "Delegate only units that gain from parallel work",
+            "independent review or specialization",
             "Visible conversations",
-            "Use subagents",
             "fetch remote refs",
             "Never commit directly to `main`",
         ):

@@ -27,7 +27,7 @@ Keep advertised, configured, callable, and successfully invoked capabilities dis
 
 For a one-off, low-risk task, use the owner's selected MAIN and current known tools; skip benchmarking and state that routing is uncalibrated. For a recurring workflow, material model choice, or task with meaningful quality/latency/cost tradeoffs, define a small bounded comparison before spending resources.
 
-Classify the work by required expertise, context, accuracy, latency, cost sensitivity, confidentiality, dependence between units, and integration effort. Calibration follows the delegation-first default for independent units with measurable acceptance and disjoint write scope. A missing benchmark or measured speed gain does not block eligible dispatch. When comparing routes, measure the critical path and observed concurrency, including setup, review and integration; worker count alone proves no benefit.
+Classify the work by required expertise, context, accuracy, latency, cost sensitivity, confidentiality, dependence between units, and integration effort. MAIN is the default; calibration compares worker routes only for units that qualify under [team execution](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution) and have measurable acceptance and disjoint write scope. A missing benchmark does not block a qualifying unit's dispatch. When comparing routes, measure the critical path and observed concurrency, including setup, review and integration; worker count alone proves no benefit.
 
 ## Run a bounded, comparable calibration
 

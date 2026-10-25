@@ -59,9 +59,11 @@
   guards ask before `git push --force`, `git reset --hard`, a recursive delete
   outside temporary folders, a production deploy or a publish. A turn that
   changed files and ends without a proof line or an explicit `UNVERIFIED` is
-  sent back once. Opt-in, with preview and undo.
-- **Parallel work, checked in one place.** Independent ready parts go to native
-  workers; the main session checks each one.
+  sent back once. After compaction, resume or clear, the agent is pointed back
+  to the active goal file. Opt-in, with preview and undo.
+- **One main loop, workers only where they pay.** The main session does the work
+  with skills and hands a part to a native worker only for parallel work, context
+  isolation, independent review or specialization, then checks each result.
 
 Free, MIT. The Git install previews every change and has undo. Your coding client's usage costs still apply.
 
@@ -103,7 +105,8 @@ The mode is informed by ASD-STE100; it does not claim full standard compliance.
 
 ## Install and use the plugin
 
-Pick the channel that fits your client; each one installs the same 18 modules:
+Pick the channel that fits your client. The first five install the same 18 modules;
+the MCP server needs no install:
 
 - **Claude Code plugin:** `claude plugin marketplace add nobrainer-tech/nobrainer-tech-flow`,
   then `claude plugin install nobrainer-tech-flow@nobrainer-tech`.
@@ -116,6 +119,11 @@ Pick the channel that fits your client; each one installs the same 18 modules:
   preview of every change and undo.
 - **Chat apps:** the [portable plugin ZIP](docs/CHAT_PLUGINS.md) for supported
   ChatGPT/Codex and Claude surfaces.
+- **MCP server, no install:** add the free remote server `https://mcp.nobrainer.tech/mcp`
+  (no sign-in, stateless) in claude.ai, ChatGPT or any MCP client. Its six read-only
+  tools give the agent a task contract, an evidence check, a done gate and a model
+  advisor; it does not install the 18 modules. Per-client steps and what is verified:
+  [MCP server README](mcp/README.md#install).
 
 Details for each are under [Install safely](#install-safely). Listing in the
 public Claude and OpenAI plugin directories is a separate review step.
@@ -152,7 +160,7 @@ next unblock action.
 A quick answer stays a quick answer. The model-neutral workflow uses one plan,
 bounded corrective attempts and a Markdown checkpoint for longer work. Native
 goals, telemetry and client-specific tools are optional. Available native workers
-handle independent ready units; unavailable workers leave safe work in MAIN.
+take a unit only when it pays; unavailable workers leave the work in MAIN.
 
 **One model is enough.** Optional Jev (remote) and Laya (local) profiles add
 typed suggestions for bounded classification, ranking and evaluation. Setup
@@ -196,11 +204,11 @@ flowchart TD
     P --> G
     J -. independent authorized work remains .-> P
     F -. optional .-> L[Markdown goal for resume]
-    G -. every independent ready unit within capacity and quota .-> M[Bounded native subagents; owner-approved model and effort]
+    G -. only units that gain from parallel work, isolated context, review or specialization .-> M[Bounded native subagents; owner-approved model and effort]
     G -. configured shadow only .-> Q[Jev remote or Laya local: advisory typed decisions]
     Q -. unavailable or invalid: core fallback .-> G
     M -->|Plain technical English reports| H
-    H -. audited unit; refill ready native slots .-> M
+    H -. audited unit; dispatch the next qualifying unit .-> M
     F -. first project use .-> R[Inspect layers and relevant wiki]
     R --> G
     M -. recurring workload .-> T[Auto Fine Tune: measured worker route]
@@ -279,9 +287,9 @@ notification only. No other authorization is granted. To update, run `git pull` 
 **npm** (Node 18+ and Python 3.11+; [package page](https://www.npmjs.com/package/nobrainer-tech-flow)):
 
 ```sh
-npx nobrainer-tech-flow@2.6.0 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.6.0 --client codex --apply    # install
-npx nobrainer-tech-flow@2.6.0 --client codex --undo --apply
+npx nobrainer-tech-flow@2.7.0 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.7.0 --client codex --apply    # install
+npx nobrainer-tech-flow@2.7.0 --client codex --undo --apply
 ```
 
 `--client` is `codex`, `claude`, `opencode` or `copilot`. The files are copied to a
@@ -400,11 +408,13 @@ DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN
 - One canonical plan owns TODO state; the owner sees only a compact Progress
   checklist and one next action.
 - A durable ledger adds exact identity, dependencies, checkpoints, retries and
-  rollback only for cross-session, dependency-rich or consequential work.
+  rollback only for cross-session, dependency-rich or consequential work, or
+  when the owner keeps adding requests in one long conversation.
 - `AUTOPILOT` continues through routine approved work without repeated check-ins.
-- Delegate every independent ready unit to native workers within verified capacity
-  and quota under the [delegation contract](skills/nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
-  MAIN coordinates, integrates, verifies and refills freed slots. Team supplies
+- Work in one MAIN loop with skills. Delegate a unit to a native worker only for parallel
+  work, context isolation, independent review or specialization, under the
+  [delegation contract](skills/nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
+  MAIN coordinates, integrates and verifies. Team supplies
   capabilities; Dispatcher schedules real queues. Visible sessions require an
   explicit owner request or authorized MAIN restart.
 - Failed review returns to `nobrainer-build`; changed code invalidates old proof.
@@ -424,7 +434,7 @@ configured limits. Missing optional telemetry lowers the health claim and still
 allows bounded safe work. An explicitly required hard budget must be enforceable.
 `RUNTIME_RELEASE` concerns actual task-owned workers; a completed result does not
 prove they stopped. `GOAL_FILE` is optional Markdown recovery state. A native goal
-is used only when available and authorized; the file alone suffices.
+mirrors the DoD where the host offers one; the file alone suffices.
 
 Autopilot works with one visible MAIN coordinator and bounded native workers.
 Ordinary native assignments use the compact packet in the delegation contract,
@@ -553,16 +563,26 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-**What's new in 2.6.0:** Flow delegates aggressively: independent units of
-substantial work go to parallel native subagents, sized so parallel work pays for its
-start-up cost, verification depth follows how risky and reversible a change is, and one
-line in the instruction block keeps Flow updated by default (`--no-auto-update` opts out).
-See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+**What's new in 2.7.0:** before substantial work the agent shows what done means and sets
+it as the host's native goal where one exists, and the TODO stays visible. Flow delegates only where it pays: one MAIN loop with skills does
+the work, and a unit goes to a native worker only for parallel work, context isolation,
+independent review or specialization. When the owner keeps adding requests in one long conversation,
+Flow records each one in the goal file as it arrives instead of leaving it only in the
+transcript, where compaction can drop it; a changed decision updates the goal file at once
+and, as the project's learning policy allows, the instruction-file lines that still state
+the old rule. The optional Claude Code guards point the agent back to the active goal file
+after compaction, resume or clear, and `nobrainer-team` fills a capability gap with a
+task-local specialist brief instead of third-party skills. A security review needs a second
+independent pass before it can report a clean result. After fixing a defect that was public
+or reachable before the fix, the agent checks for exploitation during that window or reports
+it as untested. When docs and code disagree on a coding convention, `nobrainer-build`
+follows the code unless an owner rule or a deliberate migration says otherwise, and reports
+each disagreement, with the edit that fixes a stale file when the code wins. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
-Current source version: **2.6.0**. Check the
+Current source version: **2.7.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.6.0](docs/releases/v2.6.0.md), [2.5.0](docs/releases/v2.5.0.md) and
-[2.4.0 verification records](docs/releases/v2.4.0.md) for
+for distribution and the [2.7.0](docs/releases/v2.7.0.md), [2.6.0](docs/releases/v2.6.0.md) and
+[2.5.0 verification records](docs/releases/v2.5.0.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier

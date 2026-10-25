@@ -5,8 +5,8 @@ description: "Use when the owner says nb-team or nobrainer-skill-browser, or aft
 
 # NoBrainer Team
 
-Compose bounded native assignments for every independent ready unit in the approved
-plan. Team owns capability selection and role design; `nobrainer-dispatcher` owns
+Compose bounded native assignments for the units in the approved plan that qualify
+for delegation. Team owns capability selection and role design; `nobrainer-dispatcher` owns
 queued readiness and backpressure. `nobrainer-sessions` owns authorized visible
 session identity, transport, checkout isolation, leases and receive-audit.
 
@@ -46,17 +46,18 @@ An unsearched dimension is `UNKNOWN`, not covered. Record irrelevant dimensions
 as `NOT_APPLICABLE` when a coverage audit is requested; ordinary small tasks do
 not need a full matrix. Reuse the existing task plan instead of a second catalog.
 
-## Cover independent ready work
+## Delegate only qualifying work
 
-For non-trivial work, assign every independent ready unit to a native worker under
-[nobrainer-tech-flow team execution](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
-Fill useful slots up to the verified host limit within task quota. MAIN keeps
-coordination, the critical path, integration and acceptance. A tiny task or tightly
-coupled step may stay in MAIN. Assign roles from actual outputs, never personas
-or unused capacity. Do not dispatch work whose output MAIN cannot review.
+Assign a native worker only to a unit that qualifies under
+[nobrainer-tech-flow team execution](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution):
+parallel work, context isolation, independent verification or specialization. Other
+work stays in MAIN, which keeps coordination, the critical path, integration and
+acceptance. When several units qualify, dispatch them together up to the
+verified host limit within task quota. Assign roles from actual outputs, never
+personas or unused capacity. Do not dispatch work whose output MAIN cannot review.
 
-Use the canonical contract for completion-driven refill and reasons for retaining
-eligible work in MAIN. [Auto Fine Tune](../nobrainer-auto-fine-tune/SKILL.md)
+Use the canonical contract for completion-driven dispatch and the condition that
+justifies each delegated unit. [Auto Fine Tune](../nobrainer-auto-fine-tune/SKILL.md)
 calibrates uncertain routes when useful; calibration is not a prerequisite to
 ordinary native dispatch. A host advertisement is not a successful model invocation.
 

@@ -1,6 +1,6 @@
 # Privacy Policy: NoBrainer Tech Flow MCP server
 
-Version 1.0. Effective date: [EFFECTIVE DATE].
+Version 1.0. Effective date: 21 October 2026.
 Published at https://nobrainer.tech/flow/privacy/
 
 ## 1. Who is responsible
@@ -9,7 +9,7 @@ The data controller and operator is mastalerz.it Arkadiusz Mastalerz, a Polish s
 
 ## 2. What this service is
 
-The NoBrainer Tech Flow MCP server (the server at mcp.nobrainer.tech; the planned endpoint is https://mcp.nobrainer.tech/mcp) is a free, public, stateless remote MCP server. AI clients such as Codex, Claude Code or Cursor call it to get guidance for the NoBrainer Tech Flow method.
+The NoBrainer Tech Flow MCP server (the server at mcp.nobrainer.tech; endpoint https://mcp.nobrainer.tech/mcp) is a free, public, stateless remote MCP server. AI clients such as Codex, Claude Code or Cursor call it to get guidance for the NoBrainer Tech Flow method.
 
 - No accounts, no sign-in, no OAuth.
 - No stored task content.

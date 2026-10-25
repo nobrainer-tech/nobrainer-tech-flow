@@ -14,9 +14,9 @@ upgraded merely because the new source is installed nearby.
 Node 18+ and Python 3.11+ are prerequisites. Preview the setup first:
 
 ```sh
-npx nobrainer-tech-flow@2.6.0 --client codex
-npx nobrainer-tech-flow@2.6.0 --client codex --apply
-npx nobrainer-tech-flow@2.6.0 --client codex --undo --apply
+npx nobrainer-tech-flow@2.7.0 --client codex
+npx nobrainer-tech-flow@2.7.0 --client codex --apply
+npx nobrainer-tech-flow@2.7.0 --client codex --undo --apply
 ```
 
 Use claude for Claude Code, opencode or copilot for those clients. Add --home PATH
@@ -25,7 +25,7 @@ for an isolated profile. The package is published on
 version there.
 
 Application copies the release files into the chosen home directory's
-.nobrainer-tech-flow-npm/2.6.0 and verifies the copy. That folder sits beside
+.nobrainer-tech-flow-npm/2.7.0 and verifies the copy. That folder sits beside
 ~/.nobrainer-tech-flow, where the Git installation suggests a clone, so cleaning
 the clone cannot delete the files the skill links point to. Releases before 2.3.2
 kept their copy in .nobrainer-tech-flow/npm; undo such a setup with the command of
@@ -438,7 +438,7 @@ After restart, verify:
 
 #### Optional guards
 
-Two opt-in hooks in your Claude Code user `settings.json`, never in the plugin:
+Opt-in hooks in your Claude Code user `settings.json`, never in the plugin:
 
 - before a shell command, Claude Code asks you first (it never denies) for
   `rm -r` (also `/bin/rm`) outside the temporary folders (`$TMPDIR`, `/tmp`,
@@ -454,7 +454,14 @@ Two opt-in hooks in your Claude Code user `settings.json`, never in the plugin:
 - when a turn that edited files or ran commands ends without a line starting
   with `Proof:` or `Checked:` and without `UNVERIFIED`, the stop is blocked once
   so the agent adds one. A read-only turn, a second stop and an unreadable
-  transcript are let through.
+  transcript are let through;
+- after compaction, resume or clear, the agent is told to re-read up to three
+  active Flow goal files (a `GOAL_ID:` line and a `STATUS` other than `COMPLETE`,
+  in the project root, `tasks/`, `docs/` or `.nobrainer/`). It prints only each
+  path and a known `STATUS` word, never other goal-file text; it follows no
+  symlink, skips names with characters other than letters, digits, `.`, `-` and
+  `_`, stops after 5,000 folder entries or 200 files, and prints nothing on any
+  error.
 
 This is a seatbelt, not a security boundary. It reads the command text, so
 `sh -c`, a variable or an alias gets past it, and a risky phrase inside a quoted
@@ -471,7 +478,7 @@ python3 scripts/install.py --client claude --guards --undo --apply
 `~/.claude/settings.json` when the variable is unset. The preview lists only the
 hooks it would add or remove, never other settings; other hooks are kept, each
 change writes a new backup, readable only by you, without overwriting an older one, a second `--apply`
-changes nothing, and an invalid file is refused
+changes nothing, an install from an earlier version is shown as an update, and an invalid file is refused
 (exit 3) without being touched. The hooks run `flow_guard.py` through the
 skill link that `--client claude` created, so install the skills first. A
 plugin-only install, other clients, `scripts/install.sh` and Windows are not
@@ -484,7 +491,9 @@ PreToolUse reads `tool_name`, `tool_input.command` and `cwd` and answers
 `hookSpecificOutput.permissionDecision: "ask"` with `permissionDecisionReason`;
 Stop and SubagentStop read `stop_hook_active`, `last_assistant_message`,
 `transcript_path` and `agent_transcript_path` and answer
-`{"decision": "block", "reason": ...}`.
+`{"decision": "block", "reason": ...}`; SessionStart (matcher
+`compact|resume|clear`) reads `cwd` and answers
+`hookSpecificOutput.additionalContext`.
 
 ### Codex
 

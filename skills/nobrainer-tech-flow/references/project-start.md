@@ -9,8 +9,8 @@ when the relevant facts change.
 2. Read the owner's current long-term direction or roadmap when supplied.
    Derive one short-term outcome, acceptance and next milestone for substantial
    work. Keep the full agreed outcome visible; accepting a milestone does not
-   silently close the larger goal. Use a native goal API only when the host
-   contract and the owner's request allow it.
+   silently close the larger goal. Set the outcome and DoD as a native goal when
+   the host supports one and its tool contract allows it.
 3. Discover an existing project or global wiki from instructions and local
    evidence. Query only relevant decisions, brand facts, lessons and sources.
    Ask once when the correct wiki boundary is material and not settled.

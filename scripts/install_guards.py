@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Preview, add or remove the optional nobrainer-tech-flow guards for Claude Code.
 
-The guards are three hooks in the Claude Code user settings.json: a PreToolUse hook
-that asks before common risky shell commands, and Stop and SubagentStop hooks that
-ask for a proof line once. Every run is a preview until --apply. The hooks point at
-flow_guard.py through the skill link that scripts/install.py created, so they keep
-working when the checkout is updated. Our entries are the hooks whose command is
-exactly one this script generates; --undo --apply removes those and nothing else.
-The preview names only those hooks and the settings path, never other settings,
-which can hold tokens.
+The guards are four hooks in the Claude Code user settings.json: a PreToolUse hook
+that asks before common risky shell commands, Stop and SubagentStop hooks that ask
+for a proof line once, and a SessionStart hook that, after compaction, resume or
+clear, names the active Flow goal files to re-read. Every run is a preview until
+--apply, and an install from an earlier version is reported as an update. The hooks
+point at flow_guard.py through the skill link that scripts/install.py created, so
+they keep working when the checkout is updated. Our entries are the hooks whose
+command is exactly one this script generates; --undo --apply removes those and
+nothing else. The preview names only those hooks and the settings path, never other
+settings, which can hold tokens.
 """
 
 from __future__ import annotations
@@ -28,8 +30,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 INSTALL_SKILLS = ROOT / "scripts" / "install_skills.py"
 GUARD = Path("nobrainer-tech-flow") / "scripts" / "flow_guard.py"
-EVENTS = (("PreToolUse", "Bash", "pre-tool"), ("Stop", None, "stop"), ("SubagentStop", None, "stop"))
+EVENTS = (
+    ("PreToolUse", "Bash", "pre-tool"),
+    ("Stop", None, "stop"),
+    ("SubagentStop", None, "stop"),
+    ("SessionStart", "compact|resume|clear", "session"),
+)
 TIMEOUT = 10
+DONE = {"add": "INSTALLED", "update": "UPDATED", "remove": "REMOVED"}
 DISCLAIMER = (
     "NOTE: a seatbelt: it asks before common risky commands; it is not a security "
     "boundary, and sh -c or variables bypass it."
@@ -223,18 +231,26 @@ def run(apply: bool, undo: bool, home: Path | None, rerun: str = "python3 script
             print(f"UP TO DATE: the Flow guards are already in {settings_path}; nothing changed")
         return 0
     after = render(updated)
+    # Some of our hooks but not exactly the current set, as an install from an earlier
+    # version leaves them: an update, never reported as current.
+    present = len(listed(settings, guard))
+    action = "remove" if undo else "update" if present else "add"
     if not apply:
         hooks = listed(settings if undo else updated, guard)
-        verb = f"remove {len(hooks)} hooks from" if undo else f"add {len(hooks)} hooks to"
-        print(f"PREVIEW: would {verb} {settings_path}; other settings keep their values:")
+        target = {
+            "remove": f"remove {len(hooks)} hooks from {settings_path}",
+            "update": f"update the Flow guards in {settings_path} ({present} hooks now, {len(hooks)} after)",
+            "add": f"add {len(hooks)} hooks to {settings_path}",
+        }[action]
+        print(f"PREVIEW: would {target}; other settings keep their values:")
         print("\n".join(hooks))
         if not undo:
             print(DISCLAIMER)
         flags = "--undo --apply" if undo else "--apply"
-        print(f"NO_CHANGES: preview only; {'remove' if undo else 'add'} them with: {rerun.replace('{flags}', flags)}")
+        print(f"NO_CHANGES: preview only; {action} them with: {rerun.replace('{flags}', flags)}")
         return 0
     backup = write(settings_path, before, after)
-    print(f"{'REMOVED' if undo else 'INSTALLED'}: Flow guards in {settings_path}")
+    print(f"{DONE[action]}: Flow guards in {settings_path}")
     if backup:
         print(f"BACKUP: {backup}")
     if not undo:

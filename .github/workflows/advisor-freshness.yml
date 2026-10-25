@@ -1,0 +1,40 @@
+name: Advisor snapshot freshness
+
+# The model advisor (recommend_flow_model) refuses its benchmark snapshot 14 days after the
+# fetch time and then returns an empty shortlist. Tests pin the clock, so Validate never sees
+# that coming. This read-only job fails once fewer than 3 days of validity remain; refresh the
+# snapshot and redeploy as described in mcp/docs/DEPLOY.md, section 6. It checks nothing about
+# a pull request, so it is deliberately not part of Validate.
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: advisor-freshness
+  cancel-in-progress: false
+
+jobs:
+  snapshot-freshness:
+    name: Advisor snapshot freshness
+    if: github.repository == 'nobrainer-tech/nobrainer-tech-flow'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+
+      - name: Check days of validity left on the snapshot
+        working-directory: mcp
+        run: npm run check:freshness

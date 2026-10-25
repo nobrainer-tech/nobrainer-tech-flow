@@ -23,7 +23,8 @@
     "conformance": "node scripts/conformance.ts",
     "check:bundle": "node scripts/check-bundle.mjs",
     "build:landing": "node scripts/build-landing.mjs",
-    "check:landing": "node scripts/build-landing.mjs --check"
+    "check:landing": "node scripts/build-landing.mjs --check",
+    "check:freshness": "node scripts/check-freshness.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.3.1",

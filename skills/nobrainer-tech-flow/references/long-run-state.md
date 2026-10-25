@@ -7,7 +7,9 @@ ordinary single-session work.
 ## One canonical ledger
 
 Use the project's existing Markdown tracker when suitable. Otherwise create one
-small task-local Markdown artifact. It is the only mutable owner of execution state;
+small task-local Markdown `GOAL_FILE`, by default `.nobrainer/goal.md`, which the
+context inventory already searches; do not commit it to a public repository.
+It is the only mutable owner of execution state;
 specifications define required truth, reports provide evidence, and the wiki
 stores durable knowledge.
 
@@ -54,6 +56,7 @@ GOAL_ID: <stable identity>
 OUTCOME: <observable result>
 NON_GOALS: <bounded exclusions>
 DOD: <acceptance checks>
+CURRENT_MILESTONE: <short-term goal in progress, its acceptance, the OUTCOME it serves>
 STATUS: ACTIVE | OWNER_DECISION_REQUIRED | COMPLETE | BLOCKED
 CHECKPOINT: <last verified state and evidence pointer>
 NEXT_SAFE_ACTION: <one action or NONE>
@@ -61,9 +64,16 @@ SESSION_POLICY: <policy reference or NONE>
 LAST_HEALTH_READBACK: <event, result, evidence pointer>
 ```
 
-The Markdown goal works without any native goal API. A host-native goal is an
-optional mirror and control handle, used only when available and authorized by
-the host's tool rules; never create it merely because this reference was loaded.
+Keep one `CURRENT_MILESTONE`: a short-term goal derived from `OUTCOME` and the open
+request rows, small enough to finish and verify in the current session. Work toward
+it without waiting for the owner. When it is accepted, record its evidence, set the
+next milestone from the open rows and continue; accepting a milestone never closes
+`OUTCOME`. When the owner changes a decision or a new request changes what matters
+most now, re-derive the milestone at once.
+
+The Markdown goal works without any native goal API. A host-native goal mirrors
+the outcome and DoD where the host offers one and its tool rules allow it; it is a
+visible control handle, never the canonical state.
 After session start, compaction or a verified clear, read `GOAL_FILE` from disk,
 verify `GOAL_ID`, repository, checkout, HEAD/dirty state, status and evidence,
 then reconcile any native goal actually used and continue from `NEXT_SAFE_ACTION`. A
@@ -71,6 +81,22 @@ transcript summary, cached plan or native goal never overrides newer file state.
 The same file owns the outcome-level TODO rows; health gates may checkpoint them
 but cannot mark work complete. On every material transition, update the current
 row, evidence and next safe action before starting another unit.
+
+## New owner requests
+
+A request held only in the transcript can be lost to compaction. While the ledger
+is active, record each new owner request or idea as soon as it arrives, before
+continuing any work, even when it is deferred: append a row whose `Outcome` quotes
+the owner's words, minus any secret, with the date (`YYYY-MM-DD`) and status
+`PENDING`, or `READY` when nothing blocks it. When the gate first passes
+mid-conversation, backfill rows for earlier unfinished requests. A request that
+changes an earlier decision also applies `OWNER_DECISION_CHANGED` at once, including
+any instruction-file line that still states the old decision.
+
+At every checkpoint, after compaction and at closeout, reconcile each row against
+current evidence. No row is silently dropped: closeout leaves each one `ACCEPTED`,
+`STOPPED` with the owner decision that stopped it, or visibly open as `BLOCKED` or
+`OWNER_DECISION_REQUIRED` with its next step named in the final report.
 
 ## Recovery card
 
@@ -158,7 +184,7 @@ Create a durable visible session only under the
 Use native subagents for delegated units; if unavailable, continue in MAIN.
 For a persistent delegated queue:
 
-1. `nobrainer-team` maps every independent ready unit to a bounded native assignment.
+1. `nobrainer-team` maps each unit that qualifies for delegation to a bounded native assignment.
 2. If several delegated units form a queue, `nobrainer-dispatcher` computes the
    ready set and bounded batch.
 3. MAIN spawns each bounded unit as a native subagent; only for owner-authorized

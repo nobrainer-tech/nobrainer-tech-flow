@@ -42,9 +42,9 @@ Skip ledger, delegation, review and startup care. Escalate to the full Flow life
 for ambiguity, architecture, public behavior, routing or consequential
 side effects; quick path never bypasses an owner gate.
 
-Delegate aggressively: run substantial work's independent units
-on parallel native subagents through [team execution](references/delivery.md#coordinated-team-execution);
-MAIN integrates, verifies and refills slots. Use [Auto Fine Tune](../nobrainer-auto-fine-tune/SKILL.md)
+Default to one MAIN loop with skills; delegate only units that qualify under
+[team execution](references/delivery.md#coordinated-team-execution);
+MAIN integrates and verifies. Use [Auto Fine Tune](../nobrainer-auto-fine-tune/SKILL.md)
 for first-setup capability checks; benchmark only when calibration pays.
 Unavailable native workers leave work in MAIN; visible conversations require explicit owner request
 or authorized MAIN restart; isolation, reuse or handoff alone never authorize one.
@@ -99,6 +99,7 @@ Done clean:
 ```
 
 `Outcome` is the portable goal; `Proof` plus `Done clean` are the definition of done.
+Before substantial work, show the owner what done means and set it as the host-native goal where supported.
 For substantial work, derive the next short-term goal from the supplied
 long-term direction using [project start](references/project-start.md).
 Update scope before expanding; require matching files, passing proof and no surprises.
@@ -106,11 +107,10 @@ Update scope before expanding; require matching files, passing proof and no surp
 For public contract, routing or workflow changes, update existing affected diagrams;
 fresh SVG + README Mermaid readback applies when the project maintains those formats.
 Do not create diagrams merely to satisfy a workflow gate.
-When the owner requests goal/DoD, show every field above and state the detailed-ledger decision.
+On request, show every field above and the detailed-ledger decision.
 For work that passes the detailed-ledger gate, persist the goal in an existing
 Markdown tracker or task-local Markdown `GOAL_FILE`; it is canonical across clears,
-compactions and sessions. A host-native goal is optional: use it only when available
-and authorized under that tool's rules. Require goal readback only from stores actually
+compactions and sessions. Require goal readback only from stores actually
 used; the file alone is sufficient and supersedes stale transcript text.
 Default to at most 160 words: outcome, scope, Progress, proof and next action.
 Do not add a repetitive skill/mode preamble or invent unseen schemas.
@@ -119,8 +119,8 @@ Mark uninspected paths/methods as pending.
 New dependencies, abstractions, workers, skills and tests need an acceptance reason.
 Shared abstractions require two callers or explicit contract.
 
-Use a short plan ordered by outcomes. One canonical TODO owner may be the host
-plan, repository tracker or current response.
+Use a short plan ordered by outcomes. One canonical TODO owner stays visible: the
+host's plan or todo tool, else the Progress checklist.
 
 ## Show human progress
 
@@ -142,16 +142,16 @@ commands, errors, numbers and negations; expand when brevity risks ambiguity.
 Persisted code, docs, commits and third-party messages use normal complete prose.
 The checklist views the canonical TODO; accept evidence, not worker reports.
 A stale summary never authorizes a successor.
-Use a detailed ledger only when at least one condition is true:
+Use a detailed ledger only when any condition holds:
 
 - work crosses sessions or must resume safely after context loss;
+- the owner keeps adding requests mid-run in one long conversation;
 - dependencies, multiple writers or a delegated queue control readiness;
 - a consequential external effect requires auditable gates and recovery;
 - the owner explicitly requests a durable execution record.
 
-Otherwise the detailed ledger is unnecessary ceremony; a multi-component task
-that still fits one coherent session does not pass this gate. When the gate passes,
-use [references/long-run-state.md](references/long-run-state.md) and keep the
+Otherwise a multi-component task that fits one coherent session does not pass this gate.
+When it passes, use [references/long-run-state.md](references/long-run-state.md) and keep the
 owner-facing Progress checklist concise.
 
 ## Readiness and method routing
@@ -219,7 +219,7 @@ proof and must be re-tested and re-reviewed.
 
 Apply corrections immediately:
 
-- `OWNER_DECISION_CHANGED`: supersede the old decision, move affected
+- `OWNER_DECISION_CHANGED`: supersede the old decision at once, move affected
   not-started `READY` rows to `STOPPED`, block dependants and invalidate
   only their evidence before re-planning.
 - `AGENT_ERROR_CORRECTED`: fix the active result and classify one minimal

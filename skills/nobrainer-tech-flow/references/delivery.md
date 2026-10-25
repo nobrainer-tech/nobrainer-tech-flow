@@ -20,8 +20,11 @@ the whole goal open while a required item remains, and choose the next ready
 unit as each stage closes. Do not invent an LDD method when the acronym or
 source is unresolved.
 
-A native goal is separate: create it only when explicitly requested and supported
-under the host tool contract. Reuse an existing goal; never replace an unfinished
+When the host offers a native goal, set the outcome and DoD there for substantial
+work under the host tool contract, so the owner can see whether the goal is running,
+paused or stopped. Keep the TODO visible too: mirror the canonical TODO in the
+host's plan or todo tool when it has one, otherwise show the Progress checklist.
+Reuse an existing goal; never replace an unfinished
 goal or invent a token budget. Read back native goal creation before claiming it.
 A Markdown goal does not promise scheduled continuation or automatically press
 START. When START is owner-only, explain that requirement once; never claim it
@@ -117,9 +120,12 @@ useful authorized work remains. Never turn an unknown right/license into consent
 
 Scale verification to blast radius. A reversible, low-risk change may proceed on
 green automated tests, review and security checks. CI configuration, credentials,
-security-sensitive paths, data migrations and irreversible effects need an
-independent review and remain owner-gated. An agent's approval never counts as the
-owner's.
+security-sensitive paths (such as authentication, permissions, payments and personal
+data), data migrations and irreversible effects need an independent review and
+remain owner-gated, however small the diff. Work from an untrusted or unknown author
+never takes the low-risk path. A user-interface change needs rendered evidence, a
+screenshot or recording, before and after where possible; unit tests alone do not
+prove it. An agent's approval never counts as the owner's.
 
 Review the next executable slice against concrete acceptance and failure paths.
 For a stable slice, default to one review and one focused correction verification.
@@ -142,27 +148,36 @@ reviews, tests or generated files.
 ## Coordinated team execution
 
 MAIN owns the full outcome, coordination, critical path, dependencies, integration,
-owner decisions and acceptance. Delegation is the default route to a faster done:
-MAIN works its own unit while workers run, and keeps only tiny, tightly coupled,
-gated or shared-state steps. Delegate a unit when it is independent and large
-enough that parallel work shortens the time to done more than a worker's start-up
-costs. Give each worker a short task packet, not the whole conversation, and ask
-for a concise report. Send narrow, mechanical work to a cheaper model under the
-host's policy. Each worker's model and effort come from that policy; the workflow
-names no model. Before executing non-trivial work or entering a
-blocking wait, identify independent ready units and dispatch every useful eligible
-unit promptly to native workers within verified host capacity and authorized usage
-limits. Eligibility requires accepted dependencies, authority, a supported route
-and a free write scope. One visible MAIN coordinator is compatible with many native
-workers. Before a large or risky multi-writer fan-out that is not already
-executable, run the [builder-readiness check](idea-to-delivery.md#builder-readiness-check);
-skip it for already-executable plans and mechanical changes.
+owner decisions and acceptance. The default is one MAIN loop that loads skills on
+demand and runs independent tool calls in parallel. A worker costs several times the
+tokens of the same work in one loop, every handoff loses detail, and parallel workers
+often finish later than one loop would. Delegate a unit to a native worker only when
+at least one condition holds and outweighs that cost:
 
-When an eligible ready unit stays in MAIN while a useful slot is free, record the
-concrete reason in the current plan: shared mutable state, missing accepted
-dependency, unavailable capability/route, authority gate, usage limit, or a tiny or
-tightly coupled step. A missing measured speedup is not by itself a reason to keep
-eligible work in MAIN.
+- parallel work: the unit is independent, substantial and needs little of MAIN's
+  context, so a fresh, discardable context covers it sooner or more thoroughly;
+- context isolation: the unit would flood MAIN with output it mostly does not need,
+  such as a wide search, a long log or a large read, and can return a compact result;
+- independent verification: a reviewer that should not share the author's reasoning;
+- specialization: the unit needs tools or instructions that conflict with MAIN's.
+
+Name the condition for each delegated unit in the current plan; without one, the
+unit stays in MAIN. Split by context, not by type of work: the worker that changes a
+feature also writes and runs its tests, and planning, implementation and testing of
+one unit are not split across workers. Give each worker a short task packet, not the
+whole conversation, and ask for a concise report. Send narrow, mechanical work to a
+cheaper model under the host's policy. Each worker's model and effort come from that
+policy; the workflow names no model. When several units qualify, dispatch them
+together within verified host capacity and authorized usage limits, before executing
+non-trivial work or entering a blocking wait. Eligibility also requires accepted
+dependencies, authority, a supported route and a free write scope. One visible MAIN
+coordinator is compatible with many native workers. Before a large or risky
+multi-writer fan-out that is not already executable, run the
+[builder-readiness check](idea-to-delivery.md#builder-readiness-check); skip it for
+already-executable plans and mechanical changes.
+
+When an owner or host rule requires more delegation than these conditions give, that
+rule controls; record it in the plan.
 
 A single bounded native delegate needs no Dispatcher queue; MAIN keeps coordination
 and acceptance. Use the [small native-worker packet](communication.md#small-native-worker-packet).
@@ -172,7 +187,7 @@ Sessions/Dispatcher contract. Visible conversations follow the
 them for unavailable native workers.
 
 Target concurrency is the minimum of the effective host/model limit, authorized
-usage limits and useful independent ready units. A configured ceiling is not proof
+usage limits and the units that qualify for delegation. A configured ceiling is not proof
 of available runtime slots. Count running reviewers, existing live workers and any
 permitted descendants too. If capacity is unknown, dispatch ready units
 incrementally within host policy and remaining quota until a capacity refusal;
@@ -253,6 +268,6 @@ selects the next ready work without waiting for a new user prompt. Independent
 milestones may run together up to the target concurrency in
 [coordinated team execution](#coordinated-team-execution). Keep one overarching goal open
 until every required milestone and integrated DoD passes. Do not complete and
-replace the native goal for each milestone. Native goals are optional mirrors;
-Markdown remains the portable record. Host pauses or quotas can suspend execution,
+replace the native goal for each milestone. Native goals mirror the DoD where the host
+offers them; Markdown remains the portable record. Host pauses or quotas can suspend execution,
 so preserve the next action without promising an automatic wakeup.
