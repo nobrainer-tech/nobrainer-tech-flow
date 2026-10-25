@@ -99,6 +99,7 @@ Done clean:
 ```
 
 `Outcome` is the portable goal; `Proof` plus `Done clean` are the definition of done.
+Before substantial work, show the owner what done means and set it as the host-native goal where supported.
 For substantial work, derive the next short-term goal from the supplied
 long-term direction using [project start](references/project-start.md).
 Update scope before expanding; require matching files, passing proof and no surprises.
@@ -106,11 +107,10 @@ Update scope before expanding; require matching files, passing proof and no surp
 For public contract, routing or workflow changes, update existing affected diagrams;
 fresh SVG + README Mermaid readback applies when the project maintains those formats.
 Do not create diagrams merely to satisfy a workflow gate.
-When the owner requests goal/DoD, show every field above and state the detailed-ledger decision.
+On request, show every field above and the detailed-ledger decision.
 For work that passes the detailed-ledger gate, persist the goal in an existing
 Markdown tracker or task-local Markdown `GOAL_FILE`; it is canonical across clears,
-compactions and sessions. A host-native goal is optional: use it only when available
-and authorized under that tool's rules. Require goal readback only from stores actually
+compactions and sessions. Require goal readback only from stores actually
 used; the file alone is sufficient and supersedes stale transcript text.
 Default to at most 160 words: outcome, scope, Progress, proof and next action.
 Do not add a repetitive skill/mode preamble or invent unseen schemas.
@@ -119,8 +119,8 @@ Mark uninspected paths/methods as pending.
 New dependencies, abstractions, workers, skills and tests need an acceptance reason.
 Shared abstractions require two callers or explicit contract.
 
-Use a short plan ordered by outcomes. One canonical TODO owner may be the host
-plan, repository tracker or current response.
+Use a short plan ordered by outcomes. Keep its TODO visible: prefer the host's
+plan or todo tool, else the Progress checklist.
 
 ## Show human progress
 

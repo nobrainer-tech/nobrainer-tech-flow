@@ -2,6 +2,11 @@
 
 ## v2.7.0 - 2026-10-25
 
+From task to done, visibly: before substantial work the agent shows what done means and
+sets it as the host's native goal where the host offers one, so the owner can see whether
+the goal is running, paused or stopped. The TODO stays visible in the host's plan or todo
+tool when it has one, otherwise as the Progress checklist.
+
 Flow now delegates only where it pays. One MAIN loop loads skills on demand and does the
 work; a unit goes to a native worker only for parallel work, context isolation, independent
 verification or specialization, and the plan names which condition applies. Work is split
@@ -21,7 +26,10 @@ compaction and at closeout, and none may be silently dropped. The default goal f
 at once, before continuing other work, and keeps instruction files from carrying the old
 rule: it edits a contradicting line in `AGENTS.md`, `CLAUDE.md` or a rules file when the
 project's learning policy is `AUTO_SCOPED`, prepares the exact diff under `ASK`, and names
-the stale line under `OFF`.
+the stale line under `OFF`. The goal file also keeps one `CURRENT_MILESTONE`, a short-term
+goal derived from the outcome and the open requests: the agent works toward it without
+waiting, sets the next one when it is accepted, and re-derives it when the owner changes
+what matters most.
 
 The optional Claude Code guards gain a fourth hook: after compaction, resume or clear it
 tells the agent to re-read up to three active goal files. It prints only their paths and

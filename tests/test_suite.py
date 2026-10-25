@@ -471,6 +471,10 @@ class SuiteTests(unittest.TestCase):
             "goal readback",
             "show every field above",
             "detailed-ledger decision",
+            "show the owner what done means",
+            "set it as the host-native goal where supported",
+            "keep its todo visible",
+            "prefer the host's plan or todo tool",
             "structure first",
             "selected contracts in full",
             "large documents or data",
@@ -1359,12 +1363,28 @@ class SuiteTests(unittest.TestCase):
         ):
             with self.subTest(safeguard=safeguard):
                 self.assertIn(safeguard, flat_hooks)
+        state = " ".join(
+            (SKILLS / "nobrainer-tech-flow" / "references" / "long-run-state.md")
+            .read_text(encoding="utf-8")
+            .split()
+        )
+        for clause in (
+            "CURRENT_MILESTONE:",
+            "derived from `OUTCOME` and the open request rows",
+            "without waiting for the owner",
+            "set the next milestone from the open rows and continue",
+            "accepting a milestone never closes `OUTCOME`",
+            "re-derive the milestone at once",
+        ):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, state)
         decision = flat_hooks.split("### `OWNER_DECISION_CHANGED`", 1)[1].split("### ", 1)[0]
         for term in (
             "as soon as the change arrives",
             "goal-file row",
             "instruction file",
             "controlled stop",
+            "re-derive the current short-term milestone",
         ):
             with self.subTest(term=term):
                 self.assertIn(term, decision)

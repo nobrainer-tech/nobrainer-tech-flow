@@ -70,6 +70,18 @@ class DelegationContractTests(unittest.TestCase):
                 with self.subTest(surface=relative, phrase=phrase):
                     self.assertNotIn(phrase, text)
 
+    def test_done_and_todo_stay_visible(self) -> None:
+        text = read_contract("delivery.md")
+        for phrase in (
+            "When the host offers a native goal, set the outcome and DoD there",
+            "whether the goal is running, paused or stopped",
+            "mirror the canonical TODO in the host's plan or todo tool",
+            "otherwise show the Progress checklist",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, text)
+        self.assertNotIn("create it only when explicitly requested", text)
+
     def test_single_native_delegate_needs_no_dispatcher_queue(self) -> None:
         text = read_contract("delivery.md")
         self.assertIn("A single bounded native delegate needs no Dispatcher queue", text)

@@ -43,8 +43,9 @@ constraint or decision.
    correctly classified. Under `ASK`, prepare the exact diff; under `OFF`, keep
    it task-local. Replace or annotate stale knowledge instead of appending a
    contradiction.
-6. Rebuild the affected path under a new plan fingerprint. Only then recompute
-   readiness from all gates and resume AUTOPILOT. Ask again only if the new
+6. Rebuild the affected path under a new plan fingerprint and re-derive the
+   current short-term milestone from the changed decision. Only then recompute
+   readiness from all gates and resume AUTOPILOT on that milestone. Ask again only if the new
    decision creates a real owner gate.
 
 ### `AGENT_ERROR_CORRECTED`

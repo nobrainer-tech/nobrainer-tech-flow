@@ -56,6 +56,7 @@ GOAL_ID: <stable identity>
 OUTCOME: <observable result>
 NON_GOALS: <bounded exclusions>
 DOD: <acceptance checks>
+CURRENT_MILESTONE: <short-term goal in progress, its acceptance, the OUTCOME it serves>
 STATUS: ACTIVE | OWNER_DECISION_REQUIRED | COMPLETE | BLOCKED
 CHECKPOINT: <last verified state and evidence pointer>
 NEXT_SAFE_ACTION: <one action or NONE>
@@ -63,9 +64,16 @@ SESSION_POLICY: <policy reference or NONE>
 LAST_HEALTH_READBACK: <event, result, evidence pointer>
 ```
 
-The Markdown goal works without any native goal API. A host-native goal is an
-optional mirror and control handle, used only when available and authorized by
-the host's tool rules; never create it merely because this reference was loaded.
+Keep one `CURRENT_MILESTONE`: a short-term goal derived from `OUTCOME` and the open
+request rows, small enough to finish and verify in the current session. Work toward
+it without waiting for the owner. When it is accepted, record its evidence, set the
+next milestone from the open rows and continue; accepting a milestone never closes
+`OUTCOME`. When the owner changes a decision or a new request changes what matters
+most now, re-derive the milestone at once.
+
+The Markdown goal works without any native goal API. A host-native goal mirrors
+the outcome and DoD where the host offers one and its tool rules allow it; it is a
+visible control handle, never the canonical state.
 After session start, compaction or a verified clear, read `GOAL_FILE` from disk,
 verify `GOAL_ID`, repository, checkout, HEAD/dirty state, status and evidence,
 then reconcile any native goal actually used and continue from `NEXT_SAFE_ACTION`. A
