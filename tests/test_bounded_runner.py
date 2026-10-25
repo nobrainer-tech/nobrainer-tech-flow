@@ -61,6 +61,17 @@ class BoundedRunnerTests(unittest.TestCase):
     def read_receipt(self, path: Path) -> dict[str, object]:
         return json.loads(path.read_text(encoding="utf-8"))
 
+    def wait_for_published_pid(self, path: Path, timeout: float = 5.0) -> int:
+        # The child creates the file before writing it, so existence alone can
+        # observe an empty file. Wait until the content parses as an integer.
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            try:
+                return int(path.read_text(encoding="utf-8"))
+            except (FileNotFoundError, ValueError):
+                time.sleep(0.02)
+        self.fail("child pid was not published")
+
     def assert_process_gone(self, process_id: int) -> None:
         deadline = time.monotonic() + 2
         while time.monotonic() < deadline:
@@ -327,11 +338,7 @@ class BoundedRunnerTests(unittest.TestCase):
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
             )
-            deadline = time.monotonic() + 2
-            while not child_pid_path.exists() and time.monotonic() < deadline:
-                time.sleep(0.02)
-            self.assertTrue(child_pid_path.exists(), "child pid was not published")
-            child_pid = int(child_pid_path.read_text(encoding="utf-8"))
+            child_pid = self.wait_for_published_pid(child_pid_path)
             runner.send_signal(signal.SIGINT)
             runner.communicate(timeout=3)
             self.assertNotEqual(0, runner.returncode)
