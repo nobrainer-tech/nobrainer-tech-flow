@@ -1,20 +1,24 @@
 <p align="center">
   <a href="https://nobrainer.tech">
-    <img src="assets/nobrainer-tech-logo.svg" width="96" alt="NoBrainer Tech logo">
+    <img src="assets/nobrainer-tech-logo.svg" width="80" alt="NoBrainer Tech logo">
   </a>
 </p>
 
 <h1 align="center">nobrainer-tech-flow</h1>
 
 <p align="center">
-  <em>For developers whose coding agent just said "Done."</em>
+  <strong>From task to done. See what was delivered.</strong><br>
+  For developers whose coding agent just said "Done."
 </p>
 
 <p align="center">
-  <strong>From task to done. See what was delivered.</strong><br>
-  One workflow with 18 modules that lets your coding agent do the work,<br>
-  check it and hand over the evidence. Every release has
-  <a href="https://nobrainer.tech/flow/changelog/?nb_from=github-readme">public verification notes</a>.
+  <a href="https://youtu.be/OflTMvq_Pww"><img src="assets/prove-it-video-poster.jpg" width="720" alt="Play PROVE IT, a song for every AI agent that says done: Flo and MC P, Episode 1, on YouTube"></a><br>
+  <sub>▶ <a href="https://youtu.be/OflTMvq_Pww"><strong>PROVE IT</strong></a>: a song for every AI agent that says done. Flo &amp; MC P, Episode 1 (2 min, YouTube).</sub>
+</p>
+
+<p align="center">
+  One workflow with 18 modules that lets your coding agent do the work, check it
+  and hand over the evidence: what was delivered, what was checked and what was not.
 </p>
 
 <p align="center">
@@ -24,162 +28,150 @@
 </p>
 
 <p align="center">
-  <a href="#install-safely"><strong>Add to your coding agent</strong></a>
-  ·
-  <a href="https://nobrainer.tech/flow/?nb_from=github-readme">Launch page</a>
-  ·
-  <a href="https://nobrainer.tech/flow/compare/?nb_from=github-readme">Compare 50+ tools</a>
-  ·
-  <a href="https://nobrainer.tech/flow/deep-dive/?nb_from=github-readme">Deep dive</a>
-  ·
+  <a href="#install-safely"><strong>Install</strong></a> ·
+  <a href="https://nobrainer.tech/flow/?nb_from=github-readme">Launch page</a> ·
+  <a href="https://nobrainer.tech/flow/compare/?nb_from=github-readme">Compare 50+ tools</a> ·
+  <a href="https://nobrainer.tech/flow/changelog/?nb_from=github-readme">Public verification notes</a> ·
   <a href="https://www.producthunt.com/products/nobrainer-tech-flow">Product Hunt</a>
 </p>
 
-<table>
-  <tr>
-    <td width="50%" align="center" valign="top">
-      <a href="https://nobrainer.tech/flow/assets/flow-reel-universal-1x1.mp4"><picture><source media="(prefers-reduced-motion: reduce)" srcset="https://nobrainer.tech/flow/assets/flow-reel-universal-poster-1x1.png"><img src="https://nobrainer.tech/flow/assets/flow-reel-universal-preview-1x1.webp" alt="50+ tools you could piece together turn into one workflow: nobrainer-tech-flow, from task to done."></picture></a><br>
-      <strong>Why?</strong> 50+ tools you could piece together, or one workflow.<br>
-      <a href="https://nobrainer.tech/flow/assets/flow-reel-universal-1x1.mp4">Watch with sound (20 s)</a>
-    </td>
-    <td width="50%" align="center" valign="top">
-      <a href="https://nobrainer.tech/flow/assets/flow-done-v2-1x1.mp4"><picture><source media="(prefers-reduced-motion: reduce)" srcset="https://nobrainer.tech/flow/assets/flow-done-v2-poster-1x1.png"><img src="https://nobrainer.tech/flow/assets/flow-done-v2-preview-1x1.webp" alt="Your agent says Done. nobrainer-tech-flow shows what was delivered, the proof, what was not checked and the decision left to you."></picture></a><br>
-      <strong>Done?</strong> What was delivered, the proof, what was not checked.<br>
-      <a href="https://nobrainer.tech/flow/assets/flow-done-v2-1x1.mp4">Watch with sound (30 s)</a>
-    </td>
-  </tr>
-</table>
+## Where it runs
 
-- **A handoff you can check.** Each finished task lists what was delivered,
-  which checks ran and what was not checked. An optional evidence receipt marks
-  a check `STALE` once its input files change, and a behavior-preserving rewrite
-  reports `PROVEN`, `PARTLY_PROVEN` or `NOT_PROVEN` for whether the tests would
-  catch a change.
-- **A pause before risky commands.** With the Git install, optional Claude Code
-  guards ask before `git push --force`, `git reset --hard`, a recursive delete
-  outside temporary folders, a production deploy or a publish. A turn that
-  changed files and ends without a proof line or an explicit `UNVERIFIED` is
-  sent back once. After compaction, resume or clear, the agent is pointed back
-  to the active goal file. Opt-in, with preview and undo.
-- **One main loop, workers only where they pay.** The main session does the work
-  with skills and hands a part to a native worker only for parallel work, context
-  isolation, independent review or specialization, then checks each result.
-
-Free, MIT. The Git install previews every change and has undo. Your coding client's usage costs still apply.
-
-<p align="center">
-  Ships adapters for
-  <a href="https://github.com/openai/codex">Codex</a>,
-  <a href="https://code.claude.com/docs">Claude Code</a>,
-  <a href="https://cursor.com/">Cursor</a>,
-  <a href="https://github.com/features/copilot/cli">GitHub Copilot CLI</a>,
-  <a href="https://opencode.ai/">OpenCode</a>,
-  <a href="https://github.com/google-gemini/gemini-cli">Gemini CLI</a>,
-  <a href="https://www.kimi.com/code">Kimi Code</a> and
-  <a href="https://pi.dev/">Pi</a>.
-  See the <a href="docs/COMPATIBILITY.md">per-client compatibility evidence</a> for what has been loaded and tested.
+<p align="center"><sub><strong>Coding agents</strong>: all 18 modules</sub><br>
+  <a href="docs/INSTALL.md#claude-code"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-3B65F0?logo=claude&style=for-the-badge&logoColor=white"></a>
+  <a href="docs/INSTALL.md#codex"><img alt="Codex" src="https://img.shields.io/badge/Codex-3B65F0?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTIuNiA0LjYgOS45IDEybC03LjMgNy40TC45IDE3LjcgNi42IDEyIC45IDYuM3pNMTEgMTcuMmgxMnYyLjRIMTF6Ii8%2BPC9zdmc%2B&style=for-the-badge&logoColor=white"></a>
+  <a href="docs/INSTALL.md#cursor"><img alt="Cursor" src="https://img.shields.io/badge/Cursor-3B65F0?logo=cursor&style=for-the-badge&logoColor=white"></a>
+  <a href="docs/INSTALL.md#github-copilot-cli-and-shared-agent-skills"><img alt="GitHub Copilot CLI" src="https://img.shields.io/badge/GitHub_Copilot_CLI-3B65F0?logo=githubcopilot&style=for-the-badge&logoColor=white"></a>
+  <br>
+  <a href="docs/INSTALL.md#gemini-cli"><img alt="Gemini CLI" src="https://img.shields.io/badge/Gemini_CLI-3B65F0?logo=googlegemini&style=for-the-badge&logoColor=white"></a>
+  <a href="docs/INSTALL.md#opencode"><img alt="OpenCode" src="https://img.shields.io/badge/OpenCode-3B65F0?logo=opencode&style=for-the-badge&logoColor=white"></a>
+  <a href="docs/INSTALL.md#kimi-code"><img alt="Kimi Code" src="https://img.shields.io/badge/Kimi_Code-3B65F0?logo=kimi&style=for-the-badge&logoColor=white"></a>
+  <a href="docs/INSTALL.md#pi"><img alt="Pi" src="https://img.shields.io/badge/Pi-3B65F0?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTIuNiA0LjYgOS45IDEybC03LjMgNy40TC45IDE3LjcgNi42IDEyIC45IDYuM3pNMTEgMTcuMmgxMnYyLjRIMTF6Ii8%2BPC9zdmc%2B&style=for-the-badge&logoColor=white"></a>
+</p>
+<p align="center"><sub><strong>Packages</strong></sub><br>
+  <a href="https://www.npmjs.com/package/nobrainer-tech-flow"><img alt="npm: npx nobrainer-tech-flow" src="https://img.shields.io/badge/npx_nobrainer--tech--flow-F04A14?logo=npm&style=for-the-badge&logoColor=white"></a>
+  <a href="docs/CHAT_PLUGINS.md"><img alt="Claude and ChatGPT plugin ZIP" src="https://img.shields.io/badge/Claude_%26_ChatGPT_plugin-F04A14?logo=claude&style=for-the-badge&logoColor=white"></a>
+  <a href="#install-safely"><img alt="Git install with preview and undo" src="https://img.shields.io/badge/Git_install-F04A14?logo=git&style=for-the-badge&logoColor=white"></a>
+</p>
+<p align="center"><sub><strong>No install</strong>: free remote MCP server, any MCP client</sub><br>
+  <a href="mcp/README.md#install"><img alt="MCP server mcp.nobrainer.tech" src="https://img.shields.io/badge/MCP-mcp.nobrainer.tech%2Fmcp-151515?logo=modelcontextprotocol&style=for-the-badge&logoColor=white&labelColor=3B65F0"></a>
 </p>
 
-Start with a task or just an idea. nobrainer-tech-flow clarifies what matters, does the work, and checks the result.
+The MCP server is verified in Claude Code, Codex CLI and OpenCode. Claude.ai, ChatGPT,
+Cursor, VS Code / Copilot, Gemini CLI, Cline, Windsurf and Zed have setup steps in the
+[MCP server README](mcp/README.md#install) and are not verified yet. What has been loaded
+and tested in each coding agent is in the [compatibility evidence](docs/COMPATIBILITY.md).
 
-In **2.3.0**, non-trivial work delegates every useful independent ready unit to
-native workers within verified capacity and authorized usage. MAIN coordinates,
-advances the critical path, integrates and checks the results. Each audited
-completion can release the next ready unit while other workers continue.
-See the [delegation contract](skills/nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
+## What it does
 
-In **2.2.0**, simple answers stay text. Small diagrams explain relationships;
-interactive HTML is used when controls help you explore a result. The closeout
-states what was delivered, the inspected proof and any unfinished requirement.
-There is no new module, renderer or service. See the
-[communication policy](skills/nobrainer-tech-flow/references/communication.md)
-and [verification record](docs/releases/v2.2.0.md).
+- **A handoff you can check.** Each finished task lists what was delivered, which checks
+  ran and what was not checked. An optional evidence receipt marks a check `STALE` once
+  its input files change.
+- **Small tasks stay small.** A quick answer stays a quick answer; larger work gets one
+  focused question round, a short TODO, execution and verification.
+- **One main loop, workers only where they pay.** A part goes to a native worker only for
+  parallel work, context isolation, independent review or specialization.
+- **A pause before risky commands.** Optional Claude Code guards ask before
+  `git push --force`, `git reset --hard`, a production deploy or a publish.
+- **Ideas and plans to delivery.** [SDD](skills/nobrainer-tech-flow/references/idea-to-delivery.md)
+  turns an idea into checkable acceptance criteria;
+  [autopilot](skills/nobrainer-tech-flow/references/autopilot.md) carries an approved plan
+  through to the whole goal.
 
-Agents use plain technical English for operational exchanges; you receive
-natural replies in your requested language. Explicit language and format
-requests take precedence, with commands, conditions and evidence kept intact.
+Free, MIT. The Git install previews every change and has undo. Your coding client's usage
+costs still apply.
 
-Writing defaults to [plain technical English](skills/nobrainer-writing/references/plain-technical-english.md) for English technical artifacts:
-clear steps and consistent terms while keeping exact commands, conditions and uncertainty.
-The mode is informed by ASD-STE100; it does not claim full standard compliance.
+## Install safely
 
-## Install and use the plugin
+Pick one channel. The first four install the same 18 modules.
 
-Pick the channel that fits your client. The first five install the same 18 modules;
-the MCP server needs no install:
+**Claude Code** (plugin):
 
-- **Claude Code plugin:** `claude plugin marketplace add nobrainer-tech/nobrainer-tech-flow`,
-  then `claude plugin install nobrainer-tech-flow@nobrainer-tech`.
-- **Codex plugin:** `codex plugin marketplace add nobrainer-tech/nobrainer-tech-flow`,
-  then `codex plugin add nobrainer-tech-flow@nobrainer-tech`.
-- **npm:** [`npx nobrainer-tech-flow --client codex`](https://www.npmjs.com/package/nobrainer-tech-flow)
-  previews the setup for Codex, Claude Code (`claude`), OpenCode or GitHub Copilot;
-  add `--apply` to install.
-- **Git, for any coding agent:** a setup prompt or `scripts/install.sh`, with a
-  preview of every change and undo.
-- **Chat apps:** the [portable plugin ZIP](docs/CHAT_PLUGINS.md) for supported
-  ChatGPT/Codex and Claude surfaces.
-- **MCP server, no install:** add the free remote server `https://mcp.nobrainer.tech/mcp`
-  (no sign-in, stateless) in claude.ai, ChatGPT or any MCP client. Its six read-only
-  tools give the agent a task contract, an evidence check, a done gate and a model
-  advisor; it does not install the 18 modules. Per-client steps and what is verified:
-  [MCP server README](mcp/README.md#install).
+```sh
+claude plugin marketplace add nobrainer-tech/nobrainer-tech-flow
+claude plugin install nobrainer-tech-flow@nobrainer-tech
+```
 
-Details for each are under [Install safely](#install-safely). Listing in the
-public Claude and OpenAI plugin directories is a separate review step.
+Then start with `/nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer-tech-flow".
+
+**Codex** (plugin):
+
+```sh
+codex plugin marketplace add nobrainer-tech/nobrainer-tech-flow
+codex plugin add nobrainer-tech-flow@nobrainer-tech
+```
+
+Then start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer-tech-flow".
+
+**npm** (Node 18+ and Python 3.11+); `--client` is `codex`, `claude`, `opencode` or `copilot`:
+
+```sh
+npx nobrainer-tech-flow@2.7.0 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.7.0 --client codex --apply    # install
+npx nobrainer-tech-flow@2.7.0 --client codex --undo --apply
+```
+
+**Any coding agent** (Git install with preview and undo; macOS, Linux and Windows, no
+Python needed). Paste this prompt into your agent; the same prompt installs and updates:
+
+```text
+Install nobrainer-tech-flow from https://github.com/nobrainer-tech/nobrainer-tech-flow
+for the coding agent you are, or update it if it is already installed.
+
+1. Keep a copy in ~/.nobrainer-tech-flow: clone the repository there, or run
+   git pull there if it already exists. Do not delete that folder later; the
+   skills link to it.
+2. Read the install section of its README and follow the method it gives for
+   your client and operating system (docs/INSTALL.md has the details).
+3. Preview first and show me what will change. Apply only after I agree, and
+   do not edit my files beyond what that method does.
+4. Tell me the undo command, and whether I need to restart you.
+```
+
+Or run it yourself (on Windows, in Git Bash):
+
+```sh
+git clone https://github.com/nobrainer-tech/nobrainer-tech-flow ~/.nobrainer-tech-flow
+sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude           # preview: changes nothing
+sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude --apply   # link the skills, add the block
+```
+
+`--client` is `claude`, `codex`, `opencode` or `copilot`; undo with `--undo --apply`.
+Cursor, Gemini CLI, Pi and Kimi Code use a plugin or extension:
+[client channels](docs/INSTALL.md#client-channels). The installer adds one instruction
+block that lets Flow update itself to verified stable releases once a day;
+`install_personalization.py --no-auto-update` makes that a notification only. To pin a
+reviewed commit, see [Safe default](docs/INSTALL.md#safe-default).
+
+**MCP server, no install**: add `https://mcp.nobrainer.tech/mcp` (no sign-in, stateless).
+In Claude Code:
+
+```sh
+claude mcp add --transport http nobrainer-tech-flow https://mcp.nobrainer.tech/mcp
+```
+
+Its six read-only tools give the agent a task contract, an evidence check, a done gate and
+a model advisor; it does not install the 18 modules. Other clients:
+[MCP server README](mcp/README.md#install).
+
+**First task.** In a fresh session, give it one small task with a checkable result:
+
+> Use nobrainer-tech-flow. Fix one bug in this project. Reproduce it first, make the
+> smallest correction and run the relevant check. Tell me what changed and
+> what remains unverified.
+
+More first tasks: [docs/TRY_IT.md](docs/TRY_IT.md).
 
 ## How it works
 
 ![nobrainer-tech-flow: direct work for clear small tasks; focused clarification, bounded execution and verification when needed](assets/nobrainer-workflow.svg)
 
-Small, clear tasks take the quick path. Larger work is scoped, carried through and verified, and the handoff says what was delivered, what was checked and what is left for you to decide.
-
-For an idea, [SDD](skills/nobrainer-tech-flow/references/idea-to-delivery.md)
-turns the agreed scope into a spec and checkable acceptance criteria. Ask for
-end-to-end delivery, and those criteria stay attached to execution and evidence.
-Routine choices need no extra prompt; material unknowns stay visible.
-[Try idea to delivery](docs/TRY_IT.md#from-an-idea-to-a-working-result).
-
-For a supplied or generated plan, [autopilot](skills/nobrainer-tech-flow/references/autopilot.md)
-works through ready tasks, checks each result, corrects confirmed defects and
-continues to the whole goal. Blocked work stays visible while independent tasks
-advance. [Try a small approved plan](docs/TRY_IT.md#carry-an-approved-plan-through-autopilot).
+Small, clear tasks take the quick path. Larger work is scoped, carried through and
+verified, with bounded corrective attempts, and the handoff says what is left for you to
+decide. The full guide is in [How it works](docs/HOW_IT_WORKS.md).
 
 <details>
-<summary><strong>The workflow in detail</strong></summary>
-
-New AI skills, workflows and add-ons keep arriving. nobrainer-tech-flow curates
-the useful parts into one maintained path from task to a checked finish.
-
-Say **“Use nobrainer-tech-flow”** (or invoke the technical entrypoint by the exact name your client lists for it) to fix code, prepare
-an everyday document, or investigate a problem. Clear tasks go straight to execution;
-meaningful ambiguity gets one focused question round. Done means the agreed
-criteria are met and the result is checked. A real blocker is reported with the
-next unblock action.
-
-A quick answer stays a quick answer. The model-neutral workflow uses one plan,
-bounded corrective attempts and a Markdown checkpoint for longer work. Native
-goals, telemetry and client-specific tools are optional. Available native workers
-take a unit only when it pays; unavailable workers leave the work in MAIN.
-
-**One model is enough.** Optional Jev (remote) and Laya (local) profiles add
-typed suggestions for bounded classification, ranking and evaluation. Setup
-remembers your choice; the default makes no provider calls. Missing access or
-failed requests return to the core workflow. See [setup and usage](skills/nobrainer-tech-flow/references/optional-decisions.md)
-for configuration, data approval and tested platform limits.
-
-Team checks whether a task has the capabilities it needs. Research records
-which sources were actually checked; Build names any known limit in an
-accepted simplification. The current task stays central while specialist
-tools remain optional.
-
-New source links, public package/plugin IDs and checkout paths use
-`nobrainer-tech-flow`. Existing installations with the previous
-`nobrainer-tech-skills` ID need the reviewed migration path; an installed
-legacy package does not automatically become the new package. See the
-[migration guide](docs/MIGRATION_TO_FLOW.md) and [naming map](docs/NAMING.md).
-
-### GitHub flow chart
+<summary><strong>Workflow chart</strong></summary>
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#161B23', 'primaryTextColor': '#F3EEE6', 'primaryBorderColor': '#7F9BFF', 'lineColor': '#D94724', 'secondaryColor': '#0F1319', 'tertiaryColor': '#0F1319', 'fontFamily': 'Inter, system-ui, sans-serif'}}}%%
@@ -222,483 +214,61 @@ flowchart TD
 
 </details>
 
-## Install safely
+**Modules:** [`nobrainer-tech-flow`](skills/nobrainer-tech-flow/) (entrypoint) ·
+[`nobrainer-auto-fine-tune`](skills/nobrainer-auto-fine-tune/) ·
+[`nobrainer-context`](skills/nobrainer-context/) ·
+[`nobrainer-skill-doctor`](skills/nobrainer-skill-doctor/) ·
+[`nobrainer-team`](skills/nobrainer-team/) ·
+[`nobrainer-dispatcher`](skills/nobrainer-dispatcher/) ·
+[`nobrainer-research`](skills/nobrainer-research/) ·
+[`nobrainer-writing`](skills/nobrainer-writing/) ·
+[`nobrainer-build`](skills/nobrainer-build/) ·
+[`nobrainer-security`](skills/nobrainer-security/) ·
+[`nobrainer-sessions`](skills/nobrainer-sessions/) ·
+[`nobrainer-spec-driven-development`](skills/nobrainer-spec-driven-development/) ·
+[`nobrainer-wiki`](skills/nobrainer-wiki/) ·
+[`nobrainer-browser`](skills/nobrainer-browser/) ·
+[`nobrainer-autoimprove`](skills/nobrainer-autoimprove/) ·
+[`nobrainer-decide`](skills/nobrainer-decide/) ·
+[`nobrainer-rca`](skills/nobrainer-rca/) ·
+[`nobrainer-review`](skills/nobrainer-review/).
+What each one owns and its trigger aliases:
+[skill table](docs/HOW_IT_WORKS.md#eighteen-skills-distinct-ownership).
 
-**Claude Code** (plugin):
+## What's new in 2.7.0
 
-```sh
-claude plugin marketplace add nobrainer-tech/nobrainer-tech-flow
-claude plugin install nobrainer-tech-flow@nobrainer-tech
-```
+Before substantial work the agent shows what done means and sets it as the host's native
+goal where one exists. Flow delegates only where it pays, records each owner request in the
+goal file as it arrives so compaction cannot drop it, and a security review needs a second
+independent pass before it can report a clean result. Full notes:
+[RELEASE-NOTES.md](RELEASE-NOTES.md) and the [2.7.0 verification record](docs/releases/v2.7.0.md).
 
-Start with `/nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer-tech-flow".
-The plugin also adds a small `SessionStart` hook that loads a short bootstrap.
+## Documentation
 
-**Codex** (plugin):
+| | |
+|---|---|
+| [Installation](docs/INSTALL.md) | Every channel, reviewed-commit install, guards, rollback |
+| [Compatibility](docs/COMPATIBILITY.md) | What has been loaded and tested in each client |
+| [Testing](docs/TESTING.md) | Acceptance evidence and how to run the checks |
+| [How it works](docs/HOW_IT_WORKS.md) | Workflow, skills, learning loop, quality rules |
+| [Release notes](RELEASE-NOTES.md) and [verification records](docs/releases/) | What changed and how each release was checked |
+| [MCP server](mcp/README.md) | Remote server tools and per-client setup |
+| [Chat plugins](docs/CHAT_PLUGINS.md) | Plugin ZIP for Claude and ChatGPT |
+| [Migration](docs/MIGRATION_TO_FLOW.md) and [naming](docs/NAMING.md) | Moving from the previous `nobrainer-tech-skills` ID |
 
-```sh
-codex plugin marketplace add nobrainer-tech/nobrainer-tech-flow
-codex plugin add nobrainer-tech-flow@nobrainer-tech
-```
+## Community
 
-Start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer-tech-flow".
-
-A marketplace added from GitHub follows the default branch. To pin a reviewed
-commit, see [client channels](docs/INSTALL.md#client-channels). The
-[compatibility evidence](docs/COMPATIBILITY.md) lists the tested client versions
-and limits; installing the package does not prove automatic routing.
-
-**Any coding agent** (Git install with preview and undo; macOS, Linux and
-Windows, no Python needed): paste this setup prompt into your coding agent. The
-same prompt installs and updates:
-
-```text
-Install nobrainer-tech-flow from https://github.com/nobrainer-tech/nobrainer-tech-flow
-for the coding agent you are, or update it if it is already installed.
-
-1. Keep a copy in ~/.nobrainer-tech-flow: clone the repository there, or run
-   git pull there if it already exists. Do not delete that folder later; the
-   skills link to it.
-2. Read the install section of its README and follow the method it gives for
-   your client and operating system (docs/INSTALL.md has the details).
-3. Preview first and show me what will change. Apply only after I agree, and
-   do not edit my files beyond what that method does.
-4. Tell me the undo command, and whether I need to restart you.
-```
-
-Or run it yourself in a terminal (on Windows, in Git Bash):
-
-```sh
-git clone https://github.com/nobrainer-tech/nobrainer-tech-flow ~/.nobrainer-tech-flow
-sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude           # preview: changes nothing
-sh ~/.nobrainer-tech-flow/scripts/install.sh --client claude --apply   # link the skills, add the block
-```
-
-`--client` is `claude`, `codex`, `opencode` or `copilot`. Cursor, Gemini CLI, Pi and Kimi Code
-use a plugin or extension instead: see their sections in
-[docs/INSTALL.md](docs/INSTALL.md#client-channels). The script links all eighteen skills and adds
-one instruction block, shows the exact text first, refuses anything that is not its own and
-undoes itself with `--undo --apply`. The block lets Flow update itself to verified stable
-releases once a day; `install_personalization.py --no-auto-update` turns that into a
-notification only. No other authorization is granted. To update, run `git pull` in
-`~/.nobrainer-tech-flow` and the same two commands again, or paste the prompt again. With Python,
-`python3 scripts/install.py` takes the same flags.
-
-**npm** (Node 18+ and Python 3.11+; [package page](https://www.npmjs.com/package/nobrainer-tech-flow)):
-
-```sh
-npx nobrainer-tech-flow@2.7.0 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.7.0 --client codex --apply    # install
-npx nobrainer-tech-flow@2.7.0 --client codex --undo --apply
-```
-
-`--client` is `codex`, `claude`, `opencode` or `copilot`. The files are copied to a
-stable folder in your home directory, so nothing points into npx's cache; see the
-[npm command](docs/INSTALL.md#npm-command).
-
-**Next step:** in a fresh session, give it one small task with a checkable result:
-
-> Use nobrainer-tech-flow. Fix one bug in this project. Reproduce it first, make the
-> smallest correction and run the relevant check. Tell me what changed and
-> what remains unverified.
-
-More first tasks, with acceptance criteria: [docs/TRY_IT.md](docs/TRY_IT.md). These are trials, not promised benchmark scores.
-
-<details>
-<summary><strong>Install manually from a reviewed commit</strong></summary>
-
-Clone a reviewed ref, validate it, preview what would change, then apply:
-
-```bash
-(
-  set -u
-  : "${NB_REVIEWED_COMMIT:?set a reviewed full 40-character commit SHA}"
-  test "${#NB_REVIEWED_COMMIT}" -eq 40 || exit 2
-  case "$NB_REVIEWED_COMMIT" in *[!0-9a-f]*) exit 2 ;; esac
-  git clone --no-checkout https://github.com/nobrainer-tech/nobrainer-tech-flow.git || exit 3
-  cd nobrainer-tech-flow || exit 3
-  git checkout --detach "$NB_REVIEWED_COMMIT" || exit 3
-  test "$(git rev-parse HEAD)" = "$NB_REVIEWED_COMMIT" || exit 3
-  python3 scripts/validate_skills.py --suite || exit 4
-  python3 scripts/install.py --client codex || exit 4          # preview: changes nothing
-  python3 scripts/install.py --client codex --apply || exit 4  # link the skills, add the block
-)
-```
-
-Set `NB_REVIEWED_COMMIT` to the exact full commit SHA you reviewed. Tags and
-branches are rejected because they can move; every failed gate stops before the
-next command.
-
-`install.py`, like `scripts/install.sh` without Python, links all eighteen skills
-and adds one managed instruction block for `claude`, `codex`, `opencode` or
-`copilot`. The preview shows the exact text it would write, a target that is not
-its own link is refused, the only standing authorization is the default daily Flow
-update (opt out with `install_personalization.py --no-auto-update`), and
-`python3 scripts/install.py --client codex --undo --apply` reverses it. It needs
-symbolic links (Windows: Developer Mode). For a subset, a copy install, the shared
-`agents` folder or another client, use the individual scripts in
-[Installation](docs/INSTALL.md). Restart the client and perform clean-session
-discovery before claiming runtime installation.
-
-</details>
-
-## After setup
-
-- [Run this as a ready workflow](https://nobrainer.tech/paths/ai-engineering/?nb_from=github-readme).
-  Deliver software from requirement to CI with a ready AI engineering workflow
-  built on nobrainer-tech-flow.
+- [Run this as a ready workflow](https://nobrainer.tech/paths/ai-engineering/?nb_from=github-readme):
+  from requirement to CI with a ready AI engineering workflow built on nobrainer-tech-flow.
 - [New to AI? Start the free course](https://nobrainer.tech/edu/ai-basics/?nb_from=github-readme).
-
-If this workflow helps with a real task, star the repository and follow
-[@nobrainer_tech](https://x.com/nobrainer_tech) for build notes and practical examples.
-
-<details>
-<summary><strong>Full documentation in this README</strong>: skills, compatibility, attribution, contributing</summary>
-
-<details>
-<summary><strong>Astra Ready, portable by design</strong></summary>
-
-Since version **1.6**, ordinary work has no client-specific prerequisites.
-OpenAI [introduced GPT-6 Astra](https://openai.com/index/gpt-6-astra/) on
-September 3, 2026. The suite keeps the host-selected model and uses the same
-plain-text instructions with other models; it does not pin a provider or choose
-an expensive tier automatically.
-
-[Compatibility](docs/COMPATIBILITY.md) separates available models, tested
-behavior, client loading and source distribution. Local smoke evidence covers
-only its recorded source and scenarios. It is not a universal compatibility,
-quality or token-savings benchmark.
-
-User authority, transparent pauses and sufficient verification apply across
-models. Historical runtime proof stays tied to the tested release bytes.
-
-```text
-Small task       -> direct result + relevant check
-Larger task      -> clarify if needed + short TODO + execute + verify
-Resumable task   -> same workflow + one Markdown goal/checkpoint
-Independent work -> dispatch all useful ready native units; MAIN integrates and audits
-```
-
-Load specialists only when needed. Reuse the project's instructions, tests,
-specs and wiki. Choose SDD for durable contracts and TDD when a failing test
-would expose the behavior; neither requires installing a framework.
-
-</details>
-
-<details>
-<summary><strong>Start with one skill</strong></summary>
-
-Use nobrainer-tech-flow through the canonical skill
-[`nobrainer-tech-flow`](skills/nobrainer-tech-flow/), for setup or any non-trivial
-outcome. A small reversible edit without a public contract, routing, workflow or
-portfolio change can use its quick path; other changes use the full path and its
-coherence gate.
-In Codex, type the exact name it lists for the module: `$nobrainer-tech-flow:nobrainer-tech-flow` after the installer, a plugin install or the npm package, and `$nobrainer-tech-flow` for a copy made with `install_skills.py --mode copy`. Say
-`Use NBFlow`, `Use NBF` or `Use nobrainer-tech-flow` in natural language;
-older trigger phrases are migration context only and
-depend on a client's implicit description matching.
-
-```text
-DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN
-```
-
-- `BUDDY` is the first and only ordinary clarification stage.
-- `SCOPE` freezes outcome, non-goals, expected files, proof, untouched work,
-  minimum solution, test decision and clean completion before a non-trivial write.
-- One canonical plan owns TODO state; the owner sees only a compact Progress
-  checklist and one next action.
-- A durable ledger adds exact identity, dependencies, checkpoints, retries and
-  rollback only for cross-session, dependency-rich or consequential work, or
-  when the owner keeps adding requests in one long conversation.
-- `AUTOPILOT` continues through routine approved work without repeated check-ins.
-- Work in one MAIN loop with skills. Delegate a unit to a native worker only for parallel
-  work, context isolation, independent review or specialization, under the
-  [delegation contract](skills/nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
-  MAIN coordinates, integrates and verifies. Team supplies
-  capabilities; Dispatcher schedules real queues. Visible sessions require an
-  explicit owner request or authorized MAIN restart.
-- Failed review returns to `nobrainer-build`; changed code invalidates old proof.
-- Merge, deploy, publishing, spending, credentials, destructive operations and
-  production mutation remain owner gates unless exact authority is already
-  recorded.
-
-The two execution axes stay independent:
-
-```text
-CONTROL_MODE: BUDDY -> AUTOPILOT
-SESSION_MODE: MAIN | MULTI_SESSION
-```
-
-For resumable or delegated work, `SESSION_HEALTH_GATE` uses available,
-configured limits. Missing optional telemetry lowers the health claim and still
-allows bounded safe work. An explicitly required hard budget must be enforceable.
-`RUNTIME_RELEASE` concerns actual task-owned workers; a completed result does not
-prove they stopped. `GOAL_FILE` is optional Markdown recovery state. A native goal
-mirrors the DoD where the host offers one; the file alone suffices.
-
-Autopilot works with one visible MAIN coordinator and bounded native workers.
-Ordinary native assignments use the compact packet in the delegation contract,
-exact returned IDs, observable completion and reviewed artifacts. Use persistent
-sessions and a Dispatcher only when a real handoff or dependent queue needs them.
-Native delegation does not authorize a new visible conversation.
-
-</details>
-
-<details>
-<summary><strong>Eighteen skills, distinct ownership</strong></summary>
-
-Aliases are compatibility trigger phrases, not product names or duplicate
-directories. Each skill owns one
-recurring boundary:
-
-| Skill | Alias | Responsibility |
-|---|---|---|
-| [`nobrainer-tech-flow`](skills/nobrainer-tech-flow/) | `NBFlow`, `NBF` | Technical entrypoint for end-to-end setup and delivery: one requirements gate, concise progress, bounded execution, recovery, audit and learning |
-| [`nobrainer-auto-fine-tune`](skills/nobrainer-auto-fine-tune/) | `nb-auto-fine-tune` | Read-only capability audit and route calibration: verified host models, effort, context and useful parallelism while MAIN keeps the owner's model |
-| [`nobrainer-context`](skills/nobrainer-context/) | `nb-context` | One set of project instructions for every coding agent: what Codex, Claude Code, Gemini CLI, Cursor, Copilot and OpenCode load, size limits, duplicates and contradictions, one source of truth with pointers after approval, and readback |
-| [`nobrainer-skill-doctor`](skills/nobrainer-skill-doctor/) | `nb-skill-doctor` | Cross-project audit of skills, project instructions and task prompts: trigger overlap, excessive process, coverage and minimal portfolio repair planning |
-| [`nobrainer-team`](skills/nobrainer-team/) | `nb-team` | Capability selection and bounded native assignments, installed-skill inventory and safe temporary specialist discovery |
-| [`nobrainer-dispatcher`](skills/nobrainer-dispatcher/) | `nb-dispatcher` | Dependency-aware ready-set scheduling, bounded dispatch, backpressure and audited result routing |
-| [`nobrainer-research`](skills/nobrainer-research/) | `nb-research` | Bounded current research from primary sources with facts separated from inference |
-| [`nobrainer-writing`](skills/nobrainer-writing/) | `nb-write`, `nb-brief` | High-signal drafting, compression and short human-sounding comments, issues and stories that preserve meaning, evidence, voice and action |
-| [`nobrainer-build`](skills/nobrainer-build/) | `nb-build` | Smallest verified implementation using calibrated KISS, DRY, SOLID, YAGNI and anti-slop gates |
-| [`nobrainer-security`](skills/nobrainer-security/) | `nb-security` | Threat models, security review, supply-chain audit and high-risk release evidence |
-| [`nobrainer-sessions`](skills/nobrainer-sessions/) | `nb-sessions` | Named visible sessions, exact identity, isolated writers, audited handoff, lease and recovery |
-| [`nobrainer-spec-driven-development`](skills/nobrainer-spec-driven-development/) | `nb-sdd` | Durable specification and acceptance ledger when contracts, risk or resumability justify it |
-| [`nobrainer-wiki`](skills/nobrainer-wiki/) | `nb-wiki` | Targeted retrieval and sourced durable knowledge without hidden memory or live task state |
-| [`nobrainer-browser`](skills/nobrainer-browser/) | `nb-browser` | Playwright-first rendered inspection, bounded CDP profile restart, approved session attach, browser tests and trace evidence |
-| [`nobrainer-autoimprove`](skills/nobrainer-autoimprove/) | `nb-autoimprove` | Measured baseline/variant/eval/holdout improvement with keep-or-revert |
-| [`nobrainer-decide`](skills/nobrainer-decide/) | `just decide` / `just-decide` / `decide` / `nb-decide` / `nobrainer-decide` / `deep decide` / `deep-decide` | Quick, standard or deep decisions; feasibility, reliability, total cost, delivery time and practical growth before commitment |
-| [`nobrainer-rca`](skills/nobrainer-rca/) | `nb-rca` | Read-only causal diagnosis with a continuous evidence chain and explicit uncertainty |
-| [`nobrainer-review`](skills/nobrainer-review/) | `nb-review` | Acceptance trace, adversarial bug hunt and release close gate without speculative findings |
-
-The [curation audit](docs/SKILL_CURATION.md) records why each skill exists and
-what belongs in another skill instead of becoming an unnecessary trigger.
-
-</details>
-
-<details>
-<summary><strong>SDD and GDD</strong></summary>
-
-SDD specifies what must work. GDD (Goal-Driven Development) executes it through
-accepted milestones under one overarching goal. See the [product specification](docs/specs/goal-driven-delivery.spec.md).
-
-For substantial work, `nobrainer-tech-flow` derives the outcome and DoD and keeps
-one task owner without waiting for a separate planning request. Native goal
-creation still follows the host's explicit-request requirement. Autopilot checks
-available authorized UI/API/CLI steps before handing an obstacle to the owner,
-continues independent work, and bounds review to concrete executable slices.
-Explicit `yolo` requests select the same persistence contract, without changing
-permissions or bypassing a denial. See the [delivery contract](skills/nobrainer-tech-flow/references/delivery.md).
-These are agent instructions, not an enforcement daemon or a promise to run
-while the host is paused or out of quota.
-
-</details>
-
-<details>
-<summary><strong>Correct once, improve permanently</strong></summary>
-
-nobrainer-tech-flow contains portable semantic hooks for four events:
-
-- `OWNER_DECISION_CHANGED` updates the canonical decision, marks the old value
-  superseded and invalidates dependent TODO items and evidence;
-- `AGENT_ERROR_CORRECTED` fixes the active result and classifies one minimal
-  prevention candidate: `AUTO_SCOPED` may persist it to one governed canonical
-  project-local store, `ASK` prepares one exact diff, and `OFF` keeps it
-  task-local without a durable diff;
-- `REVIEW_FAILED` creates a bounded Build correction and sends fresh evidence
-  back to Review;
-- `REPEATED_DEFECT` stops blind retries and invokes RCA with the prior failure
-  fingerprint.
-
-Only durable, sourced, authorized and non-secret knowledge is promoted through
-`nobrainer-wiki`. One mutable fact has one canonical owner; the system does not
-append contradictory copies to the plan, instructions and wiki.
-Project setup records `LEARNING_WRITE_POLICY: AUTO_SCOPED | ASK | OFF`, so an
-owner can enable automatic project-local learning without granting global or
-publishing authority.
-
-</details>
-
-<details>
-<summary><strong>Quality without AI slop</strong></summary>
-
-The shared delivery contract operationalizes:
-
-- `KISS`: the simplest complete design wins;
-- `YAGNI`: no speculative extension points or future options;
-- `DRY`: deduplicate owned knowledge and state, not incidental similarity;
-- `SOLID`: cohesive responsibilities and stable boundaries without class or
-  interface ceremony;
-- evidence: no invented APIs, fake runtime claims, placeholder logic, swallowed
-  errors, generic prose, broad unrelated rewrites or mock-only confidence;
-- content quality: purpose, audience, correctness sources, completeness,
-  coherence and target-workflow usefulness are frozen before execution.
-
-If a decision-relevant fact may be current, niche, uncertain, high-stakes or
-source-attributed, nobrainer-tech-flow routes the smallest sufficient check through Research.
-A stable local syntax, import, test or configuration error starts from local
-evidence instead of an automatic wiki/web detour. If required primary evidence
-is unavailable, it says `RESEARCH_BLOCKED` instead of guessing.
-
-</details>
-
-<details>
-<summary><strong>Compatibility is a proof ladder</strong></summary>
-
-All clients consume the same `skills/` tree. Thin adapters cover Claude Code,
-Codex, Cursor, OpenCode, Gemini CLI, Kimi Code and Pi; the portable Agent Plugin
-manifest and project instructions are the fallback for other Agent Skills
-consumers.
-
-Compatibility claims use six distinct levels:
-
-```text
-SOURCE_VALIDATED -> REPOSITORY_CHECKED -> CLIENT_LOADED
-                 -> RUNTIME_VERIFIED_EXPLICIT -> RUNTIME_VERIFIED -> DISTRIBUTED
-```
-
-A valid manifest does not prove clean-session routing. A local test does not
-prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
-and [Testing](docs/TESTING.md) for acceptance evidence.
-
-
-**What's new in 2.7.0:** before substantial work the agent shows what done means and sets
-it as the host's native goal where one exists, and the TODO stays visible. Flow delegates only where it pays: one MAIN loop with skills does
-the work, and a unit goes to a native worker only for parallel work, context isolation,
-independent review or specialization. When the owner keeps adding requests in one long conversation,
-Flow records each one in the goal file as it arrives instead of leaving it only in the
-transcript, where compaction can drop it; a changed decision updates the goal file at once
-and, as the project's learning policy allows, the instruction-file lines that still state
-the old rule. The optional Claude Code guards point the agent back to the active goal file
-after compaction, resume or clear, and `nobrainer-team` fills a capability gap with a
-task-local specialist brief instead of third-party skills. A security review needs a second
-independent pass before it can report a clean result. After fixing a defect that was public
-or reachable before the fix, the agent checks for exploitation during that window or reports
-it as untested. When docs and code disagree on a coding convention, `nobrainer-build`
-follows the code unless an owner rule or a deliberate migration says otherwise, and reports
-each disagreement, with the edit that fixes a stale file when the code wins. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
-
-Current source version: **2.7.0**. Check the
-[latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.7.0](docs/releases/v2.7.0.md), [2.6.0](docs/releases/v2.6.0.md) and
-[2.5.0 verification records](docs/releases/v2.5.0.md) for
-the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
-[v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
-imply client marketplace discovery or improved model reasoning. The earlier
-[v1.6.1 publication readback](docs/releases/v1.6.1-publication-readback.md)
-remains historical evidence.
-
-Version [`v1.5.0`](docs/releases/v1.5.0-publication-readback.md) remains an
-accepted rollback source release. Its historical pre-publication checkpoint is
-[`docs/releases/v1.5.0.md`](docs/releases/v1.5.0.md).
-
-Version [`v1.4.0`](docs/releases/v1.4.0-publication-readback.md) remains the
-previous accepted source release and rollback option. Client-specific runtime
-rows remain evidence-scoped; source publication does not imply marketplace
-discovery.
-
-The [`v1.3.1` release](docs/releases/v1.3.1-publication-readback.md) remains the
-previous accepted source release and a rollback option. It adds the English
-`BRIEF` writing mode, concise issue/story templates and surface-specific bug
-evidence.
-
-The [`v1.3.0` release](docs/releases/v1.3.0-publication-readback.md) remains an
-older accepted source release and rollback option.
-
-Version [`v1.2.1`](docs/releases/v1.2.1.md) remains the rollback source release
-at full commit `0010140d19a7ff847dff776569772ef04d82c314`, with its own exact
-tag, archive and isolated-install evidence. To reproduce the reviewed v1.3.0
-source:
-
-```bash
-git checkout --detach 8ae4a26548ce908fc5f98b22663f52e163541f56
-test "$(git rev-parse HEAD)" = "8ae4a26548ce908fc5f98b22663f52e163541f56"
-python3 scripts/validate_skills.py --suite
-python3 -m unittest discover -s tests -q
-```
-
-`v1.2.0` remains published but failed archive acceptance; its exact boundary is
-[recorded separately](docs/releases/v1.2.0.md). GitHub reports the `v1.2.1`
-release object as non-immutable and tag protection was not independently
-verified, so security-sensitive consumers should pin the full commit SHA. The
-current tag archive was re-read after the metadata-only history rewrite and
-passed 88/88 tests; historical CI binds the same tree, not the current commit
-identity.
-[`v1.1.0`](docs/releases/v1.1.0.md) remains the accepted rollback anchor at full
-commit `711be31d654835a04ef8c70674c3e493aeb2da8a`.
-
-</details>
-
-<details>
-<summary><strong>One source, thin adapters</strong></summary>
-
-```text
-skills/               canonical portable behavior
-adapters/bootstrap.md small session-start route to nobrainer-tech-flow
-hooks/                tested client lifecycle adapters
-scripts/              validation and conflict-safe installation
-tests/                deterministic and behavior-contract gates
-docs/                 compatibility, curation, eval and release evidence
-assets/               brand and workflow diagrams
-```
-
-Client-specific forks of a skill are prohibited. Team fills a capability gap
-with a task-local specialist brief for a native worker; it never searches for,
-installs or runs third-party skills. Installing anything is the owner's own
-separate decision.
-
-</details>
-
-<details>
-<summary><strong>Attribution</strong></summary>
-
-- `nobrainer-autoimprove` is an independent adaptation of Andrej Karpathy's
-  [autoresearch](https://github.com/karpathy/autoresearch) measure-change-keep
-  loop.
-- `nobrainer-wiki` is an independent adaptation of Andrej Karpathy's
-  [LLM wiki concept](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
-- Other external design sources remain cited inside the exact skill where they
-  influenced a behavior contract.
-
-</details>
-
-<details>
-<summary><strong>Contributing and security</strong></summary>
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md) and
-[RELEASE-NOTES.md](RELEASE-NOTES.md). Every change goes through a focused PR,
-pressure scenario, validators, diff review and secret scan. Do not report
-publication, distribution, live routing or user-visible success without
-readback from that layer.
-
-NoBrainer.Tech builds practical agentic workflows for teams that want speed
-without surrendering control. Learn more at [nobrainer.tech](https://nobrainer.tech)
-or browse ready-to-use workflow products on
-[Gumroad](https://nobrainertech.gumroad.com).
-
-</details>
-
-<details>
-<summary><strong>Adaptive session restart</strong></summary>
-
-On explicit task invocation, nobrainer-tech-flow immediately names the conversation
-`<task title> | started DD-MM` using its verified creation date and preserves it
-on resume. It assesses context before work, after compaction and at accepted
-milestones. Adaptive care uses recorded task authority and respects `off` and
-stricter host rules; installing the package alone enables no session mutation.
-
-A pressured session with a materially smaller full startup can rotate even when
-token payback is unknown. Age and compaction count alone do not force rotation.
-nobrainer-tech-flow preserves progress in the task file, verifies successor takeover and archives
-the source only when authorized. The full timestamp, timezone and exact session
-ID stay authoritative. Unsupported clients receive an explicit manual handoff.
-
-This belongs to [Sessions](skills/nobrainer-sessions/references/session-restart.md),
-not a separate skill. The optional stdlib [decision helper](skills/nobrainer-sessions/scripts/restart_gate.py)
-can serve a client hook without requiring one. Automatic startup care has shipped since v1.10.0;
-native transport and all-client savings are not implied. See [session restart](docs/SESSION_RESTART.md).
-
-</details>
-
-</details>
+- If this workflow helps with a real task, star the repository and follow
+  [@nobrainer_tech](https://x.com/nobrainer_tech) for build notes and practical examples.
+
+Contributions: read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+`nobrainer-autoimprove` and `nobrainer-wiki` adapt Andrej Karpathy's
+[autoresearch](https://github.com/karpathy/autoresearch) loop and
+[LLM wiki concept](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
+
+NoBrainer.Tech builds practical agentic workflows for teams that want speed without
+surrendering control. Learn more at [nobrainer.tech](https://nobrainer.tech) or browse
+ready-to-use workflow products on [Gumroad](https://nobrainertech.gumroad.com).

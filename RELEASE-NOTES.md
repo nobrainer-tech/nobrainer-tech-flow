@@ -856,3 +856,56 @@ python3 scripts/install_skills.py --client codex
 Review the dry-run before adding `--apply`. To roll back a local install, remove
 only links created from this checkout or restore the exact previously reviewed
 Git ref recorded by the project; do not delete a shared skills directory.
+
+## Release history and rollback sources
+
+Moved from the README. Each entry links to its verification record.
+
+At source version **2.7.0**, check the
+[latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
+for distribution and the [2.7.0](docs/releases/v2.7.0.md), [2.6.0](docs/releases/v2.6.0.md) and
+[2.5.0 verification records](docs/releases/v2.5.0.md) for
+the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
+[v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
+imply client marketplace discovery or improved model reasoning. The earlier
+[v1.6.1 publication readback](docs/releases/v1.6.1-publication-readback.md)
+remains historical evidence.
+
+Version [`v1.5.0`](docs/releases/v1.5.0-publication-readback.md) remains an
+accepted rollback source release. Its historical pre-publication checkpoint is
+[`docs/releases/v1.5.0.md`](docs/releases/v1.5.0.md).
+
+Version [`v1.4.0`](docs/releases/v1.4.0-publication-readback.md) remains the
+previous accepted source release and rollback option. Client-specific runtime
+rows remain evidence-scoped; source publication does not imply marketplace
+discovery.
+
+The [`v1.3.1` release](docs/releases/v1.3.1-publication-readback.md) remains the
+previous accepted source release and a rollback option. It adds the English
+`BRIEF` writing mode, concise issue/story templates and surface-specific bug
+evidence.
+
+The [`v1.3.0` release](docs/releases/v1.3.0-publication-readback.md) remains an
+older accepted source release and rollback option.
+
+Version [`v1.2.1`](docs/releases/v1.2.1.md) remains the rollback source release
+at full commit `0010140d19a7ff847dff776569772ef04d82c314`, with its own exact
+tag, archive and isolated-install evidence. To reproduce the reviewed v1.3.0
+source:
+
+```bash
+git checkout --detach 8ae4a26548ce908fc5f98b22663f52e163541f56
+test "$(git rev-parse HEAD)" = "8ae4a26548ce908fc5f98b22663f52e163541f56"
+python3 scripts/validate_skills.py --suite
+python3 -m unittest discover -s tests -q
+```
+
+`v1.2.0` remains published but failed archive acceptance; its exact boundary is
+[recorded separately](docs/releases/v1.2.0.md). GitHub reports the `v1.2.1`
+release object as non-immutable and tag protection was not independently
+verified, so security-sensitive consumers should pin the full commit SHA. The
+current tag archive was re-read after the metadata-only history rewrite and
+passed 88/88 tests; historical CI binds the same tree, not the current commit
+identity.
+[`v1.1.0`](docs/releases/v1.1.0.md) remains the accepted rollback anchor at full
+commit `711be31d654835a04ef8c70674c3e493aeb2da8a`.

@@ -114,7 +114,7 @@
     - "Quote or point to the new decision and identify the superseded statement."
     - "Mark the old value `SUPERSEDED`; do not preserve two active truths."
     - "Invalidate all evidence made under the old assumption."
-    - "Rebuild the affected path under a new plan fingerprint."
+    - "Act as soon as the change arrives, before continuing other work."
     - "Ask again only if the new decision creates a real owner gate."
   next: start_flow_task
 "event:worker_reported":
@@ -263,7 +263,7 @@
     - "Do not invent a team around vague titles such as architect, coder and tester."
     - "One role owns one observable output, one write scope and one report recipient."
     - "Do not dispatch work whose output MAIN cannot review."
-    - "Every external skill is untrusted regardless of rank or install count."
+    - "Write a task-local specialist brief and give it to a native worker."
     - "Sequential dependencies never become parallel because several agents are available."
 "module:nobrainer-tech-flow":
   heading: "Readiness and method routing"

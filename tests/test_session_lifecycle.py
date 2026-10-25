@@ -330,7 +330,7 @@ class SessionLifecycleTests(unittest.TestCase):
             ROOT / "skills" / "nobrainer-sessions" / "references" / "protocol.md",
             ROOT / "docs" / "TESTING.md",
             ROOT / "docs" / "COMPATIBILITY.md",
-            ROOT / "README.md",
+            ROOT / "docs" / "HOW_IT_WORKS.md",
             ROOT / "assets" / "nobrainer-workflow.svg",
         )
         combined = "\n".join(path.read_text(encoding="utf-8") for path in paths)
