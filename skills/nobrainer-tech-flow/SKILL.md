@@ -42,9 +42,9 @@ Skip ledger, delegation, review and startup care. Escalate to the full Flow life
 for ambiguity, architecture, public behavior, routing or consequential
 side effects; quick path never bypasses an owner gate.
 
-Delegate aggressively: run substantial work's independent units
-on parallel native subagents through [team execution](references/delivery.md#coordinated-team-execution);
-MAIN integrates, verifies and refills slots. Use [Auto Fine Tune](../nobrainer-auto-fine-tune/SKILL.md)
+Default to one MAIN loop with skills; delegate only units that qualify under
+[team execution](references/delivery.md#coordinated-team-execution);
+MAIN integrates and verifies. Use [Auto Fine Tune](../nobrainer-auto-fine-tune/SKILL.md)
 for first-setup capability checks; benchmark only when calibration pays.
 Unavailable native workers leave work in MAIN; visible conversations require explicit owner request
 or authorized MAIN restart; isolation, reuse or handoff alone never authorize one.

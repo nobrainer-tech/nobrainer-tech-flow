@@ -27,17 +27,18 @@ ROUTE_REASON: <risk, complexity, latency or evidence reason>
 
 - If no policy is supplied, keep the owner- or host-selected MAIN model.
   Use `STANDARD` for a clear one-unit task or a client without native
-  workers. Use `ROUTED` by default for substantial work with useful
-  independent units and verified native worker support.
-- `STANDARD` uses the owner- or host-selected model and effort. It is the fallback
-  for small work, unavailable native workers or one-model hosts. Unknown capacity
+  workers. Use `ROUTED` only for units that qualify for delegation under
+  [team execution](delivery.md#coordinated-team-execution) on a host with
+  verified native worker support.
+- `STANDARD` uses the owner- or host-selected model and effort. It is the default,
+  and the only policy for small work, unavailable native workers or one-model hosts. Unknown capacity
   permits bounded incremental dispatch under the delivery contract.
 - `EXTENDED` keeps that identity while allowing a larger declared
   effort, context, time or cost budget and bounded extra verification. A
   stronger model is an explicit policy change with an exact model and gate; it
   is never a hidden retry.
-- `ROUTED` is the bounded default for useful parallel work: it selects a
-  capable worker for each independent unit from models the host actually
+- `ROUTED` applies to units that qualify for delegation: it selects a
+  capable worker for each such unit from models the host actually
   exposes. Prefer a smaller, quicker route when the task's acceptance can
   still be met. Record the exact model, effort and budget
   before dispatch. If the target is unavailable, use an already verified
@@ -46,15 +47,16 @@ ROUTE_REASON: <risk, complexity, latency or evidence reason>
 
 ## Routing heuristics
 
-These heuristics choose a worker route; they do not gate eligible dispatch under
-[team execution](delivery.md#coordinated-team-execution).
+These heuristics choose a worker route for a unit that already qualifies under
+[team execution](delivery.md#coordinated-team-execution); they do not make a unit
+qualify.
 
-- For each independent ready unit, choose a smaller or faster worker only when
+- For each qualifying unit, choose a smaller or faster worker only when
   the current host advertises it, the assignment accepts it, and the expected
   setup plus audit cost is lower than the critical-path benefit. Use measured
   cost and latency when available; otherwise mark them unknown.
-- Default to useful native parallelism when the task splits cleanly. A second
-  perspective may catch defects, and a smaller worker may avoid repeating
+- When the task splits cleanly by context, parallel workers are one option to
+  weigh against one MAIN loop. A second perspective may catch defects, and a smaller worker may avoid repeating
   MAIN's full context. These are mechanisms to evaluate, not universal
   measured improvements in quality, speed or token use.
 - Use the host-selected/default capable model for ordinary implementation;

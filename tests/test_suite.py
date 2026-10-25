@@ -1375,11 +1375,11 @@ class SuiteTests(unittest.TestCase):
         for term in (
             "Expected files",
             "Done clean",
-            "Delegate every independent ready unit promptly",
-            "native capacity and quota",
-            "coordinates, integrates, verifies and refills slots",
+            "Work in one MAIN loop",
+            "delegate only qualifying units",
+            "Delegate only units that gain from parallel work",
+            "independent review or specialization",
             "Visible conversations",
-            "Use subagents",
             "fetch remote refs",
             "Never commit directly to `main`",
         ):

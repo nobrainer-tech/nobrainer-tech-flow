@@ -61,8 +61,9 @@
   changed files and ends without a proof line or an explicit `UNVERIFIED` is
   sent back once. After compaction, resume or clear, the agent is pointed back
   to the active goal file. Opt-in, with preview and undo.
-- **Parallel work, checked in one place.** Independent ready parts go to native
-  workers; the main session checks each one.
+- **One main loop, workers only where they pay.** The main session does the work
+  with skills and hands a part to a native worker only for parallel work, context
+  isolation, independent review or specialization, then checks each result.
 
 Free, MIT. The Git install previews every change and has undo. Your coding client's usage costs still apply.
 
@@ -159,7 +160,7 @@ next unblock action.
 A quick answer stays a quick answer. The model-neutral workflow uses one plan,
 bounded corrective attempts and a Markdown checkpoint for longer work. Native
 goals, telemetry and client-specific tools are optional. Available native workers
-handle independent ready units; unavailable workers leave safe work in MAIN.
+take a unit only when it pays; unavailable workers leave the work in MAIN.
 
 **One model is enough.** Optional Jev (remote) and Laya (local) profiles add
 typed suggestions for bounded classification, ranking and evaluation. Setup
@@ -203,11 +204,11 @@ flowchart TD
     P --> G
     J -. independent authorized work remains .-> P
     F -. optional .-> L[Markdown goal for resume]
-    G -. every independent ready unit within capacity and quota .-> M[Bounded native subagents; owner-approved model and effort]
+    G -. only units that gain from parallel work, isolated context, review or specialization .-> M[Bounded native subagents; owner-approved model and effort]
     G -. configured shadow only .-> Q[Jev remote or Laya local: advisory typed decisions]
     Q -. unavailable or invalid: core fallback .-> G
     M -->|Plain technical English reports| H
-    H -. audited unit; refill ready native slots .-> M
+    H -. audited unit; dispatch the next qualifying unit .-> M
     F -. first project use .-> R[Inspect layers and relevant wiki]
     R --> G
     M -. recurring workload .-> T[Auto Fine Tune: measured worker route]
@@ -410,9 +411,10 @@ DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN
   rollback only for cross-session, dependency-rich or consequential work, or
   when the owner keeps adding requests in one long conversation.
 - `AUTOPILOT` continues through routine approved work without repeated check-ins.
-- Delegate every independent ready unit to native workers within verified capacity
-  and quota under the [delegation contract](skills/nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
-  MAIN coordinates, integrates, verifies and refills freed slots. Team supplies
+- Work in one MAIN loop with skills. Delegate a unit to a native worker only for parallel
+  work, context isolation, independent review or specialization, under the
+  [delegation contract](skills/nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
+  MAIN coordinates, integrates and verifies. Team supplies
   capabilities; Dispatcher schedules real queues. Visible sessions require an
   explicit owner request or authorized MAIN restart.
 - Failed review returns to `nobrainer-build`; changed code invalidates old proof.
@@ -561,7 +563,9 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-**What's new in 2.7.0:** when the owner keeps adding requests in one long conversation,
+**What's new in 2.7.0:** Flow delegates only where it pays: one MAIN loop with skills does
+the work, and a unit goes to a native worker only for parallel work, context isolation,
+independent review or specialization. When the owner keeps adding requests in one long conversation,
 Flow records each one in the goal file as it arrives instead of leaving it only in the
 transcript, where compaction can drop it. The optional Claude Code guards point the agent back to the active goal file
 after compaction, resume or clear, and `nobrainer-team` fills a capability gap with a

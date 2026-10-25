@@ -175,7 +175,7 @@ Create a durable visible session only under the
 Use native subagents for delegated units; if unavailable, continue in MAIN.
 For a persistent delegated queue:
 
-1. `nobrainer-team` maps every independent ready unit to a bounded native assignment.
+1. `nobrainer-team` maps each unit that qualifies for delegation to a bounded native assignment.
 2. If several delegated units form a queue, `nobrainer-dispatcher` computes the
    ready set and bounded batch.
 3. MAIN spawns each bounded unit as a native subagent; only for owner-authorized
