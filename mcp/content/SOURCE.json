@@ -1,7 +1,7 @@
 {
   "repo": "https://github.com/nobrainer-tech/nobrainer-tech-flow",
-  "tag": "v2.7.2",
-  "commit": "b794d7f7ae928f658cfeb224e8389ec4226f55ae",
+  "tag": "v2.7.3",
+  "commit": "ca5db98a18880881a4f51faff1ff683c640b3756",
   "files": {
     "skills/nobrainer-auto-fine-tune/SKILL.md": "70972a7d3a649173cb7c9b347dee50b0fa3760b0c3c64c1c5f5eecca31cf184e",
     "skills/nobrainer-autoimprove/SKILL.md": "621274a98df6e5636a46d0bf18ddf1b37d9f4824bbaf1efaf4c67b88cd6bae01",
@@ -25,6 +25,6 @@
     "skills/nobrainer-tech-flow/references/delivery.md": "493a8919776e32c0f1854b5b837f37e72166ff43d4f9e7ec3e745ce3c77d6a29",
     "skills/nobrainer-tech-flow/references/long-run-state.md": "8c79fa8489485a35c0d531a15cf964ddae62cb0ecac77eb9e99167a632aa3010",
     "skills/nobrainer-wiki/SKILL.md": "efb3af5c3f50d108213d05ad8083f552ceefc9c8bd187d611bf303fe9f665b02",
-    "skills/nobrainer-writing/SKILL.md": "ba62c3dc20319b46b819757c4ed17984b283c3c658c17804c7193fe4b8d05662"
+    "skills/nobrainer-writing/SKILL.md": "37ecdddb9eb1d0d53452de636faac5981668a5df08b4e71260a5773515ae0c87"
   }
 }
