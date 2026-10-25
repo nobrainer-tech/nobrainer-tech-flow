@@ -2,6 +2,15 @@
 
 ## v2.7.0 - 2026-10-25
 
+Flow now delegates only where it pays. One MAIN loop loads skills on demand and does the
+work; a unit goes to a native worker only for parallel work, context isolation, independent
+verification or specialization, and the plan names which condition applies. Work is split
+by context, so the worker that changes a feature also writes and runs its tests. This
+replaces the 2.6.0 default of delegating every independent unit: a worker costs several
+times the tokens of the same work in one loop, every handoff loses detail, and parallel
+workers often finish later than one loop would. An owner or host rule that asks for more
+delegation still controls.
+
 Owner requests no longer live only in the transcript, where compaction can drop them.
 When the owner keeps adding requests mid-run, Flow's guidance now has the agent keep a
 goal file and record each new request in it as it arrives, before continuing any work,
@@ -20,6 +29,21 @@ Claude Code; the installer now shows an install from an earlier version as an up
 `nobrainer-team` no longer searches for, installs or runs third-party skills. A remaining
 capability gap gets a task-local specialist brief for a native worker, kept in the task
 plan and discarded afterwards.
+
+`nobrainer-security` no longer reports a clean result after a single pass: one model pass
+samples the scope, so at least one more independent pass, started from a different entry
+point, trust boundary or data-flow direction, must add no new verified finding first. When
+a fixed defect was public or reachable before the fix, the agent checks the available logs
+for exploitation during that window, or lists the window as untested. The review rule now
+names authentication, permissions, payments and personal data as security-sensitive paths
+that need an independent review however small the diff. Work from an untrusted or unknown
+author never takes the low-risk path, and a user-interface change needs a screenshot or
+recording, before and after where possible, because unit tests alone do not prove it.
+
+When instruction files or docs describe a coding convention that the existing code does not
+follow, `nobrainer-build` no longer picks one silently: it follows the code, unless the
+instruction is an explicit owner rule or names a deliberate migration, and lists each
+disagreement in its final report.
 
 The README now lists the free remote MCP server as an install channel, the docs say the
 npm package is published, and an intermittent bounded-runner test failure is fixed.

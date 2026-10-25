@@ -532,6 +532,17 @@ class SuiteTests(unittest.TestCase):
             "nobrainer-review",
         ):
             self.assertIn(term, text)
+        flat = " ".join(text.split())
+        for clause in (
+            "does not follow, do not pick one silently",
+            "Follow the convention the code uses",
+            "unless the instruction is an explicit owner rule",
+            "names a deliberate migration",
+            "list each disagreement in the final report",
+            "Owner rules on safety, authority and workflow always apply",
+        ):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, flat)
         self.assertIn("incidental similarity", text)
         self.assertIn("not a mandate for object-oriented ceremony", text)
         normalized = " ".join(text.lower().split())
@@ -838,6 +849,17 @@ class SuiteTests(unittest.TestCase):
         ):
             self.assertIn(term, text)
         self.assertIn("Do not test a live target", text)
+        flat = " ".join(text.split())
+        for clause in (
+            "One model pass samples the scope; it does not prove coverage",
+            "Before `CLEAN`, run at least one more independent pass",
+            "Stop when a pass adds no new verified finding",
+            "report how many passes ran",
+            "check the available logs or other evidence for exploitation",
+            "list the window under `UNTESTED_OR_INACCESSIBLE_SURFACE`",
+        ):
+            with self.subTest(clause=clause):
+                self.assertIn(clause, flat)
 
     def test_team_contract_builds_minimum_capability_roster(self) -> None:
         text = (SKILLS / "nobrainer-team" / "SKILL.md").read_text(encoding="utf-8")
@@ -1353,11 +1375,11 @@ class SuiteTests(unittest.TestCase):
         for term in (
             "Expected files",
             "Done clean",
-            "Delegate every independent ready unit promptly",
-            "native capacity and quota",
-            "coordinates, integrates, verifies and refills slots",
+            "Work in one MAIN loop",
+            "delegate only qualifying units",
+            "Delegate only units that gain from parallel work",
+            "independent review or specialization",
             "Visible conversations",
-            "Use subagents",
             "fetch remote refs",
             "Never commit directly to `main`",
         ):

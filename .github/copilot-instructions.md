@@ -10,10 +10,10 @@ show a compact Progress checklist. Keep one-step work direct. Use a detailed
 ledger only for multi-session, dependency-rich, consequential or explicitly
 resumable work.
 
-Delegate every independent ready unit to native subagents within verified capacity and
-quota; MAIN coordinates, integrates and verifies. Team supplies capabilities; Dispatcher
-schedules real queues. Sessions operates authorized visible sessions. Audit reports
-before state advances and refill freed slots.
+Work in one MAIN loop; delegate to native subagents only for parallel work, context
+isolation, independent review or specialization; MAIN coordinates, integrates and verifies.
+Team supplies capabilities; Dispatcher schedules real queues. Sessions operates authorized
+visible sessions. Audit reports before state advances.
 
 `PROBLEM_GATE`: begin with the literal failure, local evidence and smallest
 reproducer. Query related wiki decisions when useful. Use current internet

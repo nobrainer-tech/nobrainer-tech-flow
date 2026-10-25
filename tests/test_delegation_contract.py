@@ -13,25 +13,62 @@ def read_contract(name: str) -> str:
 
 
 class DelegationContractTests(unittest.TestCase):
-    def test_ready_units_dispatch_before_execution_or_blocking_wait(self) -> None:
+    def test_delegation_is_moderate_and_justified(self) -> None:
         text = read_contract("delivery.md")
         for phrase in (
-            "Before executing non-trivial work or entering a blocking wait",
-            "dispatch every useful eligible unit promptly",
+            "The default is one MAIN loop that loads skills on demand",
+            "Delegate a unit to a native worker only when at least one condition holds and outweighs that cost",
+            "parallel work:",
+            "context isolation:",
+            "independent verification:",
+            "specialization:",
+            "Name the condition for each delegated unit in the current plan; without one, the unit stays in MAIN",
+            "Split by context, not by type of work",
+            "also writes and runs its tests",
+            "before executing non-trivial work or entering a blocking wait",
             "authorized usage limits",
-            "eligible ready unit stays in MAIN",
-            "record the concrete reason in the current plan",
-            "shared mutable state",
-            "missing accepted dependency",
-            "unavailable capability/route",
-            "authority gate",
-            "usage limit",
-            "tiny or tightly coupled step",
-            "A missing measured speedup is not by itself a reason",
             "One visible MAIN coordinator is compatible with many native workers",
+            "When an owner or host rule requires more delegation than these conditions give, that rule controls",
         ):
             with self.subTest(phrase=phrase):
                 self.assertTrue(phrase in text, f"Missing contract phrase: {phrase!r}")
+        for retired in (
+            "Delegation is the default route",
+            "A missing measured speedup is not by itself a reason",
+        ):
+            with self.subTest(retired=retired):
+                self.assertNotIn(retired, text)
+
+    def test_retired_delegation_defaults_are_gone_from_active_surfaces(self) -> None:
+        surfaces = (
+            "AGENTS.md",
+            "adapters/bootstrap.md",
+            ".github/copilot-instructions.md",
+            "scripts/install.sh",
+            "scripts/install_personalization.py",
+            "skills/nobrainer-tech-flow/SKILL.md",
+            "skills/nobrainer-tech-flow/references/delivery.md",
+            "skills/nobrainer-tech-flow/references/model-routing.md",
+            "skills/nobrainer-tech-flow/references/long-run-state.md",
+            "skills/nobrainer-team/SKILL.md",
+            "skills/nobrainer-auto-fine-tune/SKILL.md",
+        )
+        retired = (
+            "delegate aggressively",
+            "delegation is the default route",
+            "delegation-first default",
+            "every independent ready unit",
+            "every useful eligible unit",
+            "a missing measured speedup is not by itself a reason",
+            "use `routed` by default",
+            "bounded default for useful parallel work",
+            "default to useful native parallelism",
+        )
+        for relative in surfaces:
+            text = " ".join((ROOT / relative).read_text(encoding="utf-8").split()).lower()
+            for phrase in retired:
+                with self.subTest(surface=relative, phrase=phrase):
+                    self.assertNotIn(phrase, text)
 
     def test_single_native_delegate_needs_no_dispatcher_queue(self) -> None:
         text = read_contract("delivery.md")
