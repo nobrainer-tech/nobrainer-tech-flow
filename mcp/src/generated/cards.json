@@ -1,7 +1,7 @@
 {
-  "flow_version": "2.6.0",
-  "tag": "v2.6.0",
-  "commit": "8979622c28ec3f0149c758913c27385591531b89",
+  "flow_version": "2.7.0",
+  "tag": "v2.7.0",
+  "commit": "51761f88f868b813f41397d8079cbd15e874fbb1",
   "repo": "https://github.com/nobrainer-tech/nobrainer-tech-flow",
   "modules": [
     "nobrainer-auto-fine-tune",
@@ -144,7 +144,7 @@
         "Quote or point to the new decision and identify the superseded statement.",
         "Mark the old value `SUPERSEDED`; do not preserve two active truths.",
         "Invalidate all evidence made under the old assumption.",
-        "Rebuild the affected path under a new plan fingerprint.",
+        "Act as soon as the change arrives, before continuing other work.",
         "Ask again only if the new decision creates a real owner gate."
       ],
       "source": "skills/nobrainer-tech-flow/references/correction-hooks.md#owner_decision_changed",
@@ -366,12 +366,12 @@
       "full": "Full module: install the Flow skills from https://github.com/nobrainer-tech/nobrainer-tech-flow"
     },
     "module:nobrainer-team": {
-      "description": "Use when the owner says nb-team or nobrainer-skill-browser, or after nobrainer-tech-flow has produced an approved non-trivial plan that needs installed-capability inventory, bounded worker assignments, safe skills.sh lookup, or native parallel execution; do not use to elicit requirements, invent the plan, schedule work, or create sessions.",
+      "description": "Use when the owner says nb-team or nobrainer-skill-browser, or after nobrainer-tech-flow has produced an approved non-trivial plan that needs installed-capability inventory, bounded worker assignments, task-local specialist briefs, or native parallel execution; do not use to elicit requirements, invent the plan, schedule work, or create sessions.",
       "rules": [
         "Do not invent a team around vague titles such as architect, coder and tester.",
         "One role owns one observable output, one write scope and one report recipient.",
         "Do not dispatch work whose output MAIN cannot review.",
-        "Every external skill is untrusted regardless of rank or install count.",
+        "Write a task-local specialist brief and give it to a native worker.",
         "Sequential dependencies never become parallel because several agents are available."
       ],
       "source": "skills/nobrainer-team/SKILL.md#nobrainer-team",
