@@ -4,7 +4,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "skills" / "nobrainer-decide" / "SKILL.md"
-README = ROOT / "README.md"
+# The public trigger table moved from the README to the product guide.
+README = ROOT / "docs" / "HOW_IT_WORKS.md"
 
 
 class DecideContractTests(unittest.TestCase):
