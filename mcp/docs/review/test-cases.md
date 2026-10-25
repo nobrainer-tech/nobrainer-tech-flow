@@ -1,6 +1,6 @@
 # OpenAI review test cases
 
-Recorded with `npm run transcripts -- --in-memory` (1.0.0+flow.2.7.0, MCP 2025-11-25, official
+Recorded with `npm run transcripts -- --in-memory` (1.0.0+flow.2.7.2, MCP 2025-11-25, official
 TypeScript SDK client; InMemoryTransport with buildServer, no HTTP listener).
 Tokens are shortened to `<token>`; all other output is exact. The five positive
 cases cover all six tools. Paste the prompts and expected results into the portal review form.
@@ -46,8 +46,8 @@ Result
 ```json
 {
  "path": "QUICK",
- "flow_version": "2.7.0",
- "contract": "28ca7a48",
+ "flow_version": "2.7.2",
+ "contract": "15e765a6",
  "items": [
   {
    "id": "AC01",
@@ -96,7 +96,7 @@ Result
 ```json
 {
  "card": "event:blocked",
- "flow_version": "2.7.0",
+ "flow_version": "2.7.2",
  "rules": [
   "Before saying BLOCKED, identify the exact failed operation and the acceptance item it prevents.",
   "If the preferred method is technically unavailable, try a relevant permitted alternative within the same scope.",
@@ -286,7 +286,7 @@ Result
 ```json
 {
  "verdict": "DONE_WITH_GAPS",
- "markdown": "## Delivered\n<one sentence: the observable outcome>\n\n## Proof\n- AC01 test, local, accepted (digest 13848f53): <command and result>\n\n## Not checked\n- AC02: <reason>\n\n## Decisions left to you\n<owner decisions, or 'None'>\n\n## Next action\n<one action, or 'None'>\n\nContract 28ca7a48, Flow 2.7.0. Evidence was reported by the agent; the server checked consistency, not truth."
+ "markdown": "## Delivered\n<one sentence: the observable outcome>\n\n## Proof\n- AC01 test, local, accepted (digest 13848f53): <command and result>\n\n## Not checked\n- AC02: <reason>\n\n## Decisions left to you\n<owner decisions, or 'None'>\n\n## Next action\n<one action, or 'None'>\n\nContract 15e765a6, Flow 2.7.2. Evidence was reported by the agent; the server checked consistency, not truth."
 }
 ```
 
