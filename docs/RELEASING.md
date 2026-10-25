@@ -15,8 +15,10 @@ when each channel reads back that version, or the gap is reported:
    branch, so install `nobrainer-tech-flow@nobrainer-tech` in a throwaway profile while
    `main` still equals the tag, and read back the version and the installed commit.
 4. `nobrainer-tech/nobrainer-tech-flow-plugin`: export the release ZIP there
-   through a PR, update `SOURCE.json`, run its unmodified
-   `_maintainers/verify_release.py`, then release it. It is the hook-free copy that
+   through a PR without `.mcp.json`, and remove the `mcpServers` field from the
+   copied `.codex-plugin/plugin.json` (Claude's validator rejects a remote server
+   without `type`, which OpenAI's required shape forbids). Update `SOURCE.json`, run
+   its unmodified `_maintainers/verify_release.py`, then release it. It is the hook-free copy that
    the Claude directory tracks, not a second project to promote.
 5. Claude directory (claude.ai/directory/manage) picks up that repository's
    default branch; OpenAI plugin directory (platform.openai.com/plugins) takes the

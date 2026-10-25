@@ -2869,12 +2869,13 @@ class SuiteTests(unittest.TestCase):
         self.assertNotIn("Use nb-ultra", interface["defaultPrompt"])
         self.assertTrue((ROOT / interface["composerIcon"].removeprefix("./")).is_file())
         self.assertTrue((ROOT / interface["logo"].removeprefix("./")).is_file())
-        self.assertEqual(
-            "https://github.com/nobrainer-tech/nobrainer-tech-flow/blob/main/docs/PRIVACY.md", interface["privacyPolicyURL"]
-        )
-        self.assertEqual(
-            "https://github.com/nobrainer-tech/nobrainer-tech-flow/blob/main/LICENSE", interface["termsOfServiceURL"]
-        )
+        # The ZIP declares the remote MCP server, so the manifests link its full policy.
+        self.assertEqual("https://nobrainer.tech/flow/privacy/", interface["privacyPolicyURL"])
+        self.assertEqual("https://nobrainer.tech/flow/terms/", interface["termsOfServiceURL"])
+        self.assertNotIn("delegates", interface["longDescription"])
+        # The repository root is the Git marketplace plugin root: no MCP server there.
+        self.assertNotIn("mcpServers", codex)
+        self.assertFalse((ROOT / ".mcp.json").exists())
         portable = json.loads((ROOT / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(interface, portable["extensions"]["com.openai"]["interface"])
 

@@ -1,5 +1,21 @@
 # nobrainer-tech-flow release notes
 
+## v2.7.1 - 2026-10-25
+
+The plugin ZIP for plugin directories now declares the optional remote MCP server.
+OpenAI's plugin directory stopped accepting skills-only submissions, so the ZIP built by
+`scripts/build_plugin.py` adds a `.mcp.json` with one server, `nobrainer-tech-flow` at
+`https://mcp.nobrainer.tech/mcp`, and its OpenAI manifest points to it with
+`"mcpServers": "./.mcp.json"`. Only the ZIP carries it: the Git marketplace and npm installs
+stay skills-only and do not connect to the server.
+
+The plugin manifests now link the server's full privacy policy
+(https://nobrainer.tech/flow/privacy/) and terms (https://nobrainer.tech/flow/terms/),
+and `docs/PRIVACY.md` and `docs/CHAT_PLUGINS.md` describe the declared server. The plugin
+descriptions now match 2.7.0: one main loop does the work, and native workers are used only
+for parallel work, context isolation, independent review or specialization. Skills and
+workflow guidance do not change.
+
 ## v2.7.0 - 2026-10-25
 
 From task to done, visibly: before substantial work the agent shows what done means and
@@ -861,10 +877,10 @@ Git ref recorded by the project; do not delete a shared skills directory.
 
 Moved from the README. Each entry links to its verification record.
 
-At source version **2.7.0**, check the
+At source version **2.7.1**, check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.7.0](docs/releases/v2.7.0.md), [2.6.0](docs/releases/v2.6.0.md) and
-[2.5.0 verification records](docs/releases/v2.5.0.md) for
+for distribution and the [2.7.1](docs/releases/v2.7.1.md), [2.7.0](docs/releases/v2.7.0.md) and
+[2.6.0 verification records](docs/releases/v2.6.0.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier
