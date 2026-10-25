@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Build a hook-free portable plugin ZIP from the same eighteen canonical skills."""
+"""Build a hook-free portable plugin ZIP from the same eighteen canonical skills.
+
+The ZIP, and only the ZIP, declares the optional remote MCP server: OpenAI's plugin
+directory does not accept skills-only submissions. The repository root is also the
+Git marketplace plugin root, so a root .mcp.json would connect every marketplace
+install to the remote server; the file is therefore written into the archive here.
+"""
 import argparse
 import json
 from pathlib import Path
@@ -10,6 +16,8 @@ DIRECTORIES = ("skills", "scripts", "adapters", "docs", "assets")
 ROOT_FILES = ("plugin.json", "README.md", "LICENSE", "SECURITY.md", "package.json")
 EXCLUDED = {"__pycache__", ".DS_Store", "node_modules"}
 ARCHIVES = {".zip", ".tgz", ".tar", ".gz"}
+# Exact shape required by OpenAI for Codex packages: one remote server, url only.
+MCP_CONFIG = {"mcpServers": {"nobrainer-tech-flow": {"url": "https://mcp.nobrainer.tech/mcp"}}}
 
 
 def build(output: Path) -> None:
@@ -35,12 +43,14 @@ def build(output: Path) -> None:
     with zipfile.ZipFile(output, "x", compression=zipfile.ZIP_DEFLATED) as archive:
         for path in files:
             archive.write(path, path.relative_to(ROOT).as_posix())
+        archive.writestr(".mcp.json", json.dumps(MCP_CONFIG, indent=2) + "\n")
         overlay = json.loads((ROOT / ".codex-plugin/plugin.json").read_text())
+        overlay["mcpServers"] = "./.mcp.json"
         archive.writestr(".codex-plugin/plugin.json", json.dumps(overlay, indent=2) + "\n")
         claude = json.loads((ROOT / ".claude-plugin/plugin.json").read_text())
         claude.pop("hooks", None)
         archive.writestr(".claude-plugin/plugin.json", json.dumps(claude, indent=2) + "\n")
-    print(f"PLUGIN_READY: {output.name}; version={version}; skills=18; hooks=none; bytes={output.stat().st_size}")
+    print(f"PLUGIN_READY: {output.name}; version={version}; skills=18; hooks=none; mcpServers=1; bytes={output.stat().st_size}")
 
 
 if __name__ == "__main__":
