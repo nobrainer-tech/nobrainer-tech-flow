@@ -15,7 +15,7 @@ when each channel reads back that version, or the gap is reported:
    branch, so install `nobrainer-tech-flow@nobrainer-tech` in a throwaway profile while
    `main` still equals the tag, and read back the version and the installed commit.
 4. `nobrainer-tech/nobrainer-tech-flow-plugin`: export the release ZIP there
-   through a PR without `.mcp.json`, and remove the `mcpServers` field from the
+   through a PR without `.mcp.json` or the root `mcp.json`, and remove the `mcpServers` field from the
    copied `.codex-plugin/plugin.json` (Claude's validator rejects a remote server
    without `type`, which OpenAI's required shape forbids). Update `SOURCE.json`, run
    its unmodified `_maintainers/verify_release.py`, then release it. It is the hook-free copy that

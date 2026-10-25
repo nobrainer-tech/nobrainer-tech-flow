@@ -106,9 +106,9 @@ Then start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer
 **npm** (Node 18+ and Python 3.11+); `--client` is `codex`, `claude`, `opencode` or `copilot`:
 
 ```sh
-npx nobrainer-tech-flow@2.7.1 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.7.1 --client codex --apply    # install
-npx nobrainer-tech-flow@2.7.1 --client codex --undo --apply
+npx nobrainer-tech-flow@2.7.2 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.7.2 --client codex --apply    # install
+npx nobrainer-tech-flow@2.7.2 --client codex --undo --apply
 ```
 
 **Any coding agent** (Git install with preview and undo; macOS, Linux and Windows, no
@@ -235,11 +235,12 @@ flowchart TD
 What each one owns and its trigger aliases:
 [skill table](docs/HOW_IT_WORKS.md#eighteen-skills-distinct-ownership).
 
-## What's new in 2.7.1
+## What's new in 2.7.2
 
-The plugin ZIP for plugin directories declares the optional remote MCP server and links its
-privacy policy; the Git marketplace and npm installs stay skills-only. Skills do not change.
-See the [2.7.1 verification record](docs/releases/v2.7.1.md).
+The plugin ZIP for plugin directories declares the optional remote MCP server in both the
+Codex and the portable format and links its privacy policy; the Git marketplace and npm
+installs stay skills-only. Skills do not change.
+See the [2.7.2 verification record](docs/releases/v2.7.2.md).
 
 ## What's new in 2.7.0
 

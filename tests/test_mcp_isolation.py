@@ -65,7 +65,17 @@ class McpIsolationTests(unittest.TestCase):
                 codex = json.loads(archive.read(".codex-plugin/plugin.json"))
                 claude = json.loads(archive.read(".claude-plugin/plugin.json"))
                 portable = json.loads(archive.read("plugin.json"))
+                portable_mcp = json.loads(archive.read("mcp.json"))
         self.assertEqual(1, names.count(".mcp.json"))
+        # The root plugin.json carries extensions.com.openai, so OpenAI reads the package as
+        # portable, ignores .codex-plugin/plugin.json and discovers the root mcp.json instead.
+        self.assertIn("com.openai", portable["extensions"])
+        self.assertEqual(1, names.count("mcp.json"))
+        self.assertEqual({
+            "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+            "mcpServers": {"nobrainer-tech-flow": {"type": "streamable-http", "url": "https://mcp.nobrainer.tech/mcp"}},
+        }, portable_mcp)
+        self.assertFalse((ROOT / "mcp.json").exists())
         self.assertEqual({"mcpServers": {"nobrainer-tech-flow": {"url": "https://mcp.nobrainer.tech/mcp"}}}, config)
         self.assertEqual("./.mcp.json", codex["mcpServers"])
         self.assertNotIn("mcpServers", claude)
