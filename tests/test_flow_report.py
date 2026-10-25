@@ -222,6 +222,37 @@ class FlowReportTests(unittest.TestCase):
     def test_missing_ci_snapshot_is_not_run_not_a_number(self):
         self.assertIsNone(flow_report.ci_stats(None))
 
+    def test_missing_ledger_renders_cited_claims_as_not_run_and_fails_the_gate(self):
+        real = flow_report.read_json
+        def no_ledger(path):
+            return None if Path(path).name == "evidence-ledger.json" else real(path)
+        with mock.patch.object(flow_report, "read_json", side_effect=no_ledger):
+            text, ok = render_without_validators()
+        self.assertFalse(ok)
+        self.assertNotIn("30 of 34", text)
+        self.assertNotIn("one measured promotion", text)
+        self.assertIn("installer mutation catch `NOT_RUN`", text)
+        self.assertIn("behavior evaluations `NOT_RUN`", text)
+
+    def _render_with_snapshot(self, runs):
+        real = flow_report.read_json
+        snap = {"captured_at": "2026-10-23T00:00:00Z", "complete": True, "runs": runs}
+        def fake(path):
+            return snap if Path(path).name == "ci-validate-runs.json" else real(path)
+        with mock.patch.object(flow_report, "read_json", side_effect=fake):
+            return render_without_validators()[0]
+
+    def test_snapshot_with_zero_runs_renders_speed_as_not_run(self):
+        text = self._render_with_snapshot([])
+        self.assertIn("| Speed | Wall time of a green `Validate` run | NOT_RUN |", text)
+
+    def test_snapshot_with_only_failures_renders_speed_as_not_run(self):
+        run = {"event": "push", "branch": "main", "conclusion": "failure",
+               "started_at": "2026-10-01T10:00:00Z", "updated_at": "2026-10-01T10:10:00Z"}
+        text = self._render_with_snapshot([run])
+        self.assertIn("| Speed | Wall time of a green `Validate` run | NOT_RUN |", text)
+        self.assertIn("no green runs", text)
+
 
 if __name__ == "__main__":
     unittest.main()

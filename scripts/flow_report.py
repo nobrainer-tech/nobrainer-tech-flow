@@ -256,6 +256,10 @@ def tokens(n: int) -> str:
 
 # --- ledger ----------------------------------------------------------------
 
+# Claims the scoreboard cites by id; each renders as NOT_RUN unless its ledger entry is present and verified.
+SCOREBOARD_CLAIMS = ("mutation-install-sh", "behavior-promotion-final5-1.3.0", "behavior-promotion-rejected-1.6.1")
+
+
 def check_ledger() -> list[dict]:
     ledger = read_json(DATA / "evidence-ledger.json") or {"entries": []}
     rows = []
@@ -276,7 +280,15 @@ def render(include_tests: dict | None) -> tuple[str, bool]:
     cadence, foot, ledger = release_cadence(), footprint(), check_ledger()
     workflow_days = workflow_change_dates()
     tests = include_tests or read_json(DATA / "test-run.json")
-    problems = [e["id"] for e in ledger if not e["verified"]] + [k for k, v in val.items() if not v]
+    by_id = {e["id"]: e for e in ledger}
+    has = {i: bool(by_id.get(i, {}).get("verified")) for i in SCOREBOARD_CLAIMS}
+    problems = ([e["id"] for e in ledger if not e["verified"]] + [k for k, v in val.items() if not v]
+                + [f"missing ledger entry: {i}" for i in SCOREBOARD_CLAIMS if i not in by_id])
+    mutation = "installer mutation catch 30 of 34" if has["mutation-install-sh"] else "installer mutation catch `NOT_RUN` (ledger entry missing or unverified)"
+    if has["behavior-promotion-final5-1.3.0"] and has["behavior-promotion-rejected-1.6.1"]:
+        behavior = "behavior evaluations quoted below: one measured promotion (3 paired repetitions), one rejected (1.6.1)"
+    else:
+        behavior = "behavior evaluations `NOT_RUN` (ledger entries missing or unverified)"
     L: list[str] = []
     add = L.append
 
@@ -301,13 +313,17 @@ def render(include_tests: dict | None) -> tuple[str, bool]:
     add("| Metric | Definition | Status | Headline |")
     add("|---|---|---|---|")
     add(f"| Quality | Whether Flow's own gates hold, plus recorded behavior evaluations | PARTIAL | validators {'pass' if all(val.values()) else 'FAIL'}; "
-        f"{inv['defined_cases']:,} test cases in {inv['files']} files; installer mutation catch 30 of 34; behavior evaluations quoted below: one measured promotion (3 paired repetitions), one rejected (1.6.1) |")
+        f"{inv['defined_cases']:,} test cases in {inv['files']} files; {mutation}; {behavior} |")
     if ci:
         a, m = ci["all"], ci["main_push"]
         add(f"| Reliability | CI pass rate of the `Validate` workflow, cancelled runs excluded | PARTIAL | {a['pass_rate']} of {a['success'] + a['failure']} finished runs "
             f"(`main` pushes {m['pass_rate']} of {m['success'] + m['failure']}) |")
-        add(f"| Speed | Wall time of a green `Validate` run, and release records per month | PARTIAL | latest month median {minutes(list(ci['monthly'].values())[-1][1])}, p90 {minutes(list(ci['monthly'].values())[-1][2])}"
-            + (f"; {cadence['records']} release records added" if cadence else "; release records per month `NOT_RUN` here") + " |")
+        if ci["monthly"]:
+            _, med, p90 = list(ci["monthly"].values())[-1]
+            add(f"| Speed | Wall time of a green `Validate` run, and release records per month | PARTIAL | latest month median {minutes(med)}, p90 {minutes(p90)}"
+                + (f"; {cadence['records']} release records added" if cadence else "; release records per month `NOT_RUN` here") + " |")
+        else:
+            add("| Speed | Wall time of a green `Validate` run | NOT_RUN | the CI snapshot has no green runs |")
     else:
         add("| Reliability | CI pass rate | NOT_RUN | no CI snapshot in `docs/reports/data/` |")
         add("| Speed | CI wall time | NOT_RUN | no CI snapshot |")
@@ -366,10 +382,13 @@ def render(include_tests: dict | None) -> tuple[str, bool]:
                else " (workflow change dates: `NOT_RUN` here, a git checkout with full history is needed)")
             + ", and this report does not attribute the differences to any change, so compare within a month only. p90 is a nearest-rank estimate.")
         add("")
-        add("| Month | Green runs | Median | p90 |")
-        add("|---|---|---|---|")
-        for month, (n, med, p90) in ci["monthly"].items():
-            add(f"| {month} | {n} | {minutes(med)} | {minutes(p90)} |")
+        if ci["monthly"]:
+            add("| Month | Green runs | Median | p90 |")
+            add("|---|---|---|---|")
+            for month, (n, med, p90) in ci["monthly"].items():
+                add(f"| {month} | {n} | {minutes(med)} | {minutes(p90)} |")
+        else:
+            add("`NOT_RUN`: the snapshot has no green runs, so no wall time can be stated.")
     add("")
     if cadence:
         add(f"Release records (`docs/releases/vX.Y.Z.md`) by month of the commit that first added them: "
