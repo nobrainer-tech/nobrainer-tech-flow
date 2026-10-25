@@ -65,7 +65,29 @@ class McpIsolationTests(unittest.TestCase):
                 codex = json.loads(archive.read(".codex-plugin/plugin.json"))
                 claude = json.loads(archive.read(".claude-plugin/plugin.json"))
                 portable = json.loads(archive.read("plugin.json"))
+                portable_mcp = json.loads(archive.read("mcp.json"))
         self.assertEqual(1, names.count(".mcp.json"))
+        # The root plugin.json carries extensions.com.openai, so OpenAI reads the package as
+        # portable, ignores .codex-plugin/plugin.json and discovers the root mcp.json instead.
+        self.assertIn("com.openai", portable["extensions"])
+        self.assertEqual(1, names.count("mcp.json"))
+        self.assertEqual({
+            "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+            "mcpServers": {"nobrainer-tech-flow": {"type": "streamable-http", "url": "https://mcp.nobrainer.tech/mcp"}},
+        }, portable_mcp)
+        self.assertFalse((ROOT / "mcp.json").exists())
+        review = portable["extensions"]["com.openai"]["review"]
+        self.assertEqual(5, len(review["test_cases"]["positive"]))
+        self.assertEqual(3, len(review["test_cases"]["negative"]))
+        for case in review["test_cases"]["positive"]:
+            self.assertTrue(all(case.get(key) for key in ("description", "prompt", "tools_triggered", "expected_behavior")))
+        tools = {"start_flow_task", "get_flow_step", "check_flow_evidence", "check_flow_done",
+                 "draft_flow_handoff", "recommend_flow_model"}
+        named = {name.strip() for case in review["test_cases"]["positive"] for name in case["tools_triggered"].split(",")}
+        self.assertEqual(tools, named)
+        self.assertTrue(review["demo_recording_url"].startswith("https://"))
+        self.assertNotIn("test_credentials", review)
+        self.assertNotIn("reviewer_instructions", review)
         self.assertEqual({"mcpServers": {"nobrainer-tech-flow": {"url": "https://mcp.nobrainer.tech/mcp"}}}, config)
         self.assertEqual("./.mcp.json", codex["mcpServers"])
         self.assertNotIn("mcpServers", claude)

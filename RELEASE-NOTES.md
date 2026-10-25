@@ -1,5 +1,14 @@
 # nobrainer-tech-flow release notes
 
+## v2.7.2 - 2026-10-25
+
+The plugin ZIP now also declares the remote MCP server in a root `mcp.json`. Its root
+`plugin.json` carries OpenAI settings, so the OpenAI plugin directory reads the ZIP as a
+portable package, ignores `.codex-plugin/plugin.json` and its `.mcp.json`, and reported it
+as skills-only. The new file uses the portable format (Agent Plugins schema, one
+`streamable-http` server at https://mcp.nobrainer.tech/mcp) and exists only in the ZIP.
+See the [2.7.2 record](docs/releases/v2.7.2.md).
+
 ## v2.7.1 - 2026-10-25
 
 The plugin ZIP for plugin directories now declares the optional remote MCP server.
@@ -877,10 +886,10 @@ Git ref recorded by the project; do not delete a shared skills directory.
 
 Moved from the README. Each entry links to its verification record.
 
-At source version **2.7.1**, check the
+At source version **2.7.2**, check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.7.1](docs/releases/v2.7.1.md), [2.7.0](docs/releases/v2.7.0.md) and
-[2.6.0 verification records](docs/releases/v2.6.0.md) for
+for distribution and the [2.7.2](docs/releases/v2.7.2.md), [2.7.1](docs/releases/v2.7.1.md) and
+[2.7.0 verification records](docs/releases/v2.7.0.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier

@@ -18,6 +18,12 @@ EXCLUDED = {"__pycache__", ".DS_Store", "node_modules"}
 ARCHIVES = {".zip", ".tgz", ".tar", ".gz"}
 # Exact shape required by OpenAI for Codex packages: one remote server, url only.
 MCP_CONFIG = {"mcpServers": {"nobrainer-tech-flow": {"url": "https://mcp.nobrainer.tech/mcp"}}}
+# The root plugin.json makes the ZIP a portable (Agent Plugins) package, and OpenAI then
+# ignores .codex-plugin/plugin.json; portable packages discover this root mcp.json.
+PORTABLE_MCP_CONFIG = {
+    "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+    "mcpServers": {"nobrainer-tech-flow": {"type": "streamable-http", "url": "https://mcp.nobrainer.tech/mcp"}},
+}
 # Fixed entry metadata keeps the ZIP byte-identical across builds of the same source.
 FIXED_TIME = (1980, 1, 1, 0, 0, 0)
 
@@ -54,6 +60,7 @@ def build(output: Path) -> None:
         for path in files:
             archive.writestr(entry(path.relative_to(ROOT).as_posix(), bool(path.stat().st_mode & 0o111)), path.read_bytes())
         archive.writestr(entry(".mcp.json"), json.dumps(MCP_CONFIG, indent=2) + "\n")
+        archive.writestr(entry("mcp.json"), json.dumps(PORTABLE_MCP_CONFIG, indent=2) + "\n")
         overlay = json.loads((ROOT / ".codex-plugin/plugin.json").read_text())
         overlay["mcpServers"] = "./.mcp.json"
         archive.writestr(entry(".codex-plugin/plugin.json"), json.dumps(overlay, indent=2) + "\n")

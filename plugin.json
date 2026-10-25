@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "nobrainer-tech-flow",
   "description": "From task to done. nobrainer-tech-flow is one workflow of 18 modules for AI coding agents: it scopes the task, does the work in one main loop, checks the result and hands over the evidence, including what was not checked.",
-  "version": "2.7.1",
+  "version": "2.7.2",
   "author": {
     "name": "NoBrainer Tech",
     "url": "https://nobrainer.tech"
@@ -45,7 +45,60 @@
         "screenshots": [],
         "supportURL": "https://github.com/nobrainer-tech/nobrainer-tech-flow/issues"
       },
-      "onboardingSkill": "./skills/nobrainer-tech-flow/SKILL.md"
+      "onboardingSkill": "./skills/nobrainer-tech-flow/SKILL.md",
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Start a task contract with a definition of done",
+              "prompt": "Use NoBrainer Tech Flow. I need the date parser bug fixed: parse('2026-02-30') should raise an error. Done means the new unit test passes and the change is documented in CHANGELOG.md.",
+              "tools_triggered": "start_flow_task",
+              "expected_behavior": "Returns a task contract with path QUICK, acceptance items AC01 (test, local) and AC02 (file, static), the first step DRIFT_CHECK and a contract token."
+            },
+            {
+              "description": "Guidance when the agent is blocked",
+              "prompt": "With NoBrainer Tech Flow: I can't run the tests because the CI runner is down. What should I do?",
+              "tools_triggered": "get_flow_step",
+              "expected_behavior": "Returns up to six rules for a blocker: identify the failed operation, try a permitted alternative such as running the test locally, never evade a denial, continue independent items, and name the blocker category."
+            },
+            {
+              "description": "Reject a claim that contradicts the test output",
+              "prompt": "With NoBrainer Tech Flow, start a task to fix the date parser (done means the unit test passes), then check this evidence. pytest output: '1 failed, 4 passed in 0.42s'. The tests pass, right?",
+              "tools_triggered": "start_flow_task, check_flow_evidence",
+              "expected_behavior": "Records AC01 as FAILED from the output; a record that claims 0 failures for the same output is rejected with COUNTS_MISMATCH, so the agent does not report success."
+            },
+            {
+              "description": "Done gate with an unchecked item and a handoff",
+              "prompt": "With NoBrainer Tech Flow, start a task to fix the date parser: done means the unit test passes (AC01) and CHANGELOG.md is updated (AC02). pytest now ends with '5 passed in 0.40s'. I have no access to the changelog, so mark AC02 as not checked, tell me if the task is done and write the handoff.",
+              "tools_triggered": "start_flow_task, check_flow_evidence, check_flow_done, draft_flow_handoff",
+              "expected_behavior": "AC01 is accepted from the passing output; the done gate returns DONE_WITH_GAPS because AC02 is not checked, and the handoff lists the AC01 proof and AC02 under Not checked."
+            },
+            {
+              "description": "Model recommendation from the benchmark snapshot",
+              "prompt": "With NoBrainer Tech Flow: I use Codex and Claude Code. Recommend a model using the legacy task Coding.",
+              "tools_triggered": "recommend_flow_model",
+              "expected_behavior": "Maps the legacy Coding task to terminal-coding and returns a shortlist of up to three models with quality, cost and time from the bundled benchmark snapshot, its date, expiry and source URL."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Simple fact that needs no task contract",
+              "prompt": "What is the capital of Australia?"
+            },
+            {
+              "description": "Creative chat with nothing to verify",
+              "prompt": "Write a four-line poem about autumn."
+            },
+            {
+              "description": "Deployment request the plugin cannot perform",
+              "prompt": "Deploy my app to production now."
+            }
+          ]
+        },
+        "demo_recording_url": "https://nobrainer.tech/flow/assets/mcp-review-demo.mp4",
+        "commerce": false,
+        "commerce_description": "This plugin does not sell products or process payments."
+      }
     }
   }
 }
