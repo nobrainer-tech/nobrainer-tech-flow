@@ -119,8 +119,8 @@ Mark uninspected paths/methods as pending.
 New dependencies, abstractions, workers, skills and tests need an acceptance reason.
 Shared abstractions require two callers or explicit contract.
 
-Use a short plan ordered by outcomes. Keep its TODO visible: prefer the host's
-plan or todo tool, else the Progress checklist.
+Use a short plan ordered by outcomes. One canonical TODO owner stays visible: the
+host's plan or todo tool, else the Progress checklist.
 
 ## Show human progress
 

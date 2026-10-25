@@ -473,8 +473,8 @@ class SuiteTests(unittest.TestCase):
             "detailed-ledger decision",
             "show the owner what done means",
             "set it as the host-native goal where supported",
-            "keep its todo visible",
-            "prefer the host's plan or todo tool",
+            "one canonical todo owner stays visible",
+            "the host's plan or todo tool, else the progress checklist",
             "structure first",
             "selected contracts in full",
             "large documents or data",
@@ -1388,12 +1388,13 @@ class SuiteTests(unittest.TestCase):
         ):
             with self.subTest(term=term):
                 self.assertIn(term, decision)
-        policy = decision[decision.index("instruction file"):]
-        positions = [policy.find(mark) for mark in ("`AUTO_SCOPED`", "`ASK`", "`OFF`")]
-        self.assertNotIn(-1, positions)
-        self.assertEqual(positions, sorted(positions))
-        self.assertIn("exact diff", policy[positions[1]:positions[2]])
-        self.assertIn("stale line", policy[positions[2]:])
+        for bound_action in (
+            "under `AUTO_SCOPED`, edit it",
+            "under `ASK`, prepare its exact diff and ask once",
+            "under `OFF`, name the stale line",
+        ):
+            with self.subTest(bound_action=bound_action):
+                self.assertIn(bound_action, decision)
         self.assertIn("do not\n     create or modify `tasks/lessons.md`", hooks)
 
         self.assertIn("`AUTO_SCOPED` may persist", readme)
