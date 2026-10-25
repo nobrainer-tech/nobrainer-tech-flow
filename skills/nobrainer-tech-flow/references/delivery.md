@@ -117,8 +117,9 @@ useful authorized work remains. Never turn an unknown right/license into consent
 
 Scale verification to blast radius. A reversible, low-risk change may proceed on
 green automated tests, review and security checks. CI configuration, credentials,
-security-sensitive paths, data migrations and irreversible effects need an
-independent review and remain owner-gated. An agent's approval never counts as the
+security-sensitive paths (such as authentication, permissions, payments and personal
+data), data migrations and irreversible effects need an independent review and
+remain owner-gated, however small the diff. An agent's approval never counts as the
 owner's.
 
 Review the next executable slice against concrete acceptance and failure paths.

@@ -21,6 +21,19 @@ Claude Code; the installer now shows an install from an earlier version as an up
 capability gap gets a task-local specialist brief for a native worker, kept in the task
 plan and discarded afterwards.
 
+`nobrainer-security` no longer reports a clean result after a single pass: one model pass
+samples the scope, so at least one more independent pass, started from a different entry
+point, trust boundary or data-flow direction, must add no new verified finding first. When
+a fixed defect was public or reachable before the fix, the agent checks the available logs
+for exploitation during that window, or lists the window as untested. The review rule now
+names authentication, permissions, payments and personal data as security-sensitive paths
+that need an independent review however small the diff.
+
+When instruction files or docs describe a coding convention that the existing code does not
+follow, `nobrainer-build` no longer picks one silently: it follows the code, unless the
+instruction is an explicit owner rule or names a deliberate migration, and lists each
+disagreement in its final report.
+
 The README now lists the free remote MCP server as an install channel, the docs say the
 npm package is published, and an intermittent bounded-runner test failure is fixed.
 
