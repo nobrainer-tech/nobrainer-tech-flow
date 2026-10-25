@@ -55,7 +55,8 @@ Link to canonical project paths instead of pasting every protocol.
 
 Use a compact Progress checklist for ordinary work. Persist the detailed ledger
 from `long-run-state.md` only when multiple sessions/writers, dependencies,
-consequential recovery, context-loss resume or an owner request makes it useful.
+consequential recovery, context-loss resume, an owner who keeps adding requests
+in one long conversation or an owner request makes it useful.
 It orders work without duplicating the specification or wiki.
 
 ### Public-surface coherence

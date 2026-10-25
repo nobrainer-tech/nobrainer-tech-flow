@@ -1,5 +1,32 @@
 # nobrainer-tech-flow release notes
 
+## v2.7.0 - 2026-10-25
+
+Owner requests no longer live only in the transcript, where compaction can drop them.
+When the owner keeps adding requests mid-run, Flow's guidance now has the agent keep a
+goal file and record each new request in it as it arrives, before continuing any work,
+even when the request is deferred. Each row quotes the owner's words with the date and a
+status. While the ledger is active, rows are reconciled at every checkpoint, after
+compaction and at closeout, and none may be silently dropped. The default goal file is
+`.nobrainer/goal.md`.
+
+The optional Claude Code guards gain a fourth hook: after compaction, resume or clear it
+tells the agent to re-read up to three active goal files. It prints only their paths and
+status words, never other goal-file text, and prints nothing on any error. If you already
+use the guards, update your Git checkout first, preview the change with
+`python3 scripts/install.py --client claude --guards`, apply it with `--apply` and restart
+Claude Code; the installer now shows an install from an earlier version as an update.
+
+`nobrainer-team` no longer searches for, installs or runs third-party skills. A remaining
+capability gap gets a task-local specialist brief for a native worker, kept in the task
+plan and discarded afterwards.
+
+The README now lists the free remote MCP server as an install channel, the docs say the
+npm package is published, and an intermittent bounded-runner test failure is fixed.
+
+The module set stays at eighteen. See the
+[release scope and verification record](docs/releases/v2.7.0.md).
+
 ## v2.6.0 - 2026-10-23
 
 Flow now delegates aggressively, so substantial work reaches done sooner. Independent

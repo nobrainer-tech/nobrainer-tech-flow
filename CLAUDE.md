@@ -103,9 +103,9 @@ Update at meaningful transitions, blockers and closeout, not before and
 after every command. The canonical plan or tracker owns TODO state; summaries,
 exit codes and worker reports cannot advance it.
 
-Use a detailed execution ledger only when work is multi-session, dependency-rich,
-consequential, explicitly resumable after context loss or requested by the owner. It
-must record exact identity, dependencies, write ownership, evidence, checkpoint,
+Use a detailed execution ledger only for multi-session, dependency-rich, consequential
+or resumable work, on owner request, or while owner requests keep arriving
+mid-run. It records identity, dependencies, write ownership, evidence, checkpoint,
 retry/stop conditions and rollback; ordinary single-session work uses a short checklist.
 
 ## Routing without ceremony

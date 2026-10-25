@@ -59,7 +59,8 @@
   guards ask before `git push --force`, `git reset --hard`, a recursive delete
   outside temporary folders, a production deploy or a publish. A turn that
   changed files and ends without a proof line or an explicit `UNVERIFIED` is
-  sent back once. Opt-in, with preview and undo.
+  sent back once. After compaction, resume or clear, the agent is pointed back
+  to the active goal file. Opt-in, with preview and undo.
 - **Parallel work, checked in one place.** Independent ready parts go to native
   workers; the main session checks each one.
 
@@ -285,9 +286,9 @@ notification only. No other authorization is granted. To update, run `git pull` 
 **npm** (Node 18+ and Python 3.11+; [package page](https://www.npmjs.com/package/nobrainer-tech-flow)):
 
 ```sh
-npx nobrainer-tech-flow@2.6.0 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.6.0 --client codex --apply    # install
-npx nobrainer-tech-flow@2.6.0 --client codex --undo --apply
+npx nobrainer-tech-flow@2.7.0 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.7.0 --client codex --apply    # install
+npx nobrainer-tech-flow@2.7.0 --client codex --undo --apply
 ```
 
 `--client` is `codex`, `claude`, `opencode` or `copilot`. The files are copied to a
@@ -560,16 +561,16 @@ prove production. See [Compatibility](docs/COMPATIBILITY.md) for current proof
 and [Testing](docs/TESTING.md) for acceptance evidence.
 
 
-**What's new in 2.6.0:** Flow delegates aggressively: independent units of
-substantial work go to parallel native subagents, sized so parallel work pays for its
-start-up cost, verification depth follows how risky and reversible a change is, and one
-line in the instruction block keeps Flow updated by default (`--no-auto-update` opts out).
-See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+**What's new in 2.7.0:** when the owner keeps adding requests in one long conversation,
+Flow records each one in the goal file as it arrives instead of leaving it only in the
+transcript, where compaction can drop it. The optional Claude Code guards point the agent back to the active goal file
+after compaction, resume or clear, and `nobrainer-team` fills a capability gap with a
+task-local specialist brief instead of third-party skills. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
-Current source version: **2.6.0**. Check the
+Current source version: **2.7.0**. Check the
 [latest published GitHub release](https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest)
-for distribution and the [2.6.0](docs/releases/v2.6.0.md), [2.5.0](docs/releases/v2.5.0.md) and
-[2.4.0 verification records](docs/releases/v2.4.0.md) for
+for distribution and the [2.7.0](docs/releases/v2.7.0.md), [2.6.0](docs/releases/v2.6.0.md) and
+[2.5.0 verification records](docs/releases/v2.5.0.md) for
 the current scope, reproducible checks and client-runtime limits. The unchanged command runner keeps its
 [v1.7.0 verification scope](docs/releases/v1.7.0.md). Source publication does not
 imply client marketplace discovery or improved model reasoning. The earlier
