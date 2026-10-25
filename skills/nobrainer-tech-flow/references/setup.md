@@ -61,8 +61,9 @@ placeholders with verified paths/commands and remove duplicate lines:
   approved scope autonomously. Show a compact Progress checklist at meaningful
   transitions. Keep one canonical TODO owner.
 - Use a detailed ledger only for multi-session, dependency-rich,
-  consequential or explicitly resumable work; ordinary single-session work
-  keeps the short checklist.
+  consequential or explicitly resumable work, or when the owner keeps adding
+  requests in one long conversation; ordinary single-session work keeps the
+  short checklist.
 - Prefer the smallest complete change. Apply KISS and YAGNI; deduplicate owned
   knowledge, not incidental similarity; preserve cohesive dependency boundaries.
 - Use `nobrainer-team`, `nobrainer-dispatcher` and `nobrainer-sessions` only for
