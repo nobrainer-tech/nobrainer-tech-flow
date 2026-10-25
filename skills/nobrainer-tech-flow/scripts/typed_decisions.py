@@ -131,12 +131,25 @@ CHILD_ENV = {"PATH", "PATHEXT", "SYSTEMROOT", "WINDIR", "COMSPEC", "HOME", "USER
              "VIRTUAL_ENV", "XDG_CACHE_HOME", "HF_HOME", "HF_HUB_CACHE",
              "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "SSL_CERT_FILE", "SSL_CERT_DIR"}
 KEY_LIMIT = 4096
+PROXY_ENV = {"HTTPS_PROXY", "HTTP_PROXY"}
+
+
+def child_env(source):
+    """Allowlisted variables only; a proxy URL that carries a user or password is dropped."""
+    env = {}
+    for name, value in source.items():
+        if name.upper() not in CHILD_ENV:
+            continue
+        if name.upper() in PROXY_ENV and "@" in value.split("//", 1)[-1].split("/", 1)[0]:
+            continue
+        env[name] = value
+    return env
 
 
 def invoke(provider, model, request, timeout, key=None):
     # The TypeSafe key comes only from the caller (piped with --key-stdin) and reaches
     # the child on stdin, only for Jev. The helper itself never reads a credential.
-    env = {k: v for k, v in os.environ.items() if k.upper() in CHILD_ENV}
+    env = child_env(os.environ)
     process = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--worker", provider, model],
                              input=json.dumps({"request": request, "key": key if provider == "jev" else None}),
                              capture_output=True, text=True, timeout=timeout, env=env)
@@ -147,10 +160,11 @@ def invoke(provider, model, request, timeout, key=None):
 
 def read_piped_key(stream):
     """Return the first line of a piped key, or None when nothing usable was piped."""
-    line = stream.readline(KEY_LIMIT + 1).strip()
-    if not line or len(line) > KEY_LIMIT:
+    raw = stream.readline(KEY_LIMIT + 2)
+    if len(raw.rstrip("\r\n")) > KEY_LIMIT:
         return None
-    return line
+    line = raw.strip()
+    return line or None
 
 
 def evaluate(requests, configuration, approved=False, call=invoke):

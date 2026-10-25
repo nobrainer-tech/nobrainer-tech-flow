@@ -66,6 +66,20 @@ class TypedDecisionTests(unittest.TestCase):
         self.assertIsNone(runtime.read_piped_key(io.StringIO("")))
         self.assertIsNone(runtime.read_piped_key(io.StringIO("\n")))
         self.assertIsNone(runtime.read_piped_key(io.StringIO("x" * (runtime.KEY_LIMIT + 1))))
+        self.assertIsNone(runtime.read_piped_key(io.StringIO(" " + "x" * (runtime.KEY_LIMIT + 1) + "\n")))
+        self.assertEqual("x" * runtime.KEY_LIMIT, runtime.read_piped_key(io.StringIO("x" * runtime.KEY_LIMIT + "\n")))
+
+    def test_worker_env_drops_proxy_credentials(self):
+        source = {"PATH": "/bin", "HTTPS_PROXY": "http://user:secret@proxy.example:8080",
+                  "http_proxy": "http://user@proxy.example:8080", "HTTP_PROXY": "http://proxy.example:8080",
+                  "https_proxy": "http://proxy.example:3128", "TYPESAFE_API_KEY": "synthetic"}
+        env = runtime.child_env(source)
+        self.assertNotIn("HTTPS_PROXY", env)
+        self.assertNotIn("http_proxy", env)
+        self.assertEqual("http://proxy.example:8080", env["HTTP_PROXY"])
+        self.assertEqual("http://proxy.example:3128", env["https_proxy"])
+        self.assertNotIn("TYPESAFE_API_KEY", env)
+        self.assertNotIn("secret", json.dumps(env))
 
     def test_cli_key_stdin_reaches_only_the_jev_worker(self):
         import tempfile
