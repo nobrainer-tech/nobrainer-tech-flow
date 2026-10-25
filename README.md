@@ -103,7 +103,8 @@ The mode is informed by ASD-STE100; it does not claim full standard compliance.
 
 ## Install and use the plugin
 
-Pick the channel that fits your client; each one installs the same 18 modules:
+Pick the channel that fits your client. The first five install the same 18 modules;
+the MCP server needs no install:
 
 - **Claude Code plugin:** `claude plugin marketplace add nobrainer-tech/nobrainer-tech-flow`,
   then `claude plugin install nobrainer-tech-flow@nobrainer-tech`.
@@ -116,6 +117,11 @@ Pick the channel that fits your client; each one installs the same 18 modules:
   preview of every change and undo.
 - **Chat apps:** the [portable plugin ZIP](docs/CHAT_PLUGINS.md) for supported
   ChatGPT/Codex and Claude surfaces.
+- **MCP server, no install:** add the free remote server `https://mcp.nobrainer.tech/mcp`
+  (no sign-in, stateless) in claude.ai, ChatGPT or any MCP client. Its six read-only
+  tools give the agent a task contract, an evidence check, a done gate and a model
+  advisor; it does not install the 18 modules. Per-client steps and what is verified:
+  [MCP server README](mcp/README.md#install).
 
 Details for each are under [Install safely](#install-safely). Listing in the
 public Claude and OpenAI plugin directories is a separate review step.
@@ -400,7 +406,8 @@ DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN
 - One canonical plan owns TODO state; the owner sees only a compact Progress
   checklist and one next action.
 - A durable ledger adds exact identity, dependencies, checkpoints, retries and
-  rollback only for cross-session, dependency-rich or consequential work.
+  rollback only for cross-session, dependency-rich or consequential work, or
+  when the owner keeps adding requests in one long conversation.
 - `AUTOPILOT` continues through routine approved work without repeated check-ins.
 - Delegate every independent ready unit to native workers within verified capacity
   and quota under the [delegation contract](skills/nobrainer-tech-flow/references/delivery.md#coordinated-team-execution).
