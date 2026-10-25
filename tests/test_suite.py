@@ -539,8 +539,9 @@ class SuiteTests(unittest.TestCase):
             "unless the instruction is an explicit owner rule",
             "names a deliberate migration",
             "list each disagreement in the final report",
-            "with the exact edit that would bring the instruction file in line",
-            "Apply that edit only as the project's `LEARNING_WRITE_POLICY` allows",
+            "include the exact edit that would bring the stale instruction file in line",
+            "apply it only as the project's `LEARNING_WRITE_POLICY` allows",
+            "name the code change it requires instead",
             "Owner rules on safety, authority and workflow always apply",
         ):
             with self.subTest(clause=clause):
@@ -1351,15 +1352,28 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("under `ASK`, prepare the exact single-store diff", hooks)
         self.assertIn("under `OFF`, keep the prevention candidate", hooks)
         flat_hooks = " ".join(hooks.split())
-        for clause in (
-            "Act as soon as the change arrives, before continuing other work",
-            "the goal-file row when a ledger is active",
-            "contradicts a line in another project instruction file",
-            "under `AUTO_SCOPED`, edit it; under `ASK`, prepare its exact diff and ask once; "
-            "under `OFF`, name the stale line in the final report",
+        for safeguard in (
+            "This standing policy never authorizes global instructions",
+            "within their existing classification/write rules",
+            "Preserve managed blocks",
         ):
-            with self.subTest(clause=clause):
-                self.assertIn(clause, flat_hooks)
+            with self.subTest(safeguard=safeguard):
+                self.assertIn(safeguard, flat_hooks)
+        decision = flat_hooks.split("### `OWNER_DECISION_CHANGED`", 1)[1].split("### ", 1)[0]
+        for term in (
+            "as soon as the change arrives",
+            "goal-file row",
+            "instruction file",
+            "controlled stop",
+        ):
+            with self.subTest(term=term):
+                self.assertIn(term, decision)
+        policy = decision[decision.index("instruction file"):]
+        positions = [policy.find(mark) for mark in ("`AUTO_SCOPED`", "`ASK`", "`OFF`")]
+        self.assertNotIn(-1, positions)
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn("exact diff", policy[positions[1]:positions[2]])
+        self.assertIn("stale line", policy[positions[2]:])
         self.assertIn("do not\n     create or modify `tasks/lessons.md`", hooks)
 
         self.assertIn("`AUTO_SCOPED` may persist", readme)

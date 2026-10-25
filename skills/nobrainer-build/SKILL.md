@@ -29,11 +29,13 @@ Before the first write, resolve:
 When instruction files or docs describe a coding convention the existing code
 does not follow, do not pick one silently. Follow the convention the code uses,
 unless the instruction is an explicit owner rule or names a deliberate migration,
-and list each disagreement in the final report with the exact edit that would
-bring the instruction file in line. Apply that edit only as the project's
-`LEARNING_WRITE_POLICY` allows ([correction hooks](../nobrainer-tech-flow/references/correction-hooks.md)),
-so the next run does not inherit the stale rule. Owner rules on safety, authority
-and workflow always apply.
+and list each disagreement in the final report. When the code's convention wins,
+include the exact edit that would bring the stale instruction file in line, and
+apply it only as the project's `LEARNING_WRITE_POLICY` allows
+([correction hooks](../nobrainer-tech-flow/references/correction-hooks.md)), so the
+next run does not inherit the stale rule. When an owner rule or migration wins,
+name the code change it requires instead. Owner rules on safety, authority and
+workflow always apply.
 
 Preserve unrelated changes. Use an isolated worktree or disjoint write scope
 when another writer is active. If a missing requirement changes architecture,

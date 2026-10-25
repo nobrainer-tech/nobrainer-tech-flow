@@ -47,8 +47,9 @@ recording, before and after where possible, because unit tests alone do not prov
 When instruction files or docs describe a coding convention that the existing code does not
 follow, `nobrainer-build` no longer picks one silently: it follows the code, unless the
 instruction is an explicit owner rule or names a deliberate migration, and lists each
-disagreement in its final report with the exact edit that would bring the instruction file
-in line, applied only as the learning policy allows.
+disagreement in its final report. When the code wins, the report includes the exact edit
+that fixes the stale instruction file, applied only as the learning policy allows; when an
+owner rule or migration wins, it names the code change required.
 
 The README now lists the free remote MCP server as an install channel, the docs say the
 npm package is published, and an intermittent bounded-runner test failure is fixed.
