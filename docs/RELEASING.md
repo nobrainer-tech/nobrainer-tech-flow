@@ -15,9 +15,11 @@ when each channel reads back that version, or the gap is reported:
    branch, so install `nobrainer-tech-flow@nobrainer-tech` in a throwaway profile while
    `main` still equals the tag, and read back the version and the installed commit.
 4. `nobrainer-tech/nobrainer-tech-flow-plugin`: export the release ZIP there
-   through a PR without `.mcp.json` or the root `mcp.json`, and remove the `mcpServers` field from the
-   copied `.codex-plugin/plugin.json` (Claude's validator rejects a remote server
-   without `type`, which OpenAI's required shape forbids). From `docs/` keep only
+   through a PR. That copy is tracked only by the Claude directory, so leave out
+   `.mcp.json`, the root `mcp.json`, the root portable `plugin.json`, the
+   `.codex-plugin/` folder and `assets/` (Claude's validator rejects OpenAI's remote
+   server shape, and the other manifests only add image-reference findings; ChatGPT and
+   Codex use this repository's marketplace and the release ZIP). From `docs/` keep only
    `CHAT_PLUGINS.md` and `PRIVACY.md`, the two files its README and manifests link: the
    other guides and `docs/releases/` stay here, and the Claude directory's automatic
    checks flag the install commands and image references in them. Keep the
