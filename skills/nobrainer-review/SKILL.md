@@ -1,6 +1,6 @@
 ---
 name: nobrainer-review
-description: "Use when the owner says nb-review, deep-audit, deep-code-review, or deep-autoreview; explicitly requests an evidence-gated CLOSEOUT, adversarial BUG_HUNT or RELEASE_GATE; or needs final findings filtered to verified actionable defects. Use nobrainer-build for ordinary implementation and correction work."
+description: "Use when work needs an evidence-gated CLOSEOUT, an adversarial BUG_HUNT or a RELEASE_GATE, or when final findings must be filtered to verified actionable defects. Use nobrainer-build for ordinary implementation and correction work. Aliases: nb-review, deep-audit, deep-code-review, deep-autoreview."
 ---
 
 # NoBrainer Review

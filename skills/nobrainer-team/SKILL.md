@@ -1,6 +1,6 @@
 ---
 name: nobrainer-team
-description: "Use when the owner says nb-team or nobrainer-skill-browser, or after nobrainer-tech-flow has produced an approved non-trivial plan that needs installed-capability inventory, bounded worker assignments, task-local specialist briefs, or native parallel execution; do not use to elicit requirements, invent the plan, schedule work, or create sessions."
+description: "Use when an approved non-trivial plan from nobrainer-tech-flow needs an installed-capability inventory, bounded worker assignments, task-local specialist briefs or native parallel execution; do not use to elicit requirements, invent the plan, schedule work, or create sessions. Aliases: nb-team, nobrainer-skill-browser."
 ---
 
 # NoBrainer Team

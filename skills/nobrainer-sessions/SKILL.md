@@ -1,6 +1,6 @@
 ---
 name: nobrainer-sessions
-description: "Use when the owner says nb-sessions, nb-multi, session-handoff, session-restart, or nb-session-restart, or asks for visible named reusable multi-session work with exact identity, isolated write scopes, audited handoffs, recovery, or controlled parallelism; do not use for a coherent one-session task."
+description: "Use when work needs visible, named, reusable sessions with exact identity, isolated write scopes, audited handoffs, recovery or controlled parallelism; do not use for a coherent one-session task. Aliases: nb-sessions, nb-multi, session-handoff, session-restart, nb-session-restart."
 ---
 
 # NoBrainer Sessions

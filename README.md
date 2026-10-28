@@ -17,8 +17,8 @@
 </p>
 
 <p align="center">
-  One workflow with 18 modules that lets your coding agent do the work, check it
-  and hand over the evidence: what was delivered, what was checked and what was not.
+  One workflow with 18 modules. Your coding agent does the work and checks it.
+  Then it hands over the evidence: what was delivered, what was checked and what was not.
 </p>
 
 <p align="center">
@@ -57,15 +57,15 @@
   <a href="mcp/README.md#install"><img alt="MCP server mcp.nobrainer.tech" src="https://img.shields.io/badge/MCP-mcp.nobrainer.tech%2Fmcp-151515?logo=modelcontextprotocol&style=for-the-badge&logoColor=white&labelColor=3B65F0"></a>
 </p>
 
-The MCP server is verified in Claude Code, Codex CLI and OpenCode. Claude.ai, ChatGPT,
-Cursor, VS Code / Copilot, Gemini CLI, Cline, Windsurf and Zed have setup steps in the
-[MCP server README](mcp/README.md#install) and are not verified yet. What has been loaded
+The MCP server is verified in Claude Code, Codex CLI and OpenCode. The
+[MCP server README](mcp/README.md#install) has setup steps for Claude.ai, ChatGPT, Cursor,
+VS Code / Copilot, Gemini CLI, Cline, Windsurf and Zed. These are not verified yet. What has been loaded
 and tested in each coding agent is in the [compatibility evidence](docs/COMPATIBILITY.md).
 
 ## What it does
 
-- **A handoff you can check.** Each finished task lists what was delivered, which checks
-  ran and what was not checked. An optional evidence receipt marks a check `STALE` once
+- **A handoff you can check.** Each finished task ends with `Delivered`, `Checked`
+  (command and result) and `Not checked` (gap and reason). An optional evidence receipt marks a check `STALE` once
   its input files change.
 - **Small tasks stay small.** A quick answer stays a quick answer; larger work gets one
   focused question round, a short TODO, execution and verification.
@@ -106,9 +106,9 @@ Then start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer
 **npm** (Node 18+ and Python 3.11+); `--client` is `codex`, `claude`, `opencode` or `copilot`:
 
 ```sh
-npx nobrainer-tech-flow@2.7.3 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.7.3 --client codex --apply    # install
-npx nobrainer-tech-flow@2.7.3 --client codex --undo --apply
+npx nobrainer-tech-flow@2.8.0 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.8.0 --client codex --apply    # install
+npx nobrainer-tech-flow@2.8.0 --client codex --undo --apply
 ```
 
 **Any coding agent** (Git install with preview and undo; macOS, Linux and Windows, no
@@ -151,7 +151,7 @@ claude mcp add --transport http nobrainer-tech-flow https://mcp.nobrainer.tech/m
 ```
 
 Its six read-only tools give the agent a task contract, an evidence check, a done gate and
-a model advisor; it does not install the 18 modules. Other clients:
+a model advisor. It does not install the 18 modules. Other clients:
 [MCP server README](mcp/README.md#install).
 
 **First task.** In a fresh session, give it one small task with a checkable result:
@@ -183,7 +183,7 @@ flowchart TD
     D -->|yes| E[Direct answer or edit; check the result]
     D -->|no| F[SCOPE + PLAN: outcome, authority, proof; concise TODO]
     F --> S[Short-term goal from long-term direction]
-    F -. SDD requested or justified .-> U[Reviewed spec; acceptance IDs; preserve owner gates]
+    F -. SDD requested or justified .-> U[Reviewed spec; acceptance IDs; keep approval gates]
     U --> G
     S --> G[AUTOPILOT: execute the authorized scope; select ready work and check]
     G --> H[Verify; independent REVIEW when useful]
@@ -196,9 +196,7 @@ flowchart TD
     P --> G
     J -. independent authorized work remains .-> P
     F -. optional .-> L[Markdown goal for resume]
-    G -. only units that gain from parallel work, isolated context, review or specialization .-> M[Bounded native subagents; owner-approved model and effort]
-    G -. configured shadow only .-> Q[Jev remote or Laya local: advisory typed decisions]
-    Q -. unavailable or invalid: core fallback .-> G
+    G -. only units that gain from parallel work, isolated context, review or specialization .-> M[Bounded native subagents; model and effort you approved]
     M -->|Plain technical English reports| H
     H -. audited unit; dispatch the next qualifying unit .-> M
     F -. first project use .-> R[Inspect layers and relevant wiki]
@@ -235,18 +233,19 @@ flowchart TD
 What each one owns and its trigger aliases:
 [skill table](docs/HOW_IT_WORKS.md#eighteen-skills-distinct-ownership).
 
-## What's new in 2.7.3
+## What's new in 2.8.0
 
-The optional Jev classifier helper no longer reads a credential from your machine: pipe the
-TypeSafe key on stdin with `--key-stdin` (the old `--key-env` flag is removed). The writing
-skill's API proof wording and the plugin-repository export changed so the Claude plugin
-directory's automatic checks pass. Other skills and workflow guidance do not change.
-See the [2.7.3 verification record](docs/releases/v2.7.3.md).
+Every finished task now ends with the same three-part handoff: `Delivered`, `Checked`
+(each command with its result) and `Not checked` (each gap with its reason). A validator
+keeps that block in the skill. The done gate also asks the agent to list each place where
+docs and code disagree. Each module description now starts with the situation it handles,
+so you can find the right module by what you need. See the
+[2.8.0 verification record](docs/releases/v2.8.0.md).
 
 ## What's new in 2.7.0
 
 Before substantial work the agent shows what done means and sets it as the host's native
-goal where one exists. Flow delegates only where it pays, records each owner request in the
+goal where one exists. Flow delegates only where it pays, records each of your requests in the
 goal file as it arrives so compaction cannot drop it, and a security review needs a second
 independent pass before it can report a clean result. Full notes:
 [RELEASE-NOTES.md](RELEASE-NOTES.md) and the [2.7.0 verification record](docs/releases/v2.7.0.md).

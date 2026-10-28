@@ -272,6 +272,36 @@ def public_scan_text(path: Path, text: str) -> str:
     return text
 
 
+HANDOFF_LINES = ("Delivered:", "Checked:", "Not checked:")
+
+
+def handoff_block_errors(text: str) -> list[str]:
+    """The entry skill must require the fixed final handoff block."""
+    start = text.find("End every non-trivial task with this handoff block.")
+    if start < 0:
+        return ["entry skill: missing the required final handoff block"]
+    fence = text.find("```text", start)
+    end = text.find("```", fence + len("```text")) if fence >= 0 else -1
+    if fence < 0 or end < 0:
+        return ["entry skill: handoff block must be a fenced text template"]
+    block = [line.strip() for line in text[fence:end].splitlines()]
+    errors = []
+    positions = []
+    for label in HANDOFF_LINES:
+        matches = [i for i, line in enumerate(block) if line.startswith(label)]
+        if not matches:
+            errors.append(f"entry skill: handoff block lacks {label!r}")
+        else:
+            positions.append(matches[0])
+    if not errors and positions != sorted(positions):
+        errors.append("entry skill: handoff block must order Delivered, Checked, Not checked")
+    if "->" not in text[fence:end]:
+        errors.append("entry skill: Checked lines must pair a command with its result (->)")
+    if "DONE_WITH_GAPS" not in text:
+        errors.append("entry skill: handoff block must name the DONE_WITH_GAPS meaning")
+    return errors
+
+
 def validate(suite_only: bool) -> list[str]:
     errors: list[str] = []
     seen: dict[str, Path] = {}
@@ -341,6 +371,9 @@ def validate(suite_only: bool) -> list[str]:
                 errors.append(
                     f"{path.relative_to(ROOT)}: missing required alias trigger {required_alias}"
                 )
+    entry = SKILLS / "nobrainer-tech-flow" / "SKILL.md"
+    if entry.is_file():
+        errors.extend(handoff_block_errors(entry.read_text(encoding="utf-8")))
     for name in LEGACY:
         if (SKILLS / name / "SKILL.md").exists():
             errors.append(f"legacy skill remains discoverable: {name}")

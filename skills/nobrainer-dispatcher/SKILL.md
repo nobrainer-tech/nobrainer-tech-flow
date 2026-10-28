@@ -1,6 +1,6 @@
 ---
 name: nobrainer-dispatcher
-description: "Use when the owner says nb-dispatcher or nobrainer-dispatcher, or when an approved plan has multiple queued work units that require ready-set selection, dependency-aware ordering, bounded parallel batches, retry scheduling, or routing audited results to the next queued unit; do not use for one coherent task, one bounded delegate, a standalone receive-audit, requirements, team design, or session transport."
+description: "Use when an approved plan has multiple queued work units that require ready-set selection, dependency-aware ordering, bounded parallel batches, retry scheduling, or routing audited results to the next queued unit; do not use for one coherent task, one bounded delegate, a standalone receive-audit, requirements, team design, or session transport. Aliases: nb-dispatcher, nobrainer-dispatcher."
 ---
 
 # NoBrainer Dispatcher

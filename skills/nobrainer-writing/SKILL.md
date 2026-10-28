@@ -1,6 +1,6 @@
 ---
 name: nobrainer-writing
-description: "Use when the owner says nb-write, nb-brief, nobrainer-writing, nobrainer-style, or nobrainer-human-like, or asks for prose quality work on a user-facing artifact, such as drafting, rewriting, compressing, humanizing, editing, or reviewing it; maximize useful information per word without dropping facts, evidence, caveats, voice, or required action."
+description: "Use when a user-facing artifact needs prose quality work, such as drafting, rewriting, compressing, humanizing, editing or reviewing it; maximize useful information per word without dropping facts, evidence, caveats, voice or required action. Aliases: nb-write, nb-brief, nobrainer-writing, nobrainer-style, nobrainer-human-like."
 ---
 
 # NoBrainer Writing

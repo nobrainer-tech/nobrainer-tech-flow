@@ -302,7 +302,7 @@ def render(include_tests: dict | None) -> tuple[str, bool]:
     add("It measures **Flow as a piece of software and a body of instructions**: do its gates pass, how stable is its CI, how fast is its "
         "pipeline, and how much context does it add. It does **not** yet measure **Flow as a way of working**: whether an agent using Flow "
         "finishes real tasks better, faster or cheaper than the same agent without it. That needs paid, repeated, paired model runs, "
-        "planned in [paid-run-plan.md](paid-run-plan.md) and not yet approved or run. Until then no claim about task quality, speed or "
+        "planned outside this repository and not yet approved or run. Until then no claim about task quality, speed or "
         "cost savings is made, in line with the release records.")
     add("")
     add("Each metric on the scoreboard carries a status: `MEASURED`, `PARTIAL` (a real number with a stated limit) or `NOT_RUN`. "

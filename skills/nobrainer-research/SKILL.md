@@ -1,6 +1,6 @@
 ---
 name: nobrainer-research
-description: "Use when the owner says nb-research, asks to research or verify external information, when a task depends on current, niche, uncertain, high-stakes, or source-attributed facts, or when solving a problem requires current external evidence rather than a stable local diagnostic."
+description: "Use when a task depends on current, niche, uncertain, high-stakes or source-attributed facts, when external information must be researched or verified, or when a problem needs current external evidence rather than a stable local diagnostic. Alias: nb-research."
 ---
 
 # NoBrainer Research

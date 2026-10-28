@@ -36,7 +36,7 @@ class FlowReportTests(unittest.TestCase):
                  "quote": ["## Measurement report", "text that is not in the file"]}
         with mock.patch.object(flow_report, "read_json", return_value={"entries": [entry]}):
             self.assertFalse(flow_report.check_ledger()[0]["verified"])
-        entry["quote"] = ["## Measurement report", "paid-run-plan.md"]
+        entry["quote"] = ["## Measurement report", "paid runs"]
         with mock.patch.object(flow_report, "read_json", return_value={"entries": [entry]}):
             self.assertTrue(flow_report.check_ledger()[0]["verified"])
 

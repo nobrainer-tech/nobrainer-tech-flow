@@ -9,3 +9,7 @@ backups/
 *.bak
 *.backup
 *.backup-*
+
+# Maintainer-private planning notes stay out of the public source.
+/tasks/
+/docs/reports/paid-run-plan.md

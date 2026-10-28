@@ -1,5 +1,23 @@
 # nobrainer-tech-flow release notes
 
+## v2.8.0 - 2026-10-28
+
+Every finished task now ends with one fixed handoff block: `Delivered`, `Checked` (each
+command or check with its observed result) and `Not checked` (each gap with its reason).
+A listed gap means done with gaps, not done, the same meaning as the MCP server's
+`DONE_WITH_GAPS` verdict. `scripts/validate_skills.py --suite` now fails when the entry
+skill loses that block. The verify gate also asks the agent to list each place the task
+touched where docs and code disagree.
+
+Seventeen module descriptions now start with the situation they handle instead of a
+command alias; the `nb-*` aliases move to the end and still trigger. The entry skill and
+the README top section use plain language: "the user" instead of "owner", "main agent"
+instead of MAIN in prose, and shorter sentences. Stage tokens such as
+`OWNER_DECISION_REQUIRED` do not change. Maintainer-only planning files (`tasks/` and
+`docs/reports/paid-run-plan.md`) are no longer tracked, the README chart no longer shows
+the optional Jev and Laya profiles, and `docs/COMPATIBILITY.md` now states the real
+distribution state. See the [2.8.0 record](docs/releases/v2.8.0.md).
+
 ## v2.7.3 - 2026-10-25
 
 Clears the automatic-check warnings that the Claude plugin directory showed. The optional

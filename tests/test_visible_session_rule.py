@@ -6,7 +6,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 FLOW = ROOT / "skills" / "nobrainer-tech-flow"
 CANONICAL = (
-    "visible conversations require explicit owner request or authorized MAIN restart; "
+    "visible conversations require an explicit user request or an authorized main-agent restart; "
     "isolation, reuse or handoff alone never authorize one"
 )
 ANCHOR = "SKILL.md#choose-the-smallest-workflow"

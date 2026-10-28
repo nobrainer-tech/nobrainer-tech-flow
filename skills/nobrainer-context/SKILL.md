@@ -1,6 +1,6 @@
 ---
 name: nobrainer-context
-description: "Use when the owner says nb-context or asks to set up, audit or tidy one project's instructions for coding agents (AGENTS.md, CLAUDE.md, GEMINI.md, Cursor rules, Copilot instructions): find what each client loads and its size against documented limits, report duplicates and contradictions, then propose one source of truth with short pointers, applied only after approval and read back."
+description: "Use when one project's instructions for coding agents (AGENTS.md, CLAUDE.md, GEMINI.md, Cursor rules, Copilot instructions) need setup, an audit or tidying: find what each client loads and its size against documented limits, report duplicates and contradictions, then propose one source of truth with short pointers, applied only after approval and read back. Alias: nb-context."
 ---
 
 # NoBrainer Context

@@ -1,6 +1,6 @@
 ---
 name: nobrainer-browser
-description: "Use when the owner says nb-browser or nobrainer-browser, asks to inspect or operate a rendered website, attach to an existing approved Chrome/Edge session, restart an approved non-default Chromium profile for loopback CDP, reproduce a browser flow, run Playwright tests, or record and analyze a Playwright trace. Prefer a current Playwright CLI with an explicit version readback; do not set up MCP or extra browser plugins by default."
+description: "Use when you need to inspect or operate a rendered website, attach to an existing approved Chrome/Edge session, restart an approved non-default Chromium profile for loopback CDP, reproduce a browser flow, run Playwright tests, or record and analyze a Playwright trace. Prefer a current Playwright CLI with an explicit version readback; do not set up MCP or extra browser plugins by default. Aliases: nb-browser, nobrainer-browser."
 ---
 
 # NoBrainer Browser
