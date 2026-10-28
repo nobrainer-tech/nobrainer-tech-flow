@@ -1,6 +1,6 @@
 ---
 name: nobrainer-spec-driven-development
-description: "Use when the owner says nb-sdd or when implementation needs a durable, reviewable specification because it changes architecture, public contracts, migrations, several dependent components, or work that may span sessions."
+description: "Use when implementation needs a durable, reviewable specification because it changes architecture, public contracts, migrations, several dependent components, or work that may span sessions. Alias: nb-sdd."
 ---
 
 # NoBrainer Spec-Driven Development

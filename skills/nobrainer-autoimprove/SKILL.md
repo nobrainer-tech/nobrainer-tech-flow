@@ -1,6 +1,6 @@
 ---
 name: nobrainer-autoimprove
-description: "Use when the owner says nb-autoimprove, deep-autoresearch, code-autoresearch, nobrainer-capture-lesson, or nobrainer-continuous-improvement; asks to improve a skill or prompt; or wants a measurable bounded baseline-variant-evaluation loop instead of one subjective rewrite."
+description: "Use when a skill or prompt needs to improve and a measurable, bounded baseline-variant-evaluation loop should replace one subjective rewrite. Aliases: nb-autoimprove, deep-autoresearch, code-autoresearch, nobrainer-capture-lesson, nobrainer-continuous-improvement."
 ---
 
 # NoBrainer Autoimprove

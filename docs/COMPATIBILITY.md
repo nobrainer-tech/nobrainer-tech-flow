@@ -21,10 +21,10 @@ Never promote one level from evidence belonging to another.
 Merge is a repository delivery state, not a client-compatibility level; release
 evidence records it separately.
 
-The current source version is **2.1.1**. Its release scope and proof limits are
-recorded in the [2.1.1 verification record](releases/v2.1.1.md), which refines
-the communication defaults of [2.1.0](releases/v2.1.0.md).
-It builds on the [2.0.2 installer record](releases/v2.0.2.md).
+The current source version is **2.8.0**. Its release scope and proof limits are
+recorded in the [2.8.0 verification record](releases/v2.8.0.md). Earlier records,
+such as [2.1.1](releases/v2.1.1.md), [2.1.0](releases/v2.1.0.md) and the
+[2.0.2 installer record](releases/v2.0.2.md), describe their own releases.
 The [2.0.0](releases/v2.0.0.md) and [1.14.1](releases/v1.14.1.md) records are
 historical evidence, not statements about the current source. The package/entrypoint migration
 is documented in the [migration guide](MIGRATION_TO_FLOW.md).
@@ -74,7 +74,8 @@ and current behavioral evidence in
 [the Autoimprove evaluation](evals/v1.3.0-autoimprove-integrity-2026-09-01.md).
 The older client transcripts remain hash-scoped and do not silently upgrade to
 marketplace or automatic-routing claims. Both clients retain explicit-runtime
-evidence only; automatic routing and client publication remain unverified.
+evidence only; automatic routing remains unverified. The current distribution state is in
+[Distribution channels](#distribution-channels).
 
 ## Adapter contracts and historical client evidence
 
@@ -83,8 +84,8 @@ not mean the external client's parser accepted or loaded the package.
 
 | Client / harness | Source | Repository contract | Client load | Runtime | Distribution |
 |---|---|---|---|---|---|
-| Claude Code | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: manifest, portable installer and Claude SessionStart output | `CLIENT_LOADED`: CLI `2.1.241`, isolated plugin, namespaced explicit invocation | `RUNTIME_VERIFIED_EXPLICIT`: final nobrainer-tech-flow route reached and read canonical Autoimprove; automatic routing remains unverified | `NOT_PUBLISHED` |
-| Codex | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: accepted manifest schema and portable installer | `CLIENT_LOADED`: CLI `0.149.1`, repo-scoped copy, explicit canonical invocation | `RUNTIME_VERIFIED_EXPLICIT`: final Luna cases and isolated implementation passed; automatic and alias-only routing remain unverified | `NOT_PUBLISHED` |
+| Claude Code | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: manifest, portable installer and Claude SessionStart output | `CLIENT_LOADED`: CLI `2.1.241`, isolated plugin, namespaced explicit invocation | `RUNTIME_VERIFIED_EXPLICIT`: final nobrainer-tech-flow route reached and read canonical Autoimprove; automatic routing remains unverified | `DISTRIBUTED`: this repository's Git marketplace (see [Distribution channels](#distribution-channels)); not listed in the Claude plugin directory |
+| Codex | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: accepted manifest schema and portable installer | `CLIENT_LOADED`: CLI `0.149.1`, repo-scoped copy, explicit canonical invocation | `RUNTIME_VERIFIED_EXPLICIT`: final Luna cases and isolated implementation passed; automatic and alias-only routing remain unverified | `DISTRIBUTED`: this repository's Git marketplace (see [Distribution channels](#distribution-channels)); not listed in the OpenAI plugin directory |
 | Cursor | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: manifest path and Cursor SessionStart output | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | OpenCode | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: skills registration plus idempotent first-user transform | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
 | GitHub Copilot CLI | `SOURCE_VALIDATED` | `REPOSITORY_CHECKED`: portable installer and repository instructions; no bootstrap | `NOT_VERIFIED` | `NOT_VERIFIED` | `NOT_PUBLISHED` |
@@ -101,6 +102,24 @@ recorded historical versions and hashes; they do not silently transfer to the cu
 Consult the current release record for new probes. There is deliberately no blanket “works everywhere”
 badge: an unknown harness gets portable skill folders, then needs its own
 discovery/bootstrap proof before promotion.
+
+## Distribution channels
+
+`DISTRIBUTED` means the release can be installed from a public channel and that install
+was read back. It says nothing about routing or model behavior.
+
+| Channel | State | Evidence |
+|---|---|---|
+| GitHub release with the plugin ZIP | `DISTRIBUTED` | Each `vX.Y.Z` release carries `nobrainer-tech-flow-X.Y.Z-plugin.zip` ([releasing](RELEASING.md)) |
+| npm package `nobrainer-tech-flow` | `DISTRIBUTED` | `npm view nobrainer-tech-flow version` returns the released version |
+| Claude Code marketplace in this repository | `DISTRIBUTED` | 2026-10-28, Claude Code `2.1.310`, empty `CLAUDE_CONFIG_DIR`: `claude plugin marketplace add nobrainer-tech/nobrainer-tech-flow` and `claude plugin install nobrainer-tech-flow@nobrainer-tech` installed the default branch (2.7.3), listed as enabled |
+| Codex marketplace in this repository | `DISTRIBUTED` | 2026-10-28, Codex `0.163.0`, empty `CODEX_HOME`: `codex plugin marketplace add nobrainer-tech/nobrainer-tech-flow` and `codex plugin add nobrainer-tech-flow@nobrainer-tech` installed 2.7.3, listed as installed and enabled |
+| Claude plugin directory and OpenAI plugin directory | `NOT_PUBLISHED` | Neither directory lists the plugin yet; submission is a maintainer step ([releasing](RELEASING.md), step 5) |
+| Cursor, Gemini CLI, Kimi Code and Pi registries | `NOT_PUBLISHED` | These clients install from this repository; see the [installation guide](INSTALL.md#client-channels) |
+
+Both marketplaces follow the default branch. Each release repeats this readback for the new
+version ([releasing](RELEASING.md), step 3). An install readback is `CLIENT_LOADED`
+evidence for that version; automatic routing stays unverified.
 
 ## Adapter contract
 

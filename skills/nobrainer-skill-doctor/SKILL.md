@@ -1,6 +1,6 @@
 ---
 name: nobrainer-skill-doctor
-description: "Use when the owner says nb-skill-doctor, requests a skill or task-prompt quality audit, or reviews instruction conflicts across projects. For which instruction files coding agents load in one project, use nobrainer-context."
+description: "Use when a skill or task prompt needs a quality audit, or when instructions conflict across projects. For which instruction files coding agents load in one project, use nobrainer-context. Alias: nb-skill-doctor."
 ---
 
 # NoBrainer Skill Doctor

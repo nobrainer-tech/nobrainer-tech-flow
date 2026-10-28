@@ -6,7 +6,7 @@ STATUS: APPROVED
 OWNER: repository owner
 APPROVED_BY: owner instruction to implement and release, recorded 2026-09-11
 APPROVED_AT: authorization recorded 2026-09-11; source acceptance recorded in tracker
-SPEC_HASH: see tasks/autopilot-delivery-audit.md (hash stored outside specification)
+SPEC_HASH: stored in the maintainer's tracker outside this repository
 
 ## Outcome and assumptions
 
@@ -115,7 +115,7 @@ Real security/acceptance blockers cannot be waived by a review-count limit.
 | M4 | Review convergence and naming coherence | M1 | AC09, AC11 |
 | M5 | Integrated scenario review and deterministic verification | M2, M3, M4 | AC01-AC14 |
 
-Current progress and evidence live in [the tracker](../../tasks/autopilot-delivery-audit.md).
+Progress and evidence were tracked in the maintainer's tracker outside this repository.
 M5 accepts this local source change, not a deployment or universal runtime claim.
 
 ## Recovery and approval

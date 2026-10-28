@@ -1,6 +1,6 @@
 ---
 name: nobrainer-build
-description: "Use when the owner says nb-build, engineering-standards, or nobrainer-simplifier, or asks to implement or simplify an approved bounded code, configuration, documentation, or test change after outcome and acceptance are clear; apply the smallest verified edit with calibrated KISS, DRY, SOLID, YAGNI and anti-slop gates."
+description: "Use when outcome and acceptance are clear and an approved, bounded code, configuration, documentation or test change must be implemented or simplified; apply the smallest verified edit with calibrated KISS, DRY, SOLID, YAGNI and anti-slop gates. Aliases: nb-build, engineering-standards, nobrainer-simplifier."
 ---
 
 # NoBrainer Build

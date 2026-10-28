@@ -1,6 +1,6 @@
 ---
 name: nobrainer-auto-fine-tune
-description: "Use when setting up nobrainer-tech-flow for the first time, when the owner says nb-auto-fine-tune, or when client capabilities, model routing, context or useful parallelism need recalibration."
+description: "Use when setting up nobrainer-tech-flow for the first time, or when client capabilities, model routing, context or useful parallelism need recalibration. Alias: nb-auto-fine-tune."
 ---
 
 # nobrainer-tech-flow: Orchestration Calibration

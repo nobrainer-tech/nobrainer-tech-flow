@@ -176,9 +176,8 @@ requested versus actual model, effort, budget and escalation behavior.
 repository already measures under four headings (quality, reliability, speed, cost) and
 labels what it does not. `python3 scripts/flow_report.py --write` regenerates it from
 repository data with no model call; `--check` fails when it is stale. It measures Flow as
-software. Whether an agent finishes tasks better or cheaper with Flow needs the paired,
-paid runs in [`reports/paid-run-plan.md`](reports/paid-run-plan.md), which are not approved
-or run.
+software. Whether an agent finishes tasks better or cheaper with Flow needs paired,
+paid runs; they are planned outside this repository and are not approved or run.
 
 ## Release gate
 

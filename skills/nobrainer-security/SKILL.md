@@ -1,6 +1,6 @@
 ---
 name: nobrainer-security
-description: "Use when the owner says nb-security or security-review, requests a threat model or security review, or when a change crosses authentication, authorization, secrets, untrusted input, sensitive data, dependency, installer, or production trust boundaries."
+description: "Use when a change crosses authentication, authorization, secrets, untrusted input, sensitive data, dependency, installer or production trust boundaries, or when you need a threat model or security review. Aliases: nb-security, security-review."
 ---
 
 # NoBrainer Security

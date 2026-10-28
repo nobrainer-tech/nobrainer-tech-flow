@@ -1,6 +1,6 @@
 ---
 name: nobrainer-wiki
-description: "Use when the owner says nb-wiki, nb-add, nb-get, nb-tidy, or llm-wiki; asks to create or query a wiki, save durable knowledge, or safely audit and maintain a Markdown knowledge base across projects or sessions; do not use for transient task state."
+description: "Use when durable knowledge must be saved or found again, a wiki must be created or queried, or a Markdown knowledge base across projects or sessions needs a safe audit or upkeep; do not use for transient task state. Aliases: nb-wiki, nb-add, nb-get, nb-tidy, llm-wiki."
 ---
 
 # NoBrainer Wiki

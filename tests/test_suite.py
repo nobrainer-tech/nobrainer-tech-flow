@@ -314,7 +314,7 @@ class SuiteTests(unittest.TestCase):
             self.assertIn(term, text)
         self.assertNotIn("continue until done", text.lower())
         self.assertIn("one focused requirements round", text.lower())
-        self.assertIn("do not make them owner questions", text.lower())
+        self.assertIn("do not make them questions for the user", text.lower())
         self.assertIn("without routine check-ins", text.lower())
         self.assertIn("quick path for small changes", text.lower())
         self.assertIn("one coherent, reversible edit", text.lower())
@@ -337,7 +337,7 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("ordinary single-session", text.lower())
         self.assertIn("detailed ledger", text.lower())
         self.assertIn("native subagents", text.lower())
-        self.assertIn("visible conversations require explicit owner request", text.lower())
+        self.assertIn("visible conversations require an explicit user request", text.lower())
         normalized = " ".join(text.lower().split())
         self.assertIn("do not add a repetitive skill/mode preamble", normalized)
         self.assertIn("invent unseen", text.lower())
@@ -361,8 +361,9 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("one canonical todo owner", normalized.lower())
         self.assertIn("A stale summary never authorizes a successor", normalized)
         self.assertNotIn("Run this state machine on every non-trivial invocation", text)
-        self.assertLessEqual(len(text.splitlines()), 240)
-        self.assertLessEqual(len(text.split()), 1750)
+        # 2.8.0 raised the budget from 240 lines / 1750 words for the required handoff block.
+        self.assertLessEqual(len(text.splitlines()), 250)
+        self.assertLessEqual(len(text.split()), 1900)
         routing = (
             SKILLS / "nobrainer-tech-flow" / "references" / "routing.md"
         ).read_text(encoding="utf-8")
@@ -374,7 +375,7 @@ class SuiteTests(unittest.TestCase):
         skill = " ".join((flow / "SKILL.md").read_text(encoding="utf-8").split())
         self.assertIn("Otherwise a multi-component task", skill)
         gate = skill[skill.index("Use a detailed ledger only when") : skill.index("Otherwise a multi-component task")]
-        self.assertIn("the owner keeps adding requests mid-run in one long conversation", gate)
+        self.assertIn("the user keeps adding requests mid-run in one long conversation", gate)
 
         long_run = (flow / "references" / "long-run-state.md").read_text(encoding="utf-8")
         self.assertIn("## New owner requests", long_run)
@@ -471,7 +472,7 @@ class SuiteTests(unittest.TestCase):
             "goal readback",
             "show every field above",
             "detailed-ledger decision",
-            "show the owner what done means",
+            "show the user what done means",
             "set it as the host-native goal where supported",
             "one canonical todo owner stays visible",
             "the host's plan or todo tool, else the progress checklist",
