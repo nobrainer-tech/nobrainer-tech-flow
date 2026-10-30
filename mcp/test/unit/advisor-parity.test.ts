@@ -21,12 +21,12 @@ const NOW = new Date(Date.parse(SNAPSHOT.fetched_at) + 3600000);
 const pickOf = (input: Record<string, unknown>) =>
   ((recommendFlowModel(input, NOW) as { shortlist: Entry[] }).shortlist).filter(e => e.eligible !== false).map(e => e.model + '@' + (e.effort ?? 'default'));
 
-// Captured from the website's rank() on 2026-10-23, fetchedAt 2026-10-23T14:31:44.973108+00:00,
-// snapshotId sha256:973ea034541b00585a763f3ca0f3bca57b7cf87e1b02b55ce9315a0b25a9cbe6.
+// Captured from the website's rank() on 2026-10-30, fetchedAt 2026-10-30T08:13:13.369920+00:00
+// (daily-refresh candidate; the expected order is unchanged from the 2026-10-23 capture).
 // Date.now() at fetchedAt + 1 h, app opencode via ocx:
 // the first three distinct models of its eligible pool.
 const CAPTURE_INPUTS = {
-  'task-data.json': '17328e0d94178363ebd4973d7d6910ac805c19430210088183856f8f55bd27fc',
+  'task-data.json': '714475939cfe32fc514771c52ab526a222f33d13db99318ab95acaa9d6edcb7d',
   'task-router-core.js': 'ba815adbd3d86ccc40aa4870cd3719fe0c079d6835877a32ce4c258091b9fe68',
   'task-app-defaults.js': 'b48ab17d41a1ffec623c8dc59098cfe2b5e4dc916107374fdab871eaa7755c06',
   'task-model-policy.js': '32d5ce2785b7da143101eda2a0cef81749007eaf68adb4b8986c643e0fe18f71'

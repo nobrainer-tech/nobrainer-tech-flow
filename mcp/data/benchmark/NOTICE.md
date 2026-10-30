@@ -21,7 +21,7 @@ transformed; the build script shows every step.
 
 ## Snapshot scope
 
-The public benchmark fetched on 2026-10-23 contains no Artificial Analysis data.
+The public benchmark fetched on 2026-10-30 contains no Artificial Analysis data.
 This snapshot includes only its published Arena and Terminal-Bench quality
 measurements, model catalog metadata and aggregated telemetry. The legacy task
 `coding` (case-insensitive) maps to `terminal-coding`, as on the website; it is
