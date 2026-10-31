@@ -1,6 +1,6 @@
 {
   "name": "nobrainer-tech-flow",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "description": "From task to done. nobrainer-tech-flow is one workflow of 18 modules for AI coding agents: it scopes the task, does the work in one main loop, checks the result and hands over the evidence, including what was not checked.",
   "type": "module",
   "main": ".opencode/plugins/nobrainer-tech-skills.js",

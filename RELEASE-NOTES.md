@@ -1,5 +1,22 @@
 # nobrainer-tech-flow release notes
 
+## v2.9.0 - 2026-10-31
+
+The entry skill gains a `Work to done` section and a finish check, so "from task to
+done" no longer depends on the agent's default temperament. Intent is read from the whole
+conversation: a request to act is executed, while a question, review or brainstorm gets an
+answer without unrequested changes. The full scope stays in force, including requirements
+added mid-task; the easier part is never delivered as the whole. Known, authorized next
+steps are taken without check-ins, routine reversible details are decided in scope, and
+earlier permission is reused. Ambiguity is separated from a blocker: a safe assumption is
+named and work continues, only dependent work pauses, and silence is never consent. Before
+an unavoidable approval the agent prepares everything already allowed. After a failure it
+finds the cause and never repeats an identical attempt. The finish check makes the agent
+do any requested, possible and allowed action its reply would only promise, and stop only
+on acceptance, an explicit stop or a real blocker with the done part, missing item and
+unblock condition. The entry-skill size budget rises to 280 lines and 2150 words. See the
+[2.9.0 record](docs/releases/v2.9.0.md).
+
 ## v2.8.0 - 2026-10-28
 
 Every finished task now ends with one fixed handoff block: `Delivered`, `Checked` (each
