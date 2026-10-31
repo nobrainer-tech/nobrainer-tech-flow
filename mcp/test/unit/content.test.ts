@@ -82,7 +82,7 @@ test('the loader exposes typed cards', () => {
   assert.equal(getCard('stage:NOPE'), undefined);
   assert.equal(getCard('toString'), undefined);
   assert.equal(cardRules('gates').length, 1);
-  assert.match(cardRules('gates')[0] ?? '', /^Merge, deploy, publish, spend, delete, contact people, .* unless the owner already authorized that exact action\.$/);
+  assert.match(cardRules('gates')[0] ?? '', /^Merge, deploy, publish, spend, delete, contact people, .* unless the user already authorized that exact action\.$/);
   assert.deepEqual(cardRules('stage:NOPE'), []);
 });
 

@@ -8,7 +8,7 @@
   rules:
     - "For a clear low-risk answer, rewrite, calculation or one coherent, reversible edit, deliver and check directly."
     - "Escalate to the full Flow lifecycle for ambiguity, architecture, public behavior, routing or consequential side effects"
-    - "quick path never bypasses an owner gate"
+    - "quick path never bypasses an approval gate."
     - "Lifecycle: `DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN`."
     - "Finish when accepted; audit active workers."
   next: DRIFT_CHECK
@@ -28,7 +28,7 @@
   heading: "`BUDDY`: clarify once"
   rules:
     - "Use one focused requirements round only when evidence cannot resolve scope, architecture, safety or acceptance."
-    - "Code, schema, tests or conventions settle it; do not make them owner questions."
+    - "Code, schema, tests or conventions settle it; do not make them questions for the user."
     - "Ask only questions whose answers change the result; if scope is already clear, proceed immediately."
     - "Use `nobrainer-decide` for consequential choices."
     - "Use `nobrainer-spec-driven-development` when requested or architecture, interfaces, migration, rollback, dependencies or resumability justify it."
@@ -49,10 +49,10 @@
   heading: "`AUTOPILOT`: execute the bounded scope"
   rules:
     - "After readiness, continue without routine check-ins through approved edits, commands, focused tests, broader verification and bounded corrective work."
-    - "Stop for a changed frozen input, scope-changing discovery, unrecoverable blocker or real owner gate."
+    - "Stop for a changed frozen input, scope-changing discovery, unrecoverable blocker or real approval gate."
     - "Autonomy does not expand authority."
-    - "Merge, deploy, publish, spend, delete, contact people, change credentials, migrate data, mutate production or weaken safety controls remain explicit gates unless the owner already authorized that exact action."
-    - "Corrective-attempt budget (also Build and RCA): two attempts per observed failure, each with new evidence, or the owner's smaller budget; then diagnose or report the blocker."
+    - "Merge, deploy, publish, spend, delete, contact people, change credentials, migrate data, mutate production or weaken safety controls remain explicit gates unless the user already authorized that exact action."
+    - "Corrective-attempt budget (also Build and RCA): two attempts per observed failure, each with new evidence, or the user's smaller budget; then diagnose or report the blocker."
     - "Timeouts, partial results, dead sessions, failed checks and exhausted retries never prove completion."
   next: VERIFY
 "stage:VERIFY":
@@ -82,8 +82,10 @@
   rules:
     - "Persist only durable, sourced, authorized and non-secret knowledge."
     - "Use `nobrainer-autoimprove` only with a frozen baseline, calibrated evaluator outside candidate write scope and a fresh holdout; a null result is valid."
-    - "Final: delivered outcome, decisive proof, uncertainty and recovery if needed."
-    - "Do not dump internal forms or invent follow-up work after acceptance."
+    - "Finish check: compare the result with the whole agreed scope."
+    - "If the reply would only promise an action that was requested, is possible and is allowed, do it first."
+    - "Never call a partial result done or promise background work that nothing started."
+    - "Do not dump internal forms or invent follow-up work."
   next: draft_flow_handoff
 "event:blocked":
   source: skills/nobrainer-tech-flow/references/delivery.md
@@ -158,7 +160,7 @@
   source: skills/nobrainer-tech-flow/SKILL.md
   heading: "`AUTOPILOT`: execute the bounded scope"
   rules:
-    - "Merge, deploy, publish, spend, delete, contact people, change credentials, migrate data, mutate production or weaken safety controls remain explicit gates unless the owner already authorized that exact action."
+    - "Merge, deploy, publish, spend, delete, contact people, change credentials, migrate data, mutate production or weaken safety controls remain explicit gates unless the user already authorized that exact action."
 
 "module:nobrainer-auto-fine-tune":
   rules:
@@ -270,7 +272,7 @@
   rules:
     - "Respect the host instruction hierarchy; explicit user instructions override skill guidelines."
     - "Proceed when required inputs, authority and proof are available; unknown write ownership, stale input or ambiguous irreversible effects block the affected action."
-    - "Missing optional goals, telemetry or subagents does not block safe work; use ordinary files or MAIN."
+    - "Missing optional goals, telemetry or subagents does not block safe work; use ordinary files or the main agent."
     - "Choose the least complex capable method; route non-trivial implementation through `nobrainer-build`."
     - "Loading method context is not task execution; a routing-table line or remembered summary is insufficient."
 "module:nobrainer-wiki":
