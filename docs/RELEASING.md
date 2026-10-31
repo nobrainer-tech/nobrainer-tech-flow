@@ -43,7 +43,8 @@ when each channel reads back that version, or the gap is reported:
 
 Finish with `python3 scripts/check_release_channels.py X.Y.Z`. It reads back the GitHub
 release, npm, the native plugin release, the MCP server and the website changelog, and
-exits 1 on any FAIL. The release is done only when it prints no FAIL; a channel that
+fails when a pull request in this or the native plugin repository has been open for more
+than a day: merge it, close it with a reason, or report it. It exits 1 on any FAIL. The release is done only when it prints no FAIL; a channel that
 cannot be fixed yet goes into the handoff's `Not checked` with its reason, and the next
 release adds the missed version too. Skipping a step because it is owner-gated, manual or
 "separate" still leaves it a FAIL here.
