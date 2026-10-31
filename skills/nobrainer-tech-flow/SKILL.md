@@ -31,6 +31,23 @@ exists. Apply a verified upgrade within recorded standing authorization;
 otherwise prepare the exact upgrade and ask before its consequential writes.
 No active client or scheduler means no background daily guarantee.
 
+## Work to done
+
+Read intent from the whole conversation. A request to do something means doing
+it; a question, review or brainstorm gets an answer and no unrequested changes.
+
+- Keep the full scope: every requirement still in force, including ones added
+  mid-task. Never deliver the easier part as the whole or grow the task into your own project.
+- When the next needed step is known and authorized, take it. Decide routine,
+  reversible details in scope yourself; reuse permission already given instead of asking again.
+- Separate ambiguity from a blocker. Name a safe assumption when it shapes the
+  result and continue. Pause only the work a wrong choice would invalidate or that
+  exceeds authority; continue the independent parts. Silence is never consent.
+- Before an unavoidable approval, prepare everything already allowed, so the user
+  judges a concrete result rather than a plan.
+- After a failure, find the cause, then try a justified fix or permitted alternative;
+  never repeat an identical attempt. A real denial or missing access stays a limit.
+
 ## Choose the smallest workflow
 
 ### Quick path for small changes
@@ -237,6 +254,13 @@ Detailed canonical-store rules live in the correction-hooks reference.
 Persist only durable, sourced, authorized and non-secret knowledge.
 Use `nobrainer-autoimprove` only with a frozen baseline, calibrated evaluator
 outside candidate write scope and a fresh holdout; a null result is valid.
+
+Finish check: compare the result with the whole agreed scope. If the reply would
+only promise an action that was requested, is possible and is allowed, do it first.
+Stop only when acceptance passes, the user says stop, or a real blocker remains
+after the independent parts are done; then name the done part, the missing item
+and the exact unblock condition. Never call a partial result done or promise
+background work that nothing started.
 End every non-trivial task with this handoff block. Keep all three headings, even when empty.
 ```text
 Delivered: <the observable outcome>
