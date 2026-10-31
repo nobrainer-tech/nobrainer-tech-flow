@@ -1,0 +1,1 @@
+Add a `median(xs)` function to calc.py. Then: add tests for `median` (odd and even length) and for the empty-list case of both functions, make both functions raise `ValueError("empty input")` on an empty list, update the README for both functions, bump the version in pyproject.toml to 0.2.0 and add a 0.2.0 entry to CHANGELOG.md.
