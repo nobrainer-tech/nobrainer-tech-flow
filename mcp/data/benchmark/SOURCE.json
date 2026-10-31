@@ -1,12 +1,12 @@
 {
   "source_url": "https://nobrainer.tech/ai/benchmark/",
-  "source_path": "public_html/ai/benchmark",
-  "website_commit": "7c024795335d98952c53688a5bae943eb4884032",
-  "website_dirty": false,
-  "snapshot_date": "2026-10-23",
-  "snapshot_sha256": "8dab56e2a2fe4b3084791a609c47095a7bcbe8ce91a361f93d1fee8a2e96cde9",
+  "source_path": null,
+  "website_commit": null,
+  "website_dirty": null,
+  "snapshot_date": "2026-10-30",
+  "snapshot_sha256": "8633f9b24eb58d5361358a12dc20a26d450b22681e51932ab22dd9e366e91c9f",
   "inputs": {
-    "task-data.json": "17328e0d94178363ebd4973d7d6910ac805c19430210088183856f8f55bd27fc",
+    "task-data.json": "714475939cfe32fc514771c52ab526a222f33d13db99318ab95acaa9d6edcb7d",
     "task-router-core.js": "ba815adbd3d86ccc40aa4870cd3719fe0c079d6835877a32ce4c258091b9fe68",
     "task-app-defaults.js": "b48ab17d41a1ffec623c8dc59098cfe2b5e4dc916107374fdab871eaa7755c06",
     "task-model-policy.js": "32d5ce2785b7da143101eda2a0cef81749007eaf68adb4b8986c643e0fe18f71",
