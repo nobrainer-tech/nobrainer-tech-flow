@@ -27,7 +27,23 @@ when each channel reads back that version, or the gap is reported:
    (no `icon` field), as its README describes. Update `SOURCE.json`, run
    its unmodified `_maintainers/verify_release.py`, then release it. It is the hook-free copy that
    the Claude directory tracks, not a second project to promote.
-5. Claude directory (claude.ai/directory/manage) picks up that repository's
+5. MCP server: pin its guidance cards to the new tag in a PR
+   (`cd mcp && node scripts/build-content.ts --tag vX.Y.Z --pin`; when a quoted rule was
+   reworded, update `content/cards.yaml` to the new text, then `npm test`). After the merge,
+   deploy per [mcp/docs/DEPLOY.md](../mcp/docs/DEPLOY.md) and read back that `initialize`
+   on https://mcp.nobrainer.tech/mcp reports `serverInfo.version` ending in `+flow.X.Y.Z`.
+   Never deploy a tree with an older advisor snapshot than production serves.
+6. Website changelog: add the `X.Y.Z` entry, written from `RELEASE-NOTES.md`, to
+   `sources/flow-www/site/changelog/index.html` and its `public_html/flow/changelog/` copy
+   in `nobrainer-tech-www`, deploy it and read back https://nobrainer.tech/flow/changelog/.
+   Add any earlier version the page is missing.
+7. Claude directory (claude.ai/directory/manage) picks up the native plugin repository's
    default branch; OpenAI plugin directory (platform.openai.com/plugins) takes the
    native ZIP upload. Both submissions and publication clicks are owner-gated.
-6. Changelog on https://nobrainer.tech/flow/changelog/ after owner preview.
+
+Finish with `python3 scripts/check_release_channels.py X.Y.Z`. It reads back the GitHub
+release, npm, the native plugin release, the MCP server and the website changelog, and
+exits 1 on any FAIL. The release is done only when it prints no FAIL; a channel that
+cannot be fixed yet goes into the handoff's `Not checked` with its reason, and the next
+release adds the missed version too. Skipping a step because it is owner-gated, manual or
+"separate" still leaves it a FAIL here.
