@@ -1,5 +1,10 @@
 # nobrainer-tech-flow release notes
 
+## v2.9.1 - 2026-10-31
+
+A failed test re-run without output could leave an earlier pass marked done. The
+MCP done gate now reopens the item until a later test passes.
+
 ## v2.9.0 - 2026-10-31
 
 The entry skill gains a `Work to done` section and a finish check, so "from task to

@@ -36,6 +36,33 @@ test("finding 1: a failing rerun with contradictory counts invalidates the earli
   assert.match(done.json.missing[0].need, /last record failed/);
 });
 
+test("a failing rerun without output reopens the item until a later pass", async () => {
+  let token = await contract([{ text: "pytest passes", proof: "test" }]);
+  const passed = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "test", cmd: "pytest", exit: 0, out: PASS }] });
+  assert.equal(passed.json.results[0].verdict, "ACCEPTED");
+  token = passed.json.token;
+  assert.equal((await call("check_flow_done", { token })).json.verdict, "DONE");
+
+  for (const incomplete of [{ exit: 1 }, { cmd: " ", exit: 1 }, { cmd: "pytest" }, { cmd: "pytest", exit: 0 }]) {
+    const result = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "test", ...incomplete }] });
+    assert.equal(result.json.results[0].code, "MISSING_FIELD");
+    assert.deepEqual(result.json.open, []);
+    token = result.json.token;
+  }
+
+  const rerun = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "test", cmd: "pytest", exit: 1 }] });
+  assert.equal(rerun.json.results[0].verdict, "FAILED");
+  assert.deepEqual(rerun.json.open, ["AC01"]);
+  const done = await call("check_flow_done", { token: rerun.json.token });
+  assert.equal(done.json.verdict, "NOT_DONE");
+  assert.equal(done.json.missing[0].item, "AC01");
+
+  const fixed = await call("check_flow_evidence", { token: rerun.json.token, evidence: [{ item: "AC01", kind: "test", cmd: "pytest", exit: 0, out: PASS }] });
+  assert.equal(fixed.json.results[0].verdict, "ACCEPTED");
+  assert.deepEqual(fixed.json.open, []);
+  assert.equal((await call("check_flow_done", { token: fixed.json.token })).json.verdict, "DONE");
+});
+
 test("finding 1: exit 0 with a failing summary also invalidates an earlier pass", async () => {
   let token = await contract([{ text: "pytest passes", proof: "test" }]);
   token = (await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "test", cmd: "pytest", exit: 0, out: PASS }] })).json.token;

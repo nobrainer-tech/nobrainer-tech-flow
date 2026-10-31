@@ -84,6 +84,9 @@ type Outcome = { pass: true; level: Level } | { pass: false; failed: true } | { 
 const reject = (code: string, why: string): Outcome => ({ reject: code, why });
 
 function judgeRun(r: EvidenceRecord, id: string): Outcome {
+  if (r.cmd?.trim() && typeof r.exit === "number" && r.exit !== 0 && r.out === undefined) {
+    return { pass: false, failed: true };
+  }
   if (!r.cmd?.trim() || r.exit === undefined || (r.kind === "test" && r.out === undefined)) {
     return reject("MISSING_FIELD", `${id}: ${r.kind} evidence needs cmd, exit${r.kind === "test" ? " and out" : ""}.`);
   }

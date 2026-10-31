@@ -106,9 +106,9 @@ Then start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer
 **npm** (Node 18+ and Python 3.11+); `--client` is `codex`, `claude`, `opencode` or `copilot`:
 
 ```sh
-npx nobrainer-tech-flow@2.9.0 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.9.0 --client codex --apply    # install
-npx nobrainer-tech-flow@2.9.0 --client codex --undo --apply
+npx nobrainer-tech-flow@2.9.1 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.9.1 --client codex --apply    # install
+npx nobrainer-tech-flow@2.9.1 --client codex --undo --apply
 ```
 
 **Any coding agent** (Git install with preview and undo; macOS, Linux and Windows, no
@@ -232,6 +232,11 @@ flowchart TD
 [`nobrainer-review`](skills/nobrainer-review/).
 What each one owns and its trigger aliases:
 [skill table](docs/HOW_IT_WORKS.md#eighteen-skills-distinct-ownership).
+
+## What's new in 2.9.1
+
+The MCP done gate now reopens a test when a re-run fails without output. A later
+passing result can mark the item done again.
 
 ## What's new in 2.9.0
 
