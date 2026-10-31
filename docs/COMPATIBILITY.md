@@ -21,8 +21,9 @@ Never promote one level from evidence belonging to another.
 Merge is a repository delivery state, not a client-compatibility level; release
 evidence records it separately.
 
-The current source version is **2.9.0**. Its release scope and proof limits are
-recorded in the [2.9.0 verification record](releases/v2.9.0.md). Earlier records,
+The current source version is **2.9.1**, an MCP done-gate fix described in the
+[release notes](../RELEASE-NOTES.md). The [2.9.0 verification record](releases/v2.9.0.md)
+records the 2.9.0 scope and proof limits. Earlier records,
 such as [2.1.1](releases/v2.1.1.md), [2.1.0](releases/v2.1.0.md) and the
 [2.0.2 installer record](releases/v2.0.2.md), describe their own releases.
 The [2.0.0](releases/v2.0.0.md) and [1.14.1](releases/v1.14.1.md) records are

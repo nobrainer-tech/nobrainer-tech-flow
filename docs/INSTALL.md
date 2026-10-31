@@ -14,9 +14,9 @@ upgraded merely because the new source is installed nearby.
 Node 18+ and Python 3.11+ are prerequisites. Preview the setup first:
 
 ```sh
-npx nobrainer-tech-flow@2.9.0 --client codex
-npx nobrainer-tech-flow@2.9.0 --client codex --apply
-npx nobrainer-tech-flow@2.9.0 --client codex --undo --apply
+npx nobrainer-tech-flow@2.9.1 --client codex
+npx nobrainer-tech-flow@2.9.1 --client codex --apply
+npx nobrainer-tech-flow@2.9.1 --client codex --undo --apply
 ```
 
 Use claude for Claude Code, opencode or copilot for those clients. Add --home PATH
@@ -25,7 +25,7 @@ for an isolated profile. The package is published on
 version there.
 
 Application copies the release files into the chosen home directory's
-.nobrainer-tech-flow-npm/2.9.0 and verifies the copy. That folder sits beside
+.nobrainer-tech-flow-npm/2.9.1 and verifies the copy. That folder sits beside
 ~/.nobrainer-tech-flow, where the Git installation suggests a clone, so cleaning
 the clone cannot delete the files the skill links point to. Releases before 2.3.2
 kept their copy in .nobrainer-tech-flow/npm; undo such a setup with the command of
