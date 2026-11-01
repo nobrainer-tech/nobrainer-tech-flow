@@ -140,6 +140,36 @@ test("public host classification without DNS", () => {
   for (const h of ["example.com", "8.8.8.8", "172.32.0.1", "[2001:db8::1]"]) assert.equal(isPublicHost(h), true, h);
 });
 
+test("shared IPv4 addresses and their mapped IPv6 forms are not public", () => {
+  const shared = [
+    "100.64.0.0", "100.96.0.1", "100.127.255.255",
+    "::ffff:100.64.0.0", "::ffff:100.96.0.1", "::ffff:100.127.255.255",
+    "::ffff:6440:0", "::ffff:6460:1", "::ffff:647f:ffff",
+  ];
+  const publicHosts = ["100.63.255.255", "100.128.0.0", "8.8.8.8", "::ffff:643f:ffff", "::ffff:6480:0"];
+  for (const [hosts, expected] of [[shared, false], [publicHosts, true]] as const) {
+    for (const host of hosts) {
+      assert.equal(isPublicHost(host), expected, host);
+      const url = `https://${host.includes(":") ? `[${host}]` : host}/`;
+      const result = applyEvidence(state([["url", "production"]]), [{ item: "AC01", kind: "url", url, status: 200 }]).results[0];
+      assert.equal(expected ? result?.level : result?.code, expected ? "production" : "LEVEL_TOO_LOW", url);
+    }
+  }
+});
+
+test("reserved names are not public regardless of case or a trailing dot", () => {
+  const reserved = ["invalid", "test", "example"].flatMap((suffix) => [
+    suffix, `flow-scout.${suffix}`, `FLOW-SCOUT.${suffix.toUpperCase()}`, `flow-scout.${suffix}.`, `FLOW-SCOUT.${suffix.toUpperCase()}.`,
+  ]);
+  for (const [hosts, expected] of [[reserved, false], [["test.com", "example.org", "mytest.io"], true]] as const) {
+    for (const host of hosts) {
+      assert.equal(isPublicHost(host), expected, host);
+      const result = applyEvidence(state([["url", "production"]]), [{ item: "AC01", kind: "url", url: `https://${host}/`, status: 200 }]).results[0];
+      assert.equal(expected ? result?.level : result?.code, expected ? "production" : "LEVEL_TOO_LOW", host);
+    }
+  }
+});
+
 test("level satisfaction rules", () => {
   assert.ok(levelSatisfies("production", "deployed"));
   assert.ok(levelSatisfies("production", "delivered"));

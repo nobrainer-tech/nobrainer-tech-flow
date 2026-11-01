@@ -24,6 +24,32 @@ async function contract(dod: Array<{ text: string; proof: string }>) {
   return (await call("start_flow_task", { outcome: "regression", dod })).json.token as string;
 }
 
+test("production evidence rejects shared-network addresses and reserved domains at the done gate", async () => {
+  const start = await call("start_flow_task", {
+    outcome: "production page is reachable",
+    dod: [{ text: "https://example.com is reachable", proof: "url", level: "production" }],
+  });
+  const token = start.json.token;
+  const shared = ["100.64.0.0", "100.96.0.1", "100.127.255.255"];
+  const nonPublic = [
+    ...shared,
+    ...shared.map((host) => `[::ffff:${host}]`),
+    "[::ffff:6440:0]", "[::ffff:6460:1]", "[::ffff:647f:ffff]",
+    ...["invalid", "test", "example"].flatMap((suffix) => [
+      suffix, `flow-scout.${suffix}`, `FLOW-SCOUT.${suffix.toUpperCase()}`, `flow-scout.${suffix}.`, `FLOW-SCOUT.${suffix.toUpperCase()}.`,
+    ]),
+  ];
+  const publicHosts = ["100.63.255.255", "100.128.0.0", "8.8.8.8", "test.com", "example.org", "mytest.io"];
+  for (const [hosts, expected] of [[nonPublic, false], [publicHosts, true]] as const) {
+    for (const host of hosts) {
+      const ev = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "url", url: `https://${host}/`, status: 200 }] });
+      assert.equal(expected ? ev.json.results[0].level : ev.json.results[0].code, expected ? "production" : "LEVEL_TOO_LOW", host);
+      assert.deepEqual(ev.json.open, expected ? [] : ["AC01"], host);
+      assert.equal((await call("check_flow_done", { token: ev.json.token })).json.verdict, expected ? "DONE" : "NOT_DONE", host);
+    }
+  }
+});
+
 test("finding 1: a failing rerun with contradictory counts invalidates the earlier pass and blocks DONE", async () => {
   let token = await contract([{ text: "pytest passes", proof: "test" }]);
   token = (await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "test", cmd: "pytest", exit: 0, out: PASS }] })).json.token;

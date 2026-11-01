@@ -1,5 +1,10 @@
 # nobrainer-tech-flow release notes
 
+## v2.9.2 - 2026-11-01
+
+The MCP done gate no longer accepts shared-network IP addresses or reserved
+`.invalid`, `.test` and `.example` names as production evidence.
+
 ## v2.9.1 - 2026-10-31
 
 A failed test re-run without output could leave an earlier pass marked done. The
