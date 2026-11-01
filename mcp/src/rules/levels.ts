@@ -50,7 +50,7 @@ export function kindMatches(kind: Proof, proof: Proof): boolean {
   return kind === proof || (kind === "test" && proof === "command");
 }
 
-const LOCAL_SUFFIXES = [".localhost", ".local", ".internal"];
+const LOCAL_SUFFIXES = [".localhost", ".local", ".internal", ".invalid", ".test", ".example"];
 
 function ipv4Local(host: string): boolean | null {
   const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
@@ -58,7 +58,7 @@ function ipv4Local(host: string): boolean | null {
   const [a, b] = [Number(m[1]), Number(m[2])];
   if ([a, b, Number(m[3]), Number(m[4])].some((x) => x > 255)) return true;
   return (
-    a === 0 || a === 10 || a === 127 || (a === 172 && b >= 16 && b <= 31) ||
+    a === 0 || a === 10 || a === 127 || (a === 100 && b >= 64 && b <= 127) || (a === 172 && b >= 16 && b <= 31) ||
     (a === 192 && b === 168) || (a === 169 && b === 254)
   );
 }
