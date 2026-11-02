@@ -91,24 +91,25 @@ function lastWhere(lines: string[], f: (l: string, i: number) => Found | null): 
 
 function unittest(lines: string[]): Found | null {
   let best: Found | null = null;
+  const count = (body: string, key: string) => num(new RegExp(`(?:^|, )${key}=(\\d+)`).exec(body)?.[1]);
   lines.forEach((l, i) => {
     const ran = /^Ran (\d{1,9}) tests? in [\d.]{1,10}s$/.exec(l);
     if (!ran) return;
     const total = num(ran[1]);
     for (let j = i + 1; j <= i + 3 && j < lines.length; j++) {
       const line = lines[j] ?? '';
-      // Skipped tests did not pass, and unexpected successes are failures (zero passes never count).
+      // Skips and expected failures did not pass; unexpected successes are failures.
       const ok = /^OK(?: \(([^)]{0,100})\))?$/.exec(line);
       if (ok) {
-        const skipped = num(/skipped=(\d+)/.exec(ok[1] ?? '')?.[1]);
-        best = { runner: 'unittest', passed: Math.max(0, total - skipped), failed: 0, at: j };
+        const body = ok[1] ?? '';
+        best = { runner: 'unittest', passed: Math.max(0, total - count(body, 'skipped') - count(body, 'expected failures')), failed: 0, at: j };
         return;
       }
       const f = /^FAILED \(([^)]{1,100})\)$/.exec(line);
       if (f?.[1] !== undefined) {
-        const count = (k: string) => num(new RegExp(`${k}=(\\d+)`).exec(f[1] ?? '')?.[1]);
-        const bad = count('failures') + count('errors') + count('unexpected successes');
-        best = { runner: 'unittest', passed: Math.max(0, total - bad - count('skipped')), failed: bad, at: j };
+        const body = f[1];
+        const bad = count(body, 'failures') + count(body, 'errors') + count(body, 'unexpected successes');
+        best = { runner: 'unittest', passed: Math.max(0, total - bad - count(body, 'skipped') - count(body, 'expected failures')), failed: bad, at: j };
         return;
       }
     }
