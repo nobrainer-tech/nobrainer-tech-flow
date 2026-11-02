@@ -61,8 +61,11 @@ owner allows that backend; Flow never enables a backend on its own.
   `muse session-message list --json` and `send --target <uuid> < body`.
 - **Sandbox:** `workspace-write` only for an implementer with an exclusive
   write scope; `read-only` for review and diagnosis. Muse has no `-s` flag:
-  use a read-only `--permission-profile` when one is configured, otherwise
-  isolate the run with `--worktree create`.
+  use an enforced read-only `--permission-profile` or an OS-level sandbox;
+  without one, keep review and diagnosis in MAIN. A Git worktree isolates
+  the checkout, not the filesystem, environment or network, so it is not a
+  substitute. The wrapper below bounds time and output only; it is not a
+  sandbox and inherits the caller's environment.
 - **Timeout:** wrap the call in
   [`run_bounded.py`](../scripts/run_bounded.py) for a wall-time and output cap;
   a hung proxy otherwise blocks MAIN. A timeout returns the unit to MAIN.
