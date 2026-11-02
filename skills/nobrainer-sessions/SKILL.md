@@ -58,7 +58,7 @@ the topology look multi-agent.
 
 Discover the current harness capabilities for listing, creating, renaming,
 sending, reading, and waiting on visible sessions. Verify each mutation by
-readback. If exact session transport is unavailable, remain in MAIN and report
+readback. If exact session transport ([contract](references/transport.md)) is unavailable, remain in MAIN and report
 the degraded mode; hidden workers are not equivalent to requested visible
 sessions.
 

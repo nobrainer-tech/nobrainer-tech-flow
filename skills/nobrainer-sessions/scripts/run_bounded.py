@@ -59,8 +59,29 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Include argv in the receipt; disabled by default to avoid leaking secrets.",
     )
+    parser.add_argument(
+        "--stdin-file",
+        type=Path,
+        default=None,
+        help="Feed this file to the command's stdin; without it stdin is empty.",
+    )
+    parser.add_argument(
+        "--clean-env",
+        action="store_true",
+        help="Start the command with a minimal environment (PATH, HOME, LANG, TMPDIR) "
+        "plus any --env-keep names, so inherited credentials do not reach it.",
+    )
+    parser.add_argument(
+        "--env-keep",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="With --clean-env, also pass this inherited variable (repeatable).",
+    )
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
+    if args.stdin_file is not None and not args.stdin_file.is_file():
+        parser.error(f"--stdin-file is not a readable file: {args.stdin_file}")
     if args.command and args.command[0] == "--":
         args.command = args.command[1:]
     if not args.command:
@@ -157,15 +178,28 @@ def run_bounded(
 ) -> tuple[dict[str, object], int, dict[str, bytes]]:
     started_utc = utc_now()
     started = time.monotonic()
-    process = subprocess.Popen(
-        args.command,
-        cwd=args.cwd,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        start_new_session=True,
-        close_fds=True,
+    environment = None
+    if getattr(args, "clean_env", False):
+        keep = ["PATH", "HOME", "LANG", "TMPDIR", *getattr(args, "env_keep", [])]
+        environment = {name: os.environ[name] for name in keep if name in os.environ}
+    stdin_file = getattr(args, "stdin_file", None)
+    stdin_handle = (
+        open(stdin_file, "rb") if stdin_file is not None else subprocess.DEVNULL
     )
+    try:
+        process = subprocess.Popen(
+            args.command,
+            cwd=args.cwd,
+            stdin=stdin_handle,
+            env=environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
+            close_fds=True,
+        )
+    finally:
+        if stdin_handle is not subprocess.DEVNULL:
+            stdin_handle.close()
     process_group = process.pid
     selector: selectors.BaseSelector | None = None
     streams: dict[int, tuple[str, BinaryIO]] = {}
