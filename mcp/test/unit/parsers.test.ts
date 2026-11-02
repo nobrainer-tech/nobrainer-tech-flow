@@ -53,6 +53,19 @@ for (const [file, runner, passed] of CASES) {
   });
 }
 
+test('unittest: expected failures are neither passes nor failures', () => {
+  for (const [summary, passed, failed] of [
+    ['Ran 1 test in 0.001s\n\nOK (expected failures=1)', 0, 0],
+    ['Ran 2 tests in 0.001s\n\nOK (expected failures=1)', 1, 0],
+    ['Ran 4 tests in 0.001s\n\nOK (skipped=1, expected failures=2)', 1, 0],
+    ['Ran 3 tests in 0.001s\n\nFAILED (errors=1, expected failures=2)', 0, 1],
+    ['Ran 4 tests in 0.001s\n\nFAILED (expected failures=2, failures=1)', 1, 1],
+    ['Ran 4 tests in 0.001s\n\nFAILED (failures=1, expected failures=1, skipped=1)', 1, 1],
+  ] as const) {
+    assert.deepEqual(parseTestSummary(summary), { runner: 'unittest', passed, failed }, summary);
+  }
+});
+
 test('pytest: errors count as failed, quiet and ANSI output parse', () => {
   assert.deepEqual(parseTestSummary('=== 1 failed, 3 passed, 2 errors in 0.5s ==='), {
     runner: 'pytest',

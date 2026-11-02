@@ -1,5 +1,9 @@
 # nobrainer-tech-flow release notes
 
+## v2.9.3 - 2026-11-02
+
+The MCP done gate no longer counts Python unittest expected failures as passing tests.
+
 ## v2.9.2 - 2026-11-01
 
 The MCP done gate no longer accepts shared-network IP addresses or reserved

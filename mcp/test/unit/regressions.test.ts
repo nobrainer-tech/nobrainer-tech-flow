@@ -110,6 +110,29 @@ test("finding 2: zero passed tests never count (unittest all skipped, phpunit al
   assert.equal((await call("check_flow_done", { token: ev.json.token })).json.verdict, "NOT_DONE");
 });
 
+test("unittest expected failures do not satisfy the done gate", async () => {
+  const token = await contract([{ text: "at least one Python unittest passed", proof: "test" }]);
+  const expectedOnly = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "test", cmd: "python -m unittest", exit: 0, out: "Ran 1 test in 0.001s\n\nOK (expected failures=1)" }] });
+  assert.equal(expectedOnly.json.results[0].code, "NO_TESTS_RAN");
+  assert.deepEqual(expectedOnly.json.open, ["AC01"]);
+  assert.equal((await call("check_flow_done", { token: expectedOnly.json.token })).json.verdict, "NOT_DONE");
+
+  const withPass = await call("check_flow_evidence", { token: expectedOnly.json.token, evidence: [{ item: "AC01", kind: "test", cmd: "python -m unittest", exit: 0, out: "Ran 2 tests in 0.001s\n\nOK (expected failures=1)" }] });
+  assert.equal(withPass.json.results[0].verdict, "ACCEPTED");
+  assert.deepEqual(withPass.json.open, []);
+  assert.equal((await call("check_flow_done", { token: withPass.json.token })).json.verdict, "DONE");
+
+  const rerun = await call("check_flow_evidence", { token: withPass.json.token, evidence: [{ item: "AC01", kind: "test", cmd: "python -m unittest", exit: 0, out: "Ran 1 test in 0.001s\n\nOK (expected failures=1)" }] });
+  assert.equal(rerun.json.results[0].code, "NO_TESTS_RAN");
+  assert.deepEqual(rerun.json.open, ["AC01"]);
+  assert.equal((await call("check_flow_done", { token: rerun.json.token })).json.verdict, "NOT_DONE");
+});
+
+test("unittest failed summaries count errors separately from expected failures", () => {
+  const out = "Ran 3 tests in 0.001s\n\nFAILED (errors=1, expected failures=2)";
+  assert.deepEqual(parseTestSummary(out), { runner: "unittest", passed: 0, failed: 1 });
+});
+
 test("finding 5: `src/./a.ts` and `src/a.ts` are one file for staleness", async () => {
   let token = await contract([{ text: "pytest passes", proof: "test" }, { text: "src/a.ts changed", proof: "file" }]);
   token = (await call("check_flow_evidence", { token, evidence: [
