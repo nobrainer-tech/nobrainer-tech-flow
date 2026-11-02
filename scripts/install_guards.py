@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Preview, add or remove the optional nobrainer-tech-flow guards for Claude Code.
 
-The guards are four hooks in the Claude Code user settings.json: a PreToolUse hook
-that asks before common risky shell commands, Stop and SubagentStop hooks that ask
-for a proof line once, and a SessionStart hook that, after compaction, resume or
-clear, names the active Flow goal files to re-read. Every run is a preview until
+The guards are five hooks in the Claude Code user settings.json: a PreToolUse hook
+that asks before common risky shell commands, a PreToolUse hook for the edit tools
+that asks before edits to protected paths, credential-like text or, in fix mode,
+tests, Stop and SubagentStop hooks that ask for a proof line once, and a SessionStart
+hook that, after compaction, resume or clear, names the active Flow goal files to
+re-read. Every run is a preview until
 --apply, and an install from an earlier version is reported as an update. The hooks
 point at flow_guard.py through the skill link that scripts/install.py created, so
 they keep working when the checkout is updated. Our entries are the hooks whose
@@ -32,6 +34,7 @@ INSTALL_SKILLS = ROOT / "scripts" / "install_skills.py"
 GUARD = Path("nobrainer-tech-flow") / "scripts" / "flow_guard.py"
 EVENTS = (
     ("PreToolUse", "Bash", "pre-tool"),
+    ("PreToolUse", "Edit|MultiEdit|Write|NotebookEdit", "pre-edit"),
     ("Stop", None, "stop"),
     ("SubagentStop", None, "stop"),
     ("SessionStart", "compact|resume|clear", "session"),
@@ -39,8 +42,8 @@ EVENTS = (
 TIMEOUT = 10
 DONE = {"add": "INSTALLED", "update": "UPDATED", "remove": "REMOVED"}
 DISCLAIMER = (
-    "NOTE: a seatbelt: it asks before common risky commands; it is not a security "
-    "boundary, and sh -c or variables bypass it."
+    "NOTE: a seatbelt: it asks before common risky commands and edits; it is not a "
+    "security boundary, and sh -c or variables bypass it."
 )
 
 

@@ -96,8 +96,11 @@ COMMANDS = (
 )
 
 
-def run_guard(mode: str, stdin: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
-    environment = dict(os.environ)
+def run_guard(
+    mode: str, stdin: str, env: dict[str, str] | None = None, cwd: Path | None = None
+) -> subprocess.CompletedProcess[str]:
+    # Strict mode only when a test asks for it, whatever the developer's shell holds.
+    environment = {key: value for key, value in os.environ.items() if key != "NOBRAINER_GUARD_STRICT"}
     environment.update(env or {})
     return subprocess.run(
         [sys.executable, str(GUARD), mode],
@@ -106,7 +109,18 @@ def run_guard(mode: str, stdin: str, env: dict[str, str] | None = None) -> subpr
         capture_output=True,
         check=False,
         env=environment,
+        cwd=cwd,
     )
+
+
+def decision_of(completed: subprocess.CompletedProcess[str]) -> dict | None:
+    """The PreToolUse decision a guard run printed, or None when it allowed silently."""
+
+    if not completed.stdout.strip():
+        return None
+    output = json.loads(completed.stdout)["hookSpecificOutput"]
+    assert output["hookEventName"] == "PreToolUse", output
+    return output
 
 
 def assistant(*blocks: dict) -> dict:
@@ -218,6 +232,199 @@ class PreToolTests(unittest.TestCase):
                 self.assertEqual(0, completed.returncode)
                 self.assertEqual("", completed.stdout)
                 self.assertIn("flow_guard:", completed.stderr)
+
+
+PRODUCTION = ("vercel --prod", "npm publish", "terraform apply -auto-approve", "gh release create v2.4.0")
+
+
+class StrictModeTests(unittest.TestCase):
+    def setUp(self) -> None:
+        scratch = tempfile.TemporaryDirectory()
+        self.addCleanup(scratch.cleanup)
+        self.root = Path(scratch.name) / "project"
+        (self.root / ".git").mkdir(parents=True)
+        (self.root / "app").mkdir()
+
+    def decide(self, command: str, env: dict[str, str] | None = None, cwd: Path | None = None) -> dict | None:
+        payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": command},
+                   "cwd": str(cwd or self.root)}
+        completed = run_guard("pre-tool", json.dumps(payload), env)
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        return decision_of(completed)
+
+    def assert_denied_with_route(self, output: dict | None) -> None:
+        self.assertIsNotNone(output)
+        self.assertEqual("deny", output["permissionDecision"])
+        reason = output["permissionDecisionReason"]
+        self.assertIn("strict mode", reason)
+        self.assertIn("the owner runs this command", reason)
+        self.assertIn("NOBRAINER_GUARD_STRICT unset", reason)
+        self.assertIn(".nobrainer/guard-strict deleted", reason)
+
+    def test_default_mode_still_only_asks(self) -> None:
+        for command in PRODUCTION:
+            with self.subTest(command=command):
+                self.assertEqual("ask", self.decide(command)["permissionDecision"])
+        self.assertEqual("ask", self.decide("vercel --prod", env={"NOBRAINER_GUARD_STRICT": "0"})["permissionDecision"])
+
+    def test_the_variable_denies_production_deploys_with_the_route_to_approval(self) -> None:
+        for command in PRODUCTION:
+            with self.subTest(command=command):
+                self.assert_denied_with_route(self.decide(command, env={"NOBRAINER_GUARD_STRICT": "1"}))
+
+    def test_the_project_file_denies_from_a_subfolder(self) -> None:
+        (self.root / ".nobrainer").mkdir()
+        (self.root / ".nobrainer" / "guard-strict").write_text("", encoding="utf-8")
+        output = self.decide("ls && npm -w pkg publish", cwd=self.root / "app")
+        self.assert_denied_with_route(output)
+        self.assertIn("npm publish releases a package", output["permissionDecisionReason"])
+
+    def test_other_risky_commands_still_ask_and_safe_ones_pass(self) -> None:
+        strict = {"NOBRAINER_GUARD_STRICT": "1"}
+        for command in ("git push --force", "git reset --hard", "rm -rf /home/dev/src", "kubectl delete pod web-1"):
+            with self.subTest(command=command):
+                self.assertEqual("ask", self.decide(command, env=strict)["permissionDecision"])
+        self.assertIsNone(self.decide("git status", env=strict))
+
+
+# Fixture credentials are assembled at run time so no secret scanner matches this file.
+AWS_KEY = "AKIA" + "Z7Q4" * 4
+PRIVATE_KEY = "-----BEGIN " + "OPENSSH PRIVATE KEY-----\nb3BlbnNzaA==\n"
+GITHUB_TOKEN = "ghp" + "_" + "a1B2" * 9
+OPENAI_STYLE = "sk" + "-proj-" + "Ab3dEfGhIjKlMnOpQrStUv"
+PASSWORD = 'DB_PASSWORD = "' + "hunter" + '2-fixture"'
+
+
+class EditGuardTests(unittest.TestCase):
+    def setUp(self) -> None:
+        scratch = tempfile.TemporaryDirectory()
+        self.addCleanup(scratch.cleanup)
+        self.root = Path(scratch.name) / "project"
+        (self.root / ".git").mkdir(parents=True)
+
+    def project_file(self, name: str, body: str = "") -> None:
+        (self.root / ".nobrainer").mkdir(exist_ok=True)
+        (self.root / ".nobrainer" / name).write_text(body, encoding="utf-8")
+
+    def edit(self, tool_name: str = "Edit", **tool_input: object) -> dict | None:
+        tool_input.setdefault("file_path", "src/app.py")
+        if tool_name == "Edit":
+            tool_input.setdefault("old_string", "a = 1")
+            tool_input.setdefault("new_string", "a = 2")
+        payload = {"hook_event_name": "PreToolUse", "tool_name": tool_name, "tool_input": tool_input,
+                   "cwd": str(self.root)}
+        completed = run_guard("pre-edit", json.dumps(payload))
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        output = decision_of(completed)
+        if output is not None:
+            # The edit guard asks; it never denies, in strict mode or not.
+            self.assertEqual("ask", output["permissionDecision"])
+            self.assertIn("Flow guard", output["permissionDecisionReason"])
+        return output
+
+    def test_without_project_files_an_ordinary_edit_passes(self) -> None:
+        self.assertIsNone(self.edit())
+        self.assertIsNone(self.edit("Write", file_path="tests/test_app.py", content="def test_ok():\n    pass\n"))
+        self.assertIsNone(self.edit("MultiEdit", edits=[{"old_string": "a", "new_string": "b"}]))
+        self.assertIsNone(self.edit("NotebookEdit", file_path=None, notebook_path="nb.ipynb", new_source="x = 1"))
+
+    def test_a_protected_path_asks(self) -> None:
+        self.project_file("protected-paths", "# owner-reviewed only\nmigrations/\n*.lock\nconfig/prod.yaml  # live\n\n")
+        for path in ("migrations/001_init.sql", str(self.root / "migrations" / "002.sql"), "web/Cargo.lock",
+                     "./config/prod.yaml", "src/../migrations/003.sql"):
+            with self.subTest(path=path):
+                output = self.edit(file_path=path)
+                self.assertIsNotNone(output)
+                self.assertIn("protected-paths", output["permissionDecisionReason"])
+        for path in ("src/app.py", "config/dev.yaml", "docs/migrations.md"):
+            with self.subTest(path=path):
+                self.assertIsNone(self.edit("Write", file_path=path, content="ok\n"))
+
+    def test_the_guard_files_themselves_ask(self) -> None:
+        for name in ("protected-paths", "guard-strict"):
+            with self.subTest(name=name):
+                output = self.edit("Write", file_path=f".nobrainer/{name}", content="")
+                self.assertIn("guard's own settings", output["permissionDecisionReason"])
+        self.assertIsNone(self.edit("Write", file_path=".nobrainer/fix-mode", content="parser bug\n"))
+
+    def test_credential_like_text_asks(self) -> None:
+        cases = (
+            ("Write", {"file_path": "config/aws.env", "content": f"AWS_ACCESS_KEY_ID={AWS_KEY}\n"}),
+            ("Write", {"file_path": "id_ed25519", "content": PRIVATE_KEY}),
+            ("Edit", {"old_string": "TOKEN = None", "new_string": f'TOKEN = "{GITHUB_TOKEN}"'}),
+            ("Edit", {"old_string": "KEY = None", "new_string": f'KEY = "{OPENAI_STYLE}"'}),
+            ("MultiEdit", {"edits": [{"old_string": "a", "new_string": "b"}, {"old_string": "c", "new_string": PASSWORD}]}),
+            ("NotebookEdit", {"file_path": None, "notebook_path": "nb.ipynb", "new_source": f"key = '{AWS_KEY}'"}),
+        )
+        for tool_name, tool_input in cases:
+            with self.subTest(tool=tool_name, input=str(tool_input)[:40]):
+                output = self.edit(tool_name, **tool_input)
+                self.assertIsNotNone(output)
+                self.assertIn("looks like a credential", output["permissionDecisionReason"])
+
+    def test_references_and_placeholders_are_not_credentials(self) -> None:
+        for text in (
+            'password = os.environ["DB_PASSWORD"]',
+            'password = "${DB_PASSWORD}"',
+            "PASSWORD=$PASSWORD",
+            "secret = get_secret()",
+            "password: string",
+            'password = "********"',
+            'password = "<your password>"',
+            "if password == expected_password:",
+            "branch = 'sk-feature-branch-name-long'",
+            "-----BEGIN PUBLIC KEY-----",
+        ):
+            with self.subTest(text=text):
+                self.assertIsNone(self.edit(new_string=text))
+
+    def test_fix_mode_asks_before_a_test_edit(self) -> None:
+        tests = ("tests/test_parser.py", "test_cli.py", "pkg/parser_test.go", "web/app.spec.ts", "web/app.test.js",
+                 "src/tests/helpers.py")
+        for path in tests:
+            with self.subTest(path=path, fix_mode=False):
+                self.assertIsNone(self.edit(file_path=path))
+        self.project_file("fix-mode", "fixing the date parser\n")
+        for path in tests:
+            with self.subTest(path=path, fix_mode=True):
+                output = self.edit(file_path=path)
+                self.assertIsNotNone(output)
+                self.assertIn("fix mode", output["permissionDecisionReason"])
+        for path in ("src/parser.py", "src/latest.py", "testing/notes.md"):
+            with self.subTest(path=path, fix_mode=True):
+                self.assertIsNone(self.edit(file_path=path))
+
+    def test_strict_mode_does_not_turn_an_edit_ask_into_a_deny(self) -> None:
+        self.project_file("guard-strict")
+        self.project_file("protected-paths", "src/\n")
+        payload = {"tool_name": "Write", "tool_input": {"file_path": "src/app.py", "content": AWS_KEY}, "cwd": str(self.root)}
+        completed = run_guard("pre-edit", json.dumps(payload), {"NOBRAINER_GUARD_STRICT": "1"})
+        self.assertEqual("ask", decision_of(completed)["permissionDecision"])
+
+    def test_other_tools_and_malformed_input_pass(self) -> None:
+        self.project_file("protected-paths", "*\n")
+        for payload in (
+            {"tool_name": "Bash", "tool_input": {"command": "vercel --prod"}, "cwd": str(self.root)},
+            {"tool_name": "Read", "tool_input": {"file_path": "src/app.py"}, "cwd": str(self.root)},
+            {"tool_name": "Edit", "tool_input": "src/app.py", "cwd": str(self.root)},
+        ):
+            with self.subTest(tool=payload["tool_name"]):
+                self.assertEqual("", run_guard("pre-edit", json.dumps(payload)).stdout)
+        for stdin in ("not json", "[1, 2]"):
+            with self.subTest(stdin=stdin):
+                completed = run_guard("pre-edit", stdin)
+                self.assertEqual((0, ""), (completed.returncode, completed.stdout))
+                self.assertIn("flow_guard:", completed.stderr)
+
+    def test_an_unreadable_guard_folder_fails_open_but_still_checks_the_text(self) -> None:
+        (self.root / ".nobrainer").write_text("not a folder", encoding="utf-8")
+        completed = run_guard("pre-edit", json.dumps(
+            {"tool_name": "Write", "tool_input": {"file_path": "src/app.py", "content": "ok"}, "cwd": str(self.root)}))
+        self.assertEqual((0, ""), (completed.returncode, completed.stdout))
+        self.assertIn("flow_guard:", completed.stderr)
+        completed = run_guard("pre-edit", json.dumps(
+            {"tool_name": "Write", "tool_input": {"file_path": "src/app.py", "content": AWS_KEY}, "cwd": str(self.root)}))
+        self.assertEqual("ask", decision_of(completed)["permissionDecision"])
 
 
 class StopTests(unittest.TestCase):

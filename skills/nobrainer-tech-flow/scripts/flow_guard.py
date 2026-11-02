@@ -2,16 +2,28 @@
 """Optional Claude Code guards for nobrainer-tech-flow.
 
 ``pre-tool`` reads a PreToolUse payload and asks the person before a common risky
-shell command; it never denies. ``stop`` reads a Stop or SubagentStop payload and
-blocks the stop once when a turn that edited files or ran commands ends without a
-proof line. Both fail open: input they cannot read is allowed, with a note on stderr.
+shell command. By default it never denies. In strict mode (``NOBRAINER_GUARD_STRICT=1``
+in the hook's environment, or a ``.nobrainer/guard-strict`` file in the project) a
+production deploy or publish is denied instead, with the route to approval: the owner
+runs the command, or strict mode is removed for the session.
+``pre-edit`` reads a PreToolUse payload for Edit, MultiEdit, Write or NotebookEdit and
+asks before an edit to a path listed in ``.nobrainer/protected-paths`` (one glob per
+line, ``#`` comments, relative to the project root) or to the guard's own files there,
+before new text that looks like a credential, and, while ``.nobrainer/fix-mode`` exists,
+before an edit to a test file. It never denies and reads only those project files: no
+network, no subprocess.
+``stop`` reads a Stop or SubagentStop payload and blocks the stop once when a turn that
+edited files or ran commands ends without a proof line. All three fail open: input they
+cannot read is allowed, with a note on stderr.
 ``session`` reads a SessionStart payload and, when the project has active Flow goal
 files, tells the agent to re-read them. It prints only their paths and a known STATUS
 word, never other goal-file text, and prints nothing at all on any error.
 
 This is a seatbelt, not a security boundary. It reads the command text, so a
 command hidden behind ``sh -c``, a variable or an alias can pass unnoticed, and a
-risky phrase inside a quoted string can ask without need.
+risky phrase inside a quoted string can ask without need. Strict mode is not
+enforcement either: the agent can unset a variable or delete a file it can write.
+Managed settings and permission deny rules are the enforcement layer.
 
 Install with ``scripts/install_guards.py``; the field names follow
 https://code.claude.com/docs/en/hooks.
@@ -38,18 +50,42 @@ ARGS = r"[^;&|\n]*?"
 # Narrower than ARGS, so "npm run publish" or "gh issue create --title release" pass.
 OPTIONS = r"(?:\s+-[^\s;&|]+(?:\s+[^\s;&|-][^\s;&|]*)?)*"
 END = r"(?=\s|$|[;&|)])"
+# (pattern, reason, production). Strict mode denies the production deploys and publishes.
 RISKY = (
     # --force-with-lease and a "+branch" refspec ask too: they still rewrite the remote.
     (re.compile(rf"\bgit\b{ARGS}\spush\b{ARGS}\s(?:--force\S*|-[a-zA-Z]*f[a-zA-Z]*|\+[A-Za-z]\S*){END}"),
-     "git push --force rewrites the remote branch"),
-    (re.compile(rf"\bgit\b{ARGS}\sreset\b{ARGS}\s--hard\b"), "git reset --hard discards uncommitted work"),
+     "git push --force rewrites the remote branch", False),
+    (re.compile(rf"\bgit\b{ARGS}\sreset\b{ARGS}\s--hard\b"), "git reset --hard discards uncommitted work", False),
     (re.compile(rf"\bgit\b{ARGS}\sclean\b{ARGS}\s(?:--force\b|-[a-zA-Z]*f)"),
-     "git clean -f deletes untracked files"),
-    (re.compile(rf"\bvercel\b{ARGS}\s--prod\b"), "vercel --prod deploys to production"),
-    (re.compile(rf"\bnpm\b{OPTIONS}\s+publish{END}"), "npm publish releases a package"),
-    (re.compile(rf"\bterraform\b{ARGS}\s(?:apply|destroy)\b"), "terraform apply or destroy changes infrastructure"),
-    (re.compile(rf"\bkubectl\b{ARGS}\sdelete\b"), "kubectl delete removes cluster resources"),
-    (re.compile(rf"\bgh\b{OPTIONS}\s+release\s+create{END}"), "gh release create publishes a release"),
+     "git clean -f deletes untracked files", False),
+    (re.compile(rf"\bvercel\b{ARGS}\s--prod\b"), "vercel --prod deploys to production", True),
+    (re.compile(rf"\bnpm\b{OPTIONS}\s+publish{END}"), "npm publish releases a package", True),
+    (re.compile(rf"\bterraform\b{ARGS}\s(?:apply|destroy)\b"), "terraform apply or destroy changes infrastructure", True),
+    (re.compile(rf"\bkubectl\b{ARGS}\sdelete\b"), "kubectl delete removes cluster resources", False),
+    (re.compile(rf"\bgh\b{OPTIONS}\s+release\s+create{END}"), "gh release create publishes a release", True),
+)
+STRICT_ENV = "NOBRAINER_GUARD_STRICT"
+# Project files, all under .nobrainer/ in the project root.
+STRICT_FILE = "guard-strict"
+PROTECTED_FILE = "protected-paths"
+FIX_MODE_FILE = "fix-mode"
+GUARD_FILES = (f".nobrainer/{STRICT_FILE}", f".nobrainer/{PROTECTED_FILE}")
+PROTECTED_MAX_BYTES = 64 * 1024
+EDIT_TOOLS = ("Edit", "MultiEdit", "Write", "NotebookEdit")
+TEST_NAMES = ("test_*", "*_test.*", "*.spec.*", "*.test.*")
+# Conservative credential shapes; a placeholder, a variable or a function call passes.
+CREDENTIALS = (
+    re.compile(r"-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----"),
+    re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+    re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}"),
+    re.compile(r"\bgithub_pat_[A-Za-z0-9_]{22,}"),
+    # sk-... with a digit and a capital letter in the token, so a lower-case slug passes.
+    re.compile(r"\bsk-(?=[A-Za-z0-9_-]*[0-9])(?=[A-Za-z0-9_-]*[A-Z])[A-Za-z0-9_-]{20,}"),
+    # password = "literal" or secret: 'literal'; an unquoted literal only after "=".
+    re.compile(
+        r"""(?i)\b[\w.-]*(?:password|passwd|secret)["']?\s*(?:[:=]\s*"[^"\s$<>{}*]{6,}"|[:=]\s*'[^'\s$<>{}*]{6,}'"""
+        r"""|=\s*[^\s"'$<>{}()\[\],;#=*]{6,}(?=\s|$))"""
+    ),
 )
 # An rm, also path-qualified as /bin/rm or quoted as "rm", that is not part of "git rm";
 # its arguments run to the next separator.
@@ -165,27 +201,167 @@ def pre_tool(payload: dict) -> dict | None:
     cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else None
     # A backslash line continuation is one command, so join it before splitting.
     command = command.replace("\\\n", " ")
-    reasons = []
+    reasons, production = [], []
     for segment in SEPARATOR.split(command):
         if len(segment) > LONGEST_SEGMENT and RISKY_TOOL.search(segment):
             reasons.append("a long command names a risky tool and is too long to check")
             continue
-        reasons += [reason for pattern, reason in RISKY if pattern.search(segment) and reason not in reasons]
+        for pattern, reason, deploys in RISKY:
+            if reason not in reasons and pattern.search(segment):
+                reasons.append(reason)
+                if deploys:
+                    production.append(reason)
     rm = risky_rm(command, cwd)
     if rm:
         reasons.insert(0, rm)
     if not reasons:
         return None
+    if production and strict_mode(cwd):
+        return decision(
+            "deny",
+            f"Flow guard strict mode: {'; '.join(production)}. Strict mode keeps production deploys "
+            "and publishes with the owner. To go ahead, the owner runs this command, or removes strict "
+            f"mode for this session ({STRICT_ENV} unset, .nobrainer/{STRICT_FILE} deleted) and retries.",
+        )
+    return ask(reasons)
+
+
+def decision(kind: str, reason: str) -> dict:
     return {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
-            "permissionDecision": "ask",
-            "permissionDecisionReason": (
-                f"Flow guard: {'; '.join(reasons)}. Confirm only if this is intended "
-                "(a seatbelt check, not a security boundary)."
-            ),
+            "permissionDecision": kind,
+            "permissionDecisionReason": reason,
         }
     }
+
+
+def ask(reasons: list[str]) -> dict:
+    return decision(
+        "ask",
+        f"Flow guard: {'; '.join(reasons)}. Confirm only if this is intended "
+        "(a seatbelt check, not a security boundary).",
+    )
+
+
+def git_root(start: Path) -> Path | None:
+    """The nearest folder from START up holding .git, or None.
+
+    Only a missing .git moves the search up; any other error propagates.
+    """
+
+    for folder in (start, *start.parents):
+        try:
+            os.stat(folder / ".git")
+        except FileNotFoundError:
+            continue
+        return folder
+    return None
+
+
+def strict_mode(cwd: str | None) -> bool:
+    """Whether strict mode is on; a project that cannot be read leaves it off (ask only)."""
+
+    if os.environ.get(STRICT_ENV) == "1":
+        return True
+    folder = Path(cwd) if cwd and os.path.isabs(cwd) else Path.cwd()
+    try:
+        root = git_root(folder) or folder
+    except OSError as exc:
+        note(f"cannot look for strict mode ({exc}); asking only")
+        return False
+    return os.path.lexists(root / ".nobrainer" / STRICT_FILE)
+
+
+def edit_text(tool_input: dict) -> str:
+    """The new text an edit writes: Write content, Edit or MultiEdit new_string, a notebook cell."""
+
+    pieces = [tool_input.get(key) for key in ("content", "new_string", "new_source")]
+    edits = tool_input.get("edits")
+    if isinstance(edits, list):
+        pieces += [edit.get("new_string") for edit in edits if isinstance(edit, dict)]
+    return "\n".join(piece for piece in pieces if isinstance(piece, str))
+
+
+def protected_patterns(root: Path) -> list[str]:
+    """The globs in ROOT/.nobrainer/protected-paths; none when the file is absent."""
+
+    try:
+        descriptor = os.open(root / ".nobrainer" / PROTECTED_FILE, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+    except FileNotFoundError:
+        return []
+    with os.fdopen(descriptor, "rb") as handle:
+        if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
+            return []
+        data = handle.read(PROTECTED_MAX_BYTES)
+    lines = (line.split("#", 1)[0].strip() for line in data.decode("utf-8", errors="replace").splitlines())
+    return [line for line in lines if line]
+
+
+def glob_matches(relative: str, pattern: str) -> bool:
+    """Whether project-relative RELATIVE is PATTERN, lies under it, or has it as its name.
+
+    "*" also crosses "/", a trailing "/" names a folder, and a pattern without "/" also
+    matches the file name anywhere, as .gitignore does.
+    """
+
+    pattern = pattern.removeprefix("./").strip("/")
+    if not pattern:
+        return False
+    if fnmatch.fnmatchcase(relative, pattern) or fnmatch.fnmatchcase(relative, pattern + "/*"):
+        return True
+    return "/" not in pattern and fnmatch.fnmatchcase(relative.rsplit("/", 1)[-1], pattern)
+
+
+def is_test_path(relative: str) -> bool:
+    *folders, name = relative.split("/")
+    return "tests" in folders or any(fnmatch.fnmatchcase(name, pattern) for pattern in TEST_NAMES)
+
+
+def relative_forms(target: Path, root: Path) -> list[str]:
+    """TARGET relative to ROOT as written and with links resolved; empty when outside ROOT."""
+
+    forms = []
+    for path in (target, Path(os.path.realpath(target))):
+        for base in (root, Path(os.path.realpath(root))):
+            relative = os.path.relpath(path, base).replace(os.sep, "/")
+            if relative != "." and relative != ".." and not relative.startswith("../") and relative not in forms:
+                forms.append(relative)
+    return forms
+
+
+def path_reasons(path: str, cwd: Path) -> list[str]:
+    target = Path(os.path.normpath(cwd / path))
+    root = git_root(target.parent) or git_root(cwd) or cwd
+    forms = relative_forms(target, root)
+    reasons = []
+    if any(form in GUARD_FILES for form in forms):
+        reasons.append("this edit changes the guard's own settings in .nobrainer/")
+    patterns = protected_patterns(root)
+    if any(glob_matches(form, pattern) for form in forms for pattern in patterns):
+        reasons.append(f"this path is listed in .nobrainer/{PROTECTED_FILE}")
+    if os.path.lexists(root / ".nobrainer" / FIX_MODE_FILE) and any(is_test_path(form) for form in forms or [target.name]):
+        reasons.append(f"fix mode is on (.nobrainer/{FIX_MODE_FILE}) and this edits a test; fix the code, not the test")
+    return reasons
+
+
+def pre_edit(payload: dict) -> dict | None:
+    tool_input = payload.get("tool_input")
+    if payload.get("tool_name") not in EDIT_TOOLS or not isinstance(tool_input, dict):
+        return None
+    reasons = []
+    text = edit_text(tool_input)
+    if any(pattern.search(text) for pattern in CREDENTIALS):
+        reasons.append("the new text looks like a credential; keep secrets out of files")
+    path = tool_input.get("file_path") or tool_input.get("notebook_path")
+    if isinstance(path, str) and path:
+        cwd = payload.get("cwd")
+        folder = Path(cwd) if isinstance(cwd, str) and os.path.isabs(cwd) else Path.cwd()
+        try:
+            reasons += path_reasons(path, folder)
+        except OSError as exc:
+            note(f"cannot read the project guard files ({exc}); checking the text only")
+    return ask(reasons) if reasons else None
 
 
 def blocks(entry: dict) -> list:
@@ -266,13 +442,7 @@ def project_root(cwd: Path) -> Path:
     Only a missing .git moves the search up; any other error propagates.
     """
 
-    for folder in (cwd, *cwd.parents):
-        try:
-            os.stat(folder / ".git")
-        except FileNotFoundError:
-            continue
-        return folder
-    return cwd
+    return git_root(cwd) or cwd
 
 
 def goal_status(folder: int, name: str) -> str | None:
@@ -393,8 +563,8 @@ def session(payload: dict) -> dict | None:
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    if len(argv) != 1 or argv[0] not in ("pre-tool", "stop", "session"):
-        print("usage: flow_guard.py pre-tool|stop|session  (reads the hook payload on stdin)", file=sys.stderr)
+    if len(argv) != 1 or argv[0] not in ("pre-tool", "pre-edit", "stop", "session"):
+        print("usage: flow_guard.py pre-tool|pre-edit|stop|session  (reads the hook payload on stdin)", file=sys.stderr)
         return 1
     if argv[0] == "session":
         # Whatever goes wrong, a session must start with no guard text and no error notice.
@@ -419,7 +589,7 @@ def main(argv: list[str] | None = None) -> int:
     if not isinstance(payload, dict):
         note("the hook input is not a JSON object; allowing")
         return 0
-    result = pre_tool(payload) if argv[0] == "pre-tool" else stop(payload)
+    result = {"pre-tool": pre_tool, "pre-edit": pre_edit, "stop": stop}[argv[0]](payload)
     if result is not None:
         print(json.dumps(result))
     return 0

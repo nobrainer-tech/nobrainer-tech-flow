@@ -74,7 +74,9 @@ class InstallGuardsTests(unittest.TestCase):
                 self.assertIn(str(self.settings), preview.stdout)
                 self.assertIn("PreToolUse", preview.stdout)
                 self.assertIn(f"{self.guard} pre-tool", preview.stdout)
-                self.assertIn("add 4 hooks", preview.stdout)
+                self.assertIn("add 5 hooks", preview.stdout)
+                self.assertIn(f"PreToolUse (matcher Edit|MultiEdit|Write|NotebookEdit): if [ -f {self.guard} ]", preview.stdout)
+                self.assertIn(f"{self.guard} pre-edit", preview.stdout)
                 self.assertIn(f"SessionStart (matcher compact|resume|clear): if [ -f {self.guard} ]", preview.stdout)
                 self.assertIn(f"{self.guard} session", preview.stdout)
                 self.assertNotIn("my-lint", preview.stdout)
@@ -98,9 +100,11 @@ class InstallGuardsTests(unittest.TestCase):
         self.assertEqual(OTHER_HOOKS["hooks"]["PostToolUse"], settings["hooks"]["PostToolUse"])
         self.assertEqual(OTHER_HOOKS["hooks"]["PreToolUse"][0], settings["hooks"]["PreToolUse"][0])
         self.assertEqual("Bash", settings["hooks"]["PreToolUse"][1]["matcher"])
+        self.assertEqual("Edit|MultiEdit|Write|NotebookEdit", settings["hooks"]["PreToolUse"][2]["matcher"])
         mine = self.ours(settings)
-        self.assertEqual(1, len(mine["PreToolUse"]))
+        self.assertEqual(2, len(mine["PreToolUse"]))
         self.assertTrue(mine["PreToolUse"][0].endswith("pre-tool || true; fi"))
+        self.assertTrue(mine["PreToolUse"][1].endswith("pre-edit || true; fi"))
         self.assertEqual(1, len(mine["Stop"]))
         self.assertEqual(1, len(mine["SubagentStop"]))
         self.assertEqual(1, len(mine["SessionStart"]))
@@ -126,7 +130,8 @@ class InstallGuardsTests(unittest.TestCase):
         preview = self.run_script("--undo")
         self.assertIn("NO_CHANGES", preview.stdout)
         self.assertIn(f"if [ -f {self.guard} ]; then python3 {self.guard} stop || true; fi", preview.stdout)
-        self.assertIn("remove 4 hooks", preview.stdout)
+        self.assertIn("remove 5 hooks", preview.stdout)
+        self.assertIn(f"{self.guard} pre-edit", preview.stdout)
         self.assertIn(f"{self.guard} session", preview.stdout)
         self.assertNotIn("my-format", preview.stdout)
         undone = self.run_script("--undo", "--apply")
@@ -163,7 +168,7 @@ class InstallGuardsTests(unittest.TestCase):
             event: sum("flow_guard.py" in hook["command"] for group in groups for hook in group["hooks"])
             for event, groups in settings["hooks"].items()
         }
-        self.assertEqual({"PreToolUse": 1, "PostToolUse": 0, "Stop": 1, "SubagentStop": 1, "SessionStart": 1}, mine)
+        self.assertEqual({"PreToolUse": 2, "PostToolUse": 0, "Stop": 1, "SubagentStop": 1, "SessionStart": 1}, mine)
         undone = self.run_script("--undo", "--apply")
         self.assertIn("REMOVED", undone.stdout)
         self.assertEqual(OTHER_HOOKS, json.loads(self.settings.read_text(encoding="utf-8")))
@@ -182,7 +187,7 @@ class InstallGuardsTests(unittest.TestCase):
         self.assertEqual(0, preview.returncode, preview.stderr)
         self.assertNotIn("UP TO DATE", preview.stdout)
         self.assertIn("update the Flow guards", preview.stdout)
-        self.assertIn("3 hooks now, 4 after", preview.stdout)
+        self.assertIn("3 hooks now, 5 after", preview.stdout)
         self.assertIn(f"{self.guard} session", preview.stdout)
         self.assertIn("NO_CHANGES: preview only; update them with", preview.stdout)
         self.assertEqual(before, self.settings.read_bytes())
@@ -190,11 +195,36 @@ class InstallGuardsTests(unittest.TestCase):
         self.assertEqual(0, applied.returncode, applied.stderr)
         self.assertIn("UPDATED", applied.stdout)
         updated = json.loads(self.settings.read_text(encoding="utf-8"))
-        self.assertEqual({event: 1 for event in ("PreToolUse", "Stop", "SubagentStop", "SessionStart")},
+        self.assertEqual({"PreToolUse": 2, "Stop": 1, "SubagentStop": 1, "SessionStart": 1},
                          {event: len(commands) for event, commands in self.ours(updated).items() if commands})
         self.assertEqual(OTHER_HOOKS["hooks"]["PostToolUse"], updated["hooks"]["PostToolUse"])
         [backup] = self.backups()
         self.assertEqual(before, backup.read_bytes())
+        self.assertIn("UP TO DATE", self.run_script("--apply").stdout)
+        self.run_script("--undo", "--apply")
+        self.assertEqual(OTHER_HOOKS, json.loads(self.settings.read_text(encoding="utf-8")))
+
+    def test_an_install_from_the_four_hook_version_gains_the_edit_guard(self) -> None:
+        guard = shlex.quote(str(self.guard))
+
+        def group(mode: str, matcher: str | None = None) -> dict:
+            hook = {"type": "command", "command": f"if [ -f {guard} ]; then python3 {guard} {mode} || true; fi", "timeout": 10}
+            return {**({"matcher": matcher} if matcher else {}), "hooks": [hook]}
+
+        settings = json.loads(json.dumps(OTHER_HOOKS))
+        settings["hooks"]["PreToolUse"].append(group("pre-tool", "Bash"))
+        settings["hooks"]["Stop"] = [group("stop")]
+        settings["hooks"]["SubagentStop"] = [group("stop")]
+        settings["hooks"]["SessionStart"] = [group("session", "compact|resume|clear")]
+        before = self.write_settings(settings)
+        preview = self.run_script()
+        self.assertIn("4 hooks now, 5 after", preview.stdout)
+        self.assertEqual(before, self.settings.read_bytes())
+        applied = self.run_script("--apply")
+        self.assertIn("UPDATED", applied.stdout)
+        updated = json.loads(self.settings.read_text(encoding="utf-8"))
+        matchers = [entry.get("matcher") for entry in updated["hooks"]["PreToolUse"]]
+        self.assertEqual(["Write", "Bash", "Edit|MultiEdit|Write|NotebookEdit"], matchers)
         self.assertIn("UP TO DATE", self.run_script("--apply").stdout)
         self.run_script("--undo", "--apply")
         self.assertEqual(OTHER_HOOKS, json.loads(self.settings.read_text(encoding="utf-8")))
@@ -282,12 +312,21 @@ class InstallGuardsTests(unittest.TestCase):
     def test_installed_hook_commands_run_and_fail_open(self) -> None:
         self.run_script("--apply")
         settings = json.loads(self.settings.read_text(encoding="utf-8"))
-        command = settings["hooks"]["PreToolUse"][-1]["hooks"][0]["command"]
+        by_matcher = {group.get("matcher"): group["hooks"][0]["command"] for group in settings["hooks"]["PreToolUse"]}
+        command = by_matcher["Bash"]
+        edit = by_matcher["Edit|MultiEdit|Write|NotebookEdit"]
         payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "git push --force"}, "cwd": "/"})
         asked = subprocess.run(["sh", "-c", command], input=payload, text=True, capture_output=True, check=False)
         self.assertEqual(0, asked.returncode)
         self.assertEqual("ask", json.loads(asked.stdout)["hookSpecificOutput"]["permissionDecision"])
         project = self.home / "project"
+        (project / ".nobrainer").mkdir(parents=True)
+        (project / ".nobrainer" / "protected-paths").write_text("migrations/\n", encoding="utf-8")
+        write = json.dumps({"tool_name": "Write", "tool_input": {"file_path": "migrations/1.sql", "content": "x"},
+                            "cwd": str(project)})
+        guarded = subprocess.run(["sh", "-c", edit], input=write, text=True, capture_output=True, check=False)
+        self.assertEqual(0, guarded.returncode)
+        self.assertEqual("ask", json.loads(guarded.stdout)["hookSpecificOutput"]["permissionDecision"])
         (project / ".git").mkdir(parents=True)
         (project / "tasks").mkdir()
         (project / "tasks" / "GOAL.md").write_text("GOAL_ID: g-1\nSTATUS: ACTIVE\n", encoding="utf-8")
@@ -300,6 +339,8 @@ class InstallGuardsTests(unittest.TestCase):
         (self.config / "skills" / "nobrainer-tech-flow").unlink()
         silent = subprocess.run(["sh", "-c", command], input=payload, text=True, capture_output=True, check=False)
         self.assertEqual((0, ""), (silent.returncode, silent.stdout))
+        unguarded = subprocess.run(["sh", "-c", edit], input=write, text=True, capture_output=True, check=False)
+        self.assertEqual((0, ""), (unguarded.returncode, unguarded.stdout))
         quiet = subprocess.run(["sh", "-c", session], input=start, text=True, capture_output=True, check=False, cwd=project)
         self.assertEqual((0, "", ""), (quiet.returncode, quiet.stdout, quiet.stderr))
 

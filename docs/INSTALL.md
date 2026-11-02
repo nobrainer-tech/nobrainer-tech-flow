@@ -14,9 +14,9 @@ upgraded merely because the new source is installed nearby.
 Node 18+ and Python 3.11+ are prerequisites. Preview the setup first:
 
 ```sh
-npx nobrainer-tech-flow@2.9.3 --client codex
-npx nobrainer-tech-flow@2.9.3 --client codex --apply
-npx nobrainer-tech-flow@2.9.3 --client codex --undo --apply
+npx nobrainer-tech-flow@2.10.0 --client codex
+npx nobrainer-tech-flow@2.10.0 --client codex --apply
+npx nobrainer-tech-flow@2.10.0 --client codex --undo --apply
 ```
 
 Use claude for Claude Code, opencode or copilot for those clients. Add --home PATH
@@ -25,7 +25,7 @@ for an isolated profile. The package is published on
 version there.
 
 Application copies the release files into the chosen home directory's
-.nobrainer-tech-flow-npm/2.9.3 and verifies the copy. That folder sits beside
+.nobrainer-tech-flow-npm/2.10.0 and verifies the copy. That folder sits beside
 ~/.nobrainer-tech-flow, where the Git installation suggests a clone, so cleaning
 the clone cannot delete the files the skill links point to. Releases before 2.3.2
 kept their copy in .nobrainer-tech-flow/npm; undo such a setup with the command of
@@ -451,6 +451,26 @@ Opt-in hooks in your Claude Code user `settings.json`, never in the plugin:
   command does not `cd` or `pushd` first, and a path counts by where its links
   lead. An `rm -r` whose arguments it cannot read, and a command line over 2,000
   characters that names one of these tools, are asked about as well;
+- before an Edit, MultiEdit, Write or NotebookEdit, Claude Code asks you first
+  (it never denies) when the path matches a glob in the project's
+  `.nobrainer/protected-paths` (one per line, `#` comments, relative to the
+  project root; a trailing `/` covers a folder, a pattern without `/` matches a
+  file name anywhere; no file means no protected paths), when the edit changes
+  `.nobrainer/protected-paths` or `.nobrainer/guard-strict` themselves, when the
+  new text looks like a credential (a private key header, `AKIA...`, `ghp_` or
+  `github_pat_`, an `sk-` token, or `password=` or `secret=` with a literal
+  value), and, while a `.nobrainer/fix-mode` file exists, when it edits a test
+  (`tests/`, `test_*`, `*_test.*`, `*.spec.*`, `*.test.*`). It reads only those
+  project files and the tool input: no network and no subprocess. Formatters
+  and linters stay with the project's own hooks and scripts;
+- strict mode, off by default: with `NOBRAINER_GUARD_STRICT=1` in Claude Code's
+  environment or a `.nobrainer/guard-strict` file in the project, `vercel --prod`,
+  `npm publish`, `terraform apply` or `destroy` and `gh release create` are
+  denied instead of asked, and the message names the route to approval: you
+  run the command yourself, or remove strict mode for that session. Other
+  risky commands still ask. An agent can unset a variable or delete a file, so
+  strict mode is not enforcement; managed settings and permission `deny` rules
+  are;
 - when a turn that edited files or ran commands ends without a line starting
   with `Proof:` or `Checked:` and without `UNVERIFIED`, the stop is blocked once
   so the agent adds one. A read-only turn, a second stop and an unreadable
@@ -487,8 +507,12 @@ the hooks in place, where they do nothing; remove them with `--guards --undo
 --apply`. Restart Claude Code after a change.
 
 The hooks follow https://code.claude.com/docs/en/hooks (Claude Code 2.1.302):
-PreToolUse reads `tool_name`, `tool_input.command` and `cwd` and answers
-`hookSpecificOutput.permissionDecision: "ask"` with `permissionDecisionReason`;
+PreToolUse (matcher `Bash`) reads `tool_name`, `tool_input.command` and `cwd`
+and answers `hookSpecificOutput.permissionDecision: "ask"` (`"deny"` in strict
+mode) with `permissionDecisionReason`; PreToolUse (matcher
+`Edit|MultiEdit|Write|NotebookEdit`) reads `tool_input.file_path` or
+`notebook_path`, the new text (`content`, `new_string`, `edits[].new_string`,
+`new_source`) and `cwd` and answers `"ask"` the same way;
 Stop and SubagentStop read `stop_hook_active`, `last_assistant_message`,
 `transcript_path` and `agent_transcript_path` and answer
 `{"decision": "block", "reason": ...}`; SessionStart (matcher

@@ -43,6 +43,7 @@ or any speed, token or quality gain. Those require a recorded client run.
 
 ```bash
 python3 -m unittest discover -s tests -v
+python3 -I scripts/check_eval_coverage.py origin/main HEAD
 ```
 
 ### Session-lifetime smoke
@@ -135,6 +136,30 @@ and
 The broader v1.1 routing baseline remains in
 [`evals/core-routing-v1.1.0-2026-08-28.md`](evals/core-routing-v1.1.0-2026-08-28.md).
 Do not mix scores across changed inventories, prompts or rubrics.
+
+## Standing scenario set
+
+[`docs/evals/`](evals/) is the standing scenario set. Each record freezes a
+scenario: the prompt or case, the deterministic check, and the result lines
+(`PRESSURE_RESULT:`, `HOLDOUT_RESULT:`). Every correction and every shipped fix
+adds one, so a regression meets the case that caught it. Keep development cases
+apart from holdout cases, as in section 3.
+
+Paid model runs of the set are a manual, owner-gated job. CI never spends money
+and never calls a model. What CI checks is coverage only:
+
+```bash
+python3 -I scripts/check_eval_coverage.py origin/main HEAD
+```
+
+The script lists `git diff --name-only base...head`. A change to
+`skills/*/SKILL.md`, `skills/*/references/`, `hooks/`, `adapters/`, `AGENTS.md`
+or `CLAUDE.md` must add or modify a file under `docs/evals/` in the same diff.
+For a skill, that text must name the changed skill's directory; for hooks,
+adapters and the instruction files, any `docs/evals/` change suffices. Docs-only
+and scripts-only changes pass. The validate workflow runs it on pull requests.
+It proves the change names a scenario record, not that the scenario passes or
+that a client follows the skill; that stays layers 3 and 4.
 
 ## 4. Client runtime acceptance
 

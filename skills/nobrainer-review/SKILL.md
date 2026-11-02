@@ -43,6 +43,20 @@ Before reviewing:
 If the base, scope or required runtime is inaccessible, state the exact gap. A
 partial review cannot return `CLEAN` for the unavailable surface.
 
+## Project review policy
+
+When the project has a `REVIEW.md`, read it with the nearest instructions and
+run the passes it lists. Without one, run three: bugs, security, and compliance
+against the spec, plan and project policy. `REVIEW.md` may also set:
+
+- generated or vendored paths to exclude: do not review them, and list them in
+  `UNCHECKED_SURFACE`;
+- a nit cap: the most `NIT` findings to report per review (default `0`);
+- project rules that count as `IMPORTANT`, for example a forbidden API.
+
+`REVIEW.md` narrows or adds passes; it cannot waive the finding gate, a start
+gate item or a required owner gate.
+
 ## Pre-read predictions and name/path audit
 
 Before reading implementation details, record two or three falsifiable defect
@@ -151,6 +165,17 @@ generic “consider refactoring”, dependency guesses without current primary
 documentation, and broad rewrites unrelated to a proven defect. Do not pad the
 report with low-value observations to look thorough.
 
+Label each surviving finding `IMPORTANT` (a proven defect, a spec or policy
+violation, or a security issue that should block merge) or `NIT` (a proven but
+minor issue, such as a naming or consistency defect the project's rules cover
+and the fix is trivial). A `NIT` still needs the cited `file:line`, a reachable
+trigger and a fix. Report at most the project's nit cap of them, default `0`, so
+a project that sets no cap gets no style comments; drop the rest and count them
+in the tally. A `NIT` never makes the result `FINDINGS` on its own.
+
+Human approval stays with the project's own controls (branch protection, code
+owners, the owner gate). The review informs that decision and never replaces it.
+
 ## Fix-and-recheck loop
 
 If the owner requested review only, stop after findings. If fixes are also in
@@ -180,12 +205,30 @@ INDEPENDENT_REVIEW: USED | NOT_JUSTIFIED | UNAVAILABLE
 REJECTED_CANDIDATES:
 UNCHECKED_SURFACE:
 ROLLBACK_OR_FIX_PATH:
+SEVERITY_TALLY: {"important": <n>, "nit": <n>, "nit_dropped": <n>}
 RESULT: FINDINGS | CLEAN | PARTIAL | BLOCKED
 ```
+
+`SEVERITY_TALLY` is one line of JSON so a CI step or the next session can read
+it without parsing prose; counts cover surviving findings only.
 
 Return `CLEAN` only when the complete frozen scope was inspected, required
 evidence passed and no candidate survived verification. Otherwise say `PARTIAL`
 or `BLOCKED` and name the missing proof.
+
+## Measure the review
+
+When a project tracks review quality, record from real data, not estimates:
+
+- time to first review: from the pull request opening or ready state to the
+  first published review;
+- share of findings resolved without a human touching the branch: findings
+  closed by an agent fix and a passing recheck, over all surviving findings;
+- defects caught before merge versus escaped: a defect found after merge that
+  the review scope covered counts as escaped and feeds `REVIEW_FAILED`
+  prevention in the correction hooks.
+
+Report a measure as `UNMEASURED` when the project has no source for it.
 
 ## Review convergence
 

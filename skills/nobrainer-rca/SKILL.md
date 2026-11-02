@@ -161,3 +161,13 @@ data, production, credentials, monitoring, or retry policy. If the owner asks to
 fix after accepting the RCA, start a separate bounded implementation with a
 failing regression test through `nobrainer-build`, then return for fresh
 verification and review.
+
+## Persist the post-mortem
+
+Diagnosis stays read-only. After the report, persistence is a separate write under
+the project's `LEARNING_WRITE_POLICY` from Flow
+[correction hooks](../nobrainer-tech-flow/references/correction-hooks.md):
+save the report to `docs/incidents/<date>-<slug>.md` or the project's existing
+incident home, write its one-line prevention to `tasks/lessons.md`, and turn the
+`DETECTION GAP` into a regression test or a frozen scenario through the fix task.
+Under `ASK` prepare those diffs; under `OFF` keep them in the report.
