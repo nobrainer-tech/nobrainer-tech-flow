@@ -15,7 +15,9 @@ control, changing credentials or implementing a fix.
 - `THREAT_MODEL`: map assets, actors, entry points, trust boundaries, abuse
   paths and required controls before a consequential design is frozen.
 - `SECURITY_REVIEW`: trace an exact diff, component, endpoint or data flow and
-  report only reachable, actionable defects.
+  report only reachable, actionable defects. It may run on a schedule scoped to
+  changes since the last scanned SHA, with findings deduped against earlier ones;
+  Flow's `closing-the-loop` reference owns that schedule.
 - `SUPPLY_CHAIN`: inspect an exact dependency, installer, plugin, script,
   workflow or external skill for provenance, pinning, permissions and execution
   risk.

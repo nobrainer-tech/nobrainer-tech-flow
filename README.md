@@ -18,7 +18,8 @@
 
 <p align="center">
   One workflow with 18 modules. Your coding agent does the work and checks it.
-  Then it hands over the evidence: what was delivered, what was checked and what was not.
+  Then it hands over the evidence: what was delivered, what was checked and what was not.<br>
+  It runs the whole <a href="#the-ai-native-sdlc-in-one-workflow">AI-native SDLC</a>: plan, design, build, test, deploy, maintain.
 </p>
 
 <p align="center">
@@ -72,7 +73,8 @@ and tested in each coding agent is in the [compatibility evidence](docs/COMPATIB
 - **One main loop, workers only where they pay.** A part goes to a native worker only for
   parallel work, context isolation, independent review or specialization.
 - **A pause before risky commands.** Optional Claude Code guards ask before
-  `git push --force`, `git reset --hard`, a production deploy or a publish.
+  `git push --force`, `git reset --hard`, a production deploy or a publish, and
+  before an edit to a protected path, a credential or, in fix mode, a test.
 - **Ideas and plans to delivery.** [SDD](skills/nobrainer-tech-flow/references/idea-to-delivery.md)
   turns an idea into checkable acceptance criteria;
   [autopilot](skills/nobrainer-tech-flow/references/autopilot.md) carries an approved plan
@@ -80,6 +82,26 @@ and tested in each coding agent is in the [compatibility evidence](docs/COMPATIB
 
 Free, MIT. The Git install previews every change and has undo. Your coding client's usage
 costs still apply.
+
+## The AI-native SDLC in one workflow
+
+Anthropic's [AI-native SDLC playbook](https://claude.com/resources/articles/the-ai-native-sdlc-playbook)
+rebuilds plan, design, build, test, deploy and maintain around agents, with a
+committed artifact at the end of every stage. nobrainer-tech-flow runs that loop
+with the same eighteen modules and no extra service:
+
+| Stage | What Flow commits or gates | Module |
+|---|---|---|
+| Plan | an intent record (problem, outcome, affected systems, constraints, open questions), accepted by merge | `nobrainer-tech-flow` |
+| Design | a spec with `INTENT_REF`, acceptance IDs and a policy-review table routed to named owners | `nobrainer-spec-driven-development` |
+| Build | a scope block with risks, one main loop, guards on risky commands and edits | `nobrainer-build`, `nobrainer-tech-flow` |
+| Test | a proof line with real output, a standing scenario set, an eval-coverage check in CI | `nobrainer-review`, `nobrainer-browser` |
+| Deploy | `REVIEW.md` passes with `IMPORTANT`/`NIT` labels, autonomy tiers by environment, owner gates | `nobrainer-review`, `nobrainer-security` |
+| Maintain | one baseline metric, a deterministic detector, log / diagnose / propose bands, post-mortems that become evals | `nobrainer-rca`, `nobrainer-tech-flow` |
+
+The [gap map](docs/evals/ai-native-sdlc-gap-map-2026-11-02.md) shows where each
+play lives and what 2.10.0 added. It works the same in every coding agent listed
+under [Where it runs](#where-it-runs).
 
 ## Install safely
 
@@ -106,9 +128,9 @@ Then start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer
 **npm** (Node 18+ and Python 3.11+); `--client` is `codex`, `claude`, `opencode` or `copilot`:
 
 ```sh
-npx nobrainer-tech-flow@2.9.3 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.9.3 --client codex --apply    # install
-npx nobrainer-tech-flow@2.9.3 --client codex --undo --apply
+npx nobrainer-tech-flow@2.10.0 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.10.0 --client codex --apply    # install
+npx nobrainer-tech-flow@2.10.0 --client codex --undo --apply
 ```
 
 **Any coding agent** (Git install with preview and undo; macOS, Linux and Windows, no
@@ -232,6 +254,19 @@ flowchart TD
 [`nobrainer-review`](skills/nobrainer-review/).
 What each one owns and its trigger aliases:
 [skill table](docs/HOW_IT_WORKS.md#eighteen-skills-distinct-ownership).
+
+## What's new in 2.10.0
+
+Flow now covers every stage of the AI-native SDLC playbook inside the same eighteen
+skills: a committed intent record and a spec with `INTENT_REF` and policy owners;
+`Risks:` in the scope block; guards that also watch edits to protected paths,
+credential-looking content and test files during a fix, with a strict mode for
+production deploys; a standing scenario set with an eval-coverage check in CI;
+Review with `REVIEW.md` passes and `IMPORTANT`/`NIT` labels; autonomy tiers by
+environment; and a closing-the-loop reference that turns one baseline metric into
+diagnosis or a proposed PR. Sessions gains a transport contract and short-lived CLI
+workers. Details: [release notes](RELEASE-NOTES.md) and the
+[gap map](docs/evals/ai-native-sdlc-gap-map-2026-11-02.md).
 
 ## What's new in 2.9.3
 

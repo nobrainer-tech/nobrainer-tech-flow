@@ -70,6 +70,12 @@ jobs:
       - name: Run deterministic tests
         run: python3 -m unittest discover -s tests -v
 
+      - name: Check eval coverage of the change
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: python3 -I scripts/check_eval_coverage.py "origin/$BASE_REF" HEAD
+
       - name: Check adapter syntax
         run: |
           python3 -m py_compile scripts/*.py skills/*/scripts/*.py tests/*.py

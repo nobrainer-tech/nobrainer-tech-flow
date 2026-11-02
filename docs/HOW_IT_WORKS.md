@@ -12,9 +12,11 @@ Install steps are in [INSTALL.md](INSTALL.md), client evidence in
   a check `STALE` once its input files change, and a behavior-preserving rewrite
   reports `PROVEN`, `PARTLY_PROVEN` or `NOT_PROVEN` for whether the tests would
   catch a change.
-- **A pause before risky commands.** With the Git install, optional Claude Code
+- **A pause before risky commands and edits.** With the Git install, optional Claude Code
   guards ask before `git push --force`, `git reset --hard`, a recursive delete
-  outside temporary folders, a production deploy or a publish. A turn that
+  outside temporary folders, a production deploy or a publish, and before an edit
+  to a protected path, credential-looking content, or a test file during a fix.
+  A strict mode denies the production deploy patterns outright. A turn that
   changed files and ends without a proof line or an explicit `UNVERIFIED` is
   sent back once. After compaction, resume or clear, the agent is pointed back
   to the active goal file. Opt-in, with preview and undo.
@@ -58,6 +60,12 @@ typed suggestions for bounded classification, ranking and evaluation. Setup
 remembers your choice; the default makes no provider calls. Missing access or
 failed requests return to the core workflow. See [setup and usage](../skills/nobrainer-tech-flow/references/optional-decisions.md)
 for configuration, data approval and tested platform limits.
+
+After delivery, the loop keeps running without someone watching: a committed
+intent record starts work, a spec routes policy concerns to their owners, review
+labels findings and promotes repeats into the project's instructions, and a
+deterministic detector on one baseline metric opens diagnosis or a proposed fix
+as a PR, never a merge. See [closing the loop](../skills/nobrainer-tech-flow/references/closing-the-loop.md).
 
 Team checks whether a task has the capabilities it needs. Research records
 which sources were actually checked; Build names any known limit in an

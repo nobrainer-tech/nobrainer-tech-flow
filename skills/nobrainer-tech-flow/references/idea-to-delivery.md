@@ -4,6 +4,22 @@ Use when the owner supplies a goal or idea without an implementation plan.
 An idea is enough to begin discovery. It is not approval for every possible
 product choice or external effect.
 
+## Record the intent
+
+When the idea will outlive one conversation or needs a human accept/reject, write
+it as a committed Markdown intent record at the project's existing intent home,
+else `docs/intent/<topic>.md`. Use exactly these sections: Problem, Proposed
+outcome, Affected users and systems, Constraints, Open questions. Keep the
+`OBSERVED`, `INFERRED`, `RECOMMENDED` and `UNKNOWN` labels on its statements.
+
+The owner or product owner accepts or closes the record through the normal
+review and merge; the merge records acceptance, not chat. The live `GOAL_FILE`
+(see [long-run-state](long-run-state.md)) stays uncommitted execution state. The
+intent record is the durable artifact the spec reads through `INTENT_REF`.
+
+Measure two things: time from the first conversation to the committed intent,
+and survival rate (records accepted into a spec versus closed).
+
 ## Make the idea executable
 
 1. Read the existing project and relevant decisions. State the desired result,

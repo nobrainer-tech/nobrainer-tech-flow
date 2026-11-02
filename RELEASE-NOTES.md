@@ -1,5 +1,36 @@
 # nobrainer-tech-flow release notes
 
+## v2.10.0 - 2026-11-02
+
+Flow now covers every stage of Anthropic's AI-native SDLC playbook (plan, design,
+build, test, deploy, maintain) inside the same eighteen skills; the
+[gap map](docs/evals/ai-native-sdlc-gap-map-2026-11-02.md) records what was
+missing and where each play lives.
+
+- Plan and design: an idea becomes a committed intent record (Problem, Proposed
+  outcome, Affected users and systems, Constraints, Open questions); the spec
+  template carries `INTENT_REF` and a policy-review table that routes concerns to
+  named owners before implementation may start.
+- Build: the scope block gains `Risks:`; the optional guards also watch edits
+  (protected paths from `.nobrainer/protected-paths`, credential-looking content,
+  test files while `.nobrainer/fix-mode` exists) and a strict mode denies
+  production deploy patterns; the instruction-file checklist names commands with
+  healthy output, conventions, architecture and known agent mistakes.
+- Test: a standing scenario set under `docs/evals/`; every correction freezes one
+  scenario; `scripts/check_eval_coverage.py` fails CI when a changed skill, hook
+  or instruction file has no scenario record in the same change.
+- Deploy: Review reads a project `REVIEW.md`, runs bug, security and compliance
+  passes, labels findings `IMPORTANT` or `NIT` under a nit cap and promotes repeat
+  findings into the project's instructions; delivery gains autonomy tiers by
+  environment and a headless judgment-step pattern for CI.
+- Maintain: `closing-the-loop.md` runs one baseline metric through a
+  deterministic detector with log, diagnose and propose bands, writes findings as
+  intent records and an eval per shipped fix, schedules security scans from the
+  last scanned SHA, and RCA persists post-mortems under `docs/incidents/`.
+- Sessions: a transport contract and short-lived CLI workers (`codex exec`,
+  `muse exec`) with preview by default, receipts, timeouts and MAIN verification;
+  `run_bounded.py --stdin-file` feeds a prompt file to such a worker.
+
 ## v2.9.3 - 2026-11-02
 
 The MCP done gate no longer counts Python unittest expected failures as passing tests.

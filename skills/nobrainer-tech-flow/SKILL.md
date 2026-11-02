@@ -110,6 +110,7 @@ Outcome:
 Non-goals:
 Expected files (PUBLIC_SURFACE):
 Proof:
+Risks:
 Untouched:
 Minimum solution:
 Test decision: EXISTING | NEW_REQUIRED | NOT_NEEDED — reason
@@ -117,6 +118,7 @@ Done clean:
 ```
 
 `Outcome` is the portable goal; `Proof` plus `Done clean` are the definition of done.
+`Risks` name what could invalidate the plan.
 Before substantial work, show the user what done means and set it as the host-native goal where supported.
 For substantial work, derive the next short-term goal from the supplied
 long-term direction using [project start](references/project-start.md).
@@ -254,6 +256,7 @@ Detailed canonical-store rules live in the correction-hooks reference.
 Persist only durable, sourced, authorized and non-secret knowledge.
 Use `nobrainer-autoimprove` only with a frozen baseline, calibrated evaluator
 outside candidate write scope and a fresh holdout; a null result is valid.
+For maintenance after delivery, use [closing the loop](references/closing-the-loop.md).
 
 Finish check: compare the result with the whole agreed scope. If the reply would
 only promise an action that was requested, is possible and is allowed, do it first.

@@ -50,6 +50,22 @@ Rules:
 - Keep credentials, private machine paths, mutable runtime state, guessed
   commands and model names out of instruction files.
 
+## Day-one shape of the source of truth
+
+When the source of truth is new or being rewritten, aim for about one page of
+day-one essentials; longer policy goes to a skill or reference the file points
+to. Include:
+
+- **Commands:** build, test and lint, with the one feedback command that exits
+  non-zero on failure and a line showing what healthy output looks like.
+- **Conventions:** naming, layout and style rules a linter does not enforce.
+- **Architecture:** a few lines on the main parts and where they live.
+- **Known agent mistakes:** one line per correction, added on the first
+  confirmed correction, not in advance (see the
+  [correction hooks](../../nobrainer-tech-flow/references/correction-hooks.md)).
+
+Verify each command by running it; do not guess one.
+
 ## Preview
 
 Show, for every file: the current bytes, the proposed bytes or a unified diff,

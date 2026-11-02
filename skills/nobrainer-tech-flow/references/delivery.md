@@ -145,6 +145,34 @@ blank-line shaving. Re-run only checks affected by the final change plus require
 repository checks. Finish after acceptance, not after an arbitrary quantity of
 reviews, tests or generated files.
 
+## Autonomy by environment
+
+Autonomy follows the blast radius of the environment, not the model or the
+mood of the session. Name the environment before acting; an unknown one is
+treated as production.
+
+| Environment | Agent may | Gate |
+|---|---|---|
+| dev | Run freely within the task scope: edit, build, test, reset local state. | None beyond the task scope and the owner gates elsewhere in this contract. |
+| staging | Run, deploy and rehearse the rollback. | Read back the deployed result and the rollback before calling it ready. |
+| production | Prepare the change and the rollback plan; do not deploy. | A named release owner authorizes the deploy; read back the rollback path after the deploy. |
+
+Standing owner authorizations for a specific project may widen a row; absence
+of one never does.
+
+## Headless judgment steps
+
+Start CI and automation with read-only judgment steps run through a
+non-interactive worker CLI: triage a failed build, summarize flaky tests, draft
+a changelog. Their output is advice for a person or a later step. Write steps
+come later, behind gates, and always as a pull request, never a direct push.
+The worker invocation contract is in
+[session transport](../../nobrainer-sessions/references/transport.md#short-lived-cli-workers).
+
+An agent job uses a short-lived, narrowly scoped token and holds no standing
+production credential. Expose deploy, status and rollback as scoped tools, one
+operation each with typed arguments, never as free shell access.
+
 ## Coordinated team execution
 
 MAIN owns the full outcome, coordination, critical path, dependencies, integration,

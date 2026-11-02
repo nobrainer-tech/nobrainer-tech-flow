@@ -77,6 +77,14 @@ previous action, claim, assumption or process was wrong.
    reusable preference in the wiki only when its destination and confidentiality
    permit it. Never write a secret, raw sensitive transcript or an inferred
    permanent personality trait.
+6. Freeze one scenario from the correction in the project's standing scenario
+   set: the prompt or task that triggered the error plus one deterministic
+   check that fails on the old behavior. Re-run the set when skills, hooks or
+   instruction files change. This repository defines the set in its testing
+   guide; another project keeps the scenario beside its own tests. The scenario
+   is a regression test of agent behavior, so it holds no secret or raw
+   transcript. Under `ASK` or `OFF`, treat it as part of the same single-store
+   decision.
 
 ### `REVIEW_FAILED`
 
@@ -90,6 +98,11 @@ fails.
 4. After the repeated review, run a fresh `RECEIVE_AUDIT` that binds the repaired
    diff, current tests and review result before acceptance.
 5. Do not reuse the invalidated review, test or release result.
+6. When a finding class (same normalized cause, for example a missing
+   authorization check on a new route) has failed review twice in one project,
+   also run `AGENT_ERROR_CORRECTED` for it: one minimal sourced rule in the
+   project's instruction file, or a native check (test, lint, hook, CI) when
+   one can catch it. A single occurrence stays a finding.
 
 ### `REPEATED_DEFECT`
 
@@ -98,7 +111,10 @@ Trigger when the same normalized failure reappears after a claimed fix.
 Stop blind retry. Compare fingerprints and prior prevention evidence, invoke
 `nobrainer-rca`, and require new evidence before another implementation attempt.
 Use `nobrainer-autoimprove` only when the defect belongs to a skill, prompt or
-workflow control rather than product code.
+workflow control rather than product code. Confirm the `AGENT_ERROR_CORRECTED`
+scenario for this failure is in the standing scenario set; if it is missing,
+freeze it now (prompt plus deterministic check) so the next change to a skill,
+hook or instruction file re-runs it.
 
 ## Persistence gate
 

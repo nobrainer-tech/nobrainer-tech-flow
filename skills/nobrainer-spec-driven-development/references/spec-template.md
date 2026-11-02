@@ -11,6 +11,7 @@ SPEC_ID: <stable ID>
 VERSION: 0.1.0
 STATUS: DISCOVERY | DRAFT | REVIEW | APPROVED | IMPLEMENTING | SPEC_CHANGE_PROPOSED | VERIFYING | ACCEPTED | BLOCKED | SUPERSEDED
 OWNER: <person or role>
+INTENT_REF: <path or ID of the committed intent record, or NONE with reason>
 APPROVED_BY: NONE
 APPROVED_AT: NONE
 SPEC_HASH: NONE
@@ -91,6 +92,12 @@ NON_GOALS:
 |---|---|---|---|---|
 | DEC-1 | <question> | <bounded options> | <owner> | OPEN/RESOLVED |
 
+## Policy review
+
+| Policy | Owner | Skill or check that applies it | Concern | Status |
+|---|---|---|---|---|
+| <security, privacy, compliance, brand, cost> | <named person or role> | <skill, linter or gate> | <flagged concern or NONE> | OPEN/RESOLVED/CARRIED |
+
 ## Review
 
 - CONTRADICTION_SCAN: NOT_RUN
@@ -109,6 +116,12 @@ NON_GOALS:
 Before setting `IMPLEMENTATION_MAY_START: YES`, ensure all acceptance-critical
 unknowns are resolved or owner-gated, every requirement is covered, and the
 stored hash matches the reviewed content.
+
+Send each flagged policy concern to its named owner before
+`IMPLEMENTATION_MAY_START: YES`; `CARRIED` needs a recorded owner decision. A
+human makes the go/no-go, with a technical lead for higher-risk items. Measure
+the time between the intent and spec commits, and the number of spec commits
+after the first plan.
 
 `SPEC_CHANGE_PROPOSED` blocks implementation until the revised spec is reviewed
 and approved.
