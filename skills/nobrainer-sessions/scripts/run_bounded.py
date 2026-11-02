@@ -65,6 +65,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Feed this file to the command's stdin; without it stdin is empty.",
     )
+    parser.add_argument(
+        "--clean-env",
+        action="store_true",
+        help="Start the command with a minimal environment (PATH, HOME, LANG, TMPDIR) "
+        "plus any --env-keep names, so inherited credentials do not reach it.",
+    )
+    parser.add_argument(
+        "--env-keep",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="With --clean-env, also pass this inherited variable (repeatable).",
+    )
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
     if args.stdin_file is not None and not args.stdin_file.is_file():
@@ -165,6 +178,10 @@ def run_bounded(
 ) -> tuple[dict[str, object], int, dict[str, bytes]]:
     started_utc = utc_now()
     started = time.monotonic()
+    environment = None
+    if getattr(args, "clean_env", False):
+        keep = ["PATH", "HOME", "LANG", "TMPDIR", *getattr(args, "env_keep", [])]
+        environment = {name: os.environ[name] for name in keep if name in os.environ}
     stdin_file = getattr(args, "stdin_file", None)
     stdin_handle = (
         open(stdin_file, "rb") if stdin_file is not None else subprocess.DEVNULL
@@ -174,6 +191,7 @@ def run_bounded(
             args.command,
             cwd=args.cwd,
             stdin=stdin_handle,
+            env=environment,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             start_new_session=True,

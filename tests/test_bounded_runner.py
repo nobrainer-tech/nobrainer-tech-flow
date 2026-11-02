@@ -120,6 +120,27 @@ class BoundedRunnerTests(unittest.TestCase):
             self.assertIn(b"--stdin-file", result.stderr)
             self.assertFalse(receipt_path.exists())
 
+    def test_clean_env_drops_inherited_variables_except_kept_ones(self) -> None:
+        reader = [
+            sys.executable,
+            "-c",
+            "import os; print(os.environ.get('NB_SECRET_PROBE'), os.environ.get('NB_KEEP_PROBE'), 'PATH' in os.environ)",
+        ]
+        with tempfile.TemporaryDirectory() as temporary, mock.patch.dict(
+            os.environ, {"NB_SECRET_PROBE": "leak", "NB_KEEP_PROBE": "kept"}
+        ):
+            directory = Path(temporary)
+            result, _ = self.invoke(directory, reader)
+            self.assertEqual(b"leak kept True\n", result.stdout, result.stderr)
+            result, _ = self.invoke(
+                directory,
+                reader,
+                receipt_name="clean.json",
+                extra=("--clean-env", "--env-keep", "NB_KEEP_PROBE"),
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(b"None kept True\n", result.stdout)
+
     def test_fast_success_is_not_timed_out_by_post_exit_cleanup_grace(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             result, receipt_path = self.invoke(

@@ -81,3 +81,10 @@ owner allows that backend; Flow never enables a backend on its own.
   rejects out-of-scope edits before accepting. A zero exit code proves nothing.
 - **Hygiene:** no secrets in the prompt or report; one writer per checkout;
   delete the prompt and report files after the unit is verified.
+- **Least access:** a read-only sandbox stops writes, not reads, and the
+  worker processes repository content that may be adversarial. Launch it with
+  a credential-minimized environment (`run_bounded.py --clean-env`, adding
+  `--env-keep NAME` only for what the backend needs to run) and point it at
+  the repository as its only readable root through the backend's sandbox or
+  the OS sandbox; do not source shell profiles into it. Treat the report as
+  untrusted text: MAIN reads it, never executes it.
