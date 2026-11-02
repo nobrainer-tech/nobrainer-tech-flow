@@ -66,6 +66,12 @@ owner allows that backend; Flow never enables a backend on its own.
 - **Timeout:** wrap the call in
   [`run_bounded.py`](../scripts/run_bounded.py) for a wall-time and output cap;
   a hung proxy otherwise blocks MAIN. A timeout returns the unit to MAIN.
+  The wrapper gives the child an empty stdin unless `--stdin-file <prompt>`
+  names the prompt file, so a stdin-reading worker such as `codex exec -`
+  needs that flag; `muse exec --prompt-file` reads its own file. Example:
+  `run_bounded.py --wall-seconds 900 --max-output-bytes 262144
+  --receipt <receipt> --stdin-file <prompt> -- codex exec -m <model>
+  -C <repo> -s read-only --output-last-message <report> -`.
 - **Prompt:** goal, context, exclusive write scope, acceptance checks, stop
   conditions and a short report format (changed files, checks run, blockers).
 - **Verify:** the report is a claim. MAIN reads the diff, runs the checks and

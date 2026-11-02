@@ -96,6 +96,30 @@ class BoundedRunnerTests(unittest.TestCase):
             self.assertNotIn("argv", receipt)
             self.assertEqual("UNKNOWN", receipt["model_tokens"])
 
+    def test_stdin_file_is_forwarded_and_default_stdin_is_empty(self) -> None:
+        reader = [sys.executable, "-c", "import sys; print(repr(sys.stdin.read()))"]
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            prompt = directory / "prompt.md"
+            prompt.write_text("do the task\n", encoding="utf-8")
+            result, _ = self.invoke(
+                directory, reader, extra=("--stdin-file", str(prompt))
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(b"'do the task\\n'\n", result.stdout)
+            result, _ = self.invoke(directory, reader, receipt_name="empty.json")
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(b"''\n", result.stdout)
+            result, receipt_path = self.invoke(
+                directory,
+                reader,
+                receipt_name="missing.json",
+                extra=("--stdin-file", str(directory / "absent.md")),
+            )
+            self.assertEqual(2, result.returncode)
+            self.assertIn(b"--stdin-file", result.stderr)
+            self.assertFalse(receipt_path.exists())
+
     def test_fast_success_is_not_timed_out_by_post_exit_cleanup_grace(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             result, receipt_path = self.invoke(
