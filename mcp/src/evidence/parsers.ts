@@ -7,11 +7,12 @@
 //               "N flaky" lines in a run that printed "Running N tests".
 //   Mocha       "N passing (T)" with a time, "N failing" within 3 lines after it.
 //   A bare "12 passed" line is not recognised by any runner.
-// The latest recognised summary (highest line index) wins. Multi-binary runners (Go, cargo,
-// dotnet) are summed across the whole output. Playwright counts flaky as passed.
+// The latest recognised summary supplies counts; earlier failures remain visible.
+// Multi-binary runners (Go, cargo, dotnet) are summed across the whole output.
+// Playwright counts flaky as passed.
 import { normaliseOut } from './normalise.ts';
 
-export type RunnerSummary = { runner: string; passed: number; failed: number };
+export type RunnerSummary = { runner: string; passed: number; failed: number; earlierFailure?: true };
 type Found = RunnerSummary & { at: number };
 
 const MAX_LINE = 300;
@@ -84,9 +85,13 @@ function lastWhere(lines: string[], f: (l: string, i: number) => Found | null): 
   let best: Found | null = null;
   lines.forEach((l, i) => {
     const r = f(l, i);
-    if (r) best = r;
+    if (r) best = remember(best, r);
   });
   return best;
+}
+
+function remember(previous: Found | null, next: Found): Found {
+  return previous && (previous.failed > 0 || previous.earlierFailure) ? { ...next, earlierFailure: true } : next;
 }
 
 function unittest(lines: string[]): Found | null {
@@ -102,14 +107,14 @@ function unittest(lines: string[]): Found | null {
       const ok = /^OK(?: \(([^)]{0,100})\))?$/.exec(line);
       if (ok) {
         const body = ok[1] ?? '';
-        best = { runner: 'unittest', passed: Math.max(0, total - count(body, 'skipped') - count(body, 'expected failures')), failed: 0, at: j };
+        best = remember(best, { runner: 'unittest', passed: Math.max(0, total - count(body, 'skipped') - count(body, 'expected failures')), failed: 0, at: j });
         return;
       }
       const f = /^FAILED \(([^)]{1,100})\)$/.exec(line);
       if (f?.[1] !== undefined) {
         const body = f[1];
         const bad = count(body, 'failures') + count(body, 'errors') + count(body, 'unexpected successes');
-        best = { runner: 'unittest', passed: Math.max(0, total - bad - count(body, 'skipped') - count(body, 'expected failures')), failed: bad, at: j };
+        best = remember(best, { runner: 'unittest', passed: Math.max(0, total - bad - count(body, 'skipped') - count(body, 'expected failures')), failed: bad, at: j });
         return;
       }
     }
@@ -125,7 +130,7 @@ function nodeTest(lines: string[]): Found | null {
     if (!m) return;
     if (m[1] === 'pass') pass = { n: num(m[2]), at: i };
     else if (pass && i - pass.at <= 10) {
-      best = { runner: 'node:test', passed: pass.n, failed: num(m[2]), at: i };
+      best = remember(best, { runner: 'node:test', passed: pass.n, failed: num(m[2]), at: i });
     }
   });
   return best;
@@ -136,31 +141,40 @@ function mocha(lines: string[]): Found | null {
   lines.forEach((l, i) => {
     const p = /^\s*(\d{1,9}) passing \(\d+(?:\.\d+)?(?:ms|s|m)\)\s*$/.exec(l);
     if (p) {
-      cur = { runner: 'mocha', passed: num(p[1]), failed: 0, at: i };
+      cur = remember(cur, { runner: 'mocha', passed: num(p[1]), failed: 0, at: i });
       return;
     }
     const f = /^\s*(\d{1,9}) failing\s*$/.exec(l);
     if (!f) return;
     if (cur && i - cur.at <= 3 && cur.failed === 0) cur = { ...cur, failed: num(f[1]), at: i };
-    else cur = { runner: 'mocha', passed: 0, failed: num(f[1]), at: i };
+    else cur = remember(cur, { runner: 'mocha', passed: 0, failed: num(f[1]), at: i });
   });
   return cur;
 }
 
 function playwright(lines: string[]): Found | null {
+  let best: Found | null = null;
   let start = 0;
   let sawRunning = false;
-  lines.forEach((l, i) => {
-    if (/^\s*Running \d{1,9} tests? using \d{1,5} workers?\s*$/.test(l)) {
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*Running \d{1,9} tests? using \d{1,5} workers?\s*$/.test(lines[i] ?? '')) {
+      const prior = playwrightRun(lines, start, i, sawRunning);
+      if (prior) best = remember(best, prior);
       start = i;
       sawRunning = true;
     }
-  });
+  }
+  const last = playwrightRun(lines, start, lines.length, sawRunning);
+  if (last) return remember(best, last);
+  return best && (best.failed > 0 || best.earlierFailure) ? best : null;
+}
+
+function playwrightRun(lines: string[], start: number, end: number, sawRunning: boolean): Found | null {
   let passed = 0;
   let failed = 0;
   let at = -1;
   let anchored = false;
-  for (let i = start; i < lines.length; i++) {
+  for (let i = start; i < end; i++) {
     const m = /^\s*(\d{1,9}) (passed|failed|flaky|skipped|interrupted|did not run)( \([\d.]{1,10}(?:ms|s|m)\))?\s*$/.exec(
       lines[i] ?? '',
     );
@@ -264,21 +278,26 @@ function withAt(r: RunnerSummary | null, at: number): Found | null {
   return r ? { ...r, at } : null;
 }
 
-/** The last recognised runner summary in `out`, or null. */
+/** The last recognised runner summary in `out`, retaining any earlier failure, or null. */
 export function parseTestSummary(out: string): RunnerSummary | null {
   const lines = normaliseOut(out)
     .split('\n')
     .map((l) => (l.length > MAX_LINE ? '' : l));
   let best: Found | null = null;
+  let anyFailure = false;
   for (const run of RUNNERS) {
     const r = run(lines);
+    if (r && (r.failed > 0 || r.earlierFailure)) anyFailure = true;
     if (r && (best === null || r.at > best.at)) best = r;
   }
-  return best === null ? null : { runner: best.runner, passed: best.passed, failed: best.failed };
+  return best === null ? null : {
+    runner: best.runner, passed: best.passed, failed: best.failed,
+    ...(anyFailure && best.failed === 0 ? { earlierFailure: true } : {}),
+  };
 }
 
 /** True when a recognised summary reports at least one failure. */
 export function hasFailingSummary(out: string): boolean {
   const s = parseTestSummary(out);
-  return s !== null && s.failed > 0;
+  return s !== null && (s.failed > 0 || s.earlierFailure === true);
 }

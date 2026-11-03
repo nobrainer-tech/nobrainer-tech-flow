@@ -25,7 +25,8 @@ All six tools are read-only (`readOnlyHint: true`, `openWorldHint: false`). Resu
 JSON text block. Responses never echo your free text: only IDs, enums, digests and canonical Flow text.
 
 The server checks consistency, not truth: it cannot see your machine, and evidence is reported by
-the agent. Every handoff says so.
+the agent. Every handoff says so. A recognised failure in the last 4,000 normalized characters
+of a test log rejects an exit-zero result, even if a later summary passes. Submit a clean rerun separately.
 
 ## Install
 

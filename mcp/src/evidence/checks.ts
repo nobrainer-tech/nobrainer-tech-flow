@@ -96,7 +96,7 @@ function judgeRun(r: EvidenceRecord, id: string): Outcome {
     return reject("COUNTS_MISMATCH", `${id}: claimed counts differ from the output (${s.passed} passed, ${s.failed} failed).`);
   }
   if (r.exit !== 0) return { pass: false, failed: true };
-  if (s && s.failed > 0) return reject("EXIT_OUTPUT_CONFLICT", `${id}: exit 0 but the summary has ${s.failed} failed.`);
+  if (s && (s.failed > 0 || s.earlierFailure)) return reject("EXIT_OUTPUT_CONFLICT", `${id}: exit 0 but a summary reports failed tests.`);
   if (s && s.passed < 1) return reject("NO_TESTS_RAN", `${id}: the summary shows no passed tests.`);
   // Commands need no test summary, but any recognised summary must be consistent.
   if (r.kind === "test" && !s) {
