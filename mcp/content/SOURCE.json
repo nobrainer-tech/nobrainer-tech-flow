@@ -1,7 +1,7 @@
 {
   "repo": "https://github.com/nobrainer-tech/nobrainer-tech-flow",
-  "tag": "v2.10.0",
-  "commit": "0e344bf2756ea1ed4b5af66a3af1ebb231102129",
+  "tag": "v2.10.1",
+  "commit": "ca326775cb5abef5d36e5bf3c26f23c4fcccfcca",
   "files": {
     "skills/nobrainer-auto-fine-tune/SKILL.md": "55987bc56d0c25e3e6bee55151dcaa3d2b52e2aa90d3999d3eb488119d266ac2",
     "skills/nobrainer-autoimprove/SKILL.md": "17b2a6422f746186864820dfde2d5b9a7070498c4fd8e64e8a6225a92c350127",
