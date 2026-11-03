@@ -109,16 +109,25 @@ test('prose and look-alike lines are not summaries', () => {
   }
 });
 
-test('last recognised summary wins', () => {
+test('the last summary supplies counts without hiding an earlier failure', () => {
   assert.equal(parseTestSummary(fx('jest-fail') + '\n' + fx('pytest-pass'))?.runner, 'pytest');
   assert.equal(parseTestSummary(fx('pytest-pass') + '\n' + fx('vitest-fail'))?.runner, 'vitest');
   assert.equal(parseTestSummary(fx('pytest-fail') + '\n' + fx('pytest-pass'))?.failed, 0);
   assert.equal(parseTestSummary(fx('pytest-pass') + '\n' + fx('pytest-fail'))?.failed, 2);
+  assert.equal(parseTestSummary(fx('pytest-fail') + '\n' + fx('pytest-pass'))?.earlierFailure, true);
+  assert.equal(hasFailingSummary(fx('jest-fail') + '\n' + fx('pytest-pass')), true);
+  for (const [file] of CASES) {
+    assert.equal(hasFailingSummary(fx(`${file}-fail`) + '\n' + fx(`${file}-pass`)), true, file);
+    assert.equal(hasFailingSummary(fx(`${file}-pass`) + '\n' + fx(`${file}-pass`)), false, file);
+  }
 });
 
 test('playwright: needs a Running line or a timed passed line', () => {
   assert.equal(parseTestSummary('  1 failed'), null);
   assert.equal(parseTestSummary('Running 2 tests using 1 worker\n  1 failed')?.failed, 1);
+  const incomplete = '\nRunning 1 test using 1 worker';
+  assert.equal(parseTestSummary(fx('playwright-pass') + incomplete), null);
+  assert.equal(hasFailingSummary(fx('playwright-fail') + incomplete), true);
 });
 
 test('normalise helpers', () => {

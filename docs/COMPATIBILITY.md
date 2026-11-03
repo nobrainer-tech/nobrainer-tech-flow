@@ -21,7 +21,7 @@ Never promote one level from evidence belonging to another.
 Merge is a repository delivery state, not a client-compatibility level; release
 evidence records it separately.
 
-The current source version is **2.10.0**, which closes the gaps against the
+The current source version is **2.10.1**. Version 2.10.0 closed the gaps against the
 AI-native SDLC playbook described in the [release notes](../RELEASE-NOTES.md)
 and the [gap map](evals/ai-native-sdlc-gap-map-2026-11-02.md). The [2.9.0 verification record](releases/v2.9.0.md)
 records the 2.9.0 scope and proof limits. Earlier records,

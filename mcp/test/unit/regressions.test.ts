@@ -99,6 +99,31 @@ test("finding 1: exit 0 with a failing summary also invalidates an earlier pass"
   assert.equal((await call("check_flow_done", { token: fixed.json.token })).json.verdict, "DONE", "a later consistent pass accepts again");
 });
 
+test("a mixed test log reopens the criterion until a separate clean run", async () => {
+  const cmd = "python3 -B -c 'import unittest as u; u.TextTestRunner().run(u.FunctionTestCase(lambda:1/0)); u.TextTestRunner().run(u.FunctionTestCase(lambda:None))'";
+  const failure = "Ran 1 test in 0.000s\n\nFAILED (errors=1)";
+  const clean = "Ran 1 test in 0.000s\n\nOK";
+  const mixed = `${failure}\n.\n----------------------------------------------------------------------\n${clean}\n`;
+
+  for (const kind of ["test", "command"] as const) {
+    const token = await contract([{ text: "Both unit test suites pass", proof: kind }]);
+    const first = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind, cmd, exit: 0, out: clean }] });
+    assert.equal(first.json.results[0].verdict, "ACCEPTED");
+    assert.equal((await call("check_flow_done", { token: first.json.token })).json.verdict, "DONE");
+
+    const result = await call("check_flow_evidence", { token: first.json.token, evidence: [{ item: "AC01", kind, cmd, exit: 0, out: mixed, passed: 1, failed: 0 }] });
+    assert.equal(result.json.results[0].verdict, "REJECTED");
+    assert.equal(result.json.results[0].code, "EXIT_OUTPUT_CONFLICT");
+    assert.deepEqual(result.json.open, ["AC01"]);
+    assert.equal((await call("check_flow_done", { token: result.json.token })).json.verdict, "NOT_DONE");
+
+    const fixed = await call("check_flow_evidence", { token: result.json.token, evidence: [{ item: "AC01", kind, cmd: "python3 -m unittest", exit: 0, out: clean }] });
+    assert.equal(fixed.json.results[0].verdict, "ACCEPTED");
+    assert.deepEqual(fixed.json.open, []);
+    assert.equal((await call("check_flow_done", { token: fixed.json.token })).json.verdict, "DONE");
+  }
+});
+
 test("finding 2: zero passed tests never count (unittest all skipped, phpunit all skipped)", async () => {
   assert.equal(parseTestSummary("Ran 1 test in 0.001s\n\nOK (skipped=1)")?.passed, 0);
   assert.equal(parseTestSummary("Ran 4 tests in 0.010s\n\nOK (skipped=1)")?.passed, 3);

@@ -1,5 +1,10 @@
 # nobrainer-tech-flow release notes
 
+## v2.10.1 - 2026-11-03
+
+The MCP done gate now rejects a recognised failed test summary even if a later summary passes.
+Submit a clean rerun separately to complete the criterion.
+
 ## v2.10.0 - 2026-11-02
 
 Flow now covers every stage of Anthropic's AI-native SDLC playbook (plan, design,
