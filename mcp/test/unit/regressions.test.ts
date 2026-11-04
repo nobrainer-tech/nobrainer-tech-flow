@@ -135,6 +135,34 @@ test("finding 2: zero passed tests never count (unittest all skipped, phpunit al
   assert.equal((await call("check_flow_done", { token: ev.json.token })).json.verdict, "NOT_DONE");
 });
 
+test("PHPUnit zero-assertion runs that are entirely risky do not satisfy the done gate", async () => {
+  const risky = "OK, but there were issues!\nTests: 1, Assertions: 0, Risky: 1.";
+  const valid = "OK (1 test, 1 assertion)";
+  assert.equal(parseTestSummary(risky)?.passed, 0);
+  assert.equal(parseTestSummary("Tests: 3, Assertions: 0, Risky: 3.")?.passed, 0);
+  assert.equal(parseTestSummary("Tests: 2, Assertions: 0, Risky: 1.")?.passed, 2);
+  assert.equal(parseTestSummary("Tests: 1, Assertions: 0, NotRisky: 1.")?.passed, 1);
+  assert.equal(parseTestSummary("Tests: 1, Assertions: 0.")?.passed, 1);
+  assert.equal(parseTestSummary("OK (1 test, 0 assertions)")?.passed, 1);
+  assert.equal(parseTestSummary("Tests: 1, Assertions: 1, Risky: 1.")?.passed, 1);
+
+  let token = await contract([{ text: "At least one PHPUnit test with assertions passes", proof: "test" }]);
+  for (const out of [risky, valid, risky, valid]) {
+    const result = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "test", cmd: "phpunit", exit: 0, out }] });
+    const rejected = out === risky;
+    assert.equal(result.json.results[0].code, rejected ? "NO_TESTS_RAN" : undefined);
+    assert.equal(result.json.results[0].verdict, rejected ? "REJECTED" : "ACCEPTED");
+    assert.deepEqual(result.json.open, rejected ? ["AC01"] : []);
+    token = result.json.token;
+    assert.equal((await call("check_flow_done", { token })).json.verdict, rejected ? "NOT_DONE" : "DONE");
+  }
+
+  token = await contract([{ text: "PHPUnit tests pass", proof: "test" }]);
+  const partial = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "test", cmd: "phpunit", exit: 0, out: "Tests: 2, Assertions: 0, Risky: 1." }] });
+  assert.equal(partial.json.results[0].verdict, "ACCEPTED");
+  assert.equal((await call("check_flow_done", { token: partial.json.token })).json.verdict, "DONE");
+});
+
 test("unittest expected failures do not satisfy the done gate", async () => {
   const token = await contract([{ text: "at least one Python unittest passed", proof: "test" }]);
   const expectedOnly = await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "test", cmd: "python -m unittest", exit: 0, out: "Ran 1 test in 0.001s\n\nOK (expected failures=1)" }] });

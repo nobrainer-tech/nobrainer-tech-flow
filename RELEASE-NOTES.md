@@ -1,5 +1,9 @@
 # nobrainer-tech-flow release notes
 
+## v2.10.2 - 2026-11-04
+
+The MCP done gate now rejects PHPUnit runs with zero assertions when every test is marked risky.
+
 ## v2.10.1 - 2026-11-03
 
 The MCP done gate now rejects a recognised failed test summary even if a later summary passes.

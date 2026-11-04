@@ -128,9 +128,9 @@ Then start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer
 **npm** (Node 18+ and Python 3.11+); `--client` is `codex`, `claude`, `opencode` or `copilot`:
 
 ```sh
-npx nobrainer-tech-flow@2.10.1 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.10.1 --client codex --apply    # install
-npx nobrainer-tech-flow@2.10.1 --client codex --undo --apply
+npx nobrainer-tech-flow@2.10.2 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.10.2 --client codex --apply    # install
+npx nobrainer-tech-flow@2.10.2 --client codex --undo --apply
 ```
 
 **Any coding agent** (Git install with preview and undo; macOS, Linux and Windows, no
@@ -173,7 +173,8 @@ claude mcp add --transport http nobrainer-tech-flow https://mcp.nobrainer.tech/m
 ```
 
 Its six read-only tools give the agent a task contract, an evidence check, a done gate and
-a model advisor. It does not install the 18 modules. Other clients:
+a model advisor. The done gate checks evidence consistency; it does not run your commands.
+The server does not install the 18 modules. Other clients:
 [MCP server README](mcp/README.md#install).
 
 **First task.** In a fresh session, give it one small task with a checkable result:
@@ -254,6 +255,10 @@ flowchart TD
 [`nobrainer-review`](skills/nobrainer-review/).
 What each one owns and its trigger aliases:
 [skill table](docs/HOW_IT_WORKS.md#eighteen-skills-distinct-ownership).
+
+## What's new in 2.10.2
+
+The MCP done gate now rejects PHPUnit runs with zero assertions when every test is marked risky.
 
 ## What's new in 2.10.1
 

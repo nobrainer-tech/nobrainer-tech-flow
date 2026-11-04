@@ -250,12 +250,13 @@ function phpunit(lines: string[]): Found | null {
   return lastWhere(lines, (l, at) => {
     const ok = /^OK \((\d{1,9}) tests?, \d{1,9} assertions?\)$/.exec(l);
     if (ok) return { runner: 'phpunit', passed: num(ok[1]), failed: 0, at };
-    const m = /^Tests: (\d{1,9}), Assertions: \d{1,9}((?:, [A-Za-z]{3,12}: \d{1,9}){0,8})\.?$/.exec(l);
+    const m = /^Tests: (\d{1,9}), Assertions: (\d{1,9})((?:, [A-Za-z]{3,12}: \d{1,9}){0,8})\.?$/.exec(l);
     if (!m) return null;
-    const count = (k: string) => num(new RegExp(`${k}: (\\d+)`).exec(m[2] ?? '')?.[1]);
+    const count = (k: string) => num(new RegExp(`(?:^|, )${k}: (\\d+)`).exec(m[3] ?? '')?.[1]);
     const bad = count('Failures') + count('Errors');
     const notRun = count('Skipped') + count('Incomplete');
-    return { runner: 'phpunit', passed: Math.max(0, num(m[1]) - bad - notRun), failed: bad, at };
+    const allRiskyWithoutAssertions = num(m[2]) === 0 && count('Risky') === num(m[1]);
+    return { runner: 'phpunit', passed: allRiskyWithoutAssertions ? 0 : Math.max(0, num(m[1]) - bad - notRun), failed: bad, at };
   });
 }
 
