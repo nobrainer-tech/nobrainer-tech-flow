@@ -54,6 +54,8 @@ Keep three outcomes apart. Never report one as another:
 
 ## The gates
 
+The nine gates are requirements coverage, target freshness, local checks, tests executed, test evidence, PR description, review, tracker records, and merge and closeout.
+
 ### Gate 1: Requirements coverage
 
 The PR must deliver what the requirement asks for. Not what the code happens to do,

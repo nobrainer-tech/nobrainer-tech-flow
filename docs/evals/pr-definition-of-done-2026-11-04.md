@@ -137,7 +137,8 @@ DISCOVERY_RESULT: 6/7 hits, 5/5 clean (baseline 0/7, 5/5)
   Some verdict lines did not match the number of `GAP` lines above them, and no check
   catches that. The four review findings show what this scorer cannot see.
 - The candidate read the uncommitted working tree that became this change. This record
-  changed after the shipped-text runs; no skill text did. Discovery ran before the links
+  changed after the shipped-text runs. One skill sentence did too, naming the nine gates
+  so the MCP card can quote it; no rule changed. Discovery ran before the links
   became names, but the descriptions and routing rows it depends on did not change.
 - CLIENT_RUNTIME: PARTIAL. Discovery ran once per request in Claude Code only. Codex,
   the other clients and the MCP server were not exercised. The MCP guidance card can only
