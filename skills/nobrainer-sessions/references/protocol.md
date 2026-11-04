@@ -218,6 +218,7 @@ WORK_UNIT:
 - MODEL_POLICY: <exact frozen policy>
 - MODEL_REQUESTED: <exact host/provider model, HOST_SELECTED or UNKNOWN>
 - ACCEPTANCE: <measurable condition>
+- DEFINITION_OF_DONE: <closure condition and required proof; for a PR, the gates in scope from the `nobrainer-review` PR Definition of Done>
 - REQUIRED_EVIDENCE: <diff, tests, verifier, build/runtime, review>
 
 CLOSE_GATE:

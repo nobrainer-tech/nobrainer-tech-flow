@@ -42,6 +42,25 @@
 
 <!-- State what is not proven and the exact rollback. -->
 
+## Definition of Done
+
+<!-- One status per gate: VERIFIED, GAP, UNKNOWN or N/A, with the evidence, next action
+or scope reason. Missing access is UNKNOWN, never N/A. Gates:
+skills/nobrainer-review/references/pr-definition-of-done.md. Refresh this block after
+every push: a status for a replaced head is stale. -->
+
+- Reviewed head:
+- Requirements coverage:
+- Target freshness:
+- Local checks:
+- Tests executed:
+- Evidence:
+- PR description:
+- Review:
+- Tracker records:
+
+**Verdict:** <!-- Ready, Not ready or Readiness unknown, then the single next action. -->
+
 ## Owner gate
 
 - [ ] A human owner has reviewed this complete PR before merge or publication

@@ -211,7 +211,7 @@ recurring boundary:
 | [`nobrainer-autoimprove`](../skills/nobrainer-autoimprove/) | `nb-autoimprove` | Measured baseline/variant/eval/holdout improvement with keep-or-revert |
 | [`nobrainer-decide`](../skills/nobrainer-decide/) | `just decide` / `just-decide` / `decide` / `nb-decide` / `nobrainer-decide` / `deep decide` / `deep-decide` | Quick, standard or deep decisions; feasibility, reliability, total cost, delivery time and practical growth before commitment |
 | [`nobrainer-rca`](../skills/nobrainer-rca/) | `nb-rca` | Read-only causal diagnosis with a continuous evidence chain and explicit uncertainty |
-| [`nobrainer-review`](../skills/nobrainer-review/) | `nb-review` | Acceptance trace, adversarial bug hunt and release close gate without speculative findings |
+| [`nobrainer-review`](../skills/nobrainer-review/) | `nb-review`, `nb-dod` | Acceptance trace, adversarial bug hunt, pull request Definition of Done and release close gate without speculative findings |
 
 The [curation audit](SKILL_CURATION.md) records why each skill exists and
 what belongs in another skill instead of becoming an unnecessary trigger.

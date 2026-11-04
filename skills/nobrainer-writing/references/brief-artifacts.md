@@ -20,8 +20,8 @@ section, root-cause theory, solution design or generic closing unless the reader
 needs it to act. Facts from the requester outrank polished wording; unknowns
 stay visible.
 
-Task-shaped artifacts (`BUG`, `ISSUE`, `USER_STORY` and `REQUEST`) always expose
-two fields:
+Task-shaped artifacts (`BUG`, `ISSUE`, `USER_STORY`, `REQUEST` and `TASK`) always
+expose two fields:
 
 - `Description`: what is wrong, needed or intended.
 - `Definition of Done (DoD)`: the observable closure condition and required proof.
@@ -182,7 +182,9 @@ success, and any retry behavior in scope is explicitly agreed and covered.
 ````
 
 Leave the suspected root cause out unless it is verified. A useful bug report
-lets another person reproduce the behavior without a meeting.
+lets another person reproduce the behavior without a meeting. For a defect found
+during a DoD check, reproduce it by hand at least once before reporting it: a
+failing automated test alone may be a test or data problem.
 
 ## ISSUE
 
@@ -309,6 +311,209 @@ Input or location: .github/ISSUE_TEMPLATE/bug_report.md
 Needed by: 2026-09-02
 Definition of Done (DoD): The template has separate request/response, query/result
 and UI/HAR fields, and the repository checks confirm their order.
+```
+
+## TASK
+
+Use for an automation or QA task, written once before the work starts. It says what
+will be delivered. Results go in the completion comment, never back into the task.
+
+```text
+Title: <ISSUE-KEY>: <behavior to deliver>
+
+Description: Automate <business behavior> based on <exact requirement link, e.g.
+STORY-2 AC01-AC03>.
+
+Acceptance:
+- AC01: <flow or context>: <observable behavior and expected outcome>.
+- AC02: <flow or context>: <observable behavior and expected outcome>.
+- AC03: <negative or compatibility check>: <expected outcome>.
+
+Variants: <roles, locales, platforms or data that must be covered, or none>
+Dependencies:
+- <TASK-x link>: <what it provides, phrased as a condition>
+
+Definition of Done (DoD):
+- [ ] PR reviewed, synced with `<target>`, conflict-free, approved and verified merged.
+- [ ] Tests documented in <test case store> and passing on <environment> for the final code.
+- [ ] Each AC above is mapped to a test. Gaps are resolved or have a recorded scope decision.
+- [ ] Task holds the completion comment with case links, PR link, environment, date and per-test evidence.
+- [ ] Parent holds the parent comment with the task link and AC coverage.
+- [ ] Task closed after the merge, with the transition read back.
+```
+
+Put in the link to the exact requirement, even when it lives in one comment or
+section; each scope item as an observable behavior with an expected outcome; and only
+the real prerequisites, without claiming "deployed" until that is observed.
+
+Leave out vague scope such as "verify functionality" or "analyse requirements" (do the
+analysis first, then write the scope); results, pass counts, SHAs, coverage percentages
+and completed-work narrative; and a generic exclusions list. Record an exclusion only
+when it is a real scope decision, with a link. Do not widen an agreed task afterwards,
+for example by adding "merged" to a handoff-only DoD, without the owner's approval.
+
+Example:
+
+```text
+Title: PROJ-512: Automate order approval
+
+Description: Automate purchaser and approver order approval based on
+https://tracker.example.test/PROJ-512 AC01-AC02.
+
+Acceptance:
+- AC01: Purchaser flow: submitting an order moves it to "awaiting approval".
+- AC02: Approver flow: rejecting an order shows the purchaser the rejection reason.
+
+Variants: UK and FR locales
+Dependencies:
+- PROJ-500: approval feature available on staging
+
+Definition of Done (DoD):
+- [ ] PR reviewed, synced with `main`, conflict-free, approved and verified merged.
+- [ ] Tests documented in TestRail and passing on staging for the final code.
+- [ ] AC01 and AC02 are mapped to tests. Gaps are resolved or have a recorded scope decision.
+- [ ] Task holds the completion comment with case links, PR link, environment, date and per-test evidence.
+- [ ] Parent holds the parent comment with the task link and AC coverage.
+- [ ] Task closed after the merge, with the transition read back.
+```
+
+## PR
+
+Use for a pull request title and description. When the repository has its own PR
+template, fill that in and use these bullets for its change and verification sections.
+Readiness does not go here: the DoD report is a separate text. The exception is a
+repository template with its own DoD section, which keeps that section's reviewed head
+and statuses.
+
+Title: `<ISSUE-KEY>: <imperative summary of the delivered behavior>`, for example
+`PROJ-512: Add order approval tests for purchaser and approver`. Without a ticket, use
+`No ticket: <summary>`. Keep it under about 72 characters, with no trailing period.
+
+Indent nested bullets with **four spaces**. Some hosts flatten two-space nesting.
+
+```markdown
+**<Sprint>** > **<Team>** > [<EPIC-1>: <epic title>](https://<url>) > [<STORY-2>: <story title>](https://<url>) > [<TASK-3>: <task title>](https://<url>)
+
+- **<Change type>** › [<CASE-ID>: <full case title>](https://<case-url>)
+    - [<repo/relative/path.ext>](https://<link-to-file-in-the-PR-source>)
+    - <covered endpoint, UI flow or function>; <variant constraint, e.g. "UK and FR only">
+- **<Change type>** › <changed capability, e.g. `OrderPage.submitForApproval()`>
+    - [<repo/relative/path.ext>](https://<link>)
+    - <what changed and why it matters to review>
+- **Execution** › [<ENV label>](https://<environment-url>)
+    - <Local, CI run link or test-run link> | <Passed or Failed> | <YYYY-MM-DD> | <passed>/<total>
+```
+
+Change types: `New test`, `Updated test`, `New feature`, `Fix`, `Refactor`,
+`Updated method`, `Tooling`, `Docs`, `Config`.
+
+- Use only the breadcrumb levels that actually exist. Never invent a sprint, team or story.
+- One top-level bullet per coherent change. Unrelated changes become separate bullets
+  or a separate PR.
+- Each environment gets its own execution rows. Dates have no time part. Use `Failed`
+  for an observed failure.
+- Leave out `N/A` filler, a repeated PR title, SHAs, worker or retry details,
+  "screenshot attached" narration and unexecuted placeholders.
+- For a docs or tooling PR, the execution rows are the local checks you actually ran
+  and their counts.
+
+For a larger PR, add this block only when it helps the reviewer:
+
+```markdown
+**Coverage**
+- AC01 <short> - `<test name>`
+- AC02 <short> - `<test name>`
+- AC03 <short> - out of scope, see [decision](https://<url>)
+
+**Risks**
+- <risk> - <mitigation or owner>
+```
+
+## COMMIT
+
+Use for a commit message. Add no AI or tool attribution lines ("Generated with", AI
+co-author trailers).
+
+```text
+<ISSUE-KEY>: <imperative summary, under about 72 characters>
+
+<Why the change was needed, in 1-3 lines. Not what the diff already shows.>
+```
+
+When merging the target in, use `Merge origin/<target> into <branch>`. Add one line
+only if a conflict needed a non-obvious resolution:
+`Resolved <file>: kept <side> because <reason>.`
+
+## DELIVERY_COMMENT
+
+Use for a comment on a PR or task while delivering it. Write at most two or three
+sentences of prose; links and bullet lists are fine, long explanations, tables and
+essays are not. Add no AI or tool attribution lines. Pick one kind.
+
+PR status:
+
+```markdown
+DoD: synced with `<target>` (<sha7>), no conflicts. <Env> run <date>: <passed>/<total> passed - [report](https://<url>).
+<Only if needed: one sentence on the remaining gap and next action.>
+```
+
+```markdown
+DoD: not ready. <The gap that matters most, one sentence, with its link.> Next: <one action>.
+```
+
+Reply to a review comment:
+
+```markdown
+Fixed in <sha7>: <what changed, one sentence>.
+```
+
+```markdown
+Keeping as is: <reason in one sentence>. <Optional: link to the requirement or prior decision.>
+```
+
+```markdown
+<One precise question>? <What you will do for each likely answer, if useful.>
+```
+
+Completion comment on an automation or QA task:
+
+```markdown
+**Coverage**
+<1-2 sentences: how the scope was checked and the outcome; name any gap explicitly.>
+
+**Test cases**
+- [<CASE-ID>: <exact full case title>](https://<case-url>)
+
+**PR**
+- [<PR title>](https://<pr-url>) - <Merged, Open or Approved>
+
+**Environment**
+- <YYYY-MM-DD> | <country or locale if relevant> | [<env>](https://<env-url>) | <browser, device or API client if relevant>
+
+**Evidence**
+<plain caption>
+<attached image: one per executed test or variant, steps readable>
+```
+
+- Copy every case ID, title and link from the actual case record. Never type them
+  from memory.
+- Keep failures and unexecuted scope visible, never only the green parts.
+- Keep one authoritative QA comment per task. Update it in place and delete only your
+  own superseded duplicates.
+- Run links belong in the PR's `Execution` rows. Workers, retries and SHAs belong in
+  the private review record, not in this comment.
+
+Parent story or issue, after the merge:
+
+```markdown
+Automation for <behavior> merged in [<PR>](https://<url>) and passing on <env> (<date>), task [<TASK-3>](https://<url>).
+Covered: <AC01-AC03 or list>. <Only if any: Not covered: <item> - <reason or follow-up link>.>
+```
+
+Blocked or partial status on a task or PR:
+
+```markdown
+Blocked: <exact blocker> since <date>. Done so far: <scope>. Next action: <one action, owner>.
 ```
 
 ## Human-feel and compression gate
