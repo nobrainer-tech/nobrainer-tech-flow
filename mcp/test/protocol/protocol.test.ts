@@ -109,6 +109,10 @@ test("every tool works on its own, including get_flow_step without a token", asy
   assert.equal(step.card, "event:blocked");
   assert.ok(step.rules.length >= 1 && step.rules.length <= 6);
   assert.match(step.source, /^skills\/nobrainer-tech-flow\//);
+  const dod = body(await c.callTool({ name: "get_flow_step", arguments: { topic: "pr_dod" } }));
+  assert.equal(dod.card, "topic:pr_dod");
+  assert.ok((dod.rules as string[]).some((rule) => rule.startsWith("The nine gates are")));
+  assert.match(dod.source as string, /pr-definition-of-done\.md/);
   const overview = body(await c.callTool({ name: "get_flow_step", arguments: {} }));
   assert.equal(overview.card, "overview");
   const mod = body(await c.callTool({ name: "get_flow_step", arguments: { module: "nobrainer-review" } }));

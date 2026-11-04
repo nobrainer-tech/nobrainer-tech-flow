@@ -54,8 +54,8 @@ test("golden fixtures per tool are <= 400 tokens", async () => {
 test("every card response and UNKNOWN_CARD error fit the budget", async () => {
   for (const id of cardIds()) {
     const [kind, name] = id.includes(":") ? id.split(":") : ["overview", ""];
-    const args = kind === "stage" ? { stage: name } : kind === "event" ? { event: name } : kind === "module" ? { module: name } : {};
-    if (kind !== "stage" && kind !== "event" && kind !== "module" && id !== "overview") continue;
+    const args = kind === "stage" ? { stage: name } : kind === "event" ? { event: name } : kind === "module" ? { module: name } : kind === "topic" ? { topic: name } : {};
+    if (kind !== "stage" && kind !== "event" && kind !== "module" && kind !== "topic" && id !== "overview") continue;
     const r = await run("get_flow_step", args);
     assert.equal(r.isError, false, id);
     check(id, r.text, 600);
