@@ -12,7 +12,7 @@ import { parse } from 'yaml';
 
 export const STAGES = ['DRIFT_CHECK', 'BUDDY', 'SCOPE', 'AUTOPILOT', 'VERIFY', 'RECEIVE_AUDIT', 'LEARN'];
 export const EVENTS = ['blocked', 'review_failed', 'decision_changed', 'worker_reported', 'repeated_failure', 'resume'];
-export const BASE_CARD_IDS = ['overview', ...STAGES.map((s) => `stage:${s}`), ...EVENTS.map((e) => `event:${e}`), 'handoff', 'gates'];
+export const BASE_CARD_IDS = ['overview', ...STAGES.map((s) => `stage:${s}`), ...EVENTS.map((e) => `event:${e}`), 'handoff', 'gates', 'topic:pr_dod'];
 const TOOLS = ['start_flow_task', 'get_flow_step', 'check_flow_evidence', 'check_flow_done', 'draft_flow_handoff'];
 export const MAX_CARD_TOKENS = 350;
 const MODULE_FILE = /^skills\/([^/]+)\/SKILL\.md$/;

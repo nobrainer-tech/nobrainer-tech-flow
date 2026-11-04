@@ -162,6 +162,17 @@
   rules:
     - "Merge, deploy, publish, spend, delete, contact people, change credentials, migrate data, mutate production or weaken safety controls remain explicit gates unless the user already authorized that exact action."
 
+"topic:pr_dod":
+  source: skills/nobrainer-review/references/pr-definition-of-done.md
+  heading: "Pull request Definition of Done"
+  rules:
+    - "The nine gates are requirements coverage, target freshness, local checks, tests executed, test evidence, PR description, review, tracker records, and merge and closeout."
+    - "`GAP` and `UNKNOWN` are never a pass."
+    - "\"Ready\" means every applicable check is `VERIFIED`."
+    - "Missing access is never `N/A`."
+    - "The verdict is one of `Ready`, `Not ready` or `Readiness unknown`, followed by the single next action."
+    - "Readiness alone is advice, not permission."
+
 "module:nobrainer-auto-fine-tune":
   rules:
     - "Treat the model and effort selected for MAIN as fixed for this task."

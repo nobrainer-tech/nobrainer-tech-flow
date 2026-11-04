@@ -8,12 +8,14 @@ import { contractId, openToken, tokenField, type ToolContext, type ToolDef } fro
 
 export const STAGES = ["DRIFT_CHECK", "BUDDY", "SCOPE", "AUTOPILOT", "VERIFY", "RECEIVE_AUDIT", "LEARN"] as const;
 export const EVENTS = ["blocked", "review_failed", "decision_changed", "worker_reported", "repeated_failure", "resume"] as const;
+export const TOPICS = ["pr_dod"] as const;
 
 const input = z.strictObject({
   token: tokenField.optional(),
   stage: z.enum(STAGES).optional(),
   event: z.enum(EVENTS).optional(),
   module: z.string().regex(/^nobrainer-[a-z-]{2,40}$/).optional(),
+  topic: z.enum(TOPICS).optional().describe("pr_dod: gates and verdict for a pull request's Definition of Done"),
 });
 
 type StateCard = "event:repeated_failure" | "stage:RECEIVE_AUDIT" | "stage:AUTOPILOT" | "stage:VERIFY";
@@ -64,7 +66,7 @@ export const stepTool: ToolDef<typeof input> = {
   name: "get_flow_step",
   title: "Get the next Flow step",
   description:
-    "Use when you need guidance for the current Flow stage, an event (for example blocked) or one Flow module (for example nobrainer-review). Returns up to six rules quoted from the pinned Flow release, with their source. With a contract token, event resume also returns a goal block to save.",
+    "Use when you need guidance on a Flow stage, an event (e.g. blocked), a module (e.g. nobrainer-review), or a PR's Definition of Done or readiness (topic pr_dod). Returns up to six rules quoted from the pinned release, with their source. With a token, event resume also returns a goal block.",
   input,
   async run(args, ctx) {
     let id = "overview";
@@ -75,7 +77,8 @@ export const stepTool: ToolDef<typeof input> = {
       if (!MODULES.includes(args.module)) {
         throw new ToolError("UNKNOWN_CARD", "no module card with that name", `valid modules: ${MODULES.join(", ")}`);
       }
-    } else if (args.event) id = `event:${args.event}`;
+    } else if (args.topic) id = `topic:${args.topic}`;
+    else if (args.event) id = `event:${args.event}`;
     else if (args.stage) id = `stage:${args.stage}`;
     else if (state) ({ id, next } = cardForState(state));
     const card = getCard(id);

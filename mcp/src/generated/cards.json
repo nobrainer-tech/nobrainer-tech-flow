@@ -1,7 +1,7 @@
 {
-  "flow_version": "2.10.2",
-  "tag": "v2.10.2",
-  "commit": "7eb4bf536987ab903c7c9b103649327bfb3737f5",
+  "flow_version": "2.11.0",
+  "tag": "v2.11.0",
+  "commit": "e53f1a8c616243a617f77c60deda8583ddd071b6",
   "repo": "https://github.com/nobrainer-tech/nobrainer-tech-flow",
   "modules": [
     "nobrainer-auto-fine-tune",
@@ -199,6 +199,17 @@
       ],
       "source": "skills/nobrainer-tech-flow/SKILL.md#autopilot-execute-the-bounded-scope"
     },
+    "topic:pr_dod": {
+      "rules": [
+        "The nine gates are requirements coverage, target freshness, local checks, tests executed, test evidence, PR description, review, tracker records, and merge and closeout.",
+        "`GAP` and `UNKNOWN` are never a pass.",
+        "\"Ready\" means every applicable check is `VERIFIED`.",
+        "Missing access is never `N/A`.",
+        "The verdict is one of `Ready`, `Not ready` or `Readiness unknown`, followed by the single next action.",
+        "Readiness alone is advice, not permission."
+      ],
+      "source": "skills/nobrainer-review/references/pr-definition-of-done.md#pull-request-definition-of-done"
+    },
     "module:nobrainer-auto-fine-tune": {
       "description": "Use when setting up nobrainer-tech-flow for the first time, or when client capabilities, model routing, context or useful parallelism need recalibration. Alias: nb-auto-fine-tune.",
       "rules": [
@@ -308,7 +319,7 @@
       "full": "Full module: install the Flow skills from https://github.com/nobrainer-tech/nobrainer-tech-flow"
     },
     "module:nobrainer-review": {
-      "description": "Use when work needs an evidence-gated CLOSEOUT, an adversarial BUG_HUNT or a RELEASE_GATE, or when final findings must be filtered to verified actionable defects. Use nobrainer-build for ordinary implementation and correction work. Aliases: nb-review, deep-audit, deep-code-review, deep-autoreview.",
+      "description": "Use when work needs an evidence-gated CLOSEOUT, an adversarial BUG_HUNT or a RELEASE_GATE, when someone asks for a DoD (Definition of Done) of a pull request or whether a PR is ready to merge, including after green CI, or when final findings must be filtered to verified actionable defects. Use nobrainer-build for ordinary implementation and correction work. Aliases: nb-review, deep-audit, deep-code-review, deep-autoreview, nb-dod, PR DoD.",
       "rules": [
         "A review request does not authorize fixes, commits, pushes, merges or deployments.",
         "Treat every external finding as an unverified candidate.",
