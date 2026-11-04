@@ -626,6 +626,55 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("Ten approaches reviewed", research)
         self.assertEqual(10, len(re.findall(r"^\| \d+ \|", research, re.M)))
 
+    def test_pr_definition_of_done_owns_gates_and_writing_owns_formats(self) -> None:
+        review = (SKILLS / "nobrainer-review" / "SKILL.md").read_text(encoding="utf-8")
+        gates = (
+            SKILLS / "nobrainer-review" / "references" / "pr-definition-of-done.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("references/pr-definition-of-done.md", review)
+        for status in ("VERIFIED", "GAP", "UNKNOWN", "N/A"):
+            self.assertIn(f"`{status}`", gates)
+        self.assertIn("Missing access\n  is never `N/A`", gates)
+        self.assertEqual(
+            len(re.findall(r"^### Gate \d+:", gates, re.M)), 9
+        )
+        for outcome in ("Technically mergeable", "Ready for merge", "**Done:**"):
+            self.assertIn(outcome, gates)
+        for verdict in ("`Ready`", "`Not ready`", "`Readiness unknown`"):
+            self.assertIn(verdict, gates)
+        self.assertNotRegex(gates, r"\bAC[1-9]\b")
+        self.assertIn("`REVIEW.md`", gates[: gates.index("## Status vocabulary")])
+        self.assertIn("project profile", review)
+        self.assertNotIn("Your value", gates)
+        gate_eight = gates[gates.index("### Gate 8:") : gates.index("### Gate 9:")]
+        gate_nine = gates[gates.index("### Gate 9:") : gates.index("## DoD report")]
+        for after_merge in ("completion comment", "transitioned"):
+            self.assertNotIn(after_merge, gate_eight)
+            self.assertIn(after_merge, gate_nine)
+        artifacts = (
+            SKILLS / "nobrainer-writing" / "references" / "brief-artifacts.md"
+        ).read_text(encoding="utf-8")
+        headings = re.findall(r"^## ([A-Z_]+)$", artifacts, re.M)
+        self.assertEqual(
+            headings,
+            ["COMMENT", "BUG", "ISSUE", "USER_STORY", "REQUEST", "TASK", "PR",
+             "COMMIT", "DELIVERY_COMMENT"],
+        )
+        writing = (SKILLS / "nobrainer-writing" / "SKILL.md").read_text(encoding="utf-8")
+        for shape in headings:
+            self.assertIn(f"`{shape}`", writing)
+        comment = artifacts[artifacts.index("## DELIVERY_COMMENT") :]
+        self.assertIn("DoD: synced with", comment)
+        self.assertNotIn("ENV:", comment[: comment.index("## Human-feel")])
+        template = (ROOT / ".github" / "PULL_REQUEST_TEMPLATE.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("## Definition of Done", template)
+        self.assertIn("**Verdict:**", template)
+        self.assertIn("- Reviewed head:", template)
+        self.assertIn("own DoD section", artifacts)
+        self.assertNotIn("Task and parent hold the completion comment", artifacts)
+
     def test_writing_brief_artifacts_have_one_actionable_shape(self) -> None:
         reference = (
             SKILLS / "nobrainer-writing" / "references" / "brief-artifacts.md"
@@ -711,7 +760,8 @@ class SuiteTests(unittest.TestCase):
             ("## BUG", "## ISSUE"),
             ("## ISSUE", "## USER_STORY"),
             ("## USER_STORY", "## REQUEST"),
-            ("## REQUEST", "## Human-feel and compression gate"),
+            ("## REQUEST", "## TASK"),
+            ("## TASK", "## PR"),
         ):
             section = reference[reference.index(heading) : reference.index(next_heading)]
             self.assertGreaterEqual(section.count("Description:"), 2, heading)
@@ -2924,7 +2974,13 @@ class SuiteTests(unittest.TestCase):
     def test_review_has_one_evidence_gated_owner(self) -> None:
         directory = SKILLS / "nobrainer-review"
         text = (directory / "SKILL.md").read_text(encoding="utf-8")
-        self.assertEqual({"SKILL.md"}, {path.name for path in directory.iterdir()})
+        self.assertEqual(
+            {"SKILL.md", "references"}, {path.name for path in directory.iterdir()}
+        )
+        self.assertEqual(
+            {"pr-definition-of-done.md"},
+            {path.name for path in (directory / "references").iterdir()},
+        )
         for term in (
             "CLOSEOUT",
             "BUG_HUNT",

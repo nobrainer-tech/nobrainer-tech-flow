@@ -96,7 +96,7 @@ with the same eighteen modules and no extra service:
 | Design | a spec with `INTENT_REF`, acceptance IDs and a policy-review table routed to named owners | `nobrainer-spec-driven-development` |
 | Build | a scope block with risks, one main loop, guards on risky commands and edits | `nobrainer-build`, `nobrainer-tech-flow` |
 | Test | a proof line with real output, a standing scenario set, an eval-coverage check in CI | `nobrainer-review`, `nobrainer-browser` |
-| Deploy | `REVIEW.md` passes with `IMPORTANT`/`NIT` labels, autonomy tiers by environment, owner gates | `nobrainer-review`, `nobrainer-security` |
+| Deploy | `REVIEW.md` passes with `IMPORTANT`/`NIT` labels, a PR Definition of Done with one status per gate, autonomy tiers by environment, owner gates | `nobrainer-review`, `nobrainer-security` |
 | Maintain | one baseline metric, a deterministic detector, log / diagnose / propose bands, post-mortems that become evals | `nobrainer-rca`, `nobrainer-tech-flow` |
 
 The [gap map](docs/evals/ai-native-sdlc-gap-map-2026-11-02.md) shows where each
@@ -128,9 +128,9 @@ Then start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer
 **npm** (Node 18+ and Python 3.11+); `--client` is `codex`, `claude`, `opencode` or `copilot`:
 
 ```sh
-npx nobrainer-tech-flow@2.10.2 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.10.2 --client codex --apply    # install
-npx nobrainer-tech-flow@2.10.2 --client codex --undo --apply
+npx nobrainer-tech-flow@2.11.0 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.11.0 --client codex --apply    # install
+npx nobrainer-tech-flow@2.11.0 --client codex --undo --apply
 ```
 
 **Any coding agent** (Git install with preview and undo; macOS, Linux and Windows, no
@@ -255,6 +255,15 @@ flowchart TD
 [`nobrainer-review`](skills/nobrainer-review/).
 What each one owns and its trigger aliases:
 [skill table](docs/HOW_IT_WORKS.md#eighteen-skills-distinct-ownership).
+
+## What's new in 2.11.0
+
+Ask "give me the DoD for this PR" or "is this PR ready?" and Flow reports a pull request
+Definition of Done: nine gates, one `VERIFIED`, `GAP`, `UNKNOWN` or `N/A` status per
+check, one verdict and one next action, so green CI alone never counts as ready. Writing
+adds formats for the task, PR description, commit and PR comments. Details:
+[release notes](RELEASE-NOTES.md) and the
+[gates](skills/nobrainer-review/references/pr-definition-of-done.md).
 
 ## What's new in 2.10.2
 

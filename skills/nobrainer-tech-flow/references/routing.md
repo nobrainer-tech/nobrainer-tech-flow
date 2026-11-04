@@ -25,6 +25,8 @@ trigger applies.
 | durable knowledge retrieval, capture or maintenance | `nobrainer-wiki` |
 | rendered UI, approved browser-session attach, test or trace evidence | `nobrainer-browser` |
 | closeout review, adversarial bug hunt or release gate | `nobrainer-review` |
+| a pull request's DoD (Definition of Done): "give me the DoD", "is this PR ready", gates and readiness report | `nobrainer-review` |
+| text of a task, PR description, commit or PR comment | `nobrainer-writing` |
 | measured skill, prompt or workflow improvement | `nobrainer-autoimprove` |
 
 Use `DIRECT` only for a mechanical stage where no skill adds information,

@@ -98,6 +98,12 @@ NON_GOALS:
 |---|---|---|---|---|
 | <security, privacy, compliance, brand, cost> | <named person or role> | <skill, linter or gate> | <flagged concern or NONE> | OPEN/RESOLVED/CARRIED |
 
+## Definition of Done (DoD)
+
+- [ ] Every acceptance ID passes at its named proof layer.
+- [ ] Rollback was exercised or its proof is recorded.
+- [ ] Each pull request from this spec passes the `nobrainer-review` PR Definition of Done.
+
 ## Review
 
 - CONTRADICTION_SCAN: NOT_RUN

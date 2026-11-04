@@ -21,7 +21,8 @@ small text-only edit can stay here. Do not invoke this skill for a one-sentence
 answer that is already clear, specific and complete.
 
 Use `BRIEF` for a short actionable artifact: a comment, bug report, feature
-issue, user story, status update or one clear request. It is a mode of this
+issue, user story, status update, one clear request, or a delivery text such as a
+task, PR description, commit message or PR comment. It is a mode of this
 skill, not a new skill. Read [references/brief-artifacts.md](references/brief-artifacts.md)
 for the matching shape and examples before drafting.
 
@@ -41,7 +42,8 @@ writing runs should not spend context on the research record.
   [plain technical English](references/plain-technical-english.md) for its two
   profiles and meaning checks. It is not a certified ASD-STE100 checker.
 - `BRIEF`: create or compress one short actionable artifact. Choose exactly one
-  shape from the reference: `COMMENT`, `BUG`, `ISSUE`, `USER_STORY` or `REQUEST`.
+  shape from the reference: `COMMENT`, `BUG`, `ISSUE`, `USER_STORY`, `REQUEST`,
+  `TASK`, `PR`, `COMMIT` or `DELIVERY_COMMENT`.
 
 If the user did not name a mode, default to `TECHNICAL` for English technical
 procedures and explanations, including specs and runbooks. For other artifacts,
@@ -125,8 +127,8 @@ two to five testable criteria. Put long logs, transcripts and screenshots after
 the concise core or link them; never hide them when they are needed for proof.
 Return the finished artifact only unless the owner asks for an audit.
 
-For task-shaped `BRIEF` artifacts (`BUG`, `ISSUE`, `USER_STORY` and `REQUEST`),
-write `Description:` and `Definition of Done (DoD):` as explicit fields.
+For task-shaped `BRIEF` artifacts (`BUG`, `ISSUE`, `USER_STORY`, `REQUEST` and
+`TASK`), write `Description:` and `Definition of Done (DoD):` as explicit fields.
 `Description` states what is wrong, needed or intended; `Acceptance` states
 observable product behavior when applicable; `Definition of Done (DoD)` states
 the closure condition and required proof. Do not hide either field inside a
@@ -142,6 +144,11 @@ For both `BUG` and `COMMENT`, always provide one compact `ENV:` block with
 `Name`, `URL` and `User`. `Name` is one of `QA`, `DEV`, `TEST`, `PROD`,
 `PREPROD`, `BETA` or `UNKNOWN`; use `N/A` when a field genuinely does not
 apply. `User` is a role or redacted/synthetic alias, never a credential.
+`DELIVERY_COMMENT` has no `ENV:` block: it names the environment in its run line
+or `Environment` section.
+
+PR readiness itself is not a `BRIEF` artifact. Its gates and report belong to the
+`nobrainer-review` PR Definition of Done. For "give me the DoD" on an existing PR, or "is this PR ready", use `nobrainer-review`.
 
 For `BUG`, start with `Description`, then keep the diagnostic fields separate and
 in this order: `ENV:`, `Steps to reproduce`, `Current behavior` and

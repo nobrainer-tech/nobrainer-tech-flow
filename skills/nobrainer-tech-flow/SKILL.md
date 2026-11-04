@@ -193,7 +193,7 @@ planning. Loading method context is not task execution; a routing-table line or 
 - `nobrainer-security` for trust boundaries;
 - `nobrainer-browser` for rendered behavior or trace evidence;
 - `nobrainer-rca` after repeated or causally unclear failure;
-- `nobrainer-review` when independent closeout adds material confidence;
+- `nobrainer-review` when independent closeout adds material confidence, or when someone asks for a PR's DoD or whether it is ready;
 - `nobrainer-team` for capability gaps; native subagents for bounded independent work;
   `nobrainer-dispatcher` for a real queue and `nobrainer-sessions` for durable visible sessions;
 - `nobrainer-auto-fine-tune` at first setup for capability discovery and a

@@ -1,5 +1,25 @@
 # nobrainer-tech-flow release notes
 
+## v2.11.0 - 2026-11-04
+
+Ask "give me the DoD for this PR" or "is this PR ready?" and Flow now reports a pull
+request Definition of Done, in the same eighteen skills.
+
+- `nobrainer-review` owns nine gates: requirements coverage, target freshness, local
+  checks, tests executed, evidence, PR description, review, tracker records, and merge
+  and closeout. Each check gets one status, `VERIFIED`, `GAP`, `UNKNOWN` or `N/A`, and
+  the report ends in one verdict and one next action. A green CI run alone is never
+  `Ready`, and "mergeable", "ready" and "done" stay three different claims.
+- `nobrainer-writing` adds four `BRIEF` shapes: `TASK`, `PR`, `COMMIT` and
+  `DELIVERY_COMMENT`, with formats for the PR description and for status, review reply,
+  completion, parent and blocked comments.
+- The repository's PR template gains the DoD report. The spec template, team plan and
+  worker prompt gain a DoD field. A project keeps its profile (target branch, checks,
+  environment) in `REVIEW.md` or its nearest instructions.
+
+The [eval record](docs/evals/pr-definition-of-done-2026-11-04.md) has the scenarios,
+the real-client discovery runs and their limits.
+
 ## v2.10.2 - 2026-11-04
 
 The MCP done gate now rejects PHPUnit runs with zero assertions when every test is marked risky.

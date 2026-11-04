@@ -1,6 +1,6 @@
 ---
 name: nobrainer-review
-description: "Use when work needs an evidence-gated CLOSEOUT, an adversarial BUG_HUNT or a RELEASE_GATE, or when final findings must be filtered to verified actionable defects. Use nobrainer-build for ordinary implementation and correction work. Aliases: nb-review, deep-audit, deep-code-review, deep-autoreview."
+description: "Use when work needs an evidence-gated CLOSEOUT, an adversarial BUG_HUNT or a RELEASE_GATE, when someone asks for a DoD (Definition of Done) of a pull request or whether a PR is ready to merge, including after green CI, or when final findings must be filtered to verified actionable defects. Use nobrainer-build for ordinary implementation and correction work. Aliases: nb-review, deep-audit, deep-code-review, deep-autoreview, nb-dod, PR DoD."
 ---
 
 # NoBrainer Review
@@ -52,7 +52,8 @@ against the spec, plan and project policy. `REVIEW.md` may also set:
 - generated or vendored paths to exclude: do not review them, and list them in
   `UNCHECKED_SURFACE`;
 - a nit cap: the most `NIT` findings to report per review (default `0`);
-- project rules that count as `IMPORTANT`, for example a forbidden API.
+- project rules that count as `IMPORTANT`, for example a forbidden API;
+- the project profile for the PR Definition of Done.
 
 `REVIEW.md` narrows or adds passes; it cannot waive the finding gate, a start
 gate item or a required owner gate.
@@ -148,6 +149,20 @@ fact that justifies each retry. Persistent, branch-caused or ambiguous failures
 need diagnosis or a stop, not repeated reruns. A green snapshot is progress, not
 merge authorization. Monitoring never grants permission to merge, publish, reply
 to reviewers or perform another externally visible action.
+
+## Pull request Definition of Done
+
+When a pull request is heading to a merge decision, or the owner asks whether a PR
+is ready or asks for its DoD, read
+[the PR Definition of Done](references/pr-definition-of-done.md) and report every
+gate as `VERIFIED`, `GAP`, `UNKNOWN` or `N/A`, ending in one verdict and one next
+action. Never report "technically mergeable" as "ready for merge", or "ready" as
+"done". The DoD report sits beside the review result; a `CLEAN` review does not make
+the PR `Ready`.
+
+Asked what the DoD is with no PR in scope, list the gates from that file. Asked for
+the DoD of a task not yet built, answer from the task's own `Proof` and `Done clean`;
+to write it down, use a `nobrainer-writing` `BRIEF` shape.
 
 ## Finding gate
 
