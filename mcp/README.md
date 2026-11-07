@@ -153,7 +153,7 @@ survive a restart. On Vercel the key is required.
 ```text
 api/mcp.js          Vercel Function; logic compiled from src/ into dist/ by `npm run build`
 src/rpcguard.ts     fixed-text answers for unknown tool/prompt/resource names, protocol error rewriting
-src/http.ts         POST only, 32 KiB body cap, Host and Origin checks, JSON depth limit, one
+src/http.ts         POST only (plus CORS preflight for allow-listed origins), 32 KiB body cap, Host and Origin checks, JSON depth limit, one
                     content-free log line; 2026-07-28 traffic -> SDK handler (JSON responses),
                     2025-era traffic -> fresh stateless transport with JSON responses
 src/server.ts       six tools, prompt `flow`, resource template `flow://card/{id}`, instructions
