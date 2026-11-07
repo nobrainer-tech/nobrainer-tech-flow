@@ -183,13 +183,15 @@ describe("HTTP guards", () => {
   test("CORS: allowed Origin gets a 204 preflight and an echoed allow-origin; a bad Origin gets neither", async () => {
     const preflight = (origin: string) => fetch(local.url, {
       method: "OPTIONS",
-      headers: { origin, "access-control-request-method": "POST", "access-control-request-headers": "content-type, mcp-protocol-version" },
+      headers: { origin, "access-control-request-method": "POST", "access-control-request-headers": "content-type, mcp-protocol-version, mcp-method, mcp-name" },
     });
     const ok = await preflight("https://chatgpt.com");
     assert.equal(ok.status, 204);
     assert.equal(ok.headers.get("access-control-allow-origin"), "https://chatgpt.com");
     assert.match(ok.headers.get("access-control-allow-methods") ?? "", /POST/);
     assert.match(ok.headers.get("access-control-allow-headers") ?? "", /mcp-protocol-version/);
+    const allowed = (ok.headers.get("access-control-allow-headers") ?? "").split(",").map((h) => h.trim());
+    for (const h of ["content-type", "mcp-protocol-version", "mcp-method", "mcp-name"]) assert.ok(allowed.includes(h), h);
     const bad = await preflight("https://evil.example");
     assert.equal(bad.status, 403);
     assert.equal(bad.headers.get("access-control-allow-origin"), null);

@@ -25,7 +25,7 @@ const SECURITY_HEADERS = { "cache-control": "no-store", "x-content-type-options"
 // CORS for browser-based clients on an allow-listed Origin (the Origin check itself stays the DNS-rebinding guard).
 const CORS_PREFLIGHT = {
   "access-control-allow-methods": "POST, OPTIONS",
-  "access-control-allow-headers": "content-type, accept, mcp-protocol-version, mcp-session-id",
+  "access-control-allow-headers": "content-type, accept, mcp-protocol-version, mcp-session-id, mcp-method, mcp-name",
   "access-control-max-age": "600",
 };
 
