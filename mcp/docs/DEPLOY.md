@@ -22,7 +22,7 @@ Everything below runs from the `mcp/` folder of the repository.
 | `ALLOWED_HOSTS` | recommended | `nobrainer-tech-flow-mcp.vercel.app` (and any other alias). `mcp.nobrainer.tech`, `VERCEL_URL`, `VERCEL_BRANCH_URL` and `VERCEL_PROJECT_PRODUCTION_URL` are always allowed. |
 | `FLOW_RATE_LIMIT_ID` | recommended | ID of the Firewall rate-limit rule for the per-contract limit (section 4). Unset: best-effort in-memory limit per instance. |
 | `OPENAI_APPS_CHALLENGE` | for OpenAI review | The domain-verification token from the OpenAI portal; served at `/.well-known/openai-apps-challenge` (404 while unset). |
-| `ALLOWED_ORIGINS` | no | Overrides the default `https://chatgpt.com,https://claude.ai,https://platform.openai.com`. Requests without `Origin` are always allowed. |
+| `ALLOWED_ORIGINS` | no | Overrides the default `https://chatgpt.com,https://chat.openai.com,https://claude.ai,https://platform.openai.com`. Requests without `Origin` are always allowed. An allow-listed `Origin` also gets CORS headers and a 204 answer to an `OPTIONS` preflight. |
 | `SPEND_WEBHOOK_SECRET` | for the spend guard, Sensitive | The secret Vercel shows when you save the Spend Management webhook. |
 | `FLOW_PAUSE_TOKEN` | for the spend guard, Sensitive | A Vercel access token that can pause this project, scoped as narrowly as Vercel allows. |
 | `FLOW_PROJECT_ID`, `FLOW_TEAM_ID` | for the spend guard | This project's ID and the team ID. |

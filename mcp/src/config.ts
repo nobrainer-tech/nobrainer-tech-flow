@@ -4,7 +4,7 @@ import { parseKeyRing, type KeyRing } from "./token.ts";
 import { createRateLimiter } from "./ratelimit.ts";
 import type { HttpOptions } from "./http.ts";
 
-export const DEFAULT_ORIGINS = ["https://chatgpt.com", "https://claude.ai", "https://platform.openai.com"];
+export const DEFAULT_ORIGINS = ["https://chatgpt.com", "https://chat.openai.com", "https://claude.ai", "https://platform.openai.com"];
 export const PRODUCTION_HOST = "mcp.nobrainer.tech";
 
 const list = (v: string | undefined): string[] => (v ?? "").split(",").map((s) => s.trim()).filter(Boolean);

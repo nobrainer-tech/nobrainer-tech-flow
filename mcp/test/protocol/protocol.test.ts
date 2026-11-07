@@ -172,12 +172,31 @@ describe("HTTP guards", () => {
     body: init.body ?? JSON.stringify({ jsonrpc: "2.0", id: 1, method: "ping" }),
   });
 
-  test("GET and DELETE return 405 with Allow: POST", async () => {
+  test("GET and DELETE return 405 with Allow: POST, OPTIONS", async () => {
     for (const method of ["GET", "DELETE"]) {
       const r = await fetch(local.url, { method });
       assert.equal(r.status, 405);
-      assert.equal(r.headers.get("allow"), "POST");
+      assert.equal(r.headers.get("allow"), "POST, OPTIONS");
     }
+  });
+
+  test("CORS: allowed Origin gets a 204 preflight and an echoed allow-origin; a bad Origin gets neither", async () => {
+    const preflight = (origin: string) => fetch(local.url, {
+      method: "OPTIONS",
+      headers: { origin, "access-control-request-method": "POST", "access-control-request-headers": "content-type, mcp-protocol-version" },
+    });
+    const ok = await preflight("https://chatgpt.com");
+    assert.equal(ok.status, 204);
+    assert.equal(ok.headers.get("access-control-allow-origin"), "https://chatgpt.com");
+    assert.match(ok.headers.get("access-control-allow-methods") ?? "", /POST/);
+    assert.match(ok.headers.get("access-control-allow-headers") ?? "", /mcp-protocol-version/);
+    const bad = await preflight("https://evil.example");
+    assert.equal(bad.status, 403);
+    assert.equal(bad.headers.get("access-control-allow-origin"), null);
+    const call = await post({ headers: { origin: "https://claude.ai" } });
+    assert.equal(call.status, 200);
+    assert.equal(call.headers.get("access-control-allow-origin"), "https://claude.ai");
+    assert.equal((await post()).headers.get("access-control-allow-origin"), null);
   });
 
   test("bad Origin -> 403; allowed or missing Origin passes", async () => {

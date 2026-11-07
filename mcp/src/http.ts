@@ -22,6 +22,12 @@ export type HttpOptions = {
 };
 
 const SECURITY_HEADERS = { "cache-control": "no-store", "x-content-type-options": "nosniff" };
+// CORS for browser-based clients on an allow-listed Origin (the Origin check itself stays the DNS-rebinding guard).
+const CORS_PREFLIGHT = {
+  "access-control-allow-methods": "POST, OPTIONS",
+  "access-control-allow-headers": "content-type, accept, mcp-protocol-version, mcp-session-id",
+  "access-control-max-age": "600",
+};
 
 function plain(status: number, text: string, extra: Record<string, string> = {}): Response {
   return new Response(text, { status, headers: { "content-type": "text/plain; charset=utf-8", ...SECURITY_HEADERS, ...extra } });
@@ -110,6 +116,7 @@ export function createHttpHandler(opts: HttpOptions): (req: Request) => Promise<
     const started = performance.now();
     const url = new URL(req.url);
     const line: LogLine = { route: url.pathname.slice(0, 40), status: 0 };
+    let cors: Record<string, string> = {};
     const finish = async (res: Response): Promise<Response> => {
       line.status = res.status;
       if ((res.headers.get("content-type") ?? "").includes("text/event-stream")) {
@@ -126,8 +133,8 @@ export function createHttpHandler(opts: HttpOptions): (req: Request) => Promise<
       line.duration_ms = Math.round(performance.now() - started);
       log(line);
       const headers = new Headers(res.headers);
-      for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-      return new Response(req.method === "HEAD" ? null : buf, { status: res.status, headers });
+      for (const [k, v] of Object.entries({ ...SECURITY_HEADERS, ...cors })) headers.set(k, v);
+      return new Response(req.method === "HEAD" || res.status === 204 ? null : buf, { status: res.status, headers });
     };
     const host = (req.headers.get("host") ?? url.host).toLowerCase();
     const local = opts.allowedHosts === "loopback";
@@ -139,7 +146,11 @@ export function createHttpHandler(opts: HttpOptions): (req: Request) => Promise<
       line.rejected_origin = findSecret(host) ? "redacted" : host;
       return finish(plain(403, "Forbidden origin"));
     }
-    if (req.method !== "POST") return finish(plain(405, "Method not allowed. Use POST with JSON-RPC.", { allow: "POST" }));
+    if (origin !== null) cors = { "access-control-allow-origin": origin, vary: "Origin" };
+    if (req.method === "OPTIONS") {
+      return finish(new Response(null, { status: 204, headers: origin === null ? { allow: "POST, OPTIONS" } : CORS_PREFLIGHT }));
+    }
+    if (req.method !== "POST") return finish(plain(405, "Method not allowed. Use POST with JSON-RPC.", { allow: "POST, OPTIONS" }));
     if (!(req.headers.get("content-type") ?? "").toLowerCase().includes("application/json")) {
       return finish(plain(415, "Content-Type must be application/json"));
     }

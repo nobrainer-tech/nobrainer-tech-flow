@@ -20,7 +20,7 @@ MCP traffic.
 | Caller text in logs | Log fields hold canonical method and tool names or a fixed marker (`other`, `unknown`, `redacted`); protocol versions must look like dates | `test/protocol/regressions.test.ts` |
 | Flooding and cost abuse | WAF per-IP rules, per-contract limit, 32 KiB body cap, JSON depth limit, field limits, 10 s `maxDuration`, project-level spend pause | `test/protocol/protocol.test.ts` (413/415/400), rate-limit wire test, `test/unit/spend.test.ts` |
 | Long-held connections | `subscriptions/listen` is refused at once (no SSE streams); responses are single JSON objects in both protocol eras | protocol tests |
-| DNS rebinding | `Origin` must be absent or allow-listed (403 otherwise); `Host` must be the production host or the project's Vercel hosts; the local server accepts loopback only | protocol tests, official conformance `dns-rebinding-protection` |
+| DNS rebinding | `Origin` must be absent or allow-listed (403 otherwise, also for an `OPTIONS` preflight; CORS headers go only to an allow-listed `Origin`); `Host` must be the production host or the project's Vercel hosts; the local server accepts loopback only | protocol tests, official conformance `dns-rebinding-protection` |
 | SSRF | No outbound requests from handlers | handler test with global `fetch` stubbed to throw |
 | Supply chain | Three runtime dependencies, exact pins, lockfile, `npm ci`, `npm audit signatures` in CI | CI job `mcp-server` |
 | Key compromise | Remove the kid from `FLOW_TOKEN_KEYS`: its tokens return `TOKEN_KEY_RETIRED`; rotate every 90 days | token tests |
