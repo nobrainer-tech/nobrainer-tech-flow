@@ -32,7 +32,8 @@ MCP traffic.
 - A client can resend an older token that predates a change and so avoid a `STALE` mark. The handoff
   shows the contract and evidence digests so a person can compare.
 - The file registry holds eight paths; a change to an evicted path is not detected.
-- The change epoch caps at 255 changes per contract.
+- The change epoch caps at 255 changes per contract. After that, each further file change reopens every
+  accepted test or command item, so `check_flow_done` lists it under `missing`, not `stale`.
 - Without `FLOW_RATE_LIMIT_ID`, the per-contract limit is per function instance.
 - Secret screening is pattern-based; it lowers risk, it cannot catch every secret.
 
