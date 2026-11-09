@@ -157,6 +157,30 @@ class NativeExportTests(unittest.TestCase):
             self.assertEqual(1, quiet(export_native.main, [str(zip_path), "--tag", self.tag, "--commit", COMMIT,
                                                     "--copy", str(copy), "--out", str(out)]))
 
+    def test_an_archive_path_that_escapes_the_copy_writes_nothing(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            base = Path(folder)
+            # skills/../../victim.txt under nested/out resolves to nested/victim.txt.
+            victim = base / "nested" / "victim.txt"
+            victim.parent.mkdir()
+            victim.write_text("original\n")
+            bad_zip = base / "bad.zip"
+            with zipfile.ZipFile(io.BytesIO(self.payload)) as source, zipfile.ZipFile(bad_zip, "w") as target:
+                for item in source.infolist():
+                    target.writestr(item, source.read(item.filename))
+                target.writestr("skills/../../victim.txt", "overwritten\n")
+            copy = base / "copy"
+            for name, data in current_copy().items():
+                (copy / name).parent.mkdir(parents=True, exist_ok=True)
+                (copy / name).write_bytes(data)
+            out = base / "nested" / "out"
+            self.assertEqual(1, quiet(export_native.main, [str(bad_zip), "--tag", self.tag, "--commit", COMMIT,
+                                                          "--copy", str(copy), "--out", str(out)]))
+            self.assertEqual("original\n", victim.read_text())
+            self.assertFalse(out.exists())
+            with self.assertRaisesRegex(ValueError, "unsafe archive path"):
+                export_native.build(bad_zip.read_bytes(), self.tag, COMMIT, current_copy())
+
     def test_an_in_place_export_needs_a_clean_checkout_and_keeps_git(self) -> None:
         zip_path = Path(self.scratch.name) / "plugin.zip"
         with tempfile.TemporaryDirectory() as folder:

@@ -51,7 +51,7 @@ def build(payload: bytes, tag: str, commit: str, current: dict[str, bytes]) -> d
         raise ValueError("the current copy lacks " + ", ".join(missing))
     version = tag[1:]
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
-        release = {n: archive.read(n) for n in archive.namelist() if not n.endswith("/")}
+        release = {safe_name(n): archive.read(n) for n in archive.namelist() if not n.endswith("/")}
     files = {n: d for n, d in release.items() if n.startswith("skills/") and file_problem(n, d) is None}
     files.update({name: release[name] for name in FROM_RELEASE})
     files.update({name: current[name] for name in COPY_ONLY})
@@ -81,6 +81,15 @@ def build(payload: bytes, tag: str, commit: str, current: dict[str, bytes]) -> d
     return files
 
 
+def safe_name(name: str) -> str:
+    """NAME if it is a plain relative archive path; it is checked before anything is written."""
+
+    parts = name.split("/")
+    if name.startswith("/") or "\\" in name or ":" in parts[0] or any(part in ("", ".", "..") for part in parts):
+        raise ValueError(f"unsafe archive path {name!r}")
+    return name
+
+
 def dumps(value: dict) -> bytes:
     return (json.dumps(value, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
 
@@ -91,8 +100,11 @@ def read_current(copy: Path) -> dict[str, bytes]:
 
 
 def write(files: dict[str, bytes], out: Path) -> None:
+    root = out.resolve()
     for name, data in sorted(files.items()):
         target = out / name
+        if not target.resolve().is_relative_to(root):
+            raise ValueError(f"{name} would be written outside {out}")
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
 
