@@ -22,12 +22,17 @@ when each channel reads back that version, or the gap is reported:
    Codex use this repository's marketplace and the release ZIP). From `docs/` keep only
    `CHAT_PLUGINS.md` and `PRIVACY.md`, the two files its README and manifests link: the
    other guides and `docs/releases/` stay here, and the Claude directory's automatic
-   checks flag the install commands and image references in them. Also leave out
+   checks flag the install commands and image references in them. Also leave out the
+   two helpers that the directory held v2.10.1 to v2.11.0 for ("Uses a credential from
+   the user's machine"; removing them is the portal's own remedy):
    `skills/nobrainer-tech-flow/scripts/flow_guard.py`, the lifecycle-hook helper that
-   `scripts/install_guards.py` wires into Claude Code: this copy declares no hooks and
-   ships no installer, so the file never runs there, and the directory held v2.10.1 to
-   v2.11.0 on a finding that names it ("Uses a credential from the user's machine").
-   Every other skill file stays byte-identical. Keep the
+   `scripts/install_guards.py` wires into Claude Code, which never runs in this copy
+   because it declares no hooks and ships no installer; and
+   `skills/nobrainer-tech-flow/scripts/typed_decisions.py`, the optional Jev and Laya
+   runner, which sends a TypeSafe key the user pipes in to `api.typesafe.ai`. Without it
+   that copy keeps the core path, as `references/optional-decisions.md` says. Git and npm
+   installs keep both. The copy's `_maintainers/verify_release.py` names exactly these
+   two files and compares every other skill file byte for byte. Keep the
    repository's own Claude presentation fields and its `.claude-plugin/icon.png`
    (no `icon` field), as its README describes. Update `SOURCE.json`, run
    its unmodified `_maintainers/verify_release.py`, then release it. It is the hook-free copy that
