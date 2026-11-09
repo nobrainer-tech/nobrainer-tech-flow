@@ -306,8 +306,8 @@ together mean one state, proves each state nobody designed with a call sequence,
 what to fix first; the fix goes to Build with a failing test first
 ([reference](skills/nobrainer-review/references/implicit-state.md)).
 
-Also in this release: the copy tracked by the Claude plugin directory ships without the
-two helper scripts its credential rule flagged, the plugin manifests pass the OpenAI
+Also in this release: the copy tracked by the Claude plugin directory ships no script, as
+the directory now requires (git and npm installs keep them), the plugin manifests pass the OpenAI
 portal, `NOBRAINER_GUARD_STRICT=true` now turns strict mode on, and the MCP server sends a
 stale check back for a rerun instead of to root-cause analysis and is described for the
 official MCP Registry. Details: [release notes](RELEASE-NOTES.md).

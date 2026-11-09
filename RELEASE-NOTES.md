@@ -15,11 +15,15 @@ portfolio stays at eighteen skills.
   test first and one explicit state with a single transition function. In the
   [eval record](docs/evals/implicit-state-review-2026-11-09.md) it adds no finding to code
   that has none; detection in an ordinary bug hunt is unchanged.
-- **Claude plugin directory.** The copy that the directory tracks leaves out two helper
-  scripts that its credential rule held v2.10.1 to v2.11.0 for: `flow_guard.py`, the
-  lifecycle-hook helper, which never ran in that copy, and `typed_decisions.py`, the
-  optional Jev and Laya runner. Without the runner Flow keeps the core path. Git and npm
-  installs keep both files.
+- **Claude plugin directory.** The copy that the directory tracks ships no script at all.
+  The directory now accepts only Markdown, plain text, JSON, YAML and a few image types from
+  organizations it has not verified, so it refused a copy that still had Python helpers.
+  It had also held v2.10.1 to v2.11.0 on its credential rule for two of them. The new
+  `scripts/export_native.py` builds the copy from the release ZIP, and
+  `scripts/verify_native_export.py` checks it (the copy's CI runs the same check). Where a
+  skill names a bundled script, the agent does the same check by hand or with a host tool
+  and says so ([eval record](docs/evals/scriptless-copy-2026-11-09.md)). Git and npm
+  installs keep every script.
 - **OpenAI plugin directory.** The plugin manifests no longer carry an empty
   `screenshots` list, which the portal rejected.
 - **Guards.** `NOBRAINER_GUARD_STRICT` reads `true`, `yes` and `on` as well as `1`.

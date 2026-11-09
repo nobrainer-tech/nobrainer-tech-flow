@@ -68,7 +68,7 @@ the task-wide call ceiling: do not reset it by splitting into new batches.
 Each attempt has a hard subprocess timeout, with no automatic retry. Laya
 startup is included in elapsed time; this CLI does not claim warm-model speed.
 
-The Claude directory copy of Flow does not include `scripts/typed_decisions.py`.
+The Claude directory copy of Flow ships no scripts, so `scripts/typed_decisions.py` is absent there.
 When that file is absent, offer and keep core only, treat a recorded Jev or Laya
 preference as a missing capability (`CORE_FALLBACK`) without running anything, and
 point to a git or npm install, which includes the helper.

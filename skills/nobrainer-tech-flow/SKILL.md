@@ -183,6 +183,10 @@ and explain applicability; distinguish requirements from interpretation.
 Proceed when required inputs, authority and proof are available; unknown write ownership,
 stale input or ambiguous irreversible effects block the affected action. Missing optional
 goals, telemetry or subagents does not block safe work; use ordinary files or the main agent.
+Some installs, such as the Claude directory copy, ship no scripts. When a bundled script
+a skill names is absent, do not write or fetch a replacement: do the same check by hand or
+with a host tool (for a time cap, `timeout` or the host's own limit), say the helper was
+absent and which method you used, and point to a git or npm install, which includes it.
 
 Choose the least complex capable method; route non-trivial implementation through `nobrainer-build`.
 When another skill owns a stage, load its canonical body and required references before
