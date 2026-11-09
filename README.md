@@ -83,6 +83,11 @@ and tested in each coding agent is in the [compatibility evidence](docs/COMPATIB
 Free, MIT. The Git install previews every change and has undo. Your coding client's usage
 costs still apply.
 
+Only want the working rules? [NoBrainer Can-Do Approach](https://github.com/nobrainer-tech/can-do)
+is one guide you can give any agent: complete the requested work, make routine decisions,
+recover from failures and verify the result. Flow adds the scoping, coordination, review
+and continuity around it.
+
 ## The AI-native SDLC in one workflow
 
 Anthropic's [AI-native SDLC playbook](https://claude.com/resources/articles/the-ai-native-sdlc-playbook)
