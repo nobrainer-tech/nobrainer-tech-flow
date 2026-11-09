@@ -171,9 +171,9 @@ Then start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer
 **npm** (Node 18+ and Python 3.11+); `--client` is `codex`, `claude`, `opencode` or `copilot`:
 
 ```sh
-npx nobrainer-tech-flow@2.11.0 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.11.0 --client codex --apply    # install
-npx nobrainer-tech-flow@2.11.0 --client codex --undo --apply
+npx nobrainer-tech-flow@2.12.0 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.12.0 --client codex --apply    # install
+npx nobrainer-tech-flow@2.12.0 --client codex --undo --apply
 ```
 
 **Any coding agent** (Git install with preview and undo; macOS, Linux and Windows, no
@@ -298,6 +298,19 @@ flowchart TD
 [`nobrainer-review`](skills/nobrainer-review/).
 What each one owns and its trigger aliases:
 [skill table](docs/HOW_IT_WORKS.md#eighteen-skills-distinct-ownership).
+
+## What's new in 2.12.0
+
+Ask "find the implicit state machines in this module" and the review maps the fields that
+together mean one state, proves each state nobody designed with a call sequence, and says
+what to fix first; the fix goes to Build with a failing test first
+([reference](skills/nobrainer-review/references/implicit-state.md)).
+
+Also in this release: the copy tracked by the Claude plugin directory ships without the
+two helper scripts its credential rule flagged, the plugin manifests pass the OpenAI
+portal, `NOBRAINER_GUARD_STRICT=true` now turns strict mode on, and the MCP server sends a
+stale check back for a rerun instead of to root-cause analysis and is described for the
+official MCP Registry. Details: [release notes](RELEASE-NOTES.md).
 
 ## What's new in 2.11.0
 

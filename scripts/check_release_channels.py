@@ -20,6 +20,8 @@ from typing import Callable
 CANONICAL = "nobrainer-tech/nobrainer-tech-flow"
 NATIVE = "nobrainer-tech/nobrainer-tech-flow-plugin"
 MCP_URL = "https://mcp.nobrainer.tech/mcp"
+REGISTRY_NAME = "io.github.nobrainer-tech/nobrainer-tech-flow"
+REGISTRY_URL = "https://registry.modelcontextprotocol.io/v0.1/servers?search=nobrainer-tech-flow"
 CHANGELOG_URL = "https://nobrainer.tech/flow/changelog/"
 STALE_PR_AGE = timedelta(days=1)
 
@@ -58,6 +60,15 @@ def mcp_server(get: Fetch, version: str) -> str | None:
     return None if served.endswith(f"+flow.{version}") else f"server reports {served}"
 
 
+def mcp_registry(get: Fetch, version: str) -> str | None:
+    """The official MCP Registry entry (mcp/server.json, published by the Publish MCP Registry workflow)."""
+    listed = [entry["server"]["version"] for entry in json.loads(get(REGISTRY_URL, None, {}))["servers"]
+              if entry["server"]["name"] == REGISTRY_NAME]
+    if not listed:
+        return f"{REGISTRY_NAME} is not listed"
+    return None if version in listed else f"registry lists {', '.join(listed)}"
+
+
 def website_changelog(get: Fetch, version: str) -> str | None:
     text = get(CHANGELOG_URL, None, {})
     pattern = r"(?<![\d.])v?" + re.escape(version) + r"(?![\d.])"
@@ -84,6 +95,7 @@ def check(version: str, get: Fetch = lambda u, b, h: fetch(u, b, h),
         ("Native plugin release", lambda: github_release(get, NATIVE, version, (
             f"nobrainer-tech-flow-{version}-native.zip",))),
         ("MCP server", lambda: mcp_server(get, version)),
+        ("MCP Registry", lambda: mcp_registry(get, version)),
         ("Website changelog", lambda: website_changelog(get, version)),
         ("Open pull requests", lambda: open_pull_requests(get, now)),
     ]

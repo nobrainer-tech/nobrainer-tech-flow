@@ -135,7 +135,7 @@ test("a stale run that failed twice before it passed needs a rerun, not an RCA",
   assert.doesNotMatch(b.next!, /nobrainer-rca/);
 });
 
-test("a token from before 2.11.1 with a reopened run that once failed goes to VERIFY, not AUTOPILOT", () => {
+test("a token from before 2.12.0 with a reopened run that once failed goes to VERIFY, not AUTOPILOT", () => {
   // The old server reset a run invalidated at a full epoch to OPEN and kept its failure count.
   const open = (failures: number): Item => ({ proof: "test", level: "local", failures, status: "OPEN", kind: null, unchecked: false, epoch: 0, digest: Buffer.alloc(4) });
   const state = (items: Item[]): TokenState => ({

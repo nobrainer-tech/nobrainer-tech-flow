@@ -1,5 +1,41 @@
 # nobrainer-tech-flow release notes
 
+## v2.12.0 - 2026-11-09
+
+Ask Flow to "find the implicit state machines" in a module and its review now maps them
+and says what to fix first. The release also carries the fixes the plugin directories
+asked for and four states Flow's own code could reach although nobody designed them. The
+portfolio stays at eighteen skills.
+
+- **Implicit state machines in review.** `nobrainer-review` gains one practice
+  ([reference](skills/nobrainer-review/references/implicit-state.md), alias
+  `nb-auto-fix`): find the fields that together mean one state (flags, status strings,
+  counters, locks), map who writes and who reads them, and prove each state nobody
+  designed with a call sequence. Review reports; `nobrainer-build` fixes, with a failing
+  test first and one explicit state with a single transition function. In the
+  [eval record](docs/evals/implicit-state-review-2026-11-09.md) it adds no finding to code
+  that has none; detection in an ordinary bug hunt is unchanged.
+- **Claude plugin directory.** The copy that the directory tracks leaves out two helper
+  scripts that its credential rule held v2.10.1 to v2.11.0 for: `flow_guard.py`, the
+  lifecycle-hook helper, which never ran in that copy, and `typed_decisions.py`, the
+  optional Jev and Laya runner. Without the runner Flow keeps the core path. Git and npm
+  installs keep both files.
+- **OpenAI plugin directory.** The plugin manifests no longer carry an empty
+  `screenshots` list, which the portal rejected.
+- **Guards.** `NOBRAINER_GUARD_STRICT` reads `true`, `yes` and `on` as well as `1`.
+  Those values used to leave strict mode off without a word. An unknown value still
+  leaves it off, and the guard now says so.
+- **Optional decisions.** A piped TypeSafe key longer than 4096 characters stops with
+  `INVALID_INPUT`. It used to run on as if no key had been given.
+- **MCP server.** A test or command result that went stale after a file change goes
+  back for a rerun, also when it failed twice before it passed; `get_flow_step` used to
+  send it to root-cause analysis. Past 255 file changes in one contract, a stale result
+  is reported as stale, not as never checked. Token format and old tokens are unchanged.
+- **MCP Registry.** `mcp/server.json` describes the server for the official MCP Registry
+  as `io.github.nobrainer-tech/nobrainer-tech-flow`. The `Publish MCP Registry` workflow
+  publishes it, and `scripts/check_release_channels.py` reads the entry back.
+- The README links the [Can-Do guide](https://github.com/nobrainer-tech/can-do).
+
 ## v2.11.0 - 2026-11-04
 
 Ask "give me the DoD for this PR" or "is this PR ready?" and Flow now reports a pull

@@ -122,6 +122,7 @@ VERSION_MANIFESTS = (
     ".cursor-plugin/plugin.json",
     ".kimi-plugin/plugin.json",
     "gemini-extension.json",
+    "mcp/server.json",
 )
 
 
@@ -2978,7 +2979,7 @@ class SuiteTests(unittest.TestCase):
             {"SKILL.md", "references"}, {path.name for path in directory.iterdir()}
         )
         self.assertEqual(
-            {"pr-definition-of-done.md"},
+            {"implicit-state.md", "pr-definition-of-done.md"},
             {path.name for path in (directory / "references").iterdir()},
         )
         for term in (

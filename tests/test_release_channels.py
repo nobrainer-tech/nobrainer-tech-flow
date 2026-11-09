@@ -12,8 +12,13 @@ channels = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(channels)
 
 
-def fake(version: str, *, mcp: str | None = None, changelog: str | None = None, npm: str | None = None, prs=()):
+def fake(version: str, *, mcp: str | None = None, changelog: str | None = None, npm: str | None = None, prs=(),
+         registry: list[tuple[str, str]] | None = None):
     def get(url: str, body, headers) -> str:
+        if url == channels.REGISTRY_URL:
+            listed = registry if registry is not None else [(channels.REGISTRY_NAME, version)]
+            return json.dumps({"servers": [{"server": {"name": name, "version": listed_version}}
+                                           for name, listed_version in listed]})
         if url.endswith(f"nobrainer-tech-flow/releases/tags/v{version}"):
             names = [f"nobrainer-tech-flow-{version}-plugin.zip", f"nobrainer-tech-flow-{version}.tgz"]
             return json.dumps({"draft": False, "assets": [{"name": n} for n in names]})
@@ -49,6 +54,21 @@ class ReleaseChannelTests(unittest.TestCase):
 
     def test_stale_npm_latest_fails(self) -> None:
         self.assertIn("npm", self.failures(npm="2.8.0"))
+
+    def test_a_registry_without_this_version_or_without_the_server_fails(self) -> None:
+        stale = self.failures(registry=[(channels.REGISTRY_NAME, "2.8.0")])
+        self.assertIn("2.8.0", stale["MCP Registry"])
+        # Another publisher's server with a similar name never counts as ours.
+        other = self.failures(registry=[("io.github.someone/nobrainer-tech-flow", "2.9.0")])
+        self.assertIn("is not listed", other["MCP Registry"])
+        self.assertIn("is not listed", self.failures(registry=[])["MCP Registry"])
+
+    def test_the_registry_entry_names_the_live_server_and_fits_the_registry_limits(self) -> None:
+        entry = json.loads((ROOT / "mcp" / "server.json").read_text(encoding="utf-8"))
+        self.assertEqual(channels.REGISTRY_NAME, entry["name"])
+        self.assertEqual([{"type": "streamable-http", "url": channels.MCP_URL}], entry["remotes"])
+        self.assertLessEqual(len(entry["description"]), 100)
+        self.assertNotIn("packages", entry)
 
     def test_a_pull_request_left_open_for_a_day_fails(self) -> None:
         stale = {"repo": "nobrainer-tech-flow/", "number": 126, "created_at": "2026-10-30T08:23:01Z"}

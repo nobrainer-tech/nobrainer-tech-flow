@@ -42,7 +42,11 @@ when each channel reads back that version, or the gap is reported:
    reworded, update `content/cards.yaml` to the new text, then `npm test`). After the merge,
    deploy per [mcp/docs/DEPLOY.md](../mcp/docs/DEPLOY.md) and read back that `initialize`
    on https://mcp.nobrainer.tech/mcp reports `serverInfo.version` ending in `+flow.X.Y.Z`.
-   Never deploy a tree with an older advisor snapshot than production serves.
+   Never deploy a tree with an older advisor snapshot than production serves. Then run the
+   `Publish MCP Registry` workflow from the tag (or from `main` while it still carries the
+   release): it publishes `mcp/server.json`, whose version is bumped with the other
+   manifests, to the official MCP Registry as `io.github.nobrainer-tech/nobrainer-tech-flow`
+   through GitHub OIDC. It refuses to run until the live server serves the release.
 6. Website changelog: add the `X.Y.Z` entry, written from `RELEASE-NOTES.md`, to
    `sources/flow-www/site/changelog/index.html` and its `public_html/flow/changelog/` copy
    in `nobrainer-tech-www`, deploy it and read back https://nobrainer.tech/flow/changelog/.
@@ -52,7 +56,8 @@ when each channel reads back that version, or the gap is reported:
    native ZIP upload. Both submissions and publication clicks are owner-gated.
 
 Finish with `python3 scripts/check_release_channels.py X.Y.Z`. It reads back the GitHub
-release, npm, the native plugin release, the MCP server and the website changelog, and
+release, npm, the native plugin release, the MCP server, its MCP Registry entry and the
+website changelog, and
 fails when a pull request in this or the native plugin repository has been open for more
 than a day: merge it, close it with a reason, or report it. It exits 1 on any FAIL. The release is done only when it prints no FAIL; a channel that
 cannot be fixed yet goes into the handoff's `Not checked` with its reason, and the next

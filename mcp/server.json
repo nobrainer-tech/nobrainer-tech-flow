@@ -1,0 +1,19 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.nobrainer-tech/nobrainer-tech-flow",
+  "title": "NoBrainer Tech Flow",
+  "description": "Task contract, evidence check and done gate for AI coding agents. Read-only, no sign-in.",
+  "repository": {
+    "url": "https://github.com/nobrainer-tech/nobrainer-tech-flow",
+    "source": "github",
+    "subfolder": "mcp"
+  },
+  "version": "2.12.0",
+  "websiteUrl": "https://nobrainer.tech/flow/",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.nobrainer.tech/mcp"
+    }
+  ]
+}
