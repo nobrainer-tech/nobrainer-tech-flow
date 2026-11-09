@@ -1,6 +1,6 @@
 ---
 name: nobrainer-review
-description: "Use when work needs an evidence-gated CLOSEOUT, an adversarial BUG_HUNT or a RELEASE_GATE, when someone asks for a DoD (Definition of Done) of a pull request or whether a PR is ready to merge, including after green CI, or when final findings must be filtered to verified actionable defects. Use nobrainer-build for ordinary implementation and correction work. Aliases: nb-review, deep-audit, deep-code-review, deep-autoreview, nb-dod, PR DoD."
+description: "Use when work needs an evidence-gated CLOSEOUT, an adversarial BUG_HUNT or a RELEASE_GATE, when someone asks for a DoD (Definition of Done) of a pull request or whether a PR is ready to merge, including after green CI, when someone asks for implicit or hidden state machines (states spread over flags, status strings or counters), or when final findings must be filtered to verified actionable defects. Use nobrainer-build for ordinary implementation and correction work. Aliases: nb-review, deep-audit, deep-code-review, deep-autoreview, nb-dod, PR DoD, nb-auto-fix."
 ---
 
 # NoBrainer Review
@@ -105,6 +105,10 @@ before reporting it. Check the classes relevant to the scope:
 - authorization bypass, unsafe input/output, secret leakage and trust-boundary
   confusion;
 - rollback gaps, destructive migration, hidden state or duplicate writers;
+- implicit state machines: one state spread over flags, nullable fields, status
+  strings, counters or locks, with no single place that says which combinations
+  are allowed. When the request names them, or several findings share that cause,
+  follow [implicit-state.md](references/implicit-state.md);
 - error suppression, false success, timeout treated as completion;
 - tests that assert a fixture or mock but miss the real integration path.
 

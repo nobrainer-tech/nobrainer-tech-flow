@@ -26,6 +26,7 @@ trigger applies.
 | rendered UI, approved browser-session attach, test or trace evidence | `nobrainer-browser` |
 | closeout review, adversarial bug hunt or release gate | `nobrainer-review` |
 | a pull request's DoD (Definition of Done): "give me the DoD", "is this PR ready", gates and readiness report | `nobrainer-review` |
+| implicit or hidden state machines: flags, status strings, counters or locks that together mean one state | `nobrainer-review` |
 | text of a task, PR description, commit or PR comment | `nobrainer-writing` |
 | measured skill, prompt or workflow improvement | `nobrainer-autoimprove` |
 

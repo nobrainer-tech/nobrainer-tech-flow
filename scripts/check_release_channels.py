@@ -13,6 +13,8 @@ from __future__ import annotations
 import json
 import re
 import sys
+import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from typing import Callable
@@ -20,6 +22,8 @@ from typing import Callable
 CANONICAL = "nobrainer-tech/nobrainer-tech-flow"
 NATIVE = "nobrainer-tech/nobrainer-tech-flow-plugin"
 MCP_URL = "https://mcp.nobrainer.tech/mcp"
+REGISTRY_NAME = "io.github.nobrainer-tech/nobrainer-tech-flow"
+REGISTRY_API = "https://registry.modelcontextprotocol.io/v0.1/servers/"
 CHANGELOG_URL = "https://nobrainer.tech/flow/changelog/"
 STALE_PR_AGE = timedelta(days=1)
 
@@ -58,6 +62,24 @@ def mcp_server(get: Fetch, version: str) -> str | None:
     return None if served.endswith(f"+flow.{version}") else f"server reports {served}"
 
 
+def registry_url(version: str) -> str:
+    """Exact server-version endpoint: a search would page through every historical version."""
+    return f"{REGISTRY_API}{urllib.parse.quote(REGISTRY_NAME, safe='')}/versions/{version}"
+
+
+def mcp_registry(get: Fetch, version: str) -> str | None:
+    """The official MCP Registry entry (mcp/server.json, published by the Publish MCP Registry workflow)."""
+    try:
+        server = json.loads(get(registry_url(version), None, {}))["server"]
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return f"{REGISTRY_NAME} {version} is not listed"
+        raise
+    if server.get("name") == REGISTRY_NAME and server.get("version") == version:
+        return None
+    return f"registry returned {server.get('name')} {server.get('version')}"
+
+
 def website_changelog(get: Fetch, version: str) -> str | None:
     text = get(CHANGELOG_URL, None, {})
     pattern = r"(?<![\d.])v?" + re.escape(version) + r"(?![\d.])"
@@ -84,6 +106,7 @@ def check(version: str, get: Fetch = lambda u, b, h: fetch(u, b, h),
         ("Native plugin release", lambda: github_release(get, NATIVE, version, (
             f"nobrainer-tech-flow-{version}-native.zip",))),
         ("MCP server", lambda: mcp_server(get, version)),
+        ("MCP Registry", lambda: mcp_registry(get, version)),
         ("Website changelog", lambda: website_changelog(get, version)),
         ("Open pull requests", lambda: open_pull_requests(get, now)),
     ]

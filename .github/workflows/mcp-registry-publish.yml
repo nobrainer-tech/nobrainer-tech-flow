@@ -1,0 +1,96 @@
+name: Publish MCP Registry
+
+# Lists the remote MCP server in the official MCP Registry
+# (https://registry.modelcontextprotocol.io) as io.github.nobrainer-tech/nobrainer-tech-flow.
+# Run manually from the release tag, or from main while main still carries that release,
+# after https://mcp.nobrainer.tech/mcp serves the version in mcp/server.json.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mcp-registry-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'nobrainer-tech/nobrainer-tech-flow' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      MCP_PUBLISHER_VERSION: v1.8.5
+
+    steps:
+      - name: Check out the release
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify the entry against the release and the live server
+        run: |
+          python3 - <<'PY'
+          import json, subprocess, sys
+          sys.path.insert(0, 'scripts')
+          import check_release_channels as channels
+          entry = json.load(open('mcp/server.json'))
+          version = json.load(open('package.json'))['version']
+          if entry['version'] != version or entry['name'] != channels.REGISTRY_NAME:
+              raise SystemExit('mcp/server.json does not match the package version or the registry name.')
+          subprocess.run(['git', 'merge-base', '--is-ancestor', f'refs/tags/v{version}', 'HEAD'], check=True)
+          problem = channels.mcp_server(channels.fetch, version)
+          if problem:
+              raise SystemExit(f'The live MCP server does not serve this release yet: {problem}')
+          PY
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Download and verify mcp-publisher
+        run: |
+          set -euo pipefail
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl --fail --location --silent --show-error --output "$archive" "$base_url/$archive"
+          curl --fail --location --silent --show-error --output "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
+          cosign verify-blob \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$archive"
+          tar xzf "$archive" mcp-publisher
+          rm -f "$archive" "$archive.sigstore.json"
+
+      - name: Authenticate with GitHub OIDC
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish the server entry
+        working-directory: mcp
+        run: ../mcp-publisher publish
+
+      - name: Read back the registry entry
+        run: |
+          python3 - <<'PY'
+          import json, sys, time
+          sys.path.insert(0, 'scripts')
+          import check_release_channels as channels
+          version = json.load(open('package.json'))['version']
+          problem = 'not read yet'
+          for _ in range(12):
+              try:
+                  problem = channels.mcp_registry(channels.fetch, version)
+              except Exception as error:
+                  problem = f'read failed: {error}'
+              if not problem:
+                  print(f'REGISTRY_VERIFIED: {channels.REGISTRY_NAME} {version}')
+                  break
+              time.sleep(10)
+          else:
+              raise SystemExit(f'The registry needs inspection before any retry: {problem}')
+          PY
