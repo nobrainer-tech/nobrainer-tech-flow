@@ -463,8 +463,8 @@ Opt-in hooks in your Claude Code user `settings.json`, never in the plugin:
   (`tests/`, `test_*`, `*_test.*`, `*.spec.*`, `*.test.*`). It reads only those
   project files and the tool input: no network and no subprocess. Formatters
   and linters stay with the project's own hooks and scripts;
-- strict mode, off by default: with `NOBRAINER_GUARD_STRICT=1` in Claude Code's
-  environment or a `.nobrainer/guard-strict` file in the project, `vercel --prod`,
+- strict mode, off by default: with `NOBRAINER_GUARD_STRICT=1` (or `true`, `yes`,
+  `on`) in Claude Code's environment or a `.nobrainer/guard-strict` file in the project, `vercel --prod`,
   `npm publish`, `terraform apply` or `destroy` and `gh release create` are
   denied instead of asked, and the message names the route to approval: you
   run the command yourself, or remove strict mode for that session. Other

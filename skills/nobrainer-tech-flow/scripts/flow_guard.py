@@ -2,8 +2,9 @@
 """Optional Claude Code guards for nobrainer-tech-flow.
 
 ``pre-tool`` reads a PreToolUse payload and asks the person before a common risky
-shell command. By default it never denies. In strict mode (``NOBRAINER_GUARD_STRICT=1``
-in the hook's environment, or a ``.nobrainer/guard-strict`` file in the project) a
+shell command. By default it never denies. In strict mode (``NOBRAINER_GUARD_STRICT=1``,
+``true``, ``yes`` or ``on`` in the hook's environment, or a ``.nobrainer/guard-strict``
+file in the project) a
 production deploy or publish is denied instead, with the route to approval: the owner
 runs the command, or strict mode is removed for the session.
 ``pre-edit`` reads a PreToolUse payload for Edit, MultiEdit, Write or NotebookEdit and
@@ -65,6 +66,8 @@ RISKY = (
     (re.compile(rf"\bgh\b{OPTIONS}\s+release\s+create{END}"), "gh release create publishes a release", True),
 )
 STRICT_ENV = "NOBRAINER_GUARD_STRICT"
+STRICT_ON = ("1", "true", "yes", "on")
+STRICT_OFF = ("", "0", "false", "no", "off")
 # Project files, all under .nobrainer/ in the project root.
 STRICT_FILE = "guard-strict"
 PROTECTED_FILE = "protected-paths"
@@ -259,10 +262,25 @@ def git_root(start: Path) -> Path | None:
     return None
 
 
+def strict_variable(value: str | None) -> bool:
+    """Whether NOBRAINER_GUARD_STRICT turns strict mode on.
+
+    The usual spellings of on and off are read in any case; any other value leaves it
+    off and says so on stderr, without echoing the value.
+    """
+
+    word = (value or "").strip().lower()
+    if word in STRICT_ON:
+        return True
+    if word not in STRICT_OFF:
+        note(f"{STRICT_ENV} is neither on (1, true, yes, on) nor off (0, false, no, off); it leaves strict mode off")
+    return False
+
+
 def strict_mode(cwd: str | None) -> bool:
     """Whether strict mode is on; a project that cannot be read leaves it off (ask only)."""
 
-    if os.environ.get(STRICT_ENV) == "1":
+    if strict_variable(os.environ.get(STRICT_ENV)):
         return True
     folder = Path(cwd) if cwd and os.path.isabs(cwd) else Path.cwd()
     try:
