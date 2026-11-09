@@ -93,6 +93,9 @@ class McpIsolationTests(unittest.TestCase):
         self.assertNotIn("mcpServers", claude)
         self.assertNotIn("mcpServers", portable)
         self.assertEqual("https://nobrainer.tech/flow/privacy/", codex["interface"]["privacyPolicyURL"])
+        # The OpenAI plugin portal rejects a package whose manifest has interface.screenshots.
+        self.assertNotIn("screenshots", codex["interface"])
+        self.assertNotIn("screenshots", portable["extensions"]["com.openai"]["interface"])
 
 
 if __name__ == "__main__":

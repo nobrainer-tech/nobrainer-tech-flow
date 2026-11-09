@@ -42,7 +42,6 @@
         "brandColor": "#2948B8",
         "composerIcon": "./assets/plugin-logo.png",
         "logo": "./assets/plugin-logo.png",
-        "screenshots": [],
         "supportURL": "https://github.com/nobrainer-tech/nobrainer-tech-flow/issues"
       },
       "onboardingSkill": "./skills/nobrainer-tech-flow/SKILL.md",
