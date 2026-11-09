@@ -4,15 +4,16 @@
 Two steps, both reproducible with the Python standard library only:
 
     python3 docs/demo/done_gate_demo.py capture   # calls the live MCP server
-    python3 docs/demo/done_gate_demo.py render    # writes assets/done-gate-demo.svg
+    python3 docs/demo/done_gate_demo.py render    # writes assets/done-gate-demo*.svg
 
 `capture` runs one task against https://mcp.nobrainer.tech/mcp (free, no sign-in,
 read-only tools) and saves every request and response in
 docs/demo/done-gate-transcript.json. Signed tokens are shortened to `nbf1.<token>`
 and `nbr1.<receipt>`; everything else is stored as the server returned it.
 
-`render` reads only that transcript, so the SVG can be rebuilt offline and every
-line it shows can be traced back to a recorded response.
+`render` reads only that transcript, so both SVGs (desktop and phone width) can be
+rebuilt offline. Every tool line comes from a recorded request or response; the two
+"agent" lines are the scenario the calls test.
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 TRANSCRIPT = ROOT / "docs" / "demo" / "done-gate-transcript.json"
 SVG = ROOT / "assets" / "done-gate-demo.svg"
+NARROW_SVG = ROOT / "assets" / "done-gate-demo-narrow.svg"  # phones: <picture> max-width 600px
 ENDPOINT = "https://mcp.nobrainer.tech/mcp"
 PROTOCOL = "2025-06-18"
 
@@ -117,7 +119,7 @@ def capture() -> None:
 
 # ---------------------------------------------------------------- rendering
 
-WIDTH, PAD, LINE, FONT = 860, 28, 25, 15.5
+PAD, LINE, FONT = 28, 25, 15.5
 TOP = 50  # first baseline sits one line below this, under the title bar
 STEP = 0.3  # seconds each printed line takes
 INK, MUTED, COBALT, VERMILION, PAPER, RULE = (
@@ -141,13 +143,13 @@ def lines_from(transcript: dict) -> list[tuple[str, list[tuple[str, str]], float
     add("say", [("muted", "agent  "), ("ink", "Fixed the date parser. All tests pass. Done.")], 0.6)
     add("gap", [], 0.2)
     add("cmd", [("prompt", "> "), ("cmd", "start_flow_task"),
-                ("muted", ' outcome, DoD "new unit test passes"')], 0.9)
+                ("muted", ' DoD: "new unit test passes"')], 0.9)
     add("out", [("muted", "  path "), ("ink", start["path"]),
                 ("muted", f"  {item['id']} "), ("ink", f"{item['proof']}, {item['level']}"),
                 ("muted", "  next "), ("ink", start["next"]["stage"])])
     add("gap", [], 0.2)
     add("cmd", [("prompt", "> "), ("cmd", "check_flow_evidence"),
-                ("muted", f" {item['id']} pytest -q, exit 0, log:")], 0.9)
+                ("muted", f" {item['id']} pytest -q exit=0, log:")], 0.9)
     add("log", [("muted", "    FAILED tests/test_dates.py::test_feb_30")], 0.15)
     add("log", [("muted", "    ===== 1 failed, 4 passed in 0.21s =====")], 0.15)
     verdict = [("muted", f"  {bad_result['item']} "), ("bad", bad_result["verdict"])]
@@ -163,7 +165,7 @@ def lines_from(transcript: dict) -> list[tuple[str, list[tuple[str, str]], float
     add("gap", [], 0.2)
     add("say", [("muted", "agent  "), ("ink", "Fixed the leap-day check. Running the tests again.")], 0.9)
     add("cmd", [("prompt", "> "), ("cmd", "check_flow_evidence"),
-                ("muted", f" {item['id']} pytest -q, exit 0, 5 passed")], 1.0)
+                ("muted", f" {item['id']} pytest -q: 5 passed")], 1.0)
     add("out", [("muted", f"  {good_result['item']} "), ("good", good_result["verdict"]),
                 ("muted", f"  {good_result['level']}  digest {good_result['digest']}")], 0.6)
     add("cmd", [("prompt", "> "), ("cmd", "check_flow_done")], 1.0)
@@ -172,15 +174,41 @@ def lines_from(transcript: dict) -> list[tuple[str, list[tuple[str, str]], float
     return out
 
 
-def render() -> None:
-    transcript = json.loads(TRANSCRIPT.read_text(encoding="utf-8"))
-    lines = lines_from(transcript)
-    height = TOP + LINE * len(lines) + 48
+def wrap(parts: list[tuple[str, str]], limit: int) -> list[list[tuple[str, str]]]:
+    """Split one styled line at spaces so no row exceeds `limit` characters."""
+    chars = [(css, ch) for css, chunk in parts for ch in chunk]
+    rows = []
+    while len(chars) > limit:
+        cut = max(i for i in range(6, limit + 1) if chars[i][1] == " ")
+        rows.append(chars[:cut])
+        chars = [("muted", " ")] * 4 + chars[cut + 1:]
+    rows.append(chars)
+    grouped = []
+    for row in rows:
+        spans: list[tuple[str, str]] = []
+        for css, ch in row:
+            if spans and spans[-1][0] == css:
+                spans[-1] = (css, spans[-1][1] + ch)
+            else:
+                spans.append((css, ch))
+        grouped.append(spans)
+    return grouped
+
+
+def render_variant(transcript: dict, path: Path, width: int, limit: int) -> None:
+    lines = []
+    for kind, parts, pause in lines_from(transcript):
+        for n, row in enumerate(wrap(parts, limit) if parts else [[]]):
+            lines.append((row, pause if n == 0 else 0.0))
+    caption = [f"> lines: live calls to {transcript['endpoint']}",
+               f"(server {transcript['server']}, {transcript['captured'][:10]}), shortened.",
+               "agent lines: the scenario."]
+    caption = [" ".join(caption)] if width >= 800 else [caption[0], " ".join(caption[1:])]
+    height = TOP + LINE * len(lines) + 32 + 18 * len(caption)
     t, rows, keyframes = 0.4, [], []
-    total = sum(pause for _, _, pause in lines) + STEP * len(lines) + 1.0 + LOOP_HOLD
-    for index, (kind, parts, pause) in enumerate(lines):
+    total = sum(pause for _, pause in lines) + STEP * len(lines) + 1.0 + LOOP_HOLD
+    for index, (parts, pause) in enumerate(lines):
         t += pause
-        y = TOP + LINE * (index + 1)
         if not parts:
             continue
         text = "".join(f'<tspan class="{css}">{html.escape(chunk)}</tspan>' for css, chunk in parts)
@@ -189,11 +217,13 @@ def render() -> None:
             f"@keyframes l{index}{{0%,{appear:.2f}%{{opacity:0}}"
             f"{min(appear + 1.2, 97):.2f}%,97%{{opacity:1}}100%{{opacity:0}}}}"
             f".l{index}{{animation:l{index} {total:.1f}s linear infinite}}")
-        rows.append(f'<text class="l{index}" x="{PAD}" y="{y}" xml:space="preserve">{text}</text>')
+        rows.append(f'<text class="l{index}" x="{PAD}" y="{TOP + LINE * (index + 1)}" '
+                    f'xml:space="preserve">{text}</text>')
         t += STEP
-    caption = (f"> lines: live calls to {transcript['endpoint']} (server {transcript['server']}, "
-               f"{transcript['captured'][:10]}), shortened. agent lines: the scenario.")
-    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{height}" viewBox="0 0 {WIDTH} {height}" role="img" aria-labelledby="title desc">
+    captions = "\n".join(
+        f'<text class="cap" x="{PAD}" y="{height - 16 - 18 * (len(caption) - 1 - n)}">{html.escape(c)}</text>'
+        for n, c in enumerate(caption))
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-labelledby="title desc">
 <title id="title">nobrainer-tech-flow done gate demo</title>
 <desc id="desc">An agent says all tests pass. The Flow MCP server reads the test log, rejects the claim and answers NOT_DONE. After a real fix and a passing run it answers DONE.</desc>
 <style>
@@ -205,16 +235,22 @@ text{{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",m
 {"".join(keyframes)}
 @media (prefers-reduced-motion:reduce){{text{{animation:none!important;opacity:1!important}}}}
 </style>
-<rect x="1" y="1" width="{WIDTH - 2}" height="{height - 2}" rx="14" fill="{PAPER}" stroke="{RULE}" stroke-width="2"/>
-<path d="M1 44H{WIDTH - 1}" stroke="{RULE}" stroke-width="2"/>
+<rect x="1" y="1" width="{width - 2}" height="{height - 2}" rx="14" fill="{PAPER}" stroke="{RULE}" stroke-width="2"/>
+<path d="M1 44H{width - 1}" stroke="{RULE}" stroke-width="2"/>
 <circle cx="26" cy="23" r="6" fill="#f04a14"/><circle cx="46" cy="23" r="6" fill="{RULE}"/><circle cx="66" cy="23" r="6" fill="{RULE}"/>
-<text class="ttl" x="{WIDTH // 2}" y="28" text-anchor="middle">done gate · mcp.nobrainer.tech</text>
+<text class="ttl" x="{width // 2 + 20}" y="28" text-anchor="middle">done gate · mcp.nobrainer.tech</text>
 {chr(10).join(rows)}
-<text class="cap" x="{PAD}" y="{height - 16}">{html.escape(caption)}</text>
+{captions}
 </svg>
 """
-    SVG.write_text(svg, encoding="utf-8")
-    print(f"wrote {SVG.relative_to(ROOT)} ({len(svg)} bytes, {total:.1f}s loop)")
+    path.write_text(svg, encoding="utf-8")
+    print(f"wrote {path.relative_to(ROOT)} ({len(svg)} bytes, {total:.1f}s loop)")
+
+
+def render() -> None:
+    transcript = json.loads(TRANSCRIPT.read_text(encoding="utf-8"))
+    render_variant(transcript, SVG, 860, 86)
+    render_variant(transcript, NARROW_SVG, 500, 48)
 
 
 def main() -> int:

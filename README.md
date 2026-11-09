@@ -34,8 +34,8 @@ claude mcp add --transport http nobrainer-tech-flow https://mcp.nobrainer.tech/m
 ```
 
 In Codex: `codex mcp add nobrainer-tech-flow --url https://mcp.nobrainer.tech/mcp`.
-Cursor, VS Code, ChatGPT and others: [setup per client](mcp/README.md#install). Then give
-your agent a task with a checkable result:
+Cursor, VS Code, ChatGPT and other clients: [setup steps](mcp/README.md#install) (verified so
+far in Claude Code, Codex CLI and OpenCode). Then give your agent a task with a checkable result:
 
 > Use NoBrainer Tech Flow. Fix the failing test in this project. Done means the test suite passes.
 
@@ -50,7 +50,10 @@ npx nobrainer-tech-flow --client claude --apply   # install
 Plugins for Claude Code and Codex, and a Git install for any agent: [Install safely](#install-safely).
 
 <p align="center">
-  <img src="assets/done-gate-demo.svg" width="860" alt="Terminal demo. The agent says: Fixed the date parser. All tests pass. Done. start_flow_task returns path QUICK with item AC01, a local test. check_flow_evidence gets exit 0 with a log that ends 1 failed, 4 passed, and answers REJECTED, EXIT_OUTPUT_CONFLICT. check_flow_done answers NOT_DONE, missing AC01. After a fix, a run with 5 passed is ACCEPTED and check_flow_done answers DONE with a receipt."><br>
+  <picture>
+    <source media="(max-width: 600px)" srcset="assets/done-gate-demo-narrow.svg">
+    <img src="assets/done-gate-demo.svg" width="860" alt="Terminal demo. The agent says: Fixed the date parser. All tests pass. Done. start_flow_task returns path QUICK with item AC01, a local test. check_flow_evidence gets exit 0 with a log that ends 1 failed, 4 passed, and answers REJECTED, EXIT_OUTPUT_CONFLICT. check_flow_done answers NOT_DONE, missing AC01. After a fix, a run with 5 passed is ACCEPTED and check_flow_done answers DONE with a receipt.">
+  </picture><br>
   <sub>The agent claims the tests pass; the log says <code>1 failed</code>. The done gate rejects the claim until a real passing run arrives.
   Live calls to <code>mcp.nobrainer.tech</code>, rebuilt by <a href="docs/demo/done_gate_demo.py"><code>docs/demo/done_gate_demo.py</code></a> from the <a href="docs/demo/done-gate-transcript.json">recorded transcript</a>.</sub>
 </p>

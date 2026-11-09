@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="743" viewBox="0 0 500 743" role="img" aria-labelledby="title desc">
+<title id="title">nobrainer-tech-flow done gate demo</title>
+<desc id="desc">An agent says all tests pass. The Flow MCP server reads the test log, rejects the claim and answers NOT_DONE. After a real fix and a passing run it answers DONE.</desc>
+<style>
+text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:15.5px;fill:#151515}
+.muted{fill:#5f5a52}.ink{fill:#151515}.prompt{fill:#2f55d4;font-weight:700}.cmd{fill:#2f55d4;font-weight:700}
+.bad{fill:#b8380d;font-weight:700}.good{fill:#2f55d4;font-weight:700}
+.cap{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12.5px;fill:#5f5a52}
+.ttl{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;font-size:13.5px;fill:#5f5a52;font-weight:600}
+@keyframes l0{0%,4.12%{opacity:0}5.32%,97%{opacity:1}100%{opacity:0}}.l0{animation:l0 24.2s linear infinite}@keyframes l1{0%,5.36%{opacity:0}6.56%,97%{opacity:1}100%{opacity:0}}.l1{animation:l1 24.2s linear infinite}@keyframes l3{0%,11.13%{opacity:0}12.33%,97%{opacity:1}100%{opacity:0}}.l3{animation:l3 24.2s linear infinite}@keyframes l4{0%,13.81%{opacity:0}15.01%,97%{opacity:1}100%{opacity:0}}.l4{animation:l4 24.2s linear infinite}@keyframes l6{0%,19.59%{opacity:0}20.79%,97%{opacity:1}100%{opacity:0}}.l6{animation:l6 24.2s linear infinite}@keyframes l7{0%,20.82%{opacity:0}22.02%,97%{opacity:1}100%{opacity:0}}.l7{animation:l7 24.2s linear infinite}@keyframes l8{0%,22.68%{opacity:0}23.88%,97%{opacity:1}100%{opacity:0}}.l8{animation:l8 24.2s linear infinite}@keyframes l9{0%,24.54%{opacity:0}25.74%,97%{opacity:1}100%{opacity:0}}.l9{animation:l9 24.2s linear infinite}@keyframes l10{0%,28.25%{opacity:0}29.45%,97%{opacity:1}100%{opacity:0}}.l10{animation:l10 24.2s linear infinite}@keyframes l11{0%,30.93%{opacity:0}32.13%,97%{opacity:1}100%{opacity:0}}.l11{animation:l11 24.2s linear infinite}@keyframes l13{0%,36.70%{opacity:0}37.90%,97%{opacity:1}100%{opacity:0}}.l13{animation:l13 24.2s linear infinite}@keyframes l14{0%,40.41%{opacity:0}41.61%,97%{opacity:1}100%{opacity:0}}.l14{animation:l14 24.2s linear infinite}@keyframes l15{0%,43.09%{opacity:0}44.29%,97%{opacity:1}100%{opacity:0}}.l15{animation:l15 24.2s linear infinite}@keyframes l16{0%,44.33%{opacity:0}45.53%,97%{opacity:1}100%{opacity:0}}.l16{animation:l16 24.2s linear infinite}@keyframes l18{0%,50.10%{opacity:0}51.30%,97%{opacity:1}100%{opacity:0}}.l18{animation:l18 24.2s linear infinite}@keyframes l19{0%,51.34%{opacity:0}52.54%,97%{opacity:1}100%{opacity:0}}.l19{animation:l19 24.2s linear infinite}@keyframes l20{0%,56.70%{opacity:0}57.90%,97%{opacity:1}100%{opacity:0}}.l20{animation:l20 24.2s linear infinite}@keyframes l21{0%,60.41%{opacity:0}61.61%,97%{opacity:1}100%{opacity:0}}.l21{animation:l21 24.2s linear infinite}@keyframes l22{0%,65.77%{opacity:0}66.97%,97%{opacity:1}100%{opacity:0}}.l22{animation:l22 24.2s linear infinite}@keyframes l23{0%,69.48%{opacity:0}70.68%,97%{opacity:1}100%{opacity:0}}.l23{animation:l23 24.2s linear infinite}@keyframes l24{0%,70.72%{opacity:0}71.92%,97%{opacity:1}100%{opacity:0}}.l24{animation:l24 24.2s linear infinite}
+@media (prefers-reduced-motion:reduce){text{animation:none!important;opacity:1!important}}
+</style>
+<rect x="1" y="1" width="498" height="741" rx="14" fill="#fbf8f3" stroke="#e3dccf" stroke-width="2"/>
+<path d="M1 44H499" stroke="#e3dccf" stroke-width="2"/>
+<circle cx="26" cy="23" r="6" fill="#f04a14"/><circle cx="46" cy="23" r="6" fill="#e3dccf"/><circle cx="66" cy="23" r="6" fill="#e3dccf"/>
+<text class="ttl" x="270" y="28" text-anchor="middle">done gate · mcp.nobrainer.tech</text>
+<text class="l0" x="28" y="75" xml:space="preserve"><tspan class="muted">agent  </tspan><tspan class="ink">Fixed the date parser. All tests pass.</tspan></text>
+<text class="l1" x="28" y="100" xml:space="preserve"><tspan class="muted">    </tspan><tspan class="ink">Done.</tspan></text>
+<text class="l3" x="28" y="150" xml:space="preserve"><tspan class="prompt">&gt; </tspan><tspan class="cmd">start_flow_task</tspan><tspan class="muted"> DoD: &quot;new unit test passes&quot;</tspan></text>
+<text class="l4" x="28" y="175" xml:space="preserve"><tspan class="muted">  path </tspan><tspan class="ink">QUICK</tspan><tspan class="muted">  AC01 </tspan><tspan class="ink">test, local</tspan><tspan class="muted">  next </tspan><tspan class="ink">DRIFT_CHECK</tspan></text>
+<text class="l6" x="28" y="225" xml:space="preserve"><tspan class="prompt">&gt; </tspan><tspan class="cmd">check_flow_evidence</tspan><tspan class="muted"> AC01 pytest -q exit=0,</tspan></text>
+<text class="l7" x="28" y="250" xml:space="preserve"><tspan class="muted">    log:</tspan></text>
+<text class="l8" x="28" y="275" xml:space="preserve"><tspan class="muted">    FAILED tests/test_dates.py::test_feb_30</tspan></text>
+<text class="l9" x="28" y="300" xml:space="preserve"><tspan class="muted">    ===== 1 failed, 4 passed in 0.21s =====</tspan></text>
+<text class="l10" x="28" y="325" xml:space="preserve"><tspan class="muted">  AC01 </tspan><tspan class="bad">REJECTED</tspan><tspan class="muted">  EXIT_OUTPUT_CONFLICT</tspan></text>
+<text class="l11" x="28" y="350" xml:space="preserve"><tspan class="muted">  exit 0 but a summary reports failed tests.</tspan></text>
+<text class="l13" x="28" y="400" xml:space="preserve"><tspan class="prompt">&gt; </tspan><tspan class="cmd">check_flow_done</tspan></text>
+<text class="l14" x="28" y="425" xml:space="preserve"><tspan class="bad">  NOT_DONE</tspan><tspan class="muted">  missing AC01</tspan></text>
+<text class="l15" x="28" y="450" xml:space="preserve"><tspan class="muted">  needs test evidence, level local; the last</tspan></text>
+<text class="l16" x="28" y="475" xml:space="preserve"><tspan class="muted">    record failed or was inconsistent</tspan></text>
+<text class="l18" x="28" y="525" xml:space="preserve"><tspan class="muted">agent  </tspan><tspan class="ink">Fixed the leap-day check. Running the</tspan></text>
+<text class="l19" x="28" y="550" xml:space="preserve"><tspan class="muted">    </tspan><tspan class="ink">tests again.</tspan></text>
+<text class="l20" x="28" y="575" xml:space="preserve"><tspan class="prompt">&gt; </tspan><tspan class="cmd">check_flow_evidence</tspan><tspan class="muted"> AC01 pytest -q: 5 passed</tspan></text>
+<text class="l21" x="28" y="600" xml:space="preserve"><tspan class="muted">  AC01 </tspan><tspan class="good">ACCEPTED</tspan><tspan class="muted">  local  digest 13848f53</tspan></text>
+<text class="l22" x="28" y="625" xml:space="preserve"><tspan class="prompt">&gt; </tspan><tspan class="cmd">check_flow_done</tspan></text>
+<text class="l23" x="28" y="650" xml:space="preserve"><tspan class="good">  DONE</tspan><tspan class="muted">  receipt nbr1.&lt;receipt&gt;  next</tspan></text>
+<text class="l24" x="28" y="675" xml:space="preserve"><tspan class="muted">    </tspan><tspan class="ink">draft_flow_handoff</tspan></text>
+<text class="cap" x="28" y="709">&gt; lines: live calls to https://mcp.nobrainer.tech/mcp</text>
+<text class="cap" x="28" y="727">(server 1.0.0+flow.2.11.0, 2026-11-09), shortened. agent lines: the scenario.</text>
+</svg>
