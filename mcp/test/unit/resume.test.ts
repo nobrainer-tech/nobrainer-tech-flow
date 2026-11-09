@@ -6,7 +6,8 @@ import { runTool } from "../../src/server.ts";
 import { TOOLS } from "../../src/tools/index.ts";
 import { memoryLimiter } from "../../src/ratelimit.ts";
 import { getCard, FLOW_VERSION } from "../../src/content/cards.ts";
-import { CONTRACT_PREFIX, LIFETIME_S, MAX_AGE_S, decodeToken } from "../../src/token.ts";
+import { CONTRACT_PREFIX, LIFETIME_S, MAX_AGE_S, decodeToken, type Item, type TokenState } from "../../src/token.ts";
+import { cardForState } from "../../src/tools/step.ts";
 import type { ToolContext } from "../../src/tools/common.ts";
 
 const DAY = 86_400;
@@ -116,6 +117,48 @@ test("NEXT_SAFE_ACTION follows the token state: open work, done gate, repeated f
   const stuck = (await resume(token)).block;
   assert.deepEqual(stuck.rows, ["- AC01 test, local: FAILED"]);
   assert.match(stuck.next!, /nobrainer-rca/);
+});
+
+test("a stale run that failed twice before it passed needs a rerun, not an RCA", async () => {
+  clock = T0;
+  let token = (await call("start_flow_task", { outcome: "x", dod: [{ text: "pytest passes", proof: "test" }, { text: "src/a.ts changed", proof: "file" }] })).json.token;
+  const send = async (evidence: unknown[]) => (await call("check_flow_evidence", { token, evidence })).json;
+  for (let i = 0; i < 2; i++) token = (await send([{ item: "AC01", kind: "test", cmd: "pytest", exit: 1, out: FAIL }])).token;
+  token = (await send([
+    { item: "AC01", kind: "test", cmd: "pytest", exit: 0, out: PASS }, { item: "AC02", kind: "file", path: "src/a.ts", sha256: "1".repeat(64) },
+  ])).token;
+  assert.equal((await resume(token)).block.next, "call check_flow_done");
+  token = (await send([{ item: "AC02", kind: "file", path: "src/a.ts", sha256: "2".repeat(64) }])).token;
+  const b = (await resume(token)).block;
+  assert.deepEqual(b.rows, ["- AC01 test, local: STALE", "- AC02 file, static: ACCEPTED"]);
+  assert.match(b.next!, /check_flow_evidence/);
+  assert.doesNotMatch(b.next!, /nobrainer-rca/);
+});
+
+test("a token from before 2.11.1 with a reopened run that once failed goes to VERIFY, not AUTOPILOT", () => {
+  // The old server reset a run invalidated at a full epoch to OPEN and kept its failure count.
+  const open = (failures: number): Item => ({ proof: "test", level: "local", failures, status: "OPEN", kind: null, unchecked: false, epoch: 0, digest: Buffer.alloc(4) });
+  const state = (items: Item[]): TokenState => ({
+    kid: 7, full: false, verdict: "NONE", risks: [], contract: Buffer.alloc(8), created: T0, expires: T0 + DAY, flow: [2, 11, 0], epoch: 255, items, files: [],
+  });
+  assert.equal(cardForState(state([open(1), open(0)])).id, "stage:VERIFY");
+  assert.equal(cardForState(state([open(0), open(0)])).id, "stage:AUTOPILOT");
+});
+
+test("past 255 file changes, check_flow_done still lists a later-changed run under stale", async () => {
+  clock = T0;
+  let token = (await call("start_flow_task", { outcome: "x", dod: [{ text: "pytest passes", proof: "test" }, { text: "src/a.ts changed", proof: "file" }] })).json.token;
+  const send = async (evidence: unknown[]) => (await call("check_flow_evidence", { token, evidence })).json;
+  const file = (n: number) => ({ item: "AC02", kind: "file", path: "src/a.ts", sha256: n.toString(16).padStart(8, "0").repeat(8) });
+  for (let n = 0; n <= 255; n++) token = (await send([file(n)])).token; // one registration, then 255 changes
+  token = (await send([{ item: "AC01", kind: "test", cmd: "pytest", exit: 0, out: PASS }])).token;
+  assert.equal((await resume(token)).block.next, "call check_flow_done");
+  const changed = await send([file(999)]);
+  assert.deepEqual(changed.stale, ["AC01"]);
+  const done = (await call("check_flow_done", { token: changed.token })).json;
+  assert.equal(done.verdict, "NOT_DONE");
+  assert.deepEqual(done.stale.map((s: { item: string }) => s.item), ["AC01"]);
+  assert.deepEqual(done.missing, []);
 });
 
 test("each resume renews the contract by 30 days, capped at 90 days after creation", async () => {

@@ -25,7 +25,7 @@ export type Item = {
   status: Status;
   kind: Proof | null; // kind of the accepting (or last failing) record
   unchecked: boolean; // receipts only
-  epoch: number; // change epoch at acceptance
+  epoch: number; // change epoch at acceptance; moved one back when a file changes at a full contract epoch
   digest: Buffer; // 4 bytes of the record digest, zeros when none
 };
 

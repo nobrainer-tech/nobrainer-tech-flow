@@ -1,6 +1,6 @@
 // check_flow_done (spec 5.4).
 import * as z from "zod";
-import { isCurrent, isStale } from "../evidence/checks.ts";
+import { itemState } from "../evidence/checks.ts";
 import { CONTRACT_PREFIX, RECEIPT_PREFIX, encodeToken, itemId, renew } from "../token.ts";
 import { checkItems, itemField, openToken, tokenField, type ToolDef } from "./common.ts";
 
@@ -24,15 +24,15 @@ export const doneTool: ToolDef<typeof input> = {
     const unchecked: string[] = [];
     state.items.forEach((it, i) => {
       const id = itemId(i);
-      it.unchecked = false;
-      if (isCurrent(it, state.epoch)) return;
-      if (listed.has(id)) {
-        it.unchecked = true;
+      const st = itemState(it, state.epoch);
+      it.unchecked = st !== "ACCEPTED" && listed.has(id);
+      if (st === "ACCEPTED") return;
+      if (it.unchecked) {
         unchecked.push(id);
-      } else if (isStale(it, state.epoch)) {
+      } else if (st === "STALE") {
         stale.push({ item: id, why: "a registered file changed after this check ran; re-run it" });
       } else {
-        const failed = it.status === "FAILED" ? "; the last record failed or was inconsistent" : "";
+        const failed = st === "FAILED" ? "; the last record failed or was inconsistent" : "";
         missing.push({ item: id, need: `${it.proof} evidence, level ${it.level}${failed}` });
       }
     });
