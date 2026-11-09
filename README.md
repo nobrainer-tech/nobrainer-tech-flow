@@ -8,28 +8,77 @@
 
 <p align="center">
   <strong>From task to done. See what was delivered.</strong><br>
-  For developers whose coding agent just said "Done."
+  For developers whose coding agent said "Done." without proof.
 </p>
 
 <p align="center">
-  <a href="https://youtu.be/OflTMvq_Pww"><img src="assets/prove-it-video-poster.jpg" width="720" alt="Play PROVE IT, a song for every AI agent that says done: Flo and MC P, Episode 1, on YouTube"></a><br>
+  Make your coding agent prove "done". Flow checks the claim against the evidence,
+  answers <code>NOT_DONE</code> when the test log disagrees, and ends each task with a handoff:
+  what was delivered, what was checked and what was not.<br>
+  One workflow with 18 modules for the whole <a href="#the-ai-native-sdlc-in-one-workflow">AI-native SDLC</a>,
+  in Claude Code, Codex, Cursor and five more coding agents. Free, MIT.
+</p>
+
+<p align="center">
+  <a href="https://github.com/nobrainer-tech/nobrainer-tech-flow/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/nobrainer-tech/nobrainer-tech-flow?style=flat&logo=github&color=3B65F0"></a>
+  <a href="https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/nobrainer-tech/nobrainer-tech-flow"></a>
+  <a href="https://github.com/nobrainer-tech/nobrainer-tech-flow/actions/workflows/validate.yml"><img alt="Validation" src="https://github.com/nobrainer-tech/nobrainer-tech-flow/actions/workflows/validate.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-27d8cf.svg"></a>
+</p>
+
+**Try it in 60 seconds, nothing to install.** Add the free remote MCP server: no sign-in,
+six read-only tools, it stores nothing. In Claude Code:
+
+```sh
+claude mcp add --transport http nobrainer-tech-flow https://mcp.nobrainer.tech/mcp
+```
+
+In Codex: `codex mcp add nobrainer-tech-flow --url https://mcp.nobrainer.tech/mcp`.
+Cursor, VS Code, ChatGPT and others: [setup per client](mcp/README.md#install). Then give
+your agent a task with a checkable result:
+
+> Use NoBrainer Tech Flow. Fix the failing test in this project. Done means the test suite passes.
+
+**Install all 18 modules** (Node 18+ and Python 3.11+). The first command only previews:
+
+```sh
+npx nobrainer-tech-flow --client claude           # preview: changes nothing
+npx nobrainer-tech-flow --client claude --apply   # install
+```
+
+`--client` is `claude`, `codex`, `opencode` or `copilot`; undo with `--undo --apply`.
+Plugins for Claude Code and Codex, and a Git install for any agent: [Install safely](#install-safely).
+
+<p align="center">
+  <img src="assets/done-gate-demo.svg" width="860" alt="Terminal demo. The agent says: Fixed the date parser. All tests pass. Done. start_flow_task returns path QUICK with item AC01, a local test. check_flow_evidence gets exit 0 with a log that ends 1 failed, 4 passed, and answers REJECTED, EXIT_OUTPUT_CONFLICT. check_flow_done answers NOT_DONE, missing AC01. After a fix, a run with 5 passed is ACCEPTED and check_flow_done answers DONE with a receipt."><br>
+  <sub>The agent claims the tests pass; the log says <code>1 failed</code>. The done gate rejects the claim until a real passing run arrives.
+  Live calls to <code>mcp.nobrainer.tech</code>, rebuilt by <a href="docs/demo/done_gate_demo.py"><code>docs/demo/done_gate_demo.py</code></a> from the <a href="docs/demo/done-gate-transcript.json">recorded transcript</a>.</sub>
+</p>
+
+**Before and after.** Without Flow, the agent's last message is its word:
+
+```text
+Fixed the date parser. All tests pass. Done.
+```
+
+With Flow, the task ends with the handoff the server drafts from its done receipt, filled in by the agent (shortened):
+
+```text
+## Delivered
+parse('2026-02-30') now raises ValueError.
+## Proof
+- AC01 test, local, accepted (digest 13848f53): pytest -q, 5 passed
+## Not checked
+- Nothing
+Evidence was reported by the agent; the server checked consistency, not truth.
+```
+
+<p align="center">
+  <a href="https://youtu.be/OflTMvq_Pww"><img src="assets/prove-it-video-poster.jpg" width="420" alt="Play PROVE IT, a song for every AI agent that says done: Flo and MC P, Episode 1, on YouTube"></a><br>
   <sub>▶ <a href="https://youtu.be/OflTMvq_Pww"><strong>PROVE IT</strong></a>: a song for every AI agent that says done. Flo &amp; MC P, Episode 1 (2 min, YouTube).</sub>
 </p>
 
 <p align="center">
-  One workflow with 18 modules. Your coding agent does the work and checks it.
-  Then it hands over the evidence: what was delivered, what was checked and what was not.<br>
-  It runs the whole <a href="#the-ai-native-sdlc-in-one-workflow">AI-native SDLC</a>: plan, design, build, test, deploy, maintain.
-</p>
-
-<p align="center">
-  <a href="https://github.com/nobrainer-tech/nobrainer-tech-flow/actions/workflows/validate.yml"><img alt="Validation" src="https://github.com/nobrainer-tech/nobrainer-tech-flow/actions/workflows/validate.yml/badge.svg"></a>
-  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-27d8cf.svg"></a>
-  <a href="https://github.com/nobrainer-tech/nobrainer-tech-flow/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/nobrainer-tech/nobrainer-tech-flow"></a>
-</p>
-
-<p align="center">
-  <a href="#install-safely"><strong>Install</strong></a> ·
   <a href="https://nobrainer.tech/flow/?nb_from=github-readme">Launch page</a> ·
   <a href="https://nobrainer.tech/flow/compare/?nb_from=github-readme">Compare 50+ tools</a> ·
   <a href="https://nobrainer.tech/flow/changelog/?nb_from=github-readme">Public verification notes</a> ·
@@ -38,25 +87,11 @@
 
 ## Where it runs
 
-<p align="center"><sub><strong>Coding agents</strong>: all 18 modules</sub><br>
-  <a href="docs/INSTALL.md#claude-code"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-3B65F0?logo=claude&style=for-the-badge&logoColor=white"></a>
-  <a href="docs/INSTALL.md#codex"><img alt="Codex" src="https://img.shields.io/badge/Codex-3B65F0?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTIuNiA0LjYgOS45IDEybC03LjMgNy40TC45IDE3LjcgNi42IDEyIC45IDYuM3pNMTEgMTcuMmgxMnYyLjRIMTF6Ii8%2BPC9zdmc%2B&style=for-the-badge&logoColor=white"></a>
-  <a href="docs/INSTALL.md#cursor"><img alt="Cursor" src="https://img.shields.io/badge/Cursor-3B65F0?logo=cursor&style=for-the-badge&logoColor=white"></a>
-  <a href="docs/INSTALL.md#github-copilot-cli-and-shared-agent-skills"><img alt="GitHub Copilot CLI" src="https://img.shields.io/badge/GitHub_Copilot_CLI-3B65F0?logo=githubcopilot&style=for-the-badge&logoColor=white"></a>
-  <br>
-  <a href="docs/INSTALL.md#gemini-cli"><img alt="Gemini CLI" src="https://img.shields.io/badge/Gemini_CLI-3B65F0?logo=googlegemini&style=for-the-badge&logoColor=white"></a>
-  <a href="docs/INSTALL.md#opencode"><img alt="OpenCode" src="https://img.shields.io/badge/OpenCode-3B65F0?logo=opencode&style=for-the-badge&logoColor=white"></a>
-  <a href="docs/INSTALL.md#kimi-code"><img alt="Kimi Code" src="https://img.shields.io/badge/Kimi_Code-3B65F0?logo=kimi&style=for-the-badge&logoColor=white"></a>
-  <a href="docs/INSTALL.md#pi"><img alt="Pi" src="https://img.shields.io/badge/Pi-3B65F0?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTIuNiA0LjYgOS45IDEybC03LjMgNy40TC45IDE3LjcgNi42IDEyIC45IDYuM3pNMTEgMTcuMmgxMnYyLjRIMTF6Ii8%2BPC9zdmc%2B&style=for-the-badge&logoColor=white"></a>
-</p>
-<p align="center"><sub><strong>Packages</strong></sub><br>
-  <a href="https://www.npmjs.com/package/nobrainer-tech-flow"><img alt="npm: npx nobrainer-tech-flow" src="https://img.shields.io/badge/npx_nobrainer--tech--flow-F04A14?logo=npm&style=for-the-badge&logoColor=white"></a>
-  <a href="docs/CHAT_PLUGINS.md"><img alt="Claude and ChatGPT plugin ZIP" src="https://img.shields.io/badge/Claude_%26_ChatGPT_plugin-F04A14?logo=claude&style=for-the-badge&logoColor=white"></a>
-  <a href="#install-safely"><img alt="Git install with preview and undo" src="https://img.shields.io/badge/Git_install-F04A14?logo=git&style=for-the-badge&logoColor=white"></a>
-</p>
-<p align="center"><sub><strong>No install</strong>: free remote MCP server, any MCP client</sub><br>
-  <a href="mcp/README.md#install"><img alt="MCP server mcp.nobrainer.tech" src="https://img.shields.io/badge/MCP-mcp.nobrainer.tech%2Fmcp-151515?logo=modelcontextprotocol&style=for-the-badge&logoColor=white&labelColor=3B65F0"></a>
-</p>
+| Channel | Where |
+|---|---|
+| Coding agents, all 18 modules | [Claude Code](docs/INSTALL.md#claude-code) · [Codex](docs/INSTALL.md#codex) · [Cursor](docs/INSTALL.md#cursor) · [GitHub Copilot CLI](docs/INSTALL.md#github-copilot-cli-and-shared-agent-skills) · [Gemini CLI](docs/INSTALL.md#gemini-cli) · [OpenCode](docs/INSTALL.md#opencode) · [Kimi Code](docs/INSTALL.md#kimi-code) · [Pi](docs/INSTALL.md#pi) |
+| Packages | [npm: `npx nobrainer-tech-flow`](https://www.npmjs.com/package/nobrainer-tech-flow) · [Claude and ChatGPT plugin ZIP](docs/CHAT_PLUGINS.md) · [Git install with preview and undo](#install-safely) |
+| No install | [Free remote MCP server `mcp.nobrainer.tech/mcp`](mcp/README.md#install), any MCP client |
 
 The MCP server is verified in Claude Code, Codex CLI and OpenCode. The
 [MCP server README](mcp/README.md#install) has setup steps for Claude.ai, ChatGPT, Cursor,

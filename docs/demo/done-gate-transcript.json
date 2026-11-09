@@ -1,0 +1,141 @@
+{
+ "endpoint": "https://mcp.nobrainer.tech/mcp",
+ "protocol": "2025-06-18",
+ "server": "1.0.0+flow.2.11.0",
+ "captured": "2026-11-09T21:29:34Z",
+ "calls": [
+  {
+   "tool": "start_flow_task",
+   "arguments": {
+    "outcome": "parse('2026-02-30') raises ValueError for library users",
+    "dod": [
+     {
+      "text": "new unit test for 2026-02-30 passes",
+      "proof": "test"
+     }
+    ]
+   },
+   "result": {
+    "path": "QUICK",
+    "flow_version": "2.11.0",
+    "contract": "949b2e72",
+    "items": [
+     {
+      "id": "AC01",
+      "proof": "test",
+      "level": "local"
+     }
+    ],
+    "modules": [],
+    "next": {
+     "stage": "DRIFT_CHECK",
+     "rules": [
+      "Inspect the actual inputs, instructions and required capabilities; for project work include dirty state, callers, tests and existing plan/spec.",
+      "Prior summaries, wiki and worker reports are context, not proof"
+     ],
+     "source": "skills/nobrainer-tech-flow/SKILL.md#drift_check-establish-current-truth"
+    },
+    "token": "nbf1.<token>"
+   }
+  },
+  {
+   "tool": "check_flow_evidence",
+   "arguments": {
+    "evidence": [
+     {
+      "item": "AC01",
+      "kind": "test",
+      "cmd": "pytest -q",
+      "exit": 0,
+      "out": "tests/test_dates.py ....F\nFAILED tests/test_dates.py::test_feb_30 - DID NOT RAISE ValueError\n========================= 1 failed, 4 passed in 0.21s ========================="
+     }
+    ],
+    "token": "nbf1.<token>"
+   },
+   "result": {
+    "results": [
+     {
+      "item": "AC01",
+      "verdict": "REJECTED",
+      "code": "EXIT_OUTPUT_CONFLICT",
+      "why": "AC01: exit 0 but a summary reports failed tests."
+     }
+    ],
+    "open": [
+     "AC01"
+    ],
+    "token": "nbf1.<token>"
+   }
+  },
+  {
+   "tool": "check_flow_done",
+   "arguments": {
+    "token": "nbf1.<token>"
+   },
+   "result": {
+    "verdict": "NOT_DONE",
+    "missing": [
+     {
+      "item": "AC01",
+      "need": "test evidence, level local; the last record failed or was inconsistent"
+     }
+    ],
+    "stale": [],
+    "unchecked": []
+   }
+  },
+  {
+   "tool": "check_flow_evidence",
+   "arguments": {
+    "evidence": [
+     {
+      "item": "AC01",
+      "kind": "test",
+      "cmd": "pytest -q",
+      "exit": 0,
+      "out": "tests/test_dates.py .....\n============================== 5 passed in 0.18s ===============================",
+      "passed": 5,
+      "failed": 0
+     }
+    ],
+    "token": "nbf1.<token>"
+   },
+   "result": {
+    "results": [
+     {
+      "item": "AC01",
+      "verdict": "ACCEPTED",
+      "level": "local",
+      "digest": "13848f53"
+     }
+    ],
+    "open": [],
+    "token": "nbf1.<token>"
+   }
+  },
+  {
+   "tool": "check_flow_done",
+   "arguments": {
+    "token": "nbf1.<token>"
+   },
+   "result": {
+    "verdict": "DONE",
+    "missing": [],
+    "stale": [],
+    "unchecked": [],
+    "receipt": "nbr1.<receipt>",
+    "next": "draft_flow_handoff"
+   }
+  },
+  {
+   "tool": "draft_flow_handoff",
+   "arguments": {
+    "receipt": "nbr1.<receipt>"
+   },
+   "result": {
+    "verdict": "DONE",
+    "markdown": "## Delivered\n<one sentence: the observable outcome>\n\n## Proof\n- AC01 test, local, accepted (digest 13848f53): <command and result>\n\n## Not checked\n- Nothing\n\n## Decisions left to you\n<owner decisions, or 'None'>\n\n## Next action\n<one action, or 'None'>\n\nContract 949b2e72, Flow 2.11.0. Evidence was reported by the agent; the server checked consistency, not truth."
+   }
+  }
+ ]
+}
