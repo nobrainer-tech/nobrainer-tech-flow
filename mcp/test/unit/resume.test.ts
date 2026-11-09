@@ -6,7 +6,8 @@ import { runTool } from "../../src/server.ts";
 import { TOOLS } from "../../src/tools/index.ts";
 import { memoryLimiter } from "../../src/ratelimit.ts";
 import { getCard, FLOW_VERSION } from "../../src/content/cards.ts";
-import { CONTRACT_PREFIX, LIFETIME_S, MAX_AGE_S, decodeToken } from "../../src/token.ts";
+import { CONTRACT_PREFIX, LIFETIME_S, MAX_AGE_S, decodeToken, type Item, type TokenState } from "../../src/token.ts";
+import { cardForState } from "../../src/tools/step.ts";
 import type { ToolContext } from "../../src/tools/common.ts";
 
 const DAY = 86_400;
@@ -132,6 +133,16 @@ test("a stale run that failed twice before it passed needs a rerun, not an RCA",
   assert.deepEqual(b.rows, ["- AC01 test, local: STALE", "- AC02 file, static: ACCEPTED"]);
   assert.match(b.next!, /check_flow_evidence/);
   assert.doesNotMatch(b.next!, /nobrainer-rca/);
+});
+
+test("a token from before 2.11.1 with a reopened run that once failed goes to VERIFY, not AUTOPILOT", () => {
+  // The old server reset a run invalidated at a full epoch to OPEN and kept its failure count.
+  const open = (failures: number): Item => ({ proof: "test", level: "local", failures, status: "OPEN", kind: null, unchecked: false, epoch: 0, digest: Buffer.alloc(4) });
+  const state = (items: Item[]): TokenState => ({
+    kid: 7, full: false, verdict: "NONE", risks: [], contract: Buffer.alloc(8), created: T0, expires: T0 + DAY, flow: [2, 11, 0], epoch: 255, items, files: [],
+  });
+  assert.equal(cardForState(state([open(1), open(0)])).id, "stage:VERIFY");
+  assert.equal(cardForState(state([open(0), open(0)])).id, "stage:AUTOPILOT");
 });
 
 test("past 255 file changes, check_flow_done still lists a later-changed run under stale", async () => {

@@ -26,7 +26,8 @@ export function cardForState(state: TokenState): { id: StateCard; next?: string 
   // A stale run needs a rerun, whatever failed before it passed; only an item that is failing now goes to RCA.
   if (state.items.some((i, n) => states[n] === "FAILED" && i.failures >= 2)) return { id: "event:repeated_failure" };
   if (states.every((s) => s === "ACCEPTED")) return { id: "stage:RECEIVE_AUDIT", next: "check_flow_done" };
-  if (states.every((s) => s === "OPEN")) return { id: "stage:AUTOPILOT" };
+  // The failure count stays in the condition for tokens issued before 2.11.1, where a run reopened at a full epoch kept it.
+  if (state.items.every((i, n) => states[n] === "OPEN" && i.failures === 0)) return { id: "stage:AUTOPILOT" };
   return { id: "stage:VERIFY" };
 }
 
