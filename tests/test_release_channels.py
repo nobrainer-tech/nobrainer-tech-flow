@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import unittest
+import urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -13,12 +14,15 @@ SPEC.loader.exec_module(channels)
 
 
 def fake(version: str, *, mcp: str | None = None, changelog: str | None = None, npm: str | None = None, prs=(),
-         registry: list[tuple[str, str]] | None = None):
+         registry: tuple[str, str] | None = (channels.REGISTRY_NAME, "")):
     def get(url: str, body, headers) -> str:
-        if url == channels.REGISTRY_URL:
-            listed = registry if registry is not None else [(channels.REGISTRY_NAME, version)]
-            return json.dumps({"servers": [{"server": {"name": name, "version": listed_version}}
-                                           for name, listed_version in listed]})
+        if url.startswith(channels.REGISTRY_API):
+            # The probe must ask for this exact version; a search result page would not do.
+            assert url == channels.registry_url(version), url
+            if registry is None:
+                raise urllib.error.HTTPError(url, 404, "Not Found", None, None)
+            name, listed_version = registry
+            return json.dumps({"server": {"name": name, "version": listed_version or version}})
         if url.endswith(f"nobrainer-tech-flow/releases/tags/v{version}"):
             names = [f"nobrainer-tech-flow-{version}-plugin.zip", f"nobrainer-tech-flow-{version}.tgz"]
             return json.dumps({"draft": False, "assets": [{"name": n} for n in names]})
@@ -55,13 +59,20 @@ class ReleaseChannelTests(unittest.TestCase):
     def test_stale_npm_latest_fails(self) -> None:
         self.assertIn("npm", self.failures(npm="2.8.0"))
 
-    def test_a_registry_without_this_version_or_without_the_server_fails(self) -> None:
-        stale = self.failures(registry=[(channels.REGISTRY_NAME, "2.8.0")])
-        self.assertIn("2.8.0", stale["MCP Registry"])
-        # Another publisher's server with a similar name never counts as ours.
-        other = self.failures(registry=[("io.github.someone/nobrainer-tech-flow", "2.9.0")])
-        self.assertIn("is not listed", other["MCP Registry"])
-        self.assertIn("is not listed", self.failures(registry=[])["MCP Registry"])
+    def test_a_registry_without_this_version_fails(self) -> None:
+        self.assertIn("2.9.0 is not listed", self.failures(registry=None)["MCP Registry"])
+        # An answer for another version or another publisher's server never counts as ours.
+        self.assertIn("2.8.0", self.failures(registry=(channels.REGISTRY_NAME, "2.8.0"))["MCP Registry"])
+        other = self.failures(registry=("io.github.someone/nobrainer-tech-flow", "2.9.0"))
+        self.assertIn("io.github.someone", other["MCP Registry"])
+
+    def test_the_registry_probe_asks_for_the_exact_version(self) -> None:
+        # Searching would page through every historical version and miss a release on page two.
+        self.assertEqual(
+            "https://registry.modelcontextprotocol.io/v0.1/servers/"
+            "io.github.nobrainer-tech%2Fnobrainer-tech-flow/versions/2.9.0",
+            channels.registry_url("2.9.0"),
+        )
 
     def test_the_registry_entry_names_the_live_server_and_fits_the_registry_limits(self) -> None:
         entry = json.loads((ROOT / "mcp" / "server.json").read_text(encoding="utf-8"))

@@ -13,6 +13,8 @@ from __future__ import annotations
 import json
 import re
 import sys
+import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from typing import Callable
@@ -21,7 +23,7 @@ CANONICAL = "nobrainer-tech/nobrainer-tech-flow"
 NATIVE = "nobrainer-tech/nobrainer-tech-flow-plugin"
 MCP_URL = "https://mcp.nobrainer.tech/mcp"
 REGISTRY_NAME = "io.github.nobrainer-tech/nobrainer-tech-flow"
-REGISTRY_URL = "https://registry.modelcontextprotocol.io/v0.1/servers?search=nobrainer-tech-flow"
+REGISTRY_API = "https://registry.modelcontextprotocol.io/v0.1/servers/"
 CHANGELOG_URL = "https://nobrainer.tech/flow/changelog/"
 STALE_PR_AGE = timedelta(days=1)
 
@@ -60,13 +62,22 @@ def mcp_server(get: Fetch, version: str) -> str | None:
     return None if served.endswith(f"+flow.{version}") else f"server reports {served}"
 
 
+def registry_url(version: str) -> str:
+    """Exact server-version endpoint: a search would page through every historical version."""
+    return f"{REGISTRY_API}{urllib.parse.quote(REGISTRY_NAME, safe='')}/versions/{version}"
+
+
 def mcp_registry(get: Fetch, version: str) -> str | None:
     """The official MCP Registry entry (mcp/server.json, published by the Publish MCP Registry workflow)."""
-    listed = [entry["server"]["version"] for entry in json.loads(get(REGISTRY_URL, None, {}))["servers"]
-              if entry["server"]["name"] == REGISTRY_NAME]
-    if not listed:
-        return f"{REGISTRY_NAME} is not listed"
-    return None if version in listed else f"registry lists {', '.join(listed)}"
+    try:
+        server = json.loads(get(registry_url(version), None, {}))["server"]
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return f"{REGISTRY_NAME} {version} is not listed"
+        raise
+    if server.get("name") == REGISTRY_NAME and server.get("version") == version:
+        return None
+    return f"registry returned {server.get('name')} {server.get('version')}"
 
 
 def website_changelog(get: Fetch, version: str) -> str | None:
