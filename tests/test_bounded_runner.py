@@ -189,10 +189,12 @@ class BoundedRunnerTests(unittest.TestCase):
                 "p=subprocess.Popen([sys.executable,'-c','import time; time.sleep(30)']); "
                 "print(p.pid,flush=True); time.sleep(30)"
             )
+            # The wall limit must outlast two interpreter starts on a slow runner, or the
+            # command is killed before it prints the child pid (macOS CI, 2026-11-09).
             result, receipt_path = self.invoke(
                 Path(temporary),
                 [sys.executable, "-c", code],
-                wall="0.2",
+                wall="3",
             )
             receipt = self.read_receipt(receipt_path)
             child_pid = int(result.stdout.strip())
