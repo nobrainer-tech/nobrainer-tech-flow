@@ -37,12 +37,23 @@ export function recordDigest(r: EvidenceRecord): Buffer {
   return sha(parts.join("|")).subarray(0, 4);
 }
 
-/** Is an accepted item's proof stale because a registered file changed after it? */
-export function isStale(item: Item, epoch: number): boolean {
-  return item.status === "ACCEPTED" && (item.kind === "test" || item.kind === "command") && item.epoch < epoch;
+const isRun = (item: Item): boolean => item.kind === "test" || item.kind === "command";
+
+/**
+ * The four states of a DoD item. The token stores OPEN, ACCEPTED and FAILED; STALE is an accepted
+ * test or command result older than the contract's change epoch. Every reader asks this function.
+ */
+export type ItemState = "OPEN" | "ACCEPTED" | "STALE" | "FAILED";
+
+export function itemState(item: Item, epoch: number): ItemState {
+  if (item.status !== "ACCEPTED") return item.status;
+  return isRun(item) && item.epoch < epoch ? "STALE" : "ACCEPTED";
 }
 
-export const isCurrent = (item: Item, epoch: number): boolean => item.status === "ACCEPTED" && !isStale(item, epoch);
+/** Is an accepted item's proof stale because a registered file changed after it? */
+export const isStale = (item: Item, epoch: number): boolean => itemState(item, epoch) === "STALE";
+
+export const isCurrent = (item: Item, epoch: number): boolean => itemState(item, epoch) === "ACCEPTED";
 
 /** One identity per file: forward slashes, no empty or "." segments (".." is kept, then rejected). */
 function normalisePath(p: string): string {
@@ -51,12 +62,20 @@ function normalisePath(p: string): string {
   return (unix.startsWith("/") ? "/" : "") + segments.join("/");
 }
 
-/** Reopen every accepted test or command result (used when the change epoch cannot grow). */
+/** The one write to an item's verdict: the status with the record that produced it. */
+function settle(item: Item, status: "ACCEPTED" | "FAILED", r: EvidenceRecord, epoch: number): Buffer {
+  const digest = recordDigest(r);
+  Object.assign(item, { status, kind: r.kind, digest, epoch });
+  return digest;
+}
+
+/**
+ * The change epoch is one byte. When it is full, a further change cannot raise it, so every
+ * accepted test or command result moves one epoch back instead and reads as STALE like any other.
+ */
 function staleAllRuns(state: TokenState): void {
   for (const item of state.items) {
-    if (item.status === "ACCEPTED" && (item.kind === "test" || item.kind === "command")) {
-      Object.assign(item, { status: "OPEN", kind: null, digest: Buffer.alloc(4) });
-    }
+    if (item.status === "ACCEPTED" && isRun(item)) item.epoch = state.epoch - 1;
   }
 }
 
@@ -166,14 +185,12 @@ export function applyEvidence(state: TokenState, records: EvidenceRecord[]): Evi
       results.push({ item: id, verdict: "REJECTED", code: o.reject, why: o.why });
       // A run that fails, contradicts itself or passes no tests withdraws acceptance; only a
       // later consistent pass can accept the item again. It does not count toward the failure budget.
-      if (INVALIDATING.has(o.reject)) Object.assign(item, { status: "FAILED", kind: r.kind, digest: recordDigest(r), epoch: state.epoch });
+      if (INVALIDATING.has(o.reject)) settle(item, "FAILED", r, state.epoch);
       continue;
     }
-    const digest = recordDigest(r);
     if (!o.pass) {
       item.failures = Math.min(3, item.failures + 1);
-      Object.assign(item, { status: "FAILED", kind: r.kind, digest, epoch: state.epoch });
-      const res: RecordResult = { item: id, verdict: "FAILED", digest: hex8(digest) };
+      const res: RecordResult = { item: id, verdict: "FAILED", digest: hex8(settle(item, "FAILED", r, state.epoch)) };
       if (item.failures >= 2) {
         res.code = "REPEATED_DEFECT";
         repeated = true;
@@ -185,8 +202,7 @@ export function applyEvidence(state: TokenState, records: EvidenceRecord[]): Evi
       results.push({ item: id, verdict: "REJECTED", code: "LEVEL_TOO_LOW", why: `${id} needs ${item.level}; this evidence proves ${o.level}.` });
       continue;
     }
-    Object.assign(item, { status: "ACCEPTED", kind: r.kind, digest, epoch: state.epoch });
-    results.push({ item: id, verdict: "ACCEPTED", level: o.level, digest: hex8(digest) });
+    results.push({ item: id, verdict: "ACCEPTED", level: o.level, digest: hex8(settle(item, "ACCEPTED", r, state.epoch)) });
   }
   return { results, repeated, warnings: sameOutputWarnings(state) };
 }

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyEvidence, isCurrent, isStale, type EvidenceRecord } from "../../src/evidence/checks.ts";
+import { applyEvidence, isCurrent, isStale, itemState, type EvidenceRecord } from "../../src/evidence/checks.ts";
 import { isPublicHost, levelSatisfies, kindMatches, type Level, type Proof } from "../../src/rules/levels.ts";
 import type { TokenState } from "../../src/token.ts";
 
@@ -200,6 +200,35 @@ test("staleness is still detected after the change epoch is full (255)", () => {
   applyEvidence(s, [{ item: "AC02", kind: "file", path: "a.txt", sha256: sha("3") }]);
   assert.ok(!isCurrent(s.items[0]!, s.epoch), "a change at epoch 255 must still invalidate the run");
   assert.ok(isCurrent(s.items[1]!, s.epoch));
+});
+
+test("a run invalidated at the full epoch reads as STALE, not as never checked", () => {
+  const s = state([["test", "local"], ["file", "static"]]);
+  s.epoch = 255;
+  applyEvidence(s, [{ item: "AC02", kind: "file", path: "a.txt", sha256: sha("1") }]);
+  applyEvidence(s, [run(PYTEST_PASS, 0)]);
+  applyEvidence(s, [{ item: "AC02", kind: "file", path: "a.txt", sha256: sha("2") }]);
+  assert.equal(s.epoch, 255);
+  assert.equal(itemState(s.items[0]!, s.epoch), "STALE");
+  // A fresh pass is current again, and the next change stales it again.
+  applyEvidence(s, [run(PYTEST_PASS, 0)]);
+  assert.equal(itemState(s.items[0]!, s.epoch), "ACCEPTED");
+  applyEvidence(s, [{ item: "AC02", kind: "file", path: "a.txt", sha256: sha("3") }]);
+  assert.equal(itemState(s.items[0]!, s.epoch), "STALE");
+  assert.equal(itemState(s.items[1]!, s.epoch), "ACCEPTED");
+});
+
+test("itemState names one of four states for every status, kind and epoch", () => {
+  const s = state([["test", "local"]]);
+  const item = s.items[0]!;
+  assert.equal(itemState(item, 0), "OPEN");
+  applyEvidence(s, [run(PYTEST_FAIL, 1)]);
+  assert.equal(itemState(item, s.epoch), "FAILED");
+  applyEvidence(s, [run(PYTEST_PASS, 0)]);
+  assert.equal(itemState(item, s.epoch), "ACCEPTED");
+  assert.equal(itemState(item, s.epoch + 1), "STALE");
+  assert.equal(isStale(item, s.epoch + 1), true);
+  assert.equal(isCurrent(item, s.epoch + 1), false);
 });
 
 test("rejected file evidence for a non-file item never changes the registry or stales runs", () => {

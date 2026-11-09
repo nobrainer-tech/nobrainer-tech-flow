@@ -2,7 +2,7 @@
 import * as z from "zod";
 import { CONTRACT_PREFIX, encodeToken, itemId, renew, type TokenState } from "../token.ts";
 import { FLOW_VERSION, MODULES, getCard } from "../content/cards.ts";
-import { isCurrent, isStale } from "../evidence/checks.ts";
+import { itemState } from "../evidence/checks.ts";
 import { ToolError } from "../errors.ts";
 import { contractId, openToken, tokenField, type ToolContext, type ToolDef } from "./common.ts";
 
@@ -22,10 +22,11 @@ type StateCard = "event:repeated_failure" | "stage:RECEIVE_AUDIT" | "stage:AUTOP
 
 /** Pick the next card from token state (spec 5.2 table). */
 export function cardForState(state: TokenState): { id: StateCard; next?: string } {
-  const items = state.items;
-  if (items.some((i) => i.failures >= 2 && !isCurrent(i, state.epoch))) return { id: "event:repeated_failure" };
-  if (items.every((i) => isCurrent(i, state.epoch))) return { id: "stage:RECEIVE_AUDIT", next: "check_flow_done" };
-  if (items.every((i) => i.status === "OPEN" && i.failures === 0)) return { id: "stage:AUTOPILOT" };
+  const states = state.items.map((i) => itemState(i, state.epoch));
+  // A stale run needs a rerun, whatever failed before it passed; only an item that is failing now goes to RCA.
+  if (state.items.some((i, n) => states[n] === "FAILED" && i.failures >= 2)) return { id: "event:repeated_failure" };
+  if (states.every((s) => s === "ACCEPTED")) return { id: "stage:RECEIVE_AUDIT", next: "check_flow_done" };
+  if (states.every((s) => s === "OPEN")) return { id: "stage:AUTOPILOT" };
   return { id: "stage:VERIFY" };
 }
 
@@ -43,11 +44,9 @@ const NEXT_SAFE_ACTION: Record<StateCard, string> = {
  */
 export function goalBlock(state: TokenState, ctx: ToolContext): string {
   const renewed = renew(state, ctx.now());
-  const rows = state.items.map((it, i) => {
-    const status = isCurrent(it, state.epoch) ? "ACCEPTED" : isStale(it, state.epoch) ? "STALE" : it.status === "FAILED" ? "FAILED" : "OPEN";
-    return `- ${itemId(i)} ${it.proof}, ${it.level}: ${status}`;
-  });
-  const accepted = state.items.filter((it) => isCurrent(it, state.epoch)).length;
+  const states = state.items.map((it) => itemState(it, state.epoch));
+  const rows = state.items.map((it, i) => `- ${itemId(i)} ${it.proof}, ${it.level}: ${states[i]}`);
+  const accepted = states.filter((s) => s === "ACCEPTED").length;
   const expires = new Date(renewed.expires * 1000).toISOString().slice(0, 10);
   return [
     `GOAL_ID: flow-${contractId(state)}`,
