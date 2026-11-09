@@ -23,6 +23,26 @@ class DecisionConfigTests(unittest.TestCase):
             self.assertEqual(subprocess.run(command, capture_output=True).returncode, 0)
             self.assertEqual(path.read_bytes(), before)
 
+    def test_works_in_a_copy_without_the_runner(self):
+        # The Claude directory copy omits typed_decisions.py; configuration must not need it.
+        import json
+        import shutil
+        import subprocess
+        import sys
+        with tempfile.TemporaryDirectory() as directory:
+            scripts = Path(directory) / "scripts"
+            scripts.mkdir()
+            shutil.copy2(SCRIPT, scripts / SCRIPT.name)
+            self.assertFalse((scripts / "typed_decisions.py").exists())
+            path = Path(directory) / "flow.json"
+            base = [sys.executable, "-I", str(scripts / SCRIPT.name), "--config", str(path)]
+            for args, status in ((["show"], "DEFAULT_CORE"), (["setup", "--non-interactive"], "CONFIGURED")):
+                completed = subprocess.run(base + args, capture_output=True, text=True)
+                self.assertEqual(0, completed.returncode, completed.stderr)
+                result = json.loads(completed.stdout)
+                self.assertEqual(status, result["status"])
+                self.assertEqual(("core", "off"), (result["config"]["provider"], result["config"]["mode"]))
+
     def test_missing_config_does_not_write_or_enable_provider(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "flow.json"

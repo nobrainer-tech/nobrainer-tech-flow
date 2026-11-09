@@ -279,6 +279,26 @@ class StrictModeTests(unittest.TestCase):
         self.assert_denied_with_route(output)
         self.assertIn("npm publish releases a package", output["permissionDecisionReason"])
 
+    def test_the_variable_reads_the_usual_on_and_off_spellings(self) -> None:
+        # NOBRAINER_GUARD_STRICT=true used to leave strict mode silently off.
+        for value in ("1", "true", "TRUE", "yes", "on", " 1 "):
+            with self.subTest(value=value):
+                self.assert_denied_with_route(self.decide("vercel --prod", env={"NOBRAINER_GUARD_STRICT": value}))
+        for value in ("", "0", "false", "No", "off"):
+            with self.subTest(value=value):
+                output = self.decide("vercel --prod", env={"NOBRAINER_GUARD_STRICT": value})
+                self.assertEqual("ask", output["permissionDecision"])
+
+    def test_an_unknown_value_stays_ask_only_and_says_so(self) -> None:
+        payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "vercel --prod"},
+                   "cwd": str(self.root)}
+        completed = run_guard("pre-tool", json.dumps(payload), {"NOBRAINER_GUARD_STRICT": "maybe"})
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        self.assertEqual("ask", decision_of(completed)["permissionDecision"])
+        self.assertIn("NOBRAINER_GUARD_STRICT", completed.stderr)
+        self.assertIn("leaves strict mode off", completed.stderr)
+        self.assertNotIn("maybe", completed.stderr)
+
     def test_other_risky_commands_still_ask_and_safe_ones_pass(self) -> None:
         strict = {"NOBRAINER_GUARD_STRICT": "1"}
         for command in ("git push --force", "git reset --hard", "rm -rf /home/dev/src", "kubectl delete pod web-1"):

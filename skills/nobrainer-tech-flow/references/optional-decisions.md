@@ -33,7 +33,8 @@ re-open consent. `off` disables calls even with provider settings present.
 The configuration schema accepts no credential fields, and the helper reads no
 credential from the machine: not from the environment, files or a keychain. For
 Jev, the user pipes the TypeSafe key on stdin with `--key-stdin` (first line
-only; requests then come from `--request`). The key reaches only the Jev worker,
+only, at most 4096 characters; requests then come from `--request`). A longer
+line stops the run with `INVALID_INPUT` before any provider call. The key reaches only the Jev worker,
 on its stdin. Do not print the key, put it in argv or pass it through the model.
 The worker child receives only a fixed allowlist of non-secret variables.
 
@@ -66,6 +67,11 @@ batch; its `max_calls_per_run` counts attempts including failures. MAIN owns
 the task-wide call ceiling: do not reset it by splitting into new batches.
 Each attempt has a hard subprocess timeout, with no automatic retry. Laya
 startup is included in elapsed time; this CLI does not claim warm-model speed.
+
+The Claude directory copy of Flow does not include `scripts/typed_decisions.py`.
+When that file is absent, offer and keep core only, treat a recorded Jev or Laya
+preference as a missing capability (`CORE_FALLBACK`) without running anything, and
+point to a git or npm install, which includes the helper.
 
 Accept only validated answer IDs, types, finite ranges and complete distributions.
 Off, invalid configuration, missing capability, provider failure, timeout or

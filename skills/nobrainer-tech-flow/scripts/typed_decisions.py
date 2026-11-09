@@ -159,10 +159,14 @@ def invoke(provider, model, request, timeout, key=None):
 
 
 def read_piped_key(stream):
-    """Return the first line of a piped key, or None when nothing usable was piped."""
+    """Return the first line of a piped key, or None when nothing was piped.
+
+    A line longer than KEY_LIMIT is invalid input, so it stops the run before any
+    provider call instead of reaching Jev as a missing key.
+    """
     raw = stream.readline(KEY_LIMIT + 2)
     if len(raw.rstrip("\r\n")) > KEY_LIMIT:
-        return None
+        raise ValueError("key_too_long")
     line = raw.strip()
     return line or None
 

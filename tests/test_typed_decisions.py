@@ -65,8 +65,10 @@ class TypedDecisionTests(unittest.TestCase):
         self.assertEqual("synthetic-key", runtime.read_piped_key(io.StringIO("synthetic-key\nrest\n")))
         self.assertIsNone(runtime.read_piped_key(io.StringIO("")))
         self.assertIsNone(runtime.read_piped_key(io.StringIO("\n")))
-        self.assertIsNone(runtime.read_piped_key(io.StringIO("x" * (runtime.KEY_LIMIT + 1))))
-        self.assertIsNone(runtime.read_piped_key(io.StringIO(" " + "x" * (runtime.KEY_LIMIT + 1) + "\n")))
+        # A piped key that is too long is invalid input, not a missing key.
+        for too_long in ("x" * (runtime.KEY_LIMIT + 1), " " + "x" * (runtime.KEY_LIMIT + 1) + "\n"):
+            with self.assertRaisesRegex(ValueError, "key_too_long"):
+                runtime.read_piped_key(io.StringIO(too_long))
         self.assertEqual("x" * runtime.KEY_LIMIT, runtime.read_piped_key(io.StringIO("x" * runtime.KEY_LIMIT + "\n")))
 
     def test_worker_env_drops_proxy_credentials(self):
@@ -115,6 +117,11 @@ class TypedDecisionTests(unittest.TestCase):
             self.assertEqual((2, "INVALID_INPUT"), (code, result["reason"]))
             code, result = run(["--request", str(requests), "--key-env", "TYPESAFE_API_KEY"], "")
             self.assertEqual((2, "KEY_ENV_REMOVED_USE_KEY_STDIN"), (code, result["reason"]))
+            # A key the user piped but that cannot be used stops before any provider call;
+            # it used to reach Jev as "no key" and come back as MISSING_TYPESAFE_API_KEY.
+            code, result = run(["--config", str(config), "--request", str(requests), "--approved-data",
+                                "--key-stdin"], "x" * (runtime.KEY_LIMIT + 1) + "\n")
+            self.assertEqual((2, "INVALID_INPUT"), (code, result["reason"]))
             self.assertEqual(["synthetic-piped"], seen)
 
     def test_off_and_unapproved_never_touch_provider(self):
