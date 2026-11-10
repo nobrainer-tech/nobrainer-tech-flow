@@ -1,7 +1,7 @@
 {
-  "flow_version": "2.11.0",
-  "tag": "v2.11.0",
-  "commit": "e53f1a8c616243a617f77c60deda8583ddd071b6",
+  "flow_version": "2.12.0",
+  "tag": "v2.12.0",
+  "commit": "fe6d5217cc7c6f4c5f65672790b7cd19ef833790",
   "repo": "https://github.com/nobrainer-tech/nobrainer-tech-flow",
   "modules": [
     "nobrainer-auto-fine-tune",
@@ -319,7 +319,7 @@
       "full": "Full module: install the Flow skills from https://github.com/nobrainer-tech/nobrainer-tech-flow"
     },
     "module:nobrainer-review": {
-      "description": "Use when work needs an evidence-gated CLOSEOUT, an adversarial BUG_HUNT or a RELEASE_GATE, when someone asks for a DoD (Definition of Done) of a pull request or whether a PR is ready to merge, including after green CI, or when final findings must be filtered to verified actionable defects. Use nobrainer-build for ordinary implementation and correction work. Aliases: nb-review, deep-audit, deep-code-review, deep-autoreview, nb-dod, PR DoD.",
+      "description": "Use when work needs an evidence-gated CLOSEOUT, an adversarial BUG_HUNT or a RELEASE_GATE, when someone asks for a DoD (Definition of Done) of a pull request or whether a PR is ready to merge, including after green CI, when someone asks for implicit or hidden state machines (states spread over flags, status strings or counters), or when final findings must be filtered to verified actionable defects. Use nobrainer-build for ordinary implementation and correction work. Aliases: nb-review, deep-audit, deep-code-review, deep-autoreview, nb-dod, PR DoD, nb-auto-fix.",
       "rules": [
         "A review request does not authorize fixes, commits, pushes, merges or deployments.",
         "Treat every external finding as an unverified candidate.",

@@ -1,6 +1,6 @@
 # nobrainer-tech-flow release notes
 
-## v2.12.0 - 2026-11-09
+## v2.12.0 - 2026-11-10
 
 Ask Flow to "find the implicit state machines" in a module and its review now maps them
 and says what to fix first. The release also carries the fixes the plugin directories
