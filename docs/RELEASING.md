@@ -14,29 +14,34 @@ when each channel reads back that version, or the gap is reported:
 3. Claude Code and Codex marketplaces in this repository: they follow the default
    branch, so install `nobrainer-tech-flow@nobrainer-tech` in a throwaway profile while
    `main` still equals the tag, and read back the version and the installed commit.
-4. `nobrainer-tech/nobrainer-tech-flow-plugin`: export the release ZIP there
-   through a PR. That copy is tracked only by the Claude directory, so leave out
-   `.mcp.json`, the root `mcp.json`, the root portable `plugin.json`, the
-   `.codex-plugin/` folder and `assets/` (Claude's validator rejects OpenAI's remote
-   server shape, and the other manifests only add image-reference findings; ChatGPT and
-   Codex use this repository's marketplace and the release ZIP). From `docs/` keep only
-   `CHAT_PLUGINS.md` and `PRIVACY.md`, the two files its README and manifests link: the
-   other guides and `docs/releases/` stay here, and the Claude directory's automatic
-   checks flag the install commands and image references in them. Also leave out the
-   two helpers that the directory held v2.10.1 to v2.11.0 for ("Uses a credential from
-   the user's machine"; removing them is the portal's own remedy):
-   `skills/nobrainer-tech-flow/scripts/flow_guard.py`, the lifecycle-hook helper that
-   `scripts/install_guards.py` wires into Claude Code, which never runs in this copy
-   because it declares no hooks and ships no installer; and
-   `skills/nobrainer-tech-flow/scripts/typed_decisions.py`, the optional Jev and Laya
-   runner, which sends a TypeSafe key the user pipes in to `api.typesafe.ai`. Without it
-   that copy keeps the core path, as `references/optional-decisions.md` says. Git and npm
-   installs keep both. The copy's `_maintainers/verify_release.py` names exactly these
-   two files and compares every other skill file byte for byte. Keep the
-   repository's own Claude presentation fields and its `.claude-plugin/icon.png`
-   (no `icon` field), as its README describes. Update `SOURCE.json`, run
-   its unmodified `_maintainers/verify_release.py`, then release it. It is the hook-free copy that
-   the Claude directory tracks, not a second project to promote.
+4. `nobrainer-tech/nobrainer-tech-flow-plugin` is the copy that the Claude directory scans;
+   ChatGPT and Codex use this repository's marketplace and the release ZIP instead. The
+   directory refuses scripts, programs and every other file outside Markdown, plain text,
+   JSON, YAML and PNG, JPEG, GIF, WebP or ICO images from organizations it has not verified
+   (`LOCAL_CODE_FILE_TYPE`, which refused `4eff9df`). It also refuses any file that starts
+   with `#!` and any package-manager file, so that copy ships no script at all; git and npm
+   installs keep every script. Export it from the downloaded release ZIP into a clean
+   checkout of that repository, then publish the diff through a PR:
+
+   ```bash
+   python3 scripts/export_native.py nobrainer-tech-flow-X.Y.Z-plugin.zip \
+     --tag vX.Y.Z --commit <tag commit> --copy ../nobrainer-tech-flow-plugin
+   ```
+
+   The exporter works as follows:
+   - From the ZIP it keeps every `skills/` file of an allowed type, byte for byte. It leaves
+     out `skills/*/scripts/`, and `nobrainer-tech-flow/SKILL.md` tells the agent what to do
+     when a named script is absent.
+   - Also from the ZIP it takes `LICENSE`, `SECURITY.md`, `docs/CHAT_PLUGINS.md` and
+     `docs/PRIVACY.md`.
+   - It keeps the copy's own `README.md`, `AGENTS.md`, `.claude-plugin/icon.png` (no `icon`
+     field), marketplace manifest, CI workflow and listing fields in
+     `.claude-plugin/plugin.json`.
+   - It writes `SOURCE.json`, then runs `scripts/verify_native_export.py`, which the copy's
+     CI also runs from the tag. That verifier checks the type rule, refuses `#!`
+     and package-manager files, and requires every kept skill file to match the ZIP.
+
+   The copy is the directory's snapshot of this release, not a second project to promote.
 5. MCP server: pin its guidance cards to the new tag in a PR
    (`cd mcp && node scripts/build-content.ts --tag vX.Y.Z --pin`; when a quoted rule was
    reworded, update `content/cards.yaml` to the new text, then `npm test`). After the merge,

@@ -363,9 +363,10 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("A stale summary never authorizes a successor", normalized)
         self.assertNotIn("Run this state machine on every non-trivial invocation", text)
         # 2.8.0 raised the budget from 240 lines / 1750 words for the required handoff block;
-        # 2.9.0 raised it again for the work-to-done contract and the finish check.
+        # 2.9.0 raised it again for the work-to-done contract and the finish check;
+        # 2.12.0 for the rule on scripts absent from the Claude directory copy.
         self.assertLessEqual(len(text.splitlines()), 280)
-        self.assertLessEqual(len(text.split()), 2150)
+        self.assertLessEqual(len(text.split()), 2210)
         routing = (
             SKILLS / "nobrainer-tech-flow" / "references" / "routing.md"
         ).read_text(encoding="utf-8")
