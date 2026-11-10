@@ -18,8 +18,9 @@ when each channel reads back that version, or the gap is reported:
    ChatGPT and Codex use this repository's marketplace and the release ZIP instead. The
    directory refuses scripts, programs and every other file outside Markdown, plain text,
    JSON, YAML and PNG, JPEG, GIF, WebP or ICO images from organizations it has not verified
-   (`LOCAL_CODE_FILE_TYPE`, which refused `4eff9df`). It also refuses any file that starts
-   with `#!` and any package-manager file, so that copy ships no script at all; git and npm
+   (`LOCAL_CODE_FILE_TYPE`, which refused `4eff9df` and `a0dab22`). A file without an
+   extension may stay only as a license, a readme or `.gitignore`. It also refuses any file
+   that starts with `#!` and any package-manager file, so that copy ships no script at all; git and npm
    installs keep every script. Export it from the downloaded release ZIP into a clean
    checkout of that repository, then publish the diff through a PR:
 
@@ -31,7 +32,8 @@ when each channel reads back that version, or the gap is reported:
    The exporter works as follows:
    - From the ZIP it keeps every `skills/` file of an allowed type, byte for byte. It leaves
      out `skills/*/scripts/`, and `nobrainer-tech-flow/SKILL.md` tells the agent what to do
-     when a named script is absent.
+     when a named script is absent. It also leaves out `skills/nobrainer-tech-flow/VERSION`;
+     the copy's manifests carry the version.
    - Also from the ZIP it takes `LICENSE`, `SECURITY.md`, `docs/CHAT_PLUGINS.md` and
      `docs/PRIVACY.md`.
    - It keeps the copy's own `README.md`, `AGENTS.md`, `.claude-plugin/icon.png` (no `icon`

@@ -75,7 +75,9 @@ class NativeExportTests(unittest.TestCase):
         kept = {p.relative_to(out).as_posix() for p in (out / "skills").rglob("*") if p.is_file()}
         left_out = {n for n in self.release if n.startswith("skills/")} - kept
         self.assertTrue(left_out)
-        self.assertTrue(all("/scripts/" in name and name.endswith(".py") for name in left_out), left_out)
+        scripts = {name for name in left_out if "/scripts/" in name and name.endswith(".py")}
+        self.assertTrue(scripts)
+        self.assertEqual({"skills/nobrainer-tech-flow/VERSION"}, left_out - scripts)
         self.assertFalse(any(p.suffix == ".py" or p.read_bytes().startswith(b"#!") for p in out.rglob("*") if p.is_file()))
 
     def test_the_copy_keeps_its_listing_fields_and_takes_the_release_version(self) -> None:
@@ -103,10 +105,10 @@ class NativeExportTests(unittest.TestCase):
     def test_the_verifier_refuses_a_file_that_starts_with_a_shebang(self) -> None:
         out = self.export()
         (out / "README.md").write_bytes(b"#!/bin/sh\necho hi\n")
-        (out / "run").write_bytes(b"#!/usr/bin/env python3\n")
+        (out / "run.txt").write_bytes(b"#!/usr/bin/env python3\n")
         problems = self.problems(out)
         self.assertIn("README.md: starts with #!", problems)
-        self.assertIn("run: starts with #!", problems)
+        self.assertIn("run.txt: starts with #!", problems)
 
     def test_the_verifier_refuses_one_changed_byte_in_a_skill(self) -> None:
         out = self.export()
@@ -127,16 +129,33 @@ class NativeExportTests(unittest.TestCase):
     def test_the_verifier_refuses_text_that_is_not_what_its_name_says(self) -> None:
         out = self.export()
         (out / "notes.txt").write_bytes(b"caf\xe9\n")
-        (out / "NOTICE").write_bytes(b"line\x00\n")
+        (out / "notice.txt").write_bytes(b"line\x00\n")
         (out / "extra.json").write_text("{not json")
         (out / "pnpm-workspace.yaml").write_text("packages: []\n")
         (out / ".gitignore").write_text("*.pyc\n")
         problems = self.problems(out)
         self.assertIn("notes.txt: is not UTF-8 text", problems)
-        self.assertIn("NOTICE: holds a NUL byte", problems)
+        self.assertIn("notice.txt: holds a NUL byte", problems)
         self.assertIn("extra.json: is not valid JSON", problems)
         self.assertIn("pnpm-workspace.yaml: package manager file", problems)
         self.assertFalse([p for p in problems if p.startswith(".gitignore")])
+
+    def test_an_extensionless_file_must_be_a_license_readme_or_gitignore(self) -> None:
+        # The portal lets only "a license, a readme, .gitignore" stay without a type; it
+        # refused a0dab22, whose one other extension-less file was VERSION.
+        out = self.export()
+        self.assertFalse((out / "skills/nobrainer-tech-flow/VERSION").exists())
+        self.assertTrue((out / "LICENSE").exists())
+        self.assertEqual([], self.problems(out))
+        (out / "README").write_text("readme\n")
+        (out / "Licence").write_text("MIT\n")
+        (out / ".gitignore").write_text("*.pyc\n")
+        self.assertEqual([], self.problems(out))
+        (out / "skills/nobrainer-tech-flow/VERSION").write_bytes(self.release["skills/nobrainer-tech-flow/VERSION"])
+        (out / "NOTES").write_text("notes\n")
+        problems = self.problems(out)
+        self.assertIn("skills/nobrainer-tech-flow/VERSION: a file without an extension must be a license, a readme or .gitignore", problems)
+        self.assertIn("NOTES: a file without an extension must be a license, a readme or .gitignore", problems)
 
     def test_the_verifier_refuses_a_disguised_image(self) -> None:
         out = self.export()
