@@ -4,7 +4,9 @@
 The copy (nobrainer-tech/nobrainer-tech-flow-plugin) is what the Claude plugin directory
 scans. It keeps, byte for byte, every file of the release ZIP's skills/ that the directory
 accepts from an unverified organization (Markdown, plain text, JSON, YAML, images) and no
-script, so it omits skills/*/scripts/. From the ZIP it also takes LICENSE, SECURITY.md,
+script, so it omits skills/*/scripts/ and skills/nobrainer-tech-flow/VERSION (a file
+without an extension that is not a license, a readme or .gitignore; the manifests carry the
+version). Both rules come from verify_native_export.file_problem. From the ZIP it also takes LICENSE, SECURITY.md,
 docs/CHAT_PLUGINS.md and docs/PRIVACY.md. From the current copy it keeps the files only
 the copy has (README.md, AGENTS.md, the brand icon, the marketplace manifest, the CI
 workflow) and the copy's own listing fields in .claude-plugin/plugin.json. It writes

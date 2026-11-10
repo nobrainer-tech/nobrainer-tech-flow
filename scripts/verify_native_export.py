@@ -28,7 +28,10 @@ import zipfile
 CANONICAL = "https://github.com/nobrainer-tech/nobrainer-tech-flow"
 API = "https://api.github.com/repos/nobrainer-tech/nobrainer-tech-flow/git/"
 TEXT_SUFFIXES = {".md", ".txt", ".json", ".yml", ".yaml"}
-# Extension-less files are allowed only as plain text (LICENSE, VERSION).
+# The portal lets only "a license, a readme, .gitignore" stay without a type, as UTF-8
+# text; any other extension-less file, such as skills/nobrainer-tech-flow/VERSION, is
+# refused (it refused a0dab22 for that file), so the export leaves it out.
+EXTENSIONLESS = {"license", "licence", "readme", ".gitignore"}
 IMAGE_MAGIC = {
     ".png": (b"\x89PNG\r\n\x1a\n",),
     ".jpg": (b"\xff\xd8\xff",),
@@ -60,6 +63,8 @@ def file_problem(name: str, data: bytes) -> str | None:
         return None if data[:4] == b"RIFF" and data[8:12] == b"WEBP" else "not a WebP image"
     if suffix in IMAGE_MAGIC:
         return None if data.startswith(IMAGE_MAGIC[suffix]) else f"not a {suffix[1:].upper()} image"
+    if suffix == "" and base.lower() not in EXTENSIONLESS:
+        return "a file without an extension must be a license, a readme or .gitignore"
     if suffix not in TEXT_SUFFIXES and suffix != "":
         return f"type {suffix} is not allowed"
     if data.startswith(b"#!"):
@@ -135,8 +140,6 @@ def verify(root: Path, payload: bytes, source: dict) -> list[str]:
         problems.append(f"docs/: must hold exactly {', '.join(KEPT_DOCS)}")
     if len([n for n in kept if re.fullmatch(r"skills/[^/]+/SKILL\.md", n)]) != 18:
         problems.append("skills/: must hold exactly 18 SKILL.md files")
-    if files.get("skills/nobrainer-tech-flow/VERSION", b"").decode("utf-8", "replace").strip() != version:
-        problems.append("skills/nobrainer-tech-flow/VERSION: does not match the SOURCE.json tag")
 
     problems += manifest_problems(files, version)
     return problems
