@@ -11,10 +11,10 @@ wording close the gap without making answers to short questions longer?
 Changed text:
 
 - `CLAUDE.md` and `AGENTS.md` (still byte-identical): "Before the first tool call, say in one
-  line what you are about to do. On longer runs, give a one-line update every few tool calls and
-  at transitions, blockers, safety gates and new evidence; never repeat the plan or unchanged
-  state. Close with a recap a reader can follow without the rest of the conversation: outcome,
-  decisive proof, remaining risk and next action."
+  line what you will do; on longer runs, update in one line every few calls. Never repeat the
+  plan or unchanged state. Close with a self-contained recap: outcome, decisive proof, remaining
+  risk and next action." It replaces the "run tools without announcing them" and "Speak mid-run
+  only for ..." sentences and keeps the file within its 205-line and 1620-word test limits.
 - `skills/nobrainer-tech-flow/SKILL.md`: "Before the first tool call, say in one line what you
   are about to do; on longer runs give a one-line update every few tool calls." It replaces "Run
   tools without announcing the next command when the host permits; otherwise emit its shortest
@@ -79,3 +79,7 @@ HOLDOUT_RESULT: PASS 2/2 (answers correct; words within the limit)
 - **Other clients.** Codex, Cursor and Gemini read the same `AGENTS.md`; they were not run.
 - **Token cost.** The +39% is measured on read-only audits. Long implementation runs were not
   measured.
+- **Wording measured.** The runs used a longer `CLAUDE.md` sentence with the same instructions
+  (it also listed transitions, blockers, safety gates and new evidence as update points). It was
+  shortened afterwards to fit the always-loaded size limit; the entry skill sentence is the one
+  that was measured. The shortened file text was not re-run.

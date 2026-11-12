@@ -79,11 +79,10 @@ Before the first non-trivial write, resolve the compact contract:
 Follow Flow [communication](skills/nobrainer-tech-flow/references/communication.md):
 plain technical English between agents by default, direct replies in the user's
 requested language, with explicit language and format requirements preserved.
-Communication is evidence-budgeted. Before the first tool call, say in one line what you are about to do.
-On longer runs, give a one-line update every few tool calls and at transitions,
-blockers, safety gates and new evidence; never repeat the plan or unchanged state.
-Close with a recap a reader can follow without the rest of the conversation:
-outcome, decisive proof, remaining risk and next action. Preserve exact errors, commands, numbers and
+Communication is evidence-budgeted. Before the first tool call, say in one line what you will do;
+on longer runs, update in one line every few calls. Never repeat the plan or unchanged state.
+Close with a self-contained recap: outcome, decisive proof, remaining risk and next action.
+Preserve exact errors, commands, numbers and
 negations; expand when brevity risks ambiguity. Persisted artifacts use normal prose.
 
 Do not add an abstraction, dependency, compatibility layer, agent, skill or test
