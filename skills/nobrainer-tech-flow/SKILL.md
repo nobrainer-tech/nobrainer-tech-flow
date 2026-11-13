@@ -155,8 +155,8 @@ Next: open the named caller and its existing test
 ```
 
 Update after scope is frozen, at transitions, blockers, new evidence and closeout.
-Run tools without announcing the next command when
-the host permits; otherwise emit its shortest useful scope or evidence sentence.
+Before the first tool call, say in one line what you are about to do; on longer
+runs give a one-line update every few tool calls.
 Never repeat the plan, unchanged state or already reported proof. Preserve exact
 commands, errors, numbers and negations; expand when brevity risks ambiguity.
 Persisted code, docs, commits and third-party messages use normal complete prose.
