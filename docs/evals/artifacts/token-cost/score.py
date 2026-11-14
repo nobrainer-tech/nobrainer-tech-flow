@@ -1,6 +1,7 @@
 """Aggregate token-cost eval runs as defined in scoring.md.
 
-Usage: python3 score.py EVAL_DIR/runs [BASE,CANDIDATE]   (default plain,flow)
+Usage: python3 score.py EVAL_DIR/runs [BASE,CANDIDATE] [--tasks T1,...] [--repeats N]
+Defaults: plain,flow; tasks T1-T6; 2 repeats. Hard tasks: --tasks H1,H2,H3,H4,H5 --repeats 3.
 Prints one row per run, per-task means and the primary result.
 """
 import json
@@ -28,14 +29,12 @@ def load(runs_dir: Path):
     rows = []
     for path in sorted(runs_dir.glob("*/result.json")):
         data = json.loads(path.read_text(encoding="utf-8"))
-        (cost, tokens, turns, seconds), complete = turn_numbers(data["turn1"])
-        if data.get("turn2"):
-            (c2, t2, n2, s2), complete2 = turn_numbers(data["turn2"])
-            complete = complete and complete2
-            cost += c2
-            turns += n2
-            seconds += s2
-            tokens = {k: tokens[k] + t2[k] for k in KEYS}
+        all_turns = data.get("turns") or [t for t in (data["turn1"], data.get("turn2")) if t]
+        cost, tokens, turns, seconds, complete = 0.0, dict.fromkeys(KEYS, 0), 0, 0, True
+        for turn in all_turns:
+            (c, t, n, sec), ok = turn_numbers(turn)
+            cost, turns, seconds, complete = cost + c, turns + n, seconds + sec, complete and ok
+            tokens = {k: tokens[k] + t[k] for k in KEYS}
         flow_loaded = any("nobrainer-tech-flow" in s for s in data["turn1"].get("skills", []))
         # A run without the final cost telemetry is an incomplete measurement, not a free fix.
         valid = complete and flow_loaded == (data["arm"] in ("flow", "slim"))
@@ -44,19 +43,31 @@ def load(runs_dir: Path):
         if data["arm"] == "slim":
             entry = path.parent / "repo" / ".claude" / "skills" / "nobrainer-tech-flow" / "SKILL.md"
             valid = valid and "delegate only where it helps" in entry.read_text(encoding="utf-8")
-        rows.append({**data, "cost": cost, "tokens": tokens, "turns": turns, "seconds": seconds, "valid": valid})
+        data = {k: v for k, v in data.items() if k != "turns"}
+        rows.append({**data, "cost": cost, "tokens": tokens, "turns": turns, "seconds": seconds,
+                     "retries": len(all_turns) - 1, "valid": valid})
     return rows
 
 
 def main() -> int:
-    base, cand = (sys.argv[2] if len(sys.argv) > 2 else "plain,flow").split(",")
-    rows = [r for r in load(Path(sys.argv[1])) if r["arm"] in (base, cand)]
-    print("run\tP1\tP2\tcost_usd\tinput\tcache_write\tcache_read\toutput\tturns\tseconds\tvalid")
+    args = sys.argv[1:]
+    tasks, repeats = TASKS, REPEATS
+    if "--tasks" in args:
+        i = args.index("--tasks")
+        tasks = tuple(args[i + 1].split(","))
+        del args[i:i + 2]
+    if "--repeats" in args:
+        i = args.index("--repeats")
+        repeats = tuple(range(1, int(args[i + 1]) + 1))
+        del args[i:i + 2]
+    base, cand = (args[1] if len(args) > 1 else "plain,flow").split(",")
+    rows = [r for r in load(Path(args[0])) if r["arm"] in (base, cand)]
+    print("run\tP1\tP2\tcost_usd\tinput\tcache_write\tcache_read\toutput\tturns\tseconds\tvalid\tretries")
     for r in rows:
         t = r["tokens"]
         print(f"{r['name']}\t{int(r['p1'])}\t{int(r['p2'])}\t{r['cost']:.4f}\t{t['inputTokens']}\t"
               f"{t['cacheCreationInputTokens']}\t{t['cacheReadInputTokens']}\t{t['outputTokens']}\t"
-              f"{r['turns']}\t{r['seconds']:.0f}\t{int(r['valid'])}")
+              f"{r['turns']}\t{r['seconds']:.0f}\t{int(r['valid'])}\t{r['retries']}")
     rows = [r for r in rows if r["valid"]]
     per_task = defaultdict(lambda: defaultdict(list))
     for r in rows:
@@ -75,10 +86,11 @@ def main() -> int:
         total = sum(r["cost"] for r in mine)
         tokens = {k: sum(r["tokens"][k] for r in mine) for k in KEYS}
         summary[arm] = {"runs": len(mine), "p1": sum(r["p1"] for r in mine), "p2": passed,
+                        "retries": sum(r["retries"] for r in mine),
                         "cost": round(total, 4), "per_fix": round(total / passed, 4) if passed else None,
                         "tokens": tokens}
     print("\n" + json.dumps(summary, indent=1))
-    expected = {(t, a, rep) for t in TASKS for a in (base, cand) for rep in REPEATS}
+    expected = {(t, a, rep) for t in tasks for a in (base, cand) for rep in repeats}
     missing = sorted(expected - {(r["task"], r["arm"], r["rep"]) for r in rows})
     if missing:
         names = ", ".join(f"{t}-{a}-{rep}" for t, a, rep in missing)
