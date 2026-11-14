@@ -1,6 +1,6 @@
 """Run the token-cost eval: PLAIN vs FLOW on six tasks, two repeats, one retry turn.
 
-Usage: python3 run.py EVAL_DIR FLOW_CHECKOUT [--only T1-plain-1,...] [--workers 4]
+Usage: python3 run.py EVAL_DIR FLOW_CHECKOUT  (EVAL_DIR/skills.tar = git archive <commit> skills) [--only T1-plain-1,...] [--workers 4]
 Writes EVAL_DIR/runs/<task>-<arm>-<rep>/{turn1.jsonl,turn2.jsonl,check*.txt,result.json}.
 """
 import argparse
@@ -43,8 +43,7 @@ def prepare(eval_dir: Path, flow: Path, task: str, arm: str, repo: Path) -> None
         extra.unlink()
     if arm == "flow":
         (repo / ".claude").mkdir()
-        archive = subprocess.run(["git", "-C", str(flow), "archive", "HEAD", "skills"], check=True, capture_output=True).stdout
-        subprocess.run(["tar", "-x", "-C", str(repo / ".claude")], input=archive, check=True)
+        subprocess.run(["tar", "-x", "-f", str(eval_dir / "skills.tar"), "-C", str(repo / ".claude")], check=True)
         shutil.copy(flow / "adapters" / "bootstrap.md", repo / "CLAUDE.md")
     subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
     subprocess.run(GIT + ["add", "-A"], cwd=repo, check=True)
