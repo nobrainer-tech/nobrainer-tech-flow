@@ -9,6 +9,8 @@ from collections import defaultdict
 from pathlib import Path
 
 KEYS = ("inputTokens", "cacheCreationInputTokens", "cacheReadInputTokens", "outputTokens")
+TASKS = ("T1", "T2", "T3", "T4", "T5", "T6")
+REPEATS = (1, 2)
 
 
 def turn_numbers(turn):
@@ -17,22 +19,26 @@ def turn_numbers(turn):
     for usage in (result.get("modelUsage") or {}).values():
         for key in KEYS:
             tokens[key] += usage.get(key) or 0
-    return result.get("total_cost_usd") or 0.0, tokens, result.get("num_turns") or 0, (turn or {}).get("seconds") or 0
+    complete = result.get("total_cost_usd") is not None and bool(result.get("modelUsage"))
+    numbers = (result.get("total_cost_usd") or 0.0, tokens, result.get("num_turns") or 0, (turn or {}).get("seconds") or 0)
+    return numbers, complete
 
 
 def load(runs_dir: Path):
     rows = []
     for path in sorted(runs_dir.glob("*/result.json")):
         data = json.loads(path.read_text(encoding="utf-8"))
-        cost, tokens, turns, seconds = turn_numbers(data["turn1"])
+        (cost, tokens, turns, seconds), complete = turn_numbers(data["turn1"])
         if data.get("turn2"):
-            c2, t2, n2, s2 = turn_numbers(data["turn2"])
+            (c2, t2, n2, s2), complete2 = turn_numbers(data["turn2"])
+            complete = complete and complete2
             cost += c2
             turns += n2
             seconds += s2
             tokens = {k: tokens[k] + t2[k] for k in KEYS}
         flow_loaded = any("nobrainer-tech-flow" in s for s in data["turn1"].get("skills", []))
-        valid = flow_loaded == (data["arm"] in ("flow", "slim"))
+        # A run without the final cost telemetry is an incomplete measurement, not a free fix.
+        valid = complete and flow_loaded == (data["arm"] in ("flow", "slim"))
         if data["arm"] == "lean":
             valid = valid and (path.parent / "repo" / "CLAUDE.md").exists()
         if data["arm"] == "slim":
@@ -72,6 +78,12 @@ def main() -> int:
                         "cost": round(total, 4), "per_fix": round(total / passed, 4) if passed else None,
                         "tokens": tokens}
     print("\n" + json.dumps(summary, indent=1))
+    expected = {(t, a, rep) for t in TASKS for a in (base, cand) for rep in REPEATS}
+    missing = sorted(expected - {(r["task"], r["arm"], r["rep"]) for r in rows})
+    if missing:
+        names = ", ".join(f"{t}-{a}-{rep}" for t, a, rep in missing)
+        print(f"RESULT=INCOMPLETE (rerun missing or invalid runs: {names})")
+        return 1
     plain, flow = summary[base], summary[cand]
     if plain["per_fix"] and flow["per_fix"]:
         ratio = flow["per_fix"] / plain["per_fix"]

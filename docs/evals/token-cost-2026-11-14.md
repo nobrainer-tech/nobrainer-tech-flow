@@ -74,6 +74,9 @@ Where the extra cost comes from:
   of four (scoring said four), and the skills copied from a tarball of `6330c3b` (sha256
   `8bcc5763…`) because `git archive` on the live checkout failed with exit 128 in eight runs.
   The measures and the decision rule did not change.
+- After review, the counter refuses a verdict unless every task, arm and repeat has a valid
+  run with the client's final cost telemetry. Every reported run had both (all tables:
+  nonzero cost, manipulation check passed), so no reported result changes.
 - Not measured: Caveman or another compressor, and long tasks where the agent first claims a
   fix that fails.
 
