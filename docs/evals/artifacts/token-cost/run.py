@@ -45,6 +45,8 @@ def prepare(eval_dir: Path, flow: Path, task: str, arm: str, repo: Path) -> None
         (repo / ".claude").mkdir()
         subprocess.run(["tar", "-x", "-f", str(eval_dir / "skills.tar"), "-C", str(repo / ".claude")], check=True)
         shutil.copy(flow / "adapters" / "bootstrap.md", repo / "CLAUDE.md")
+    if arm == "lean":
+        shutil.copy(eval_dir / "lean-claude-md.md", repo / "CLAUDE.md")
     subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
     subprocess.run(GIT + ["add", "-A"], cwd=repo, check=True)
     subprocess.run(GIT + ["commit", "-q", "-m", "base"], cwd=repo, check=True)
@@ -112,11 +114,13 @@ def main() -> int:
     parser.add_argument("flow", type=Path)
     parser.add_argument("--only")
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--arms", default="plain,flow", help="two arms, e.g. plain,lean")
     args = parser.parse_args()
     names = []
     for rep in (1, 2):
         for i, task in enumerate(PROMPTS):
-            arms = ("plain", "flow") if (i + rep) % 2 else ("flow", "plain")
+            first, second = args.arms.split(",")
+            arms = (first, second) if (i + rep) % 2 else (second, first)
             names += [f"{task}-{arm}-{rep}" for arm in arms]
     if args.only:
         names = [n for n in names if n in args.only.split(",")]

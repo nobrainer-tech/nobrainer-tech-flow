@@ -1,6 +1,6 @@
 """Aggregate token-cost eval runs as defined in scoring.md.
 
-Usage: python3 score.py EVAL_DIR/runs
+Usage: python3 score.py EVAL_DIR/runs [BASE,CANDIDATE]   (default plain,flow)
 Prints one row per run, per-task means and the primary result.
 """
 import json
@@ -33,12 +33,15 @@ def load(runs_dir: Path):
             tokens = {k: tokens[k] + t2[k] for k in KEYS}
         flow_loaded = any("nobrainer-tech-flow" in s for s in data["turn1"].get("skills", []))
         valid = flow_loaded == (data["arm"] == "flow")
+        if data["arm"] == "lean":
+            valid = valid and (path.parent / "repo" / "CLAUDE.md").exists()
         rows.append({**data, "cost": cost, "tokens": tokens, "turns": turns, "seconds": seconds, "valid": valid})
     return rows
 
 
 def main() -> int:
-    rows = load(Path(sys.argv[1]))
+    base, cand = (sys.argv[2] if len(sys.argv) > 2 else "plain,flow").split(",")
+    rows = [r for r in load(Path(sys.argv[1])) if r["arm"] in (base, cand)]
     print("run\tP1\tP2\tcost_usd\tinput\tcache_write\tcache_read\toutput\tturns\tseconds\tvalid")
     for r in rows:
         t = r["tokens"]
@@ -49,15 +52,15 @@ def main() -> int:
     per_task = defaultdict(lambda: defaultdict(list))
     for r in rows:
         per_task[r["task"]][r["arm"]].append(r["cost"])
-    print("\ntask\tplain_mean\tflow_mean\tratio")
+    print(f"\ntask\t{base}_mean\t{cand}_mean\tratio")
     for task in sorted(per_task):
-        plain = per_task[task]["plain"]
-        flow = per_task[task]["flow"]
+        plain = per_task[task][base]
+        flow = per_task[task][cand]
         if plain and flow:
             pm, fm = sum(plain) / len(plain), sum(flow) / len(flow)
             print(f"{task}\t{pm:.4f}\t{fm:.4f}\t{fm / pm:.2f}")
     summary = {}
-    for arm in ("plain", "flow"):
+    for arm in (base, cand):
         mine = [r for r in rows if r["arm"] == arm]
         passed = sum(r["p2"] for r in mine)
         total = sum(r["cost"] for r in mine)
@@ -66,13 +69,13 @@ def main() -> int:
                         "cost": round(total, 4), "per_fix": round(total / passed, 4) if passed else None,
                         "tokens": tokens}
     print("\n" + json.dumps(summary, indent=1))
-    plain, flow = summary["plain"], summary["flow"]
+    plain, flow = summary[base], summary[cand]
     if plain["per_fix"] and flow["per_fix"]:
         ratio = flow["per_fix"] / plain["per_fix"]
         if ratio <= 0.90 and flow["p2"] >= plain["p2"]:
-            verdict = "FLOW_SAVES"
+            verdict = f"{cand.upper()}_SAVES"
         elif ratio >= 1.10:
-            verdict = "FLOW_COSTS_MORE"
+            verdict = f"{cand.upper()}_COSTS_MORE"
         elif ratio < 1.10 and ratio > 0.90:
             verdict = "EVEN"
         else:

@@ -74,11 +74,36 @@ Where the extra cost comes from:
   of four (scoring said four), and the skills copied from a tarball of `6330c3b` (sha256
   `8bcc5763…`) because `git archive` on the live checkout failed with exit 128 in eight runs.
   The measures and the decision rule did not change.
-- Not measured: Caveman or another compressor, long tasks where the agent first claims a fix
-  that fails, and a lighter always-loaded profile.
+- Not measured: Caveman or another compressor, and long tasks where the agent first claims a
+  fix that fails.
+
+## LEAN: five lines in `CLAUDE.md`, no Flow install
+
+Frozen in `1a24178` before its runs: [scoring](artifacts/token-cost/scoring-lean.md),
+[the five lines](artifacts/token-cost/lean-claude-md.md) (noisy commands show failures only,
+locate before reading, hand broad reading to a cheaper subagent, run the check once before
+done, reply with result, proof and next step). Twelve runs, same harness, against the twelve
+clean PLAIN runs above. [Per-run table](artifacts/token-cost/results-lean.tsv).
+
+| Task | PLAIN | LEAN | LEAN / PLAIN |
+|---|---|---|---|
+| T1 | 0.140 | 0.147 | 1.05 |
+| T2 | 0.226 | 0.176 | 0.78 |
+| T3 | 0.147 | 0.147 | 1.00 |
+| T4 | 0.158 | 0.149 | 0.94 |
+| T5 | 0.171 | 0.174 | 1.02 |
+| T6 | 0.177 | 0.168 | 0.95 |
+
+RESULT: `EVEN` (cost per verified fix 0.160 against 0.170, ratio 0.944; 12 of 12 fixed).
+
+- The only clear gain is T2, the 2470-line log (22% less). Elsewhere the lines change little:
+  PLAIN already piped noisy output through `tail` (23 calls against 24) and read the whole
+  log in 2 runs against 1. No LEAN run used a subagent, so that line was never exercised.
+- The baseline PLAIN runs were recorded about an hour earlier, not interleaved with LEAN.
 
 ## Consequence
 
-No public sentence may say that Flow saves tokens. The measured cost is the always-loaded
-text, so the next experiment is a lighter profile measured in the same harness, frozen before
-its runs.
+No public sentence may say that Flow, or the five lines, save tokens: Flow costs 1.31 times
+plain on these tasks, and the lines are even within the frozen band. What the numbers do
+show is where Flow's cost sits: the always-loaded text. Cutting it (a shorter bootstrap and
+shorter skill descriptions) is the lever to measure next, in the same harness.
