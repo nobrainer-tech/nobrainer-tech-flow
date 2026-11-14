@@ -101,9 +101,43 @@ RESULT: `EVEN` (cost per verified fix 0.160 against 0.170, ratio 0.944; 12 of 12
   log in 2 runs against 1. No LEAN run used a subagent, so that line was never exercised.
 - The baseline PLAIN runs were recorded about an hour earlier, not interleaved with LEAN.
 
+## SLIM: Flow with a short bootstrap and short skill descriptions
+
+Frozen in `7b540f3` before its runs: [scoring](artifacts/token-cost/scoring-slim.md),
+[short descriptions](artifacts/token-cost/slim-descriptions.json) (5298 to 2106 characters),
+[short bootstrap](artifacts/token-cost/slim-bootstrap.md) (220 to 51 words). Skill bodies
+unchanged. Twelve SLIM runs interleaved with twelve fresh PLAIN runs.
+[Per-run table](artifacts/token-cost/results-slim.tsv).
+
+| Task | PLAIN (fresh) | SLIM | SLIM / PLAIN |
+|---|---|---|---|
+| T1 | 0.136 | 0.172 | 1.26 |
+| T2 | 0.210 | 0.236 | 1.13 |
+| T3 | 0.128 | 0.176 | 1.38 |
+| T4 | 0.188 | 0.239 | 1.27 |
+| T5 | 0.220 | 0.248 | 1.13 |
+| T6 | 0.162 | 0.200 | 1.24 |
+
+RESULT: `SLIM_COSTS_MORE` (cost per verified fix 0.212 against 0.174, ratio 1.22; 12 of 12
+fixed in both arms). Against the FLOW table above, SLIM is 0.95 (0.212 against 0.222).
+
+- The short text did shrink the prompt: the first call carried 1,324 tokens more than PLAIN
+  (median 34,640 against 33,317), against 2,900 more for FLOW.
+- The cost barely moved because most of it is a one-off cache write at the start of each
+  session: 8,629 tokens for SLIM against 5,395 for PLAIN at the first call (median), with
+  1,900 fewer tokens read from a cache shared across runs. Why the shared prefix gets shorter
+  is inferred, not observed: the client places the skill listing in the session-specific part
+  of the prompt.
+- The extra cost behaves like a fixed amount per session, not a share of the work: SLIM minus
+  PLAIN is 0.026 to 0.050 per task (mean 0.038), FLOW minus PLAIN 0.024 to 0.101 (mean 0.053),
+  whatever the task's own cost. On tasks of 20 to 50 seconds that is 13 to 38 percent; a long
+  session would carry the same amount once.
+- Routing with the short descriptions was not tested, so SLIM is not a release candidate.
+
 ## Consequence
 
-No public sentence may say that Flow, or the five lines, save tokens: Flow costs 1.31 times
-plain on these tasks, and the lines are even within the frozen band. What the numbers do
-show is where Flow's cost sits: the always-loaded text. Cutting it (a shorter bootstrap and
-shorter skill descriptions) is the lever to measure next, in the same harness.
+No public sentence may say that Flow, the five lines or the short text save tokens. What the
+numbers support: Flow adds a roughly fixed list-price amount per session (about 0.04 to 0.05
+here, once per session), and on these tasks it bought no extra verified fixes because plain
+Claude Code fixed all of them. The open question is long work, where a first "done" fails and
+the cost of rework can exceed that fixed amount; that needs harder tasks, not shorter text.
