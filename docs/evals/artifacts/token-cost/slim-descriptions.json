@@ -1,0 +1,20 @@
+{
+ "nobrainer-auto-fine-tune": "Use when setting up Flow the first time or recalibrating client, model, context or parallelism. Alias: nb-auto-fine-tune.",
+ "nobrainer-autoimprove": "Use when a skill or prompt must improve through a measured baseline-variant loop. Alias: nb-autoimprove.",
+ "nobrainer-browser": "Use when you must inspect, operate or test a rendered website, or record a Playwright trace. Alias: nb-browser.",
+ "nobrainer-build": "Use when an approved, bounded code, config, docs or test change must be implemented or simplified. Alias: nb-build.",
+ "nobrainer-context": "Use when a project's agent instruction files (AGENTS.md, CLAUDE.md, rules) need setup, an audit or tidying. Alias: nb-context.",
+ "nobrainer-decide": "Use when choosing between options: just decide, decide or deep decide. Alias: nb-decide.",
+ "nobrainer-dispatcher": "Use when an approved plan has many queued work units to order, batch and route. Alias: nb-dispatcher.",
+ "nobrainer-rca": "Use when a failure or wrong behavior has an unclear cause and needs an evidence-bound diagnosis. Alias: nb-rca.",
+ "nobrainer-research": "Use when a task depends on current, niche, uncertain or source-attributed external facts. Alias: nb-research.",
+ "nobrainer-review": "Use for a CLOSEOUT, BUG_HUNT, RELEASE_GATE, a PR Definition of Done, or implicit state machines. Aliases: nb-review, nb-dod, nb-auto-fix.",
+ "nobrainer-security": "Use when a change crosses auth, secrets, untrusted input, sensitive data, dependencies or production trust. Alias: nb-security.",
+ "nobrainer-sessions": "Use when work needs named, reusable sessions, audited handoffs, recovery or controlled parallelism. Alias: nb-sessions.",
+ "nobrainer-skill-doctor": "Use when a skill or task prompt needs a quality audit, or instructions conflict across projects. Alias: nb-skill-doctor.",
+ "nobrainer-spec-driven-development": "Use when a change needs a durable specification: architecture, public contracts, migrations or multi-session work. Alias: nb-sdd.",
+ "nobrainer-team": "Use when an approved Flow plan needs worker assignments, specialist briefs or native parallel execution. Alias: nb-team.",
+ "nobrainer-tech-flow": "Use to set up, start, resume or complete a task: scope the outcome, delegate only where it helps, verify delivery. Aliases: NBFlow, NBF.",
+ "nobrainer-wiki": "Use when durable knowledge must be saved, found again, or a Markdown wiki audited; not for task state. Alias: nb-wiki.",
+ "nobrainer-writing": "Use when user-facing prose needs drafting, rewriting, compressing or review without losing facts. Alias: nb-write."
+}
