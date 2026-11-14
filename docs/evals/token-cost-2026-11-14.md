@@ -137,10 +137,49 @@ fixed in both arms). Against the FLOW table above, SLIM is 0.95 (0.212 against 0
   session would carry the same amount once.
 - Routing with the short descriptions was not tested, so SLIM is not a release candidate.
 
+## Hard tasks with rework
+
+Frozen in `56b34ea` before any run: [scoring](artifacts/token-cost/scoring-hard.md),
+[tasks](artifacts/token-cost/tasks-hard.md), [runner](artifacts/token-cost/run_hard.py),
+[reference solutions](artifacts/token-cost/ref-hard/). Five tasks whose hidden checks follow
+from prompt sentences (float refund totals, two decimal conventions, a weekend discount in
+Warsaw time across DST, line-by-line shipping, idempotent payment retries); each check failed
+on the base fixture and passed on the reference solution before the runs. Three runs per task
+and arm, up to two resumed retry turns, every turn's cost counted.
+[Per-run table](artifacts/token-cost/results-hard.tsv).
+
+| Task | PLAIN mean cost | FLOW mean cost | FLOW / PLAIN |
+|---|---|---|---|
+| H1 refunds | 0.267 | 0.268 | 1.00 |
+| H2 supplier formats | 0.277 | 0.274 | 0.99 |
+| H3 weekend discount | 0.270 | 0.346 | 1.28 |
+| H4 line shipping | 0.203 | 0.256 | 1.26 |
+| H5 payment retries | 0.302 | 0.427 | 1.42 |
+
+| Arm | Passed on turn 1 | Passed in the end | Retry turns | Cost per fix |
+|---|---|---|---|---|
+| PLAIN | 14 of 15 | 15 of 15 | 1 | 0.264 |
+| FLOW | 13 of 15 | 15 of 15 | 2 | 0.314 |
+
+RESULT: `FLOW_COSTS_MORE` (ratio 1.192).
+
+- All three first-turn failures were in H5, and all three for the same case: paying a
+  cancelled order without a `payment_id`. The prompt is ambiguous there: "paying a cancelled
+  order must raise" sits next to "calls without payment_id keep today's behaviour", and today
+  that call succeeds. One PLAIN run named it as an open decision. This is a defect of the task,
+  not evidence about either arm. Without H5 the ratio is 1.125, still `FLOW_COSTS_MORE`, with
+  12 of 12 first-turn passes in both arms.
+- No task showed Flow preventing rework: plain Claude Code (Opus 5.5, medium) already tested
+  its own changes and passed every unambiguous task on the first turn.
+- The extra cost is again close to a fixed amount per run: 0.050 on average (FLOW total 4.712
+  against 3.955 over 15 runs), the same order as on the short tasks.
+
 ## Consequence
 
 No public sentence may say that Flow, the five lines or the short text save tokens. What the
 numbers support: Flow adds a roughly fixed list-price amount per session (about 0.04 to 0.05
 here, once per session), and on these tasks it bought no extra verified fixes because plain
-Claude Code fixed all of them. The open question is long work, where a first "done" fails and
-the cost of rework can exceed that fixed amount; that needs harder tasks, not shorter text.
+Claude Code fixed all of them. On five harder tasks with rework counted, the same held: Flow
+cost 1.19 times plain (1.13 without the ambiguous task) and prevented no retry. Flow's case
+does not rest on tokens; on single-session, well-specified coding tasks it is a cost of about
+0.05 per session at list price.
