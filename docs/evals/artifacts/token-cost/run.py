@@ -41,10 +41,19 @@ def prepare(eval_dir: Path, flow: Path, task: str, arm: str, repo: Path) -> None
         extra.rename(repo / "tests" / "test_schedule.py")
     else:
         extra.unlink()
-    if arm == "flow":
+    if arm in ("flow", "slim"):
         (repo / ".claude").mkdir()
         subprocess.run(["tar", "-x", "-f", str(eval_dir / "skills.tar"), "-C", str(repo / ".claude")], check=True)
         shutil.copy(flow / "adapters" / "bootstrap.md", repo / "CLAUDE.md")
+    if arm == "slim":
+        short = json.loads((eval_dir / "slim-descriptions.json").read_text(encoding="utf-8"))
+        for name, text in short.items():
+            skill = repo / ".claude" / "skills" / name / "SKILL.md"
+            body = skill.read_text(encoding="utf-8")
+            start = body.index("\ndescription:") + 1
+            end = body.index("\n", start)
+            skill.write_text(body[:start] + "description: " + json.dumps(text) + body[end:], encoding="utf-8")
+        shutil.copy(eval_dir / "slim-bootstrap.md", repo / "CLAUDE.md")
     if arm == "lean":
         shutil.copy(eval_dir / "lean-claude-md.md", repo / "CLAUDE.md")
     subprocess.run(["git", "init", "-q"], cwd=repo, check=True)

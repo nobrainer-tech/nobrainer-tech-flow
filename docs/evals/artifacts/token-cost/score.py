@@ -32,9 +32,12 @@ def load(runs_dir: Path):
             seconds += s2
             tokens = {k: tokens[k] + t2[k] for k in KEYS}
         flow_loaded = any("nobrainer-tech-flow" in s for s in data["turn1"].get("skills", []))
-        valid = flow_loaded == (data["arm"] == "flow")
+        valid = flow_loaded == (data["arm"] in ("flow", "slim"))
         if data["arm"] == "lean":
             valid = valid and (path.parent / "repo" / "CLAUDE.md").exists()
+        if data["arm"] == "slim":
+            entry = path.parent / "repo" / ".claude" / "skills" / "nobrainer-tech-flow" / "SKILL.md"
+            valid = valid and "delegate only where it helps" in entry.read_text(encoding="utf-8")
         rows.append({**data, "cost": cost, "tokens": tokens, "turns": turns, "seconds": seconds, "valid": valid})
     return rows
 
