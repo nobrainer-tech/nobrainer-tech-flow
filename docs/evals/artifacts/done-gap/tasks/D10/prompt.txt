@@ -1,0 +1,1 @@
+Rename Order.total to Order.gross. Keep total working as a deprecated alias for one more release: reading it, setting it and passing total= to the constructor must still work and must emit a DeprecationWarning. Code inside shop/ must not use the alias.

@@ -1,0 +1,1 @@
+Add python3 -m shop invoice ORDER_ID --html, which writes invoices/ORDER_ID.html showing the customer's name (from data/customers.csv), the order total, the discount and the amount to pay. The amounts must be the same as on the text invoice (python3 -m shop invoice ORDER_ID). Customer names are typed in by customers and can contain any characters.
