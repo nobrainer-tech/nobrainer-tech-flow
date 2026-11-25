@@ -42,12 +42,12 @@ dirty checkout.
 ## Say where the work is
 
 The owner looks in the checkout they opened, and it does not show the change
-until the task branch is merged or checked out there. Every handoff and final
-report therefore names the worktree path and the task branch, states that the
-original checkout is unchanged, and gives the one command that shows the result
-(for example `cd <worktree>`, or `git switch <branch>` in a clean checkout). A
-report that lists passing checks without saying where the change lives is not
-done.
+until the task branch is merged. Every handoff and final report therefore names
+the worktree path and the task branch, states that the original checkout is
+unchanged, and gives `cd <worktree>` as the way to see the result. Do not offer
+`git switch <branch>` in the original checkout: the retained task worktree holds
+that branch, so Git refuses the switch. A report that lists passing checks
+without saying where the change lives is not done.
 
 ## Keep the review gate
 
