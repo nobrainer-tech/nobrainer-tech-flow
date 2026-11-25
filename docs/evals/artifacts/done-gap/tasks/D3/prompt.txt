@@ -1,0 +1,1 @@
+Orders files can now have a currency column (PLN, EUR, and so on). The report must print orders, gross, discount and net per currency: PLN first, then the other currencies alphabetically. Files without the column are all PLN, currency codes can come in any case, and an empty currency cell means PLN. Every orders file in data/ and data/archive/ must still produce a report.

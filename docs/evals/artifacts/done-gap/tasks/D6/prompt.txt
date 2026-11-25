@@ -1,0 +1,1 @@
+Write python3 -m shop migrate data/store, which upgrades the order files in data/store to schema version 2 as described in docs/schema.md. It runs on every deploy, so running it again on files that are already migrated must be safe, and a file it cannot parse must be reported on stderr and left untouched while the other files are still migrated.

@@ -1,0 +1,1 @@
+Money in shop must be exact. Use decimal.Decimal for every amount (prices, order totals, discounts, report totals) in all public functions and in the CLI output, rounded half-up to 0.01. No float may be used for money anywhere in shop/.

@@ -1,0 +1,1 @@
+tests/test_couriers.py fails about one run in five on CI, and we can never reproduce it locally for long. Fix the cause, not the test.
