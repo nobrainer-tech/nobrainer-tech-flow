@@ -25,7 +25,10 @@ checkout or branch overrides this default.
    commit, worktree path, task branch, creation result and verification
    evidence in the task's existing execution record. Verify with Git that the
    worktree is registered, its branch and HEAD match the recorded values, and
-   it starts clean. Do all task edits and checks in that worktree.
+   it starts clean. Do all task edits and checks in that worktree. Place it
+   where the host keeps worktrees for that repository (in Claude Code,
+   `.claude/worktrees/<name>` inside it), not in a temporary or scratch folder
+   that the host may clear while the work is unmerged.
 5. If setup fails partway through, inspect Git's worktree and branch state
    before recovery. Remove only artifacts proven to have been created by this
    task, using a non-force operation and readback. Preserve ambiguous or
@@ -35,6 +38,16 @@ The original checkout may already be dirty. That is not a reason to interrupt
 or alter it: create the fresh task worktree beside it. Report any limitation
 that prevents safe worktree creation rather than silently falling back to the
 dirty checkout.
+
+## Say where the work is
+
+The owner looks in the checkout they opened, and it does not show the change
+until the task branch is merged or checked out there. Every handoff and final
+report therefore names the worktree path and the task branch, states that the
+original checkout is unchanged, and gives the one command that shows the result
+(for example `cd <worktree>`, or `git switch <branch>` in a clean checkout). A
+report that lists passing checks without saying where the change lives is not
+done.
 
 ## Keep the review gate
 

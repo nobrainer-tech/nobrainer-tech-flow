@@ -171,9 +171,9 @@ Then start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer
 **npm** (Node 18+ and Python 3.11+); `--client` is `codex`, `claude`, `opencode` or `copilot`:
 
 ```sh
-npx nobrainer-tech-flow@2.12.0 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.12.0 --client codex --apply    # install
-npx nobrainer-tech-flow@2.12.0 --client codex --undo --apply
+npx nobrainer-tech-flow@2.12.1 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.12.1 --client codex --apply    # install
+npx nobrainer-tech-flow@2.12.1 --client codex --undo --apply
 ```
 
 **Any coding agent** (Git install with preview and undo; macOS, Linux and Windows, no
@@ -298,6 +298,15 @@ flowchart TD
 [`nobrainer-review`](skills/nobrainer-review/).
 What each one owns and its trigger aliases:
 [skill table](docs/HOW_IT_WORKS.md#eighteen-skills-distinct-ownership).
+
+## What's new in 2.12.1
+
+When Flow does a task in its own Git worktree, the final report now says where the change
+lives: the worktree path, the task branch, that the checkout you opened is unchanged, and
+the one command to see the result. The worktree goes where the host keeps worktrees for that
+repository, not in a temporary folder that can be cleared. Found by the
+[done-gap eval](docs/evals/done-gap-2026-11-21.md), where one run left the user's checkout
+untouched without saying so. Details: [release notes](RELEASE-NOTES.md).
 
 ## What's new in 2.12.0
 

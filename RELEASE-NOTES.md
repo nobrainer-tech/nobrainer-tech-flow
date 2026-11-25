@@ -1,5 +1,26 @@
 # nobrainer-tech-flow release notes
 
+## v2.12.1 - 2026-11-25
+
+A Flow report now says where the work is when the task ran in its own Git worktree.
+
+- **Say where the work is.** The
+  [task worktree lifecycle](skills/nobrainer-tech-flow/references/worktrees.md) asks every
+  handoff and final report to name the worktree path and the task branch, to say that the
+  checkout the owner opened is unchanged, and to give the one command that shows the
+  result. A report that lists passing checks without saying where the change lives is
+  not done.
+- **Worktree location.** The task worktree goes where the host keeps worktrees for that
+  repository (in Claude Code, `.claude/worktrees/<name>` inside it), not in a temporary
+  folder the host may clear while the work is unmerged.
+- **Why.** In the [done-gap eval](docs/evals/done-gap-2026-11-21.md) (60 runs, Flow against
+  plain Claude Code) one Flow run wrote a correct change into a worktree in a scratch
+  folder and reported "Not checked: None", so the user's checkout showed nothing. In four
+  reruns of that task with this change, all four passed on the first turn; none used a
+  separate worktree, so the new report line was not exercised.
+- The same eval found no completion gain from Flow on ten tasks built around early
+  "done"; the release makes no claim that it does.
+
 ## v2.12.0 - 2026-11-10
 
 Ask Flow to "find the implicit state machines" in a module and its review now maps them
