@@ -46,15 +46,17 @@ class HiddenTest(unittest.TestCase):
     def assert_top(self, stdout, expected):
         lines = [line for line in top_lines(stdout) if re.search(r"\bK-\d\d\b", line)]
         self.assertEqual(len(lines), len(expected), stdout)
-        # Largest first; the prompt does not order equal totals, so ties may come in any order.
+        # Largest first. The prompt sets no tie-break, so any orders with the cutoff total
+        # are valid: check each line's own total, unique ids and the descending totals.
+        known = {order_id: float(total) for order_id, _, total in ROWS}
         got = []
         for line in lines:
             order_id = re.search(r"\bK-\d\d\b", line).group(0)
             numbers = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", line.replace(order_id, ""))]
-            total = next((float(t) for i, t in expected if i == order_id and float(t) in numbers), None)
-            got.append((order_id, total))
+            self.assertIn(known[order_id], numbers, line)
+            got.append((order_id, known[order_id]))
+        self.assertEqual(len({i for i, _ in got}), len(got), stdout)
         self.assertEqual([t for _, t in got], [float(t) for _, t in expected], stdout)
-        self.assertEqual(sorted(i for i, _ in got), sorted(i for i, _ in expected), stdout)
 
     def test_top_three_with_ties(self):
         with tempfile.TemporaryDirectory() as tmp:

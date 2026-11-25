@@ -23,6 +23,10 @@ def load(runs: Path):
         results = [t.get("result") or {} for t in data["turns"]]
         cost = sum(r.get("total_cost_usd") or 0.0 for r in results)
         telemetry = all(r.get("total_cost_usd") is not None and r.get("modelUsage") for r in results)
+        # A turn that ended in a client error is a harness failure: rerun it, never score it.
+        client_ok = all(t.get("exit") == 0 and not (t.get("result") or {}).get("is_error") for t in data["turns"])
+        if not client_ok:
+            problems.append(f"{data['name']}: client turn ended in an error (exit or is_error)")
         listed = any("nobrainer-tech-flow" in s for s in data["turn1"].get("skills") or [])
         manip = listed == (data["arm"] != "plain")
         grade = {}
