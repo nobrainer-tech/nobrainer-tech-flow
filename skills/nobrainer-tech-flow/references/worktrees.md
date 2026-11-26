@@ -1,9 +1,16 @@
 # Task worktree lifecycle
 
-Use one isolated Git worktree per repository task by default. This keeps the
-owner's checkout and its uncommitted work untouched while giving the task a
-fresh, verifiable base. An explicit owner instruction to work in a particular
-checkout or branch overrides this default.
+Work in the checkout the owner opened; that is where they look for the result.
+Before the first commit, if that checkout is on the default branch, create a task
+branch there. Create a separate task worktree only when one of these holds:
+
+- the owner or the project's instructions ask for one;
+- the checkout has uncommitted work that the task must not touch;
+- another writer (a session, worker or process) is editing the same checkout;
+- the task runs in parallel with other tasks in the same repository.
+
+Name the reason in the plan. An explicit owner instruction about where to work
+overrides this rule. The rest of this file applies once a task worktree is used.
 
 ## Start from the current remote default
 
@@ -34,10 +41,9 @@ checkout or branch overrides this default.
    task, using a non-force operation and readback. Preserve ambiguous or
    pre-existing paths and refs.
 
-The original checkout may already be dirty. That is not a reason to interrupt
-or alter it: create the fresh task worktree beside it. Report any limitation
-that prevents safe worktree creation rather than silently falling back to the
-dirty checkout.
+When the reason is a dirty checkout, do not interrupt or alter it: create the
+task worktree beside it. Report any limitation that prevents safe worktree
+creation rather than silently falling back to the dirty checkout.
 
 ## Say where the work is
 

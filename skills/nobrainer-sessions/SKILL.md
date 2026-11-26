@@ -25,8 +25,9 @@ durable or explicitly visible sessions.
 Read [references/protocol.md](references/protocol.md) before setup, dispatch, or
 RECEIVE_AUDIT.
 
-For project work, use the default isolated-worktree lifecycle in
-[references/worktrees.md](../nobrainer-tech-flow/references/worktrees.md):
+When a session shares its repository with another writer, or another reason in
+[references/worktrees.md](../nobrainer-tech-flow/references/worktrees.md) holds,
+use its task-worktree lifecycle:
 discover and fetch the remote default branch before creating a task worktree,
 preserve the original checkout, and retain the worktree for owner review until
 the exact PR merge is verified. After that gate, remove only the clean,

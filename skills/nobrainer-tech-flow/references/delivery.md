@@ -195,9 +195,10 @@ feature also writes and runs its tests, and planning, implementation and testing
 one unit are not split across workers. Give each worker a short task packet, not the
 whole conversation, and ask for a concise report. Send narrow, mechanical work to a
 cheaper model under the host's policy. Each worker's model and effort come from that
-policy; the workflow names no model. When several units qualify, dispatch them
-together within verified host capacity and authorized usage limits, before executing
-non-trivial work or entering a blocking wait. Eligibility also requires accepted
+policy; the workflow names no model. When several independent units qualify, dispatch
+them together within verified host capacity and authorized usage limits, before executing
+non-trivial work or entering a blocking wait; free capacity is never a reason to
+create a unit. Eligibility also requires accepted
 dependencies, authority, a supported route and a free write scope. One visible MAIN
 coordinator is compatible with many native workers. Before a large or risky
 multi-writer fan-out that is not already executable, run the

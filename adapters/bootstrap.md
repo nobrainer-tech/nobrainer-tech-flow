@@ -23,5 +23,5 @@ Correction: a changed owner decision supersedes the old requirement and
 invalidates affected TODO and evidence. Failed
 review returns to Build and invalidates stale proof. No mode authorizes global
 instructions, disclosure, commits or publishing. Unavailable: MAIN; never
-invent success. Derive outcome/DoD, resolve authorized UI/CLI steps before
-BLOCKED, continue independent work, and read `nobrainer-tech-flow` delivery.
+invent success. Before BLOCKED, derive outcome/DoD, resolve authorized UI/CLI
+steps, continue independent work and read `nobrainer-tech-flow` delivery.

@@ -52,8 +52,8 @@ Assign a native worker only to a unit that qualifies under
 [nobrainer-tech-flow team execution](../nobrainer-tech-flow/references/delivery.md#coordinated-team-execution):
 parallel work, context isolation, independent verification or specialization. Other
 work stays in MAIN, which keeps coordination, the critical path, integration and
-acceptance. When several units qualify, dispatch them together up to the
-verified host limit within task quota. Assign roles from actual outputs, never
+acceptance. Units that qualify may run together within the verified host limit
+and task quota; qualification, not free capacity, sets the number. Assign roles from actual outputs, never
 personas or unused capacity. Do not dispatch work whose output MAIN cannot review.
 
 Use the canonical contract for completion-driven dispatch and the condition that

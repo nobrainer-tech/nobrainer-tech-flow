@@ -171,9 +171,9 @@ Then start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer
 **npm** (Node 18+ and Python 3.11+); `--client` is `codex`, `claude`, `opencode` or `copilot`:
 
 ```sh
-npx nobrainer-tech-flow@2.12.1 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.12.1 --client codex --apply    # install
-npx nobrainer-tech-flow@2.12.1 --client codex --undo --apply
+npx nobrainer-tech-flow@2.13.0 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.13.0 --client codex --apply    # install
+npx nobrainer-tech-flow@2.13.0 --client codex --undo --apply
 ```
 
 **Any coding agent** (Git install with preview and undo; macOS, Linux and Windows, no
