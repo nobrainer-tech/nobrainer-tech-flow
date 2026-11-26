@@ -6,7 +6,7 @@ Flow on request now costs 16% less per finished task, with the same completion, 
 works in the checkout you opened.
 
 - **Shorter entry skill.** [`nobrainer-tech-flow`](skills/nobrainer-tech-flow/SKILL.md)
-  drops from 2208 to 1575 words. It keeps what every task needs: work to done, the quick
+  drops from 2208 to 1596 words. It keeps what every task needs: work to done, the quick
   path, the approval gates, verification and the handoff block. The scope contract, the
   detailed-ledger gate, readiness and receive audit move to
   [full lifecycle](skills/nobrainer-tech-flow/references/full-lifecycle.md), read only for

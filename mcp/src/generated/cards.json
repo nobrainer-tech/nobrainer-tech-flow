@@ -1,7 +1,7 @@
 {
-  "flow_version": "2.12.0",
-  "tag": "v2.12.0",
-  "commit": "fe6d5217cc7c6f4c5f65672790b7cd19ef833790",
+  "flow_version": "2.13.0",
+  "tag": "v2.13.0",
+  "commit": "ad6f35d5622745c26c98eec39f8787cc15723559",
   "repo": "https://github.com/nobrainer-tech/nobrainer-tech-flow",
   "modules": [
     "nobrainer-auto-fine-tune",
@@ -29,18 +29,18 @@
         "For a clear low-risk answer, rewrite, calculation or one coherent, reversible edit, deliver and check directly.",
         "Escalate to the full Flow lifecycle for ambiguity, architecture, public behavior, routing or consequential side effects",
         "quick path never bypasses an approval gate.",
-        "Lifecycle: `DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN`.",
-        "Finish when accepted; audit active workers."
+        "Default to one main-agent loop with skills.",
+        "The stages `DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN` are a checklist, not a ritual: skip any stage that adds nothing to this task."
       ],
       "source": "skills/nobrainer-tech-flow/SKILL.md#choose-the-smallest-workflow",
       "next": "DRIFT_CHECK"
     },
     "stage:DRIFT_CHECK": {
       "rules": [
-        "Inspect the actual inputs, instructions and required capabilities; for project work include dirty state, callers, tests and existing plan/spec.",
-        "Prior summaries, wiki and worker reports are context, not proof",
+        "Inspect the actual inputs, instructions, callers, tests and dirty state.",
+        "Summaries, wiki and worker reports are context, not proof.",
         "Preserve unrelated work.",
-        "Research current, external, niche, uncertain, high-stakes or attributed facts.",
+        "Use current primary-source research only when the remedy depends on external, niche, uncertain or high-stakes facts",
         "`PROBLEM_GATE`: start with the literal failure and local evidence; do not infer that a documented command produced the failure.",
         "inaccessible research means stop at `RESEARCH_BLOCKED`"
       ],
@@ -52,8 +52,7 @@
         "Use one focused requirements round only when evidence cannot resolve scope, architecture, safety or acceptance.",
         "Code, schema, tests or conventions settle it; do not make them questions for the user.",
         "Ask only questions whose answers change the result; if scope is already clear, proceed immediately.",
-        "Use `nobrainer-decide` for consequential choices.",
-        "Use `nobrainer-spec-driven-development` when requested or architecture, interfaces, migration, rollback, dependencies or resumability justify it."
+        "Use `nobrainer-decide` for consequential choices and `nobrainer-spec-driven-development` when architecture, interfaces, migration, rollback or resumability justify a spec."
       ],
       "source": "skills/nobrainer-tech-flow/SKILL.md#buddy-clarify-once",
       "next": "SCOPE"
@@ -61,13 +60,11 @@
     "stage:SCOPE": {
       "rules": [
         "`Outcome` is the portable goal; `Proof` plus `Done clean` are the definition of done.",
+        "`Risks` name what could invalidate the plan.",
         "Update scope before expanding; require matching files, passing proof and no surprises.",
-        "Mark uninspected paths/methods as pending.",
-        "New dependencies, abstractions, workers, skills and tests need an acceptance reason.",
-        "Shared abstractions require two callers or explicit contract.",
-        "Use a short plan ordered by outcomes."
+        "Do not create diagrams merely to satisfy a workflow gate."
       ],
-      "source": "skills/nobrainer-tech-flow/SKILL.md#scope-the-minimum-sufficient-change",
+      "source": "skills/nobrainer-tech-flow/references/full-lifecycle.md#scope-the-minimum-sufficient-change",
       "next": "start_flow_task"
     },
     "stage:AUTOPILOT": {
@@ -86,9 +83,9 @@
       "rules": [
         "Prove every acceptance item at its actual layer.",
         "Static validation, local runtime, deployed runtime, production behavior, external delivery and user usefulness are different evidence levels.",
-        "Invoke `nobrainer-review` for a justified adversarial or release closeout.",
-        "A verified finding returns to `nobrainer-build`; changed work invalidates old proof and must be re-tested and re-reviewed.",
-        "`VERIFY` fails closeout when an affected public surface lacks its update or readback."
+        "a finished report is not proof.",
+        "A verified review finding returns to `nobrainer-build`; changed work invalidates old proof and must be re-tested and re-reviewed.",
+        "Before done, list each place the task touched where docs and code disagree; agents follow stale docs."
       ],
       "source": "skills/nobrainer-tech-flow/SKILL.md#verify-and-receive_audit",
       "next": "check_flow_evidence"
@@ -108,7 +105,7 @@
     "stage:LEARN": {
       "rules": [
         "Persist only durable, sourced, authorized and non-secret knowledge.",
-        "Use `nobrainer-autoimprove` only with a frozen baseline, calibrated evaluator outside candidate write scope and a fresh holdout; a null result is valid.",
+        "Use `nobrainer-autoimprove` only with a frozen baseline, calibrated evaluator outside candidate write scope and a fresh holdout.",
         "Finish check: compare the result with the whole agreed scope.",
         "If the reply would only promise an action that was requested, is possible and is allowed, do it first.",
         "Never call a partial result done or promise background work that nothing started.",
@@ -393,13 +390,12 @@
     "module:nobrainer-tech-flow": {
       "description": "Use when you want to set up, start, resume or complete a coding or non-coding task: scope the outcome, use native workers only where they help, and verify delivery. Aliases: NBFlow, NBF, nobrainer-tech-flow.",
       "rules": [
-        "Respect the host instruction hierarchy; explicit user instructions override skill guidelines.",
-        "Proceed when required inputs, authority and proof are available; unknown write ownership, stale input or ambiguous irreversible effects block the affected action.",
-        "Missing optional goals, telemetry or subagents does not block safe work; use ordinary files or the main agent.",
-        "Choose the least complex capable method; route non-trivial implementation through `nobrainer-build`.",
-        "Loading method context is not task execution; a routing-table line or remembered summary is insufficient."
+        "Explicit user instructions override skill guidelines; for a skill-caused pause, quote the exact clause.",
+        "Missing optional goals, telemetry or subagents does not block safe work.",
+        "Route non-trivial implementation through `nobrainer-build`.",
+        "loading method context is not task execution, and a routing-table line or remembered summary is insufficient."
       ],
-      "source": "skills/nobrainer-tech-flow/SKILL.md#readiness-and-method-routing",
+      "source": "skills/nobrainer-tech-flow/SKILL.md#method-routing",
       "full": "Full module: install the Flow skills from https://github.com/nobrainer-tech/nobrainer-tech-flow"
     },
     "module:nobrainer-wiki": {

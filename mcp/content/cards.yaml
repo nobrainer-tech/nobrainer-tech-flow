@@ -9,17 +9,17 @@
     - "For a clear low-risk answer, rewrite, calculation or one coherent, reversible edit, deliver and check directly."
     - "Escalate to the full Flow lifecycle for ambiguity, architecture, public behavior, routing or consequential side effects"
     - "quick path never bypasses an approval gate."
-    - "Lifecycle: `DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN`."
-    - "Finish when accepted; audit active workers."
+    - "Default to one main-agent loop with skills."
+    - "The stages `DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN` are a checklist, not a ritual: skip any stage that adds nothing to this task."
   next: DRIFT_CHECK
 "stage:DRIFT_CHECK":
   source: skills/nobrainer-tech-flow/SKILL.md
   heading: "`DRIFT_CHECK`: establish current truth"
   rules:
-    - "Inspect the actual inputs, instructions and required capabilities; for project work include dirty state, callers, tests and existing plan/spec."
-    - "Prior summaries, wiki and worker reports are context, not proof"
+    - "Inspect the actual inputs, instructions, callers, tests and dirty state."
+    - "Summaries, wiki and worker reports are context, not proof."
     - "Preserve unrelated work."
-    - "Research current, external, niche, uncertain, high-stakes or attributed facts."
+    - "Use current primary-source research only when the remedy depends on external, niche, uncertain or high-stakes facts"
     - "`PROBLEM_GATE`: start with the literal failure and local evidence; do not infer that a documented command produced the failure."
     - "inaccessible research means stop at `RESEARCH_BLOCKED`"
   next: BUDDY
@@ -30,19 +30,16 @@
     - "Use one focused requirements round only when evidence cannot resolve scope, architecture, safety or acceptance."
     - "Code, schema, tests or conventions settle it; do not make them questions for the user."
     - "Ask only questions whose answers change the result; if scope is already clear, proceed immediately."
-    - "Use `nobrainer-decide` for consequential choices."
-    - "Use `nobrainer-spec-driven-development` when requested or architecture, interfaces, migration, rollback, dependencies or resumability justify it."
+    - "Use `nobrainer-decide` for consequential choices and `nobrainer-spec-driven-development` when architecture, interfaces, migration, rollback or resumability justify a spec."
   next: SCOPE
 "stage:SCOPE":
-  source: skills/nobrainer-tech-flow/SKILL.md
+  source: skills/nobrainer-tech-flow/references/full-lifecycle.md
   heading: "Scope the minimum sufficient change"
   rules:
     - "`Outcome` is the portable goal; `Proof` plus `Done clean` are the definition of done."
+    - "`Risks` name what could invalidate the plan."
     - "Update scope before expanding; require matching files, passing proof and no surprises."
-    - "Mark uninspected paths/methods as pending."
-    - "New dependencies, abstractions, workers, skills and tests need an acceptance reason."
-    - "Shared abstractions require two callers or explicit contract."
-    - "Use a short plan ordered by outcomes."
+    - "Do not create diagrams merely to satisfy a workflow gate."
   next: start_flow_task
 "stage:AUTOPILOT":
   source: skills/nobrainer-tech-flow/SKILL.md
@@ -61,9 +58,9 @@
   rules:
     - "Prove every acceptance item at its actual layer."
     - "Static validation, local runtime, deployed runtime, production behavior, external delivery and user usefulness are different evidence levels."
-    - "Invoke `nobrainer-review` for a justified adversarial or release closeout."
-    - "A verified finding returns to `nobrainer-build`; changed work invalidates old proof and must be re-tested and re-reviewed."
-    - "`VERIFY` fails closeout when an affected public surface lacks its update or readback."
+    - "a finished report is not proof."
+    - "A verified review finding returns to `nobrainer-build`; changed work invalidates old proof and must be re-tested and re-reviewed."
+    - "Before done, list each place the task touched where docs and code disagree; agents follow stale docs."
   next: check_flow_evidence
 "stage:RECEIVE_AUDIT":
   source: skills/nobrainer-tech-flow/references/autopilot.md
@@ -81,7 +78,7 @@
   heading: "`LEARN` and close"
   rules:
     - "Persist only durable, sourced, authorized and non-secret knowledge."
-    - "Use `nobrainer-autoimprove` only with a frozen baseline, calibrated evaluator outside candidate write scope and a fresh holdout; a null result is valid."
+    - "Use `nobrainer-autoimprove` only with a frozen baseline, calibrated evaluator outside candidate write scope and a fresh holdout."
     - "Finish check: compare the result with the whole agreed scope."
     - "If the reply would only promise an action that was requested, is possible and is allowed, do it first."
     - "Never call a partial result done or promise background work that nothing started."
@@ -279,13 +276,12 @@
     - "Write a task-local specialist brief and give it to a native worker."
     - "Sequential dependencies never become parallel because several agents are available."
 "module:nobrainer-tech-flow":
-  heading: "Readiness and method routing"
+  heading: "Method routing"
   rules:
-    - "Respect the host instruction hierarchy; explicit user instructions override skill guidelines."
-    - "Proceed when required inputs, authority and proof are available; unknown write ownership, stale input or ambiguous irreversible effects block the affected action."
-    - "Missing optional goals, telemetry or subagents does not block safe work; use ordinary files or the main agent."
-    - "Choose the least complex capable method; route non-trivial implementation through `nobrainer-build`."
-    - "Loading method context is not task execution; a routing-table line or remembered summary is insufficient."
+    - "Explicit user instructions override skill guidelines; for a skill-caused pause, quote the exact clause."
+    - "Missing optional goals, telemetry or subagents does not block safe work."
+    - "Route non-trivial implementation through `nobrainer-build`."
+    - "loading method context is not task execution, and a routing-table line or remembered summary is insufficient."
 "module:nobrainer-wiki":
   rules:
     - "Do not store live execution state, leases, current hashes, transient blockers, credentials or secrets."
