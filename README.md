@@ -171,9 +171,9 @@ Then start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer
 **npm** (Node 18+ and Python 3.11+); `--client` is `codex`, `claude`, `opencode` or `copilot`:
 
 ```sh
-npx nobrainer-tech-flow@2.12.0 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.12.0 --client codex --apply    # install
-npx nobrainer-tech-flow@2.12.0 --client codex --undo --apply
+npx nobrainer-tech-flow@2.13.0 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.13.0 --client codex --apply    # install
+npx nobrainer-tech-flow@2.13.0 --client codex --undo --apply
 ```
 
 **Any coding agent** (Git install with preview and undo; macOS, Linux and Windows, no
@@ -298,6 +298,18 @@ flowchart TD
 [`nobrainer-review`](skills/nobrainer-review/).
 What each one owns and its trigger aliases:
 [skill table](docs/HOW_IT_WORKS.md#eighteen-skills-distinct-ownership).
+
+## What's new in 2.13.0
+
+Flow on request costs 16% less per finished task than 2.12, with the same completion:
+20 of 20 tasks passed on the first turn in a 40-run rerun of the
+[done-gap eval](docs/evals/slim-entry-2026-11-26.md). The entry skill is a quarter
+shorter, the full scope contract loads only for multi-session, delegated or
+public-contract work, and Flow now works in the checkout you opened instead of a separate
+worktree unless there is a reason for one. In Claude Code, `/ship` and `/steward` own the
+pull-request loop when you run them. Plain Claude Code is still cheaper on these tasks
+(Flow costs 1.24 times as much per fix, down from 1.47). Details:
+[release notes](RELEASE-NOTES.md).
 
 ## What's new in 2.12.0
 

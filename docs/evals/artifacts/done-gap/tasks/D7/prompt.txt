@@ -1,0 +1,1 @@
+Orders files now have a status column. Cancelled orders must not count in the totals report.

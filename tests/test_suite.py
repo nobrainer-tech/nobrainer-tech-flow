@@ -298,7 +298,9 @@ class SuiteTests(unittest.TestCase):
         self.assertFalse((SKILLS / "NBF").exists())
 
     def test_ultra_contract(self) -> None:
-        text = (SKILLS / "nobrainer-tech-flow" / "SKILL.md").read_text(encoding="utf-8")
+        skill = (SKILLS / "nobrainer-tech-flow" / "SKILL.md").read_text(encoding="utf-8")
+        # 2.13.0 moved the scope contract and ledger gate to a reference read only when needed.
+        text = skill + "\n" + (SKILLS / "nobrainer-tech-flow" / "references" / "full-lifecycle.md").read_text(encoding="utf-8")
         for term in (
             "DRIFT_CHECK",
             "BUDDY",
@@ -362,11 +364,10 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("one canonical todo owner", normalized.lower())
         self.assertIn("A stale summary never authorizes a successor", normalized)
         self.assertNotIn("Run this state machine on every non-trivial invocation", text)
-        # 2.8.0 raised the budget from 240 lines / 1750 words for the required handoff block;
-        # 2.9.0 raised it again for the work-to-done contract and the finish check;
-        # 2.12.0 for the rule on scripts absent from the Claude directory copy.
-        self.assertLessEqual(len(text.splitlines()), 280)
-        self.assertLessEqual(len(text.split()), 2210)
+        # 2.13.0 cut the always-loaded entry skill from 2208 to under 1600 words;
+        # the done-gap eval showed its length is most of Flow's cost per task.
+        self.assertLessEqual(len(skill.splitlines()), 200)
+        self.assertLessEqual(len(skill.split()), 1600)
         routing = (
             SKILLS / "nobrainer-tech-flow" / "references" / "routing.md"
         ).read_text(encoding="utf-8")
@@ -375,7 +376,12 @@ class SuiteTests(unittest.TestCase):
 
     def test_ledger_captures_owner_requests_added_in_one_long_conversation(self) -> None:
         flow = SKILLS / "nobrainer-tech-flow"
-        skill = " ".join((flow / "SKILL.md").read_text(encoding="utf-8").split())
+        entry = " ".join((flow / "SKILL.md").read_text(encoding="utf-8").split())
+        route = entry[entry.index("[full lifecycle](references/full-lifecycle.md)") :].split(";", 1)[0]
+        # The gate lives in the reference, so the entry skill must route this case there.
+        self.assertIn("the user keeps adding requests mid-run", route)
+        self.assertIn("need an independent review and stay owner-gated", entry)
+        skill = " ".join((flow / "references" / "full-lifecycle.md").read_text(encoding="utf-8").split())
         self.assertIn("Otherwise a multi-component task", skill)
         gate = skill[skill.index("Use a detailed ledger only when") : skill.index("Otherwise a multi-component task")]
         self.assertIn("the user keeps adding requests mid-run in one long conversation", gate)
@@ -464,7 +470,7 @@ class SuiteTests(unittest.TestCase):
         self.assertIn("explicit owner request", sessions.lower() + protocol.lower())
 
     def test_ultra_binds_goal_dod_and_context_budget(self) -> None:
-        text = (SKILLS / "nobrainer-tech-flow" / "SKILL.md").read_text(encoding="utf-8")
+        text = (SKILLS / "nobrainer-tech-flow" / "SKILL.md").read_text(encoding="utf-8") + "\n" + (SKILLS / "nobrainer-tech-flow" / "references" / "full-lifecycle.md").read_text(encoding="utf-8")
         normalized = " ".join(text.split()).lower()
         for contract in (
             "portable goal",

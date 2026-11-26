@@ -1,0 +1,1 @@
+Add a --top N option to python3 -m shop report that also prints the N largest orders (order id and total), largest first, after the totals.

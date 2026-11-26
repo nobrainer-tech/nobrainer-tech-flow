@@ -73,9 +73,11 @@ LAST_READBACK: <UTC timestamp and evidence pointer>
 
 ## Project worktree lifecycle
 
-Unless the owner specifies another checkout, project tasks run in a dedicated
-worktree created from the freshly fetched and verified default branch advertised
-by the intended remote. Keep the original checkout intact, including dirty
+When the [worktree rule](../../nobrainer-tech-flow/references/worktrees.md) names
+a reason (the owner asks, the checkout holds work the task must not touch, or
+another writer shares it), project tasks run in a dedicated worktree created from
+the freshly fetched and verified default branch advertised by the intended remote.
+A solo session on a clean checkout works in that checkout. Keep the original checkout intact, including dirty
 work. Record the task worktree path, branch, remote/default branch, base SHA and
 Git readback alongside the existing task/session execution state; `CHECKOUT`
 must identify the actual task worktree. Do not silently fall back to a dirty or

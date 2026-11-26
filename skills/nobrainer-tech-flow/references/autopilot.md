@@ -11,7 +11,7 @@ Use the existing plan and acceptance criteria as the single state owner. Bind
 the actual inputs, dependencies, write scopes and required checks. Do not
 replace a supplied plan with a new one or stop after planning when execution
 is already authorized. Resolve only a missing decision that changes the work.
-Persist state only under the [detailed-ledger gate](../SKILL.md#show-human-progress).
+Persist state only under the [detailed-ledger gate](full-lifecycle.md#detailed-ledger).
 
 If the input is an idea, first use [idea to delivery](idea-to-delivery.md).
 For an end-to-end request, carry the resulting SDD acceptance IDs into the

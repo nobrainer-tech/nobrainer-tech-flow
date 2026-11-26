@@ -1,0 +1,12 @@
+{
+  "schema": 2,
+  "order_id": "O-0013",
+  "gross": "88.00",
+  "currency": "PLN",
+  "status": "shipped",
+  "history": [
+    {
+      "event": "migrated_v2"
+    }
+  ]
+}

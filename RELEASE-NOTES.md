@@ -1,5 +1,37 @@
 # nobrainer-tech-flow release notes
 
+## v2.13.0 - 2026-11-26
+
+Flow on request now costs 16% less per finished task, with the same completion, and it
+works in the checkout you opened.
+
+- **Shorter entry skill.** [`nobrainer-tech-flow`](skills/nobrainer-tech-flow/SKILL.md)
+  drops from 2208 to 1575 words. It keeps what every task needs: work to done, the quick
+  path, the approval gates, verification and the handoff block. The scope contract, the
+  detailed-ledger gate, readiness and receive audit move to
+  [full lifecycle](skills/nobrainer-tech-flow/references/full-lifecycle.md), read only for
+  multi-session, delegated or public-contract work. The stages are a checklist: a stage
+  that adds nothing to the task is skipped.
+- **Work in the opened checkout.** The [worktree rule](skills/nobrainer-tech-flow/references/worktrees.md)
+  creates a separate task worktree only when the user asks for one, the checkout holds
+  work the task must not touch, or another writer shares it. Otherwise Flow edits in place
+  and creates a task branch before the first commit on the default branch. When a
+  worktree is used, the report names its path and branch, says the opened checkout is
+  unchanged and gives `cd <worktree>` to see the result; the worktree goes where the host
+  keeps worktrees, not in a temporary folder.
+- **Claude Code `/ship` and `/steward`.** When the user runs one, it owns committing,
+  opening and watching the pull request; Flow does not repeat that loop.
+- **Delegation wording.** `nobrainer-team` and the delegation contract no longer suggest
+  filling free capacity: only units that qualify are delegated.
+- **Evidence.** [Done-gap rerun](docs/evals/slim-entry-2026-11-26.md), 40 runs on the ten
+  early-"done" tasks of the [2.12 eval](docs/evals/done-gap-2026-11-21.md): Flow on
+  request passed 20 of 20 on the first turn (19 of 20 before) at 0.333 per verified fix
+  against 0.397, a pass line fixed before the run at 0.337. Plain Claude Code passed 20 of
+  20 at 0.269 in both runs, so Flow still costs 1.24 times as much per fix, down from
+  1.47. About two fifths of the saving comes from one task where the old worktree default
+  forced a retry. The set shows no completion gain from Flow, and this release claims
+  none.
+
 ## v2.12.0 - 2026-11-10
 
 Ask Flow to "find the implicit state machines" in a module and its review now maps them
