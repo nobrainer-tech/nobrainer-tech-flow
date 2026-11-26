@@ -146,9 +146,19 @@ depend on a client's implicit description matching.
 DRIFT_CHECK -> BUDDY -> SCOPE -> AUTOPILOT -> VERIFY -> RECEIVE_AUDIT -> LEARN
 ```
 
+- The stages are a checklist, not a ritual: a stage that adds nothing to the task
+  is skipped. The entry skill holds what every task needs; the full scope contract,
+  ledger and receive audit live in
+  [full lifecycle](../skills/nobrainer-tech-flow/references/full-lifecycle.md),
+  read only for multi-session, delegated or public-contract work.
 - `BUDDY` is the first and only ordinary clarification stage.
-- `SCOPE` freezes outcome, non-goals, expected files, proof, untouched work,
-  minimum solution, test decision and clean completion before a non-trivial write.
+- `SCOPE` shows the user what done means; for work that needs the full lifecycle it
+  freezes outcome, non-goals, expected files, proof, untouched work, minimum
+  solution, test decision and clean completion before a non-trivial write.
+- Work happens in the checkout the user opened. A separate task worktree needs a
+  named reason: the user asks for one, the checkout has work the task must not
+  touch, or another writer shares it
+  ([worktree rule](../skills/nobrainer-tech-flow/references/worktrees.md)).
 - One canonical plan owns TODO state; the owner sees only a compact Progress
   checklist and one next action.
 - A durable ledger adds exact identity, dependencies, checkpoints, retries and
