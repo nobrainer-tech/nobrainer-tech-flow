@@ -299,14 +299,17 @@ flowchart TD
 What each one owns and its trigger aliases:
 [skill table](docs/HOW_IT_WORKS.md#eighteen-skills-distinct-ownership).
 
-## What's new in 2.12.1
+## What's new in 2.13.0
 
-When Flow does a task in its own Git worktree, the final report now says where the change
-lives: the worktree path, the task branch, that the checkout you opened is unchanged, and
-the one command to see the result. The worktree goes where the host keeps worktrees for that
-repository, not in a temporary folder that can be cleared. Found by the
-[done-gap eval](docs/evals/done-gap-2026-11-21.md), where one run left the user's checkout
-untouched without saying so. Details: [release notes](RELEASE-NOTES.md).
+Flow on request costs 16% less per finished task than 2.12, with the same completion:
+20 of 20 tasks passed on the first turn in a 40-run rerun of the
+[done-gap eval](docs/evals/slim-entry-2026-11-26.md). The entry skill is a quarter
+shorter, the full scope contract loads only for multi-session, delegated or
+public-contract work, and Flow now works in the checkout you opened instead of a separate
+worktree unless there is a reason for one. In Claude Code, `/ship` and `/steward` own the
+pull-request loop when you run them. Plain Claude Code is still cheaper on these tasks
+(Flow costs 1.24 times as much per fix, down from 1.47). Details:
+[release notes](RELEASE-NOTES.md).
 
 ## What's new in 2.12.0
 
