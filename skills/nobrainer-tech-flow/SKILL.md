@@ -13,8 +13,8 @@ Here "the user" owns the task; references call that person the owner and the mai
 Read a reference only when its condition holds:
 
 - [full lifecycle](references/full-lifecycle.md): work that crosses sessions,
-  delegates, changes a public contract, routing or workflow, or the user asks for
-  the full contract;
+  delegates, changes a public contract, routing or workflow, the user keeps adding
+  requests mid-run, or the user asks for the full contract;
 - [routing](references/routing.md): choosing a specialist beyond the list below;
   [model routing](references/model-routing.md) when selecting a model or effort;
 - [setup](references/setup.md) to set up, upgrade or repair Flow;
@@ -92,7 +92,7 @@ architecture, interfaces, migration, rollback or resumability justify a spec.
 
 ## Scope and progress
 
-Before substantial work, show the user what done means in one or two lines and set
+Before substantial work, show the user what done means and set
 it as the host-native goal where supported. Choose the least complex capable method;
 new dependencies, abstractions, workers, skills and tests need an acceptance reason.
 Do not add a repetitive skill/mode preamble or invent unseen schemas.
@@ -143,7 +143,9 @@ real approval gate. Approved plans use the [approved-plan loop](references/autop
 Autonomy does not expand authority. Merge, deploy, publish, spend, delete,
 contact people, change credentials, migrate data, mutate production or weaken
 safety controls remain explicit gates unless the user already authorized that
-exact action.
+exact action. Changes to CI configuration, credentials, authentication,
+permissions, payments, personal data or migrations need an independent review and
+stay owner-gated however small the diff ([review scale](references/delivery.md#keep-review-proportional-to-progress)).
 
 Corrective-attempt budget (also Build and RCA): two attempts per observed failure,
 each with new evidence, or the user's smaller budget; then diagnose or report the blocker.
@@ -163,8 +165,7 @@ Before done, list each place the task touched where docs and code disagree; agen
 Apply corrections at once: `OWNER_DECISION_CHANGED` supersedes the old decision
 and its dependent evidence; `AGENT_ERROR_CORRECTED` fixes the result;
 `REVIEW_FAILED` returns the item to Build; `CANDIDATE_REJECTED` keeps the champion;
-`REPEATED_DEFECT` stops blind retries and goes to RCA. Details live in the
-correction-hooks reference.
+`REPEATED_DEFECT` stops blind retries and goes to RCA.
 ## `LEARN` and close
 
 Persist only durable, sourced, authorized and non-secret knowledge. Use

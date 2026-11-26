@@ -376,6 +376,11 @@ class SuiteTests(unittest.TestCase):
 
     def test_ledger_captures_owner_requests_added_in_one_long_conversation(self) -> None:
         flow = SKILLS / "nobrainer-tech-flow"
+        entry = " ".join((flow / "SKILL.md").read_text(encoding="utf-8").split())
+        route = entry[entry.index("[full lifecycle](references/full-lifecycle.md)") :].split(";", 1)[0]
+        # The gate lives in the reference, so the entry skill must route this case there.
+        self.assertIn("the user keeps adding requests mid-run", route)
+        self.assertIn("need an independent review and stay owner-gated", entry)
         skill = " ".join((flow / "references" / "full-lifecycle.md").read_text(encoding="utf-8").split())
         self.assertIn("Otherwise a multi-component task", skill)
         gate = skill[skill.index("Use a detailed ledger only when") : skill.index("Otherwise a multi-component task")]

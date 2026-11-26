@@ -77,3 +77,9 @@ No FLOW_ASK run created a worktree, and every one ended with the handoff block.
 - Plain Claude Code still fell into no trap, so this set shows cost, not benefit. Flow
   remains more expensive than plain Claude Code on these tasks; the release claims only
   that it got cheaper.
+- Changed after the run, from an independent review: the entry skill now names the
+  independent-review gate for CI, credential, security and migration changes, and routes
+  a conversation where the user keeps adding requests to the ledger in full lifecycle;
+  `skills/nobrainer-sessions/references/protocol.md` follows the new worktree rule. The
+  skill went from 1575 to 1596 words. None of the ten tasks touches those cases, so the
+  measured cost is expected to hold, but these bytes were not rerun.
