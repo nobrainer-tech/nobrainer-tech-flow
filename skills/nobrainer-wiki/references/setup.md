@@ -25,8 +25,9 @@ Do not create empty layers that have no present use. A project-local wiki may
 live under its existing docs structure.
 
 `WIKI.md`, `README.md`, `AGENTS.md` and inbox files carry no `type`, so OKF
-consumers skip them as non-concepts. Give every curated page and source capture
-frontmatter with a `type`.
+consumers skip them as non-concepts. Give every curated page and every Markdown
+source capture frontmatter with a `type`; keep raw non-Markdown captures (JSON,
+CSV, images) unchanged as assets.
 
 ## Existing wikis
 
@@ -94,19 +95,24 @@ separately. Do not resolve conflicting sources by silently deleting one.
 - `sources`: one entry per material the page derives from. `resource` is
   required: an absolute URL, a path in the wiki, or a scope description such as
   `all support tickets from 2026-10`. Give an `id` to every cited source. Add
-  `author`, `usage_count` or `last_modified` only when known.
+  `author` or `last_modified` only when known, and `usage_count` only with the
+  `usage_window: { from, to }` it was counted in.
 - Per-claim citation: a footnote whose label is the source `id`, as in
   `claim.[^vendor-docs]`. Consumers join on the label, not on the footnote text.
   Do not add a separate citation list.
-- `generated`: `by` is the actor that wrote the current content; `at` is the time
-  of the last meaningful content change. Formatting, whitespace or a link repair
-  does not change `at`.
-- `verified`: a list of `{ by, at }` events, one per real check of the content
-  against its sources. Write one only after the check happened. Keep older events
-  as history.
+- `generated`: `by` (required) is the actor that wrote the current content; `at`
+  is the time of the last meaningful content change. Formatting, whitespace or a
+  link repair does not change `at`.
+- `verified`: a list of `{ by, at }` events (both keys required), one per real
+  check of the content against its sources or its `resource`. Write one only
+  after the check happened. Keep older events as history.
+- Timestamps are RFC 3339 strings: a date-time such as `"2026-11-27T10:00:00Z"`
+  (preferred for `generated.at` and `verified[].at`) or a date such as
+  `"2026-11-27"`.
 - `status`: `draft` (incomplete or unreviewed), `stable` (the default) or
-  `deprecated`. To retire or move a page, keep the file as `deprecated` and set
-  `superseded_by` to the replacement path; do not delete it.
+  `deprecated`. To retire or move a page, keep the file as `deprecated` and do
+  not delete it; set `superseded_by` to the replacement path only when one
+  exists.
 - `stale_after`: only when a real review date is known, such as a contract end,
   an announced price change or a version end of life. Omit it otherwise; never
   invent one.
@@ -120,18 +126,21 @@ Actors (`generated.by`, `verified[].by`, `sources[].author`):
 - An agent records itself as `<agent>/<version>` in `generated`. It writes a
   `human:` event in `verified` only when that person confirmed the current
   content, and then uses the time of that confirmation.
-- A `verified` event is current only when its `at` is not earlier than
-  `generated.at`. After an agent rewrites reviewed content, the page is no longer
+- A `verified` event is current when `generated` is absent or its `at` is not
+  earlier than `generated.at`; only current events count. After an agent
+  rewrites reviewed content, the page is no longer
   human-reviewed until the person confirms it again.
 
-Frontmatter syntax: the file starts with a `---` line, the block parses as one
-YAML mapping without duplicate keys, and values that look like numbers, booleans
-or dates are quoted. When editing an existing page, keep keys you do not know and
+Frontmatter syntax: the file starts with a line that is exactly `---`, the block
+ends at the next such line, it parses as one YAML 1.2 (core schema) mapping
+without duplicate keys or custom tags, and values that look like numbers,
+booleans or dates are quoted. When editing an existing page, keep keys you do not know and
 do not re-serialize values you did not change.
 
 From the earlier inline contract: `CLASSIFICATION:` becomes
-`x-nb-classification`; a `LAST_VERIFIED:` date becomes a `verified` event with
-the actor who checked (`UNKNOWN` means no event); `(source: X)` becomes a
+`x-nb-classification`; a `LAST_VERIFIED:` date becomes a `verified` event only
+when the page or its log records who checked it, otherwise it stays as a body
+note and no event is written (`UNKNOWN` means no event); `(source: X)` becomes a
 `sources` entry with a footnote.
 
 ### Links
@@ -166,8 +175,9 @@ description: Decisions, playbooks and sources for the example team; use it for o
 ```
 
 Group entries under `#` headings as `* [Title](/path/to/page.md) - description`,
-with the description taken from the page frontmatter. When regenerating an
-index, keep the existing root frontmatter.
+reusing the linked page's `description` when it has one; a directory entry gets
+a short written summary. When regenerating an index, keep the existing root
+frontmatter.
 
 `log.md` has no frontmatter. Group entries under `## YYYY-MM-DD` headings, newest
 date first. Add today's entry under today's heading (create it at the top when
@@ -186,9 +196,10 @@ missing); never rewrite earlier entries.
 `index.md` and `log.md` are reserved names at every level; never use them for a
 page.
 
-Conformance: every frontmatter block in the wiki parses as a YAML mapping, and
-every `index.md` and `log.md` follows the forms above. Declare `okf_version` only
-when both hold.
+Conformance: every frontmatter block in a `.md` file of the wiki parses as a
+YAML mapping, and every `index.md` and `log.md` follows the forms above. A `.md`
+file without frontmatter or `type` is not a page for OKF and does not break
+conformance. Declare `okf_version` only when both rules hold.
 
 ## Managed instruction block
 

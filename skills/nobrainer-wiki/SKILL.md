@@ -63,8 +63,9 @@ over copying an external work.
 
 Separate observed fact, attributed claim, inference, recommendation and
 forecast. Every durable entry needs source, date, scope, classification and
-certainty; dates are absolute. On OKF pages they live in frontmatter
-(`sources`, `generated`, `verified`, `x-nb-classification`), not in body lines.
+certainty; dates are absolute. On OKF pages, provenance, authorship, checks
+and classification live in frontmatter (`sources`, `generated`, `verified`,
+`x-nb-classification`); claim dates, scope and certainty stay with the claim.
 Preserve contradictions and stale-risk markers rather than silently choosing a
 convenient version.
 
@@ -112,12 +113,13 @@ the answer, commits or pushes.
 4. Search existing pages by terms/aliases/languages before creating anything.
 5. Prepare one scoped write set: allowed source capture, pages, index, log and
    exact inbox items to promote.
-6. Apply minimal edits with per-claim citations and Markdown links;
-   use wikilinks only where the wiki already uses them.
+6. Apply minimal edits in the target wiki's page format (see the setup
+   reference): per-claim citations and Markdown links on OKF pages, the
+   existing citation and link style elsewhere.
 7. Verify target content, index reachability, source links, classification and
    secret boundaries before marking inbox items processed.
-8. Add one meaningful log entry under today's date heading only after
-   successful promotion.
+8. Add one meaningful log entry in the wiki's log format (OKF: under today's
+   date heading) only after successful promotion.
 
 A mixed sensitive source requires an explicit sanitization list and destination
 approval. Do not mass-rewrite, resolve owner decisions, commit, push or publish
@@ -135,7 +137,8 @@ missing speech from surrounding context.
 Audit exact dangling links, index drift, stale/time-sensitive claims, uncited
 material claims, contradictions, duplicate candidates, orphans, inbox backlog,
 classification leaks, secret/PII risk, frontmatter that does not parse, new
-pages without `type` and pages past `stale_after`. Every finding needs
+OKF pages without `type`, and `stale_after` values that are reached
+(`now >= stale_after`) or malformed. Every finding needs
 file/line, evidence, confidence and one recommended action. An orphan may be
 intentional; a fuzzy title match is not permission to merge.
 
