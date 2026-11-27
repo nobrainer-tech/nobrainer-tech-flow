@@ -6,12 +6,13 @@ Flow's done gate now refuses a "done" built on cut output, partial data or proof
 no longer there.
 
 - **Cut and partial output.** `check_flow_evidence` rejects output that shows it was cut
-  (`TRUNCATED_OUTPUT`). Its optional `expected` and `received` counts make 100 of 240 rows
-  `INCOMPLETE`, which also withdraws an earlier acceptance. No exception is not proof the
+  (`TRUNCATED_OUTPUT`), checked after the exit code so a failed rerun still fails. Its optional `expected` and `received` counts make 100 of 240 rows
+  `INCOMPLETE` for any evidence kind, which also withdraws an earlier acceptance. No exception is not proof the
   data is complete.
 - **Withdrawn proof.** After a resume, an accepted item the agent lists as unchecked now
   leaves the proof and the verdict becomes `DONE_WITH_GAPS`; before, the server ignored
-  that entry and still answered `DONE`.
+  that entry and still answered `DONE`. The answer carries a contract token with those items
+  open again, so resuming from it cannot bring the old proof back.
 - **Tool arguments.** [`nobrainer-security`](skills/nobrainer-security/SKILL.md) treats tool
   names, descriptions and schemas as untrusted input. Before a call with side effects it
   checks target, recipient, resource and provider against the user's request, and when two

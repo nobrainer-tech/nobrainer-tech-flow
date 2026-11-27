@@ -327,3 +327,13 @@ test("an accepted item the agent lists as unchecked after a resume is withdrawn:
   const proof = String(handoff.json.markdown).split("## Not checked")[0] ?? "";
   assert.doesNotMatch(proof, /AC02/);
 });
+
+test("review of #165: a blank-padded short reason is refused, and a withdrawal survives resume via the new token", async () => {
+  let token = await contract([{ text: "pytest passes", proof: "test" }]);
+  token = (await call("check_flow_evidence", { token, evidence: [{ item: "AC01", kind: "test", cmd: "pytest", exit: 0, out: PASS }] })).json.token;
+  const short = await call("check_flow_done", { token, unchecked: [{ item: "AC01", reason: "log gone  " }] });
+  assert.equal(short.isError, true);
+  const done = await call("check_flow_done", { token, unchecked: [{ item: "AC01", reason: "resumed: the pytest log is gone" }] });
+  assert.equal(done.json.verdict, "DONE_WITH_GAPS");
+  assert.equal((await call("check_flow_done", { token: done.json.token })).json.verdict, "NOT_DONE");
+});

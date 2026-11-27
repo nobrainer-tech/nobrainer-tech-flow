@@ -36,8 +36,8 @@ const sha = (s: string): Buffer => createHash("sha256").update(s).digest();
 export function recordDigest(r: EvidenceRecord): Buffer {
   // The note is part of the digest so two different observations never share one (spec 7.1 amended).
   const parts = [r.kind, r.cmd ?? "", r.exit ?? "", normaliseOut(r.out ?? ""), r.path ?? "", r.sha256 ?? "", r.url ?? "", r.status ?? "", normaliseText(r.note ?? "")];
-  // Counts join the digest only when given, so digests of records without them are unchanged.
-  if (r.expected !== undefined || r.received !== undefined) parts.push(`${r.expected ?? ""}/${r.received ?? ""}`);
+  // Records with counts use a separate, unambiguous encoding; digests of records without them are unchanged.
+  if (r.expected !== undefined || r.received !== undefined) return sha(`v2${JSON.stringify([...parts, r.expected ?? null, r.received ?? null])}`).subarray(0, 4);
   return sha(parts.join("|")).subarray(0, 4);
 }
 
@@ -104,10 +104,12 @@ const INVALIDATING = new Set(["COUNTS_MISMATCH", "EXIT_OUTPUT_CONFLICT", "NO_TES
 
 // Markers that a client or tool cut the output: the summary or an error may be in the missing part.
 const TRUNCATION = [
-  /\[[^\]\n]*\btruncated\b[^\]\n]*\]/i,
+  /\[\s*\.{3}[^\]\n]*\btruncated\b[^\]\n]*\]/i,
+  /^\s*\[(?:output\s+)?truncated\]\s*$/im,
   /<truncated\b/i,
-  /\(\s*\d+\s+more\s+lines?\s*\)/i,
-  /\boutput too large\b/i,
+  /^\s*(?:\.{3}\s*)?\(\s*\d+\s+more\s+lines?\s*\)/im,
+  /^\s*output too large\b/im,
+  /^\s*(?:warning:\s*)?truncated output\b/im,
   /\.\.\.\s*\[?\d+\s+(?:characters|chars|bytes|lines)\s+(?:truncated|omitted)/i,
 ];
 
@@ -135,16 +137,15 @@ function judgeRun(r: EvidenceRecord, id: string): Outcome {
     return reject("MISSING_FIELD", `${id}: ${r.kind} evidence needs cmd, exit${r.kind === "test" ? " and out" : ""}.`);
   }
   const out = normaliseOut(r.out ?? "");
-  if (TRUNCATION.some((re) => re.test(out))) {
-    return reject("TRUNCATED_OUTPUT", `${id}: the output was cut, so the summary or an error may be missing. Submit the last lines with the summary, or save the full output to a file and submit it as file evidence.`);
-  }
-  const counted = judgeCounts(r, id);
-  if (counted) return counted;
   const s = parseTestSummary(out);
   if (s && ((r.passed !== undefined && r.passed !== s.passed) || (r.failed !== undefined && r.failed !== s.failed))) {
     return reject("COUNTS_MISMATCH", `${id}: claimed counts differ from the output (${s.passed} passed, ${s.failed} failed).`);
   }
   if (r.exit !== 0) return { pass: false, failed: true };
+  // Checked after the exit code, so a cut output can never hide a failed rerun.
+  if (TRUNCATION.some((re) => re.test(out))) {
+    return reject("TRUNCATED_OUTPUT", `${id}: the output was cut, so the summary or an error may be missing. Submit the last lines with the summary line.`);
+  }
   if (s && (s.failed > 0 || s.earlierFailure)) return reject("EXIT_OUTPUT_CONFLICT", `${id}: exit 0 but a summary reports failed tests.`);
   if (s && s.passed < 1) return reject("NO_TESTS_RAN", `${id}: the summary shows no passed tests.`);
   // Commands need no test summary, but any recognised summary must be consistent.
@@ -162,6 +163,9 @@ function judgeRun(r: EvidenceRecord, id: string): Outcome {
 }
 
 function judge(r: EvidenceRecord, id: string): Outcome {
+  // Counts apply to every kind: a hashed file or a 200 page can hold partial data too.
+  const counted = judgeCounts(r, id);
+  if (counted) return counted;
   switch (r.kind) {
     case "test":
     case "command":

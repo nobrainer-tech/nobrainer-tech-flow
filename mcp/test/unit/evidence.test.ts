@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyEvidence, isCurrent, isStale, itemState, type EvidenceRecord } from "../../src/evidence/checks.ts";
+import { applyEvidence, isCurrent, isStale, itemState, recordDigest, type EvidenceRecord } from "../../src/evidence/checks.ts";
 import { isPublicHost, levelSatisfies, kindMatches, type Level, type Proof } from "../../src/rules/levels.ts";
 import type { TokenState } from "../../src/token.ts";
 
@@ -268,4 +268,31 @@ test("fewer received than expected is INCOMPLETE and withdraws acceptance; a ful
   assert.equal(partial?.code, "INCOMPLETE");
   assert.equal(s.items[0]?.status, "FAILED");
   assert.equal(applyEvidence(s, [fetch(240, undefined)]).results[0]?.code, "MISSING_FIELD");
+});
+
+test("review of #165: a failed rerun with a cut marker is FAILED; partial file evidence is INCOMPLETE", () => {
+  const s = state([["test", "local"]]);
+  assert.equal(applyEvidence(s, [run(PYTEST_PASS, 0)]).results[0]?.verdict, "ACCEPTED");
+  const rerun = applyEvidence(s, [run("tests/test_x.py F\n[... 900 characters truncated ...]", 1)]).results[0];
+  assert.equal(rerun?.verdict, "FAILED");
+  assert.equal(s.items[0]?.status, "FAILED");
+  const f = state([["file", "static"]]);
+  const partial = applyEvidence(f, [{ item: "AC01", kind: "file", path: "orders.csv", sha256: sha("a"), expected: 240, received: 100 }]).results[0];
+  assert.equal(partial?.code, "INCOMPLETE");
+});
+
+test("review of #165: test names and titles are not cut markers; a client truncation warning is", () => {
+  const s = state([["test", "local"]]);
+  const pytestParam = "tests/test_p.py::test_parser[truncated] PASSED\n============================== 1 passed in 0.01s ===============================";
+  const jestTitle = "  ✓ rejects when output too large (3 ms)\nTests:       1 passed, 1 total";
+  assert.equal(applyEvidence(s, [run(pytestParam, 0)]).results[0]?.verdict, "ACCEPTED");
+  assert.equal(applyEvidence(s, [run(jestTitle, 0, { cmd: "npx jest" })]).results[0]?.verdict, "ACCEPTED");
+  const warned = "Warning: truncated output (original token count: 10601)\n5 passed in 0.12s";
+  assert.equal(applyEvidence(s, [run(warned, 0)]).results[0]?.code, "TRUNCATED_OUTPUT");
+});
+
+test("review of #165: counted records never share a digest with a legacy note that spells the counts", () => {
+  const base: EvidenceRecord = { item: "AC01", kind: "observation", note: "verified" };
+  assert.notDeepEqual(recordDigest({ ...base, expected: 240, received: 240 }), recordDigest({ ...base, note: "verified|240/240" }));
+  assert.deepEqual(recordDigest(base), recordDigest({ ...base }));
 });

@@ -6,7 +6,7 @@ import { checkItems, itemField, openToken, tokenField, type ToolDef } from "./co
 
 const input = z.strictObject({
   token: tokenField.describe("Latest contract token"),
-  unchecked: z.array(z.strictObject({ item: itemField, reason: z.string().min(10).max(200) })).max(10).optional(),
+  unchecked: z.array(z.strictObject({ item: itemField, reason: z.string().trim().min(10).max(200) })).max(10).optional(),
 });
 
 export const doneTool: ToolDef<typeof input> = {
@@ -17,14 +17,16 @@ export const doneTool: ToolDef<typeof input> = {
   input,
   async run(args, ctx) {
     const state = await openToken(args.token, CONTRACT_PREFIX, ctx);
-    const listed = new Set((args.unchecked ?? []).filter((u) => u.reason.trim().length >= 10).map((u) => u.item));
+    const listed = new Set((args.unchecked ?? []).map((u) => u.item));
     checkItems(state, [...listed]);
     const missing: Array<{ item: string; need: string }> = [];
     const stale: Array<{ item: string; why: string }> = [];
     const unchecked: string[] = [];
+    const withdrawn: number[] = [];
     state.items.forEach((it, i) => {
       const id = itemId(i);
       const st = itemState(it, state.epoch);
+      if (st === "ACCEPTED" && listed.has(id)) withdrawn.push(i);
       // Listing an accepted item withdraws it: after a resume or handoff the agent may no longer
       // hold the evidence it once submitted, and a summary of it is not proof.
       it.unchecked = listed.has(id);
@@ -44,6 +46,12 @@ export const doneTool: ToolDef<typeof input> = {
       const receipt = { ...renew(state, ctx.now()), verdict: verdict as "DONE" | "DONE_WITH_GAPS" };
       result.receipt = encodeToken(receipt, RECEIPT_PREFIX, ctx.ring);
       result.next = "draft_flow_handoff";
+    }
+    if (withdrawn.length) {
+      // The withdrawal must survive a resume: return a contract token where those items are open again.
+      for (const i of withdrawn) Object.assign(state.items[i] as object, { status: "OPEN", unchecked: false, digest: Buffer.alloc(4) });
+      for (const it of state.items) it.unchecked = false;
+      result.token = encodeToken(renew(state, ctx.now()), CONTRACT_PREFIX, ctx.ring);
     }
     return result;
   },

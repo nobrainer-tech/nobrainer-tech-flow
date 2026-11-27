@@ -29,7 +29,7 @@ gone or steered:
 - an accepted item listed as unchecked after a resume gives `DONE_WITH_GAPS` and is
   absent from the handoff's proof.
 
-`npm test`: 270 pass, 0 fail. The six tool definitions stay within the 1,500-token budget
+The six tool definitions stay within the 1,500-token budget
 (1,488).
 
 **Item 3.** [Scenario](artifacts/tool-argument-check/prompt.md) and
@@ -49,6 +49,25 @@ adds about 70 words to a skill that loads only for security work.
 fake provider that commits a write and drops the reply. The successor must find the
 original result and write exactly once, and the same fixture runs in plain Claude Code for
 comparison. That eval is the next candidate.
+
+## Independent review
+
+An independent review (Codex `gpt-6.2-sol`, read-only) reproduced six defects in the
+first version, all fixed with a test each before merge:
+
+1. A failed rerun with a cut marker left an earlier pass accepted. The exit code is now
+   checked first.
+2. Counts were checked only for tests and commands. They now apply to every evidence kind.
+3. The markers matched the pytest id `test_parser[truncated]` and a Jest title, and missed
+   `Warning: truncated output`. The markers are now anchored to whole lines or ellipses.
+4. A reason padded with blanks to 10 characters was dropped silently, and a withdrawal
+   was lost on resume. Such a reason is now refused, and the done answer returns a
+   contract token with the withdrawn items open.
+5. The message suggested file evidence, which a test item cannot take. That hint is gone.
+6. A counted record could share a digest with a legacy note that spelled the counts.
+   Counted records now use a separate encoding.
+
+`npm test`: 274 pass, 0 fail.
 
 ## Limits
 
