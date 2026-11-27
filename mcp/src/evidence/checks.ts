@@ -18,6 +18,8 @@ export type EvidenceRecord = {
   url?: string | undefined;
   status?: number | undefined;
   note?: string | undefined;
+  expected?: number | undefined;
+  received?: number | undefined;
 };
 
 export type RecordResult = {
@@ -34,6 +36,8 @@ const sha = (s: string): Buffer => createHash("sha256").update(s).digest();
 export function recordDigest(r: EvidenceRecord): Buffer {
   // The note is part of the digest so two different observations never share one (spec 7.1 amended).
   const parts = [r.kind, r.cmd ?? "", r.exit ?? "", normaliseOut(r.out ?? ""), r.path ?? "", r.sha256 ?? "", r.url ?? "", r.status ?? "", normaliseText(r.note ?? "")];
+  // Counts join the digest only when given, so digests of records without them are unchanged.
+  if (r.expected !== undefined || r.received !== undefined) parts.push(`${r.expected ?? ""}/${r.received ?? ""}`);
   return sha(parts.join("|")).subarray(0, 4);
 }
 
@@ -96,7 +100,28 @@ function registerFile(state: TokenState, path: string, sha256: string): void {
   state.files.push({ path: ph, hash: ch });
 }
 
-const INVALIDATING = new Set(["COUNTS_MISMATCH", "EXIT_OUTPUT_CONFLICT", "NO_TESTS_RAN"]);
+const INVALIDATING = new Set(["COUNTS_MISMATCH", "EXIT_OUTPUT_CONFLICT", "NO_TESTS_RAN", "INCOMPLETE"]);
+
+// Markers that a client or tool cut the output: the summary or an error may be in the missing part.
+const TRUNCATION = [
+  /\[[^\]\n]*\btruncated\b[^\]\n]*\]/i,
+  /<truncated\b/i,
+  /\(\s*\d+\s+more\s+lines?\s*\)/i,
+  /\boutput too large\b/i,
+  /\.\.\.\s*\[?\d+\s+(?:characters|chars|bytes|lines)\s+(?:truncated|omitted)/i,
+];
+
+/** Expected and received item counts (rows, pages, files) must come together and add up. */
+function judgeCounts(r: EvidenceRecord, id: string): Outcome | undefined {
+  if (r.expected === undefined && r.received === undefined) return undefined;
+  if (r.expected === undefined || r.received === undefined) {
+    return reject("MISSING_FIELD", `${id}: give both expected and received, or neither.`);
+  }
+  if (r.received < r.expected) {
+    return reject("INCOMPLETE", `${id}: received ${r.received} of ${r.expected} expected items; no exception is not proof the data is complete. Fetch the rest (every page), then submit again.`);
+  }
+  return undefined;
+}
 
 type Outcome = { pass: true; level: Level } | { pass: false; failed: true } | { reject: string; why: string };
 
@@ -110,6 +135,11 @@ function judgeRun(r: EvidenceRecord, id: string): Outcome {
     return reject("MISSING_FIELD", `${id}: ${r.kind} evidence needs cmd, exit${r.kind === "test" ? " and out" : ""}.`);
   }
   const out = normaliseOut(r.out ?? "");
+  if (TRUNCATION.some((re) => re.test(out))) {
+    return reject("TRUNCATED_OUTPUT", `${id}: the output was cut, so the summary or an error may be missing. Submit the last lines with the summary, or save the full output to a file and submit it as file evidence.`);
+  }
+  const counted = judgeCounts(r, id);
+  if (counted) return counted;
   const s = parseTestSummary(out);
   if (s && ((r.passed !== undefined && r.passed !== s.passed) || (r.failed !== undefined && r.failed !== s.failed))) {
     return reject("COUNTS_MISMATCH", `${id}: claimed counts differ from the output (${s.passed} passed, ${s.failed} failed).`);

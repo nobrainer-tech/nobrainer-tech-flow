@@ -248,3 +248,24 @@ test("IPv4-mapped IPv6 loopback in hex form counts as local", () => {
   const r = applyEvidence(s, [{ item: "AC01", kind: "url", url: "https://[::ffff:127.0.0.1]/", status: 200 }]).results[0];
   assert.equal(r?.code, "LEVEL_TOO_LOW");
 });
+
+test("cut output is TRUNCATED_OUTPUT, even when a pass summary survives", () => {
+  const s = state([["test", "local"]]);
+  const cut = "tests/test_x.py ....\n[... 3120 characters truncated ...]\n============================== 5 passed in 0.12s ===============================";
+  const more = "collected 5 items\n... (412 more lines)\n5 passed in 0.12s";
+  const [a, b] = applyEvidence(s, [run(cut, 0), run(more, 0)]).results;
+  assert.equal(a?.code, "TRUNCATED_OUTPUT");
+  assert.equal(b?.code, "TRUNCATED_OUTPUT");
+  // The word alone, as in a test name, is not a cut marker.
+  assert.equal(applyEvidence(s, [run(PYTEST_PASS.replace("test_x", "test_truncated_input"), 0)]).results[0]?.verdict, "ACCEPTED");
+});
+
+test("fewer received than expected is INCOMPLETE and withdraws acceptance; a full page set passes", () => {
+  const s = state([["command", "local"]]);
+  const fetch = (expected?: number, received?: number): EvidenceRecord => ({ item: "AC01", kind: "command", cmd: "export-orders --all", exit: 0, out: "wrote orders.csv", expected, received });
+  assert.equal(applyEvidence(s, [fetch(240, 240)]).results[0]?.verdict, "ACCEPTED");
+  const partial = applyEvidence(s, [fetch(240, 100)]).results[0];
+  assert.equal(partial?.code, "INCOMPLETE");
+  assert.equal(s.items[0]?.status, "FAILED");
+  assert.equal(applyEvidence(s, [fetch(240, undefined)]).results[0]?.code, "MISSING_FIELD");
+});

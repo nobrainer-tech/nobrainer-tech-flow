@@ -117,6 +117,11 @@ Do not invent a retry path. If a step cannot be safely resumed or repeated,
 state that before starting it and require the appropriate checkpoint or owner
 gate.
 
+An external write whose reply was lost may still have happened. Before retrying it
+after a crash, timeout or resume, look the operation up at the provider by its
+recorded key, target or time and confirm its result there. Retry only when that
+readback shows it did not happen; otherwise record the found result as the outcome.
+
 At session start or after compaction, reconcile the exact checkout, base/HEAD,
 dirty state, ledger fingerprint, active sessions/writers, last accepted proof
 and next `READY` row. A stale summary never authorizes a successor.

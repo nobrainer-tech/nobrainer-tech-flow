@@ -312,3 +312,18 @@ test("delta 5: Go output tails retain successful packages alongside skipped pack
     assert.equal((await call("check_flow_done", { token: checked.json.token })).json.verdict, "DONE");
   }
 });
+
+test("an accepted item the agent lists as unchecked after a resume is withdrawn: DONE_WITH_GAPS, not in the proof", async () => {
+  let token = await contract([{ text: "pytest passes", proof: "test" }, { text: "export has every order", proof: "command" }]);
+  token = (await call("check_flow_evidence", { token, evidence: [
+    { item: "AC01", kind: "test", cmd: "pytest", exit: 0, out: PASS },
+    { item: "AC02", kind: "command", cmd: "export-orders --all", exit: 0, out: "wrote orders.csv", expected: 240, received: 240 },
+  ] })).json.token;
+  assert.equal((await call("check_flow_done", { token })).json.verdict, "DONE");
+  const done = await call("check_flow_done", { token, unchecked: [{ item: "AC02", reason: "resumed session: orders.csv is gone, only a summary remains" }] });
+  assert.equal(done.json.verdict, "DONE_WITH_GAPS");
+  assert.deepEqual(done.json.unchecked, ["AC02"]);
+  const handoff = await call("draft_flow_handoff", { receipt: done.json.receipt });
+  const proof = String(handoff.json.markdown).split("## Not checked")[0] ?? "";
+  assert.doesNotMatch(proof, /AC02/);
+});

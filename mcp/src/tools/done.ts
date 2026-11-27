@@ -25,8 +25,10 @@ export const doneTool: ToolDef<typeof input> = {
     state.items.forEach((it, i) => {
       const id = itemId(i);
       const st = itemState(it, state.epoch);
-      it.unchecked = st !== "ACCEPTED" && listed.has(id);
-      if (st === "ACCEPTED") return;
+      // Listing an accepted item withdraws it: after a resume or handoff the agent may no longer
+      // hold the evidence it once submitted, and a summary of it is not proof.
+      it.unchecked = listed.has(id);
+      if (st === "ACCEPTED" && !it.unchecked) return;
       if (it.unchecked) {
         unchecked.push(id);
       } else if (st === "STALE") {
