@@ -104,12 +104,13 @@ const INVALIDATING = new Set(["COUNTS_MISMATCH", "EXIT_OUTPUT_CONFLICT", "NO_TES
 
 // Markers that a client or tool cut the output: the summary or an error may be in the missing part.
 const TRUNCATION = [
-  /\[\s*\.{3}[^\]\n]*\btruncated\b[^\]\n]*\]/i,
+  /\[(?=[^\]\n]*\s)[^\]\n]*\btruncated\b[^\]\n]*\]/i,
   /^\s*\[(?:output\s+)?truncated\]\s*$/im,
   /<truncated\b/i,
   /^\s*(?:\.{3}\s*)?\(\s*\d+\s+more\s+lines?\s*\)/im,
   /^\s*output too large\b/im,
-  /^\s*(?:warning:\s*)?truncated output\b/im,
+  /^\s*warning:\s*(?:output\s+)?truncated\b/im,
+  /\btruncated output \(original\b/i,
   /\.\.\.\s*\[?\d+\s+(?:characters|chars|bytes|lines)\s+(?:truncated|omitted)/i,
 ];
 
@@ -163,13 +164,16 @@ function judgeRun(r: EvidenceRecord, id: string): Outcome {
 }
 
 function judge(r: EvidenceRecord, id: string): Outcome {
+  if (r.kind === "test" || r.kind === "command") {
+    // A failed run stays a failure whatever its counts say; otherwise counts can only make it worse.
+    const run = judgeRun(r, id);
+    if ("failed" in run) return run;
+    return judgeCounts(r, id) ?? run;
+  }
   // Counts apply to every kind: a hashed file or a 200 page can hold partial data too.
   const counted = judgeCounts(r, id);
   if (counted) return counted;
   switch (r.kind) {
-    case "test":
-    case "command":
-      return judgeRun(r, id);
     case "file":
       return { pass: true, level: "static" };
     case "url": {
@@ -212,8 +216,6 @@ export function applyEvidence(state: TokenState, records: EvidenceRecord[]): Evi
       results.push({ item: id, verdict: "REJECTED", code: "KIND_MISMATCH", why: `${id} needs ${item.proof} evidence, not ${r.kind}.` });
       continue;
     }
-    // Only accepted-shape file evidence for a file item may change the registry (and so stale runs).
-    if (r.kind === "file") registerFile(state, r.path as string, r.sha256 as string);
     const o = judge(r, id);
     if ("reject" in o) {
       results.push({ item: id, verdict: "REJECTED", code: o.reject, why: o.why });
@@ -236,6 +238,9 @@ export function applyEvidence(state: TokenState, records: EvidenceRecord[]): Evi
       results.push({ item: id, verdict: "REJECTED", code: "LEVEL_TOO_LOW", why: `${id} needs ${item.level}; this evidence proves ${o.level}.` });
       continue;
     }
+    // Only accepted file evidence may change the registry (and so stale runs); a rejected
+    // partial file must not.
+    if (r.kind === "file") registerFile(state, r.path as string, r.sha256 as string);
     results.push({ item: id, verdict: "ACCEPTED", level: o.level, digest: hex8(settle(item, "ACCEPTED", r, state.epoch)) });
   }
   return { results, repeated, warnings: sameOutputWarnings(state) };

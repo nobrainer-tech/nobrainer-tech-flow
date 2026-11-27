@@ -52,6 +52,7 @@ export const doneTool: ToolDef<typeof input> = {
       for (const i of withdrawn) Object.assign(state.items[i] as object, { status: "OPEN", unchecked: false, digest: Buffer.alloc(4) });
       for (const it of state.items) it.unchecked = false;
       result.token = encodeToken(renew(state, ctx.now()), CONTRACT_PREFIX, ctx.ring);
+      result.note = "Use this token from now on: the one you sent still holds the withdrawn proof.";
     }
     return result;
   },

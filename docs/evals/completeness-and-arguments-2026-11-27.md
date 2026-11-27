@@ -67,7 +67,13 @@ first version, all fixed with a test each before merge:
 6. A counted record could share a digest with a legacy note that spelled the counts.
    Counted records now use a separate encoding.
 
-`npm test`: 274 pass, 0 fail.
+A re-review of the fixes found two gaps and two new defects, also fixed with tests. A
+failed rerun that gave only `expected` was masked by `MISSING_FIELD`, and bracketed or
+log-line markers were matched wrongly. A rejected partial file still changed the file
+registry and staled accepted tests. The done answer did not say that its returned token
+supersedes the old one.
+
+`npm test`: 276 pass, 0 fail.
 
 ## Limits
 

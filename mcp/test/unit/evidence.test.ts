@@ -296,3 +296,22 @@ test("review of #165: counted records never share a digest with a legacy note th
   assert.notDeepEqual(recordDigest({ ...base, expected: 240, received: 240 }), recordDigest({ ...base, note: "verified|240/240" }));
   assert.deepEqual(recordDigest(base), recordDigest({ ...base }));
 });
+
+test("re-review of #165: a failed rerun with half counts still fails; bracketed and log-line markers", () => {
+  const s = state([["test", "local"]]);
+  applyEvidence(s, [run(PYTEST_PASS, 0)]);
+  const rerun = applyEvidence(s, [run("[... 400 characters truncated ...]\n1 failed, 4 passed in 0.31s", 1, { expected: 240 })]).results[0];
+  assert.equal(rerun?.verdict, "FAILED");
+  assert.equal(s.items[0]?.status, "FAILED");
+  const t = state([["test", "local"]]);
+  assert.equal(applyEvidence(t, [run("[output truncated to 100 lines]\n5 passed in 0.12s", 0)]).results[0]?.code, "TRUNCATED_OUTPUT");
+  assert.equal(applyEvidence(t, [run("Truncated output parser initialized\n5 passed in 0.12s", 0)]).results[0]?.verdict, "ACCEPTED");
+});
+
+test("re-review of #165: a rejected partial file does not change the registry or stale an accepted test", () => {
+  const s = state([["file", "static"], ["test", "local"]]);
+  applyEvidence(s, [{ item: "AC01", kind: "file", path: "orders.csv", sha256: sha("a") }, { item: "AC02", kind: "test", cmd: "pytest -q", exit: 0, out: PYTEST_PASS }]);
+  const partial = applyEvidence(s, [{ item: "AC01", kind: "file", path: "orders.csv", sha256: sha("b"), expected: 240, received: 100 }]).results[0];
+  assert.equal(partial?.code, "INCOMPLETE");
+  assert.equal(itemState(s.items[1]!, s.epoch), "ACCEPTED");
+});
