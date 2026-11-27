@@ -108,9 +108,9 @@ the certificate is active.
 
 The benchmark snapshot expires 14 days after its `fetched_at` (the website's own rule). After that,
 `recommend_flow_model` returns `expired: true` and an empty shortlist. Every deploy should carry a
-snapshot fetched within the last 14 days: `npm run refresh:benchmark -- --source <website>/public_html/ai/benchmark`,
-`npm test`, commit, then build and deploy as in section 2. `npm run check:freshness` exits 1 when fewer than three days remain, and the daily Advisor freshness workflow runs it. The snapshot in this release was fetched
-2026-10-30 and expires 2026-11-13. The public task enum lists only tasks with measurements;
+snapshot fetched within the last 14 days. Build it from the website's newest checked daily candidate, `<benchmark-daily state dir>/candidate-<stamp>/ai/benchmark` (the `output` path in that run's `daily-report.json`; this release used `candidate-20261127-063004-21154`). The website checkout's `www/ai/benchmark` holds only the last published capture, which may already be expired. Run `npm run refresh:benchmark -- --source <that directory>`,
+`npm test` with `NB_BENCHMARK_SOURCE` set to the same directory (it runs the live parity matrix against the site's `rank()`), commit, then build and deploy as in section 2. The daily refresh on the website side writes each checked candidate under its runtime folder; publication of that candidate to the site is a separate, owner-gated step. When the site's router modules change, the parity matrix fails until `src/advisor/` and the build script follow them. `npm run check:freshness` exits 1 when fewer than three days remain, and the daily Advisor freshness workflow runs it. The snapshot in this release was fetched
+2026-11-27 and expires 2026-12-11. The public task enum lists only tasks with measurements;
 the legacy `coding` alias is accepted in any case and returns `task: "terminal-coding"` with
 a Terminal-Bench shortlist. The smoke test checks this mapping through the SDK in both protocol eras.
 

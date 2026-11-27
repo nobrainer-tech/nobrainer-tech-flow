@@ -17,11 +17,12 @@ transformed; the build script shows every step.
 | Arena ratings (orchestration, instructions, frontend, research, writing) | LMArena leaderboard dataset, https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset | CC BY 4.0 (dataset card licence field `cc-by-4.0`, checked 2026-10-20) | Filtered to current models and reshaped. CC BY 4.0 permits sharing and adaptation, including commercially, with attribution and an indication of changes. |
 | Terminal-Bench success rates, costs and times | harbor-framework/terminal-bench and terminal-bench-2-1 released submissions | Apache License 2.0 | Licence copies: `terminal-bench-LICENSE.txt`, `terminal-bench-2-1-LICENSE.txt`. |
 | Model catalog, routes and list prices | models.dev, https://models.dev/api.json | MIT (https://github.com/sst/models.dev LICENSE, checked 2026-10-20) | Prices feed the reference-workload cost estimates. |
+| NoBrainer index (task `nb-index`) | Derived by NoBrainer from the Arena and Terminal-Bench cohorts above, method at https://nobrainer.tech/ai/benchmark/#nb-index-method | The Arena (CC BY 4.0) and Terminal-Bench (Apache 2.0) attribution applies | An equal-weight mean of those cohorts, each rescaled 0-100 across current models. It is a NoBrainer summary, not a third-party score. |
 | Own agent telemetry cost and time | NoBrainer aggregated agent-log metadata | NoBrainer data; no prompts or content | Median seconds and list-price USD per action for a fixed reference task size. |
 
 ## Snapshot scope
 
-The public benchmark fetched on 2026-10-30 contains no Artificial Analysis data.
+The public benchmark fetched on 2026-11-27 contains no Artificial Analysis data.
 This snapshot includes only its published Arena and Terminal-Bench quality
 measurements, model catalog metadata and aggregated telemetry. The legacy task
 `coding` (case-insensitive) maps to `terminal-coding`, as on the website; it is

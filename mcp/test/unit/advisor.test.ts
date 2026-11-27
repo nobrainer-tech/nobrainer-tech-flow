@@ -41,10 +41,12 @@ describe('recommend_flow_model ranking', () => {
     const claude = run({ task: 'writing', have: ['Claude-Code'] });
     assert.ok(claude.shortlist.length > 0);
     for (const e of claude.shortlist) assert.match(e.model, /^anthropic\//);
-    // An app restricts given providers to its native ones.
+    // Explicit plans are honored as given, like the site's rank(); an app no longer narrows them.
     const both = run({ task: 'writing', have: ['codex', 'openai', 'anthropic'] });
-    for (const e of both.shortlist) assert.match(e.model, /^openai\//);
-    assert.match(run({ task: 'writing', have: ['claude', 'openai'] }).note ?? '', /reach none of the given providers/);
+    assert.deepEqual(both.shortlist, run({ task: 'writing', have: ['openai', 'anthropic'] }).shortlist);
+    const foreign = run({ task: 'writing', have: ['claude', 'openai'] });
+    assert.ok(foreign.shortlist.length > 0 && foreign.shortlist.every(e => e.model.startsWith('openai/')));
+    assert.match(foreign.note ?? '', /serve none of the given plans natively/);
     // Cursor maps to the site's "other" app: every route stays open.
     assert.deepEqual(run({ task: 'writing', have: ['cursor', 'zai'] }).shortlist.map(e => e.model.split('/')[0]).every(r => r === 'zai'), true);
   });
@@ -62,8 +64,9 @@ describe('recommend_flow_model ranking', () => {
 
 describe('recommend_flow_model notes', () => {
   it('notes requested models that are unknown, retired, escalation-only or without task data', () => {
-    const out = run({ task: 'writing', have: ['gpt-6.1-sol', 'not-a-model-xyz', 'claude-opus-4-8', 'claude-opus-5-5'] });
-    assert.ok(out.shortlist.length > 0 && out.shortlist.every(e => e.model.endsWith('gpt-6.1-sol')));
+    const out = run({ task: 'writing', have: ['gpt-6.2-sol', 'not-a-model-xyz', 'claude-opus-4-8', 'claude-opus-5-5', 'gpt-6.1-sol'] });
+    assert.ok(out.shortlist.length > 0 && out.shortlist.every(e => e.model.endsWith('gpt-6.2-sol')));
+    assert.match(out.note ?? '', /Superseded by a newer version, not ranked: gpt-6\.1-sol\./);
     assert.match(out.note ?? '', /Not in snapshot: have\[1\]\./);
     assert.doesNotMatch(JSON.stringify(out), /not-a-model-xyz/, 'user free text is never echoed');
     assert.match(out.note ?? '', /Retired by site model policy: claude-opus-4-8\./);

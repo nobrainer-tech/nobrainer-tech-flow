@@ -1,6 +1,6 @@
 # OpenAI review test cases
 
-Recorded with `npm run transcripts -- --in-memory` (1.0.0+flow.2.7.3, MCP 2025-11-25, official
+Recorded with `npm run transcripts -- --in-memory` (1.0.0+flow.2.13.0, MCP 2025-11-25, official
 TypeScript SDK client; InMemoryTransport with buildServer, no HTTP listener).
 Tokens are shortened to `<token>`; all other output is exact. The five positive
 cases cover all six tools. Paste the prompts and expected results into the portal review form.
@@ -46,8 +46,8 @@ Result
 ```json
 {
  "path": "QUICK",
- "flow_version": "2.7.3",
- "contract": "22bba5a9",
+ "flow_version": "2.13.0",
+ "contract": "3f5f8cc3",
  "items": [
   {
    "id": "AC01",
@@ -64,8 +64,8 @@ Result
  "next": {
   "stage": "DRIFT_CHECK",
   "rules": [
-   "Inspect the actual inputs, instructions and required capabilities; for project work include dirty state, callers, tests and existing plan/spec.",
-   "Prior summaries, wiki and worker reports are context, not proof"
+   "Inspect the actual inputs, instructions, callers, tests and dirty state.",
+   "Summaries, wiki and worker reports are context, not proof."
   ],
   "source": "skills/nobrainer-tech-flow/SKILL.md#drift_check-establish-current-truth"
  },
@@ -96,7 +96,7 @@ Result
 ```json
 {
  "card": "event:blocked",
- "flow_version": "2.7.3",
+ "flow_version": "2.13.0",
  "rules": [
   "Before saying BLOCKED, identify the exact failed operation and the acceptance item it prevents.",
   "If the preferred method is technically unavailable, try a relevant permitted alternative within the same scope.",
@@ -286,7 +286,7 @@ Result
 ```json
 {
  "verdict": "DONE_WITH_GAPS",
- "markdown": "## Delivered\n<one sentence: the observable outcome>\n\n## Proof\n- AC01 test, local, accepted (digest 13848f53): <command and result>\n\n## Not checked\n- AC02: <reason>\n\n## Decisions left to you\n<owner decisions, or 'None'>\n\n## Next action\n<one action, or 'None'>\n\nContract 22bba5a9, Flow 2.7.3. Evidence was reported by the agent; the server checked consistency, not truth."
+ "markdown": "## Delivered\n<one sentence: the observable outcome>\n\n## Proof\n- AC01 test, local, accepted (digest 13848f53): <command and result>\n\n## Not checked\n- AC02: <reason>\n\n## Decisions left to you\n<owner decisions, or 'None'>\n\n## Next action\n<one action, or 'None'>\n\nContract 3f5f8cc3, Flow 2.13.0. Evidence was reported by the agent; the server checked consistency, not truth."
 }
 ```
 
@@ -320,7 +320,7 @@ Result
  "priority": "balanced",
  "role": "worker",
  "expired": false,
- "expires": "2026-11-06",
+ "expires": "2026-12-11",
  "cohort": "terminal-bench",
  "scale": "Task success, %",
  "shortlist": [
@@ -340,33 +340,33 @@ Result
    "harness": "claude-code"
   },
   {
-   "model": "openai/gpt-6.1-sol",
+   "model": "openai/gpt-6.2-sol",
    "effort": "max",
-   "quality": 58.2,
+   "quality": 61.5,
    "range": [
-    55.1,
-    61.3
+    58.8,
+    64.3
    ],
-   "cost_usd": 1.92,
-   "cost_per_success_usd": 3.3,
+   "cost_usd": 1.06,
+   "cost_per_success_usd": 1.72,
    "cost_kind": "observed",
-   "seconds": 3177,
+   "seconds": 1214,
    "time_kind": "observed",
    "harness": "codex",
    "eligible": false
   },
   {
-   "model": "openai/gpt-6-luna",
+   "model": "openai/gpt-6.1-terra",
    "effort": "max",
-   "quality": 16.4,
+   "quality": 53.3,
    "range": [
-    13.6,
-    19.1
+    50.2,
+    56.4
    ],
-   "cost_usd": 0.219,
-   "cost_per_success_usd": 1.34,
+   "cost_usd": 2.65,
+   "cost_per_success_usd": 4.97,
    "cost_kind": "observed",
-   "seconds": 2284,
+   "seconds": 123,
    "time_kind": "observed",
    "harness": "codex",
    "eligible": false
@@ -374,8 +374,8 @@ Result
  ],
  "why": "Equal ordinal ranks of quality lower bound, cost and time within the normal quality band. Comparable harness and evidence kinds after plan order; a policy heuristic.",
  "note": "Cost and time are per-task reference figures, not invoices.",
- "snapshot": "2026-10-23",
- "snapshot_sha": "8dab56e2",
+ "snapshot": "2026-11-27",
+ "snapshot_sha": "9e622899",
  "source": "https://nobrainer.tech/ai/benchmark/"
 }
 ```

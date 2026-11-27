@@ -19,7 +19,7 @@ client, plus guidance quoted from the pinned Flow release and a model advisor ba
 | `check_flow_evidence` | Checks one to four evidence records: exit codes, the test-runner summary (pytest, unittest, node:test, Vitest, Jest, Mocha, Playwright, Go, cargo, RSpec, PHPUnit, dotnet), claimed counts, evidence level, URL host and status, file hashes. Marks earlier test results stale when a registered file changes, and returns `REPEATED_DEFECT` after a second failure. |
 | `check_flow_done` | `DONE` only when every item has accepted, current evidence; `DONE_WITH_GAPS` when the rest are listed as unchecked with a reason; otherwise `NOT_DONE` with the exact missing items. |
 | `draft_flow_handoff` | A final-report skeleton built only from the done receipt. |
-| `recommend_flow_model` | A top-3 model shortlist for a data-backed task type (`orchestration`, `instructions`, `frontend`, `research`, `writing`, `terminal-coding`) from a pinned, dated benchmark snapshot, filtered by the providers, models or client apps you have (`have`), with an optional priority (quality, balanced, efficient) and role. The legacy `coding` alias is accepted case-insensitively (for example, `Coding`) and returns `task: "terminal-coding"` with a Terminal-Bench shortlist. Never invents scores and says when data is missing. Like the website, it refuses once the snapshot is 14 days past its fetch time (`expired: true`, `expires` date in every response). |
+| `recommend_flow_model` | A top-3 model shortlist for a data-backed task type (`nb-index` for the all-round NoBrainer index, `orchestration`, `instructions`, `frontend`, `research`, `writing`, `terminal-coding`) from a pinned, dated benchmark snapshot, filtered by the plans, models or client apps you have (`have`; `zenfree` is the free OpenCode Zen plan, and an app alone selects its native plans), with an optional priority (quality, balanced, efficient) and role. The legacy `coding` alias is accepted case-insensitively (for example, `Coding`) and returns `task: "terminal-coding"` with a Terminal-Bench shortlist. Never invents scores and says when data is missing. Like the website, it refuses once the snapshot is 14 days past its fetch time (`expired: true`, `expires` date in every response). |
 
 All six tools are read-only (`readOnlyHint: true`, `openWorldHint: false`). Results are one compact
 JSON text block. Responses never echo your free text: only IDs, enums, digests and canonical Flow text.
@@ -181,7 +181,7 @@ release: update `content/SOURCE.json` (tag, commit, hashes), fix `cards.yaml`, r
 
 ### Updating the benchmark snapshot
 
-`npm run refresh:benchmark -- --source <website>/public_html/ai/benchmark` regenerates
+`npm run refresh:benchmark -- --source <website>/www/ai/benchmark` regenerates
 `data/benchmark/snapshot.json` and `SOURCE.json` deterministically. The website rule applies: a snapshot expires 14 days after its fetch time, so refresh and redeploy at least every 14 days or the advisor answers `expired: true` with an empty shortlist. See `data/benchmark/NOTICE.md`
 for provenance and third-party licences.
 

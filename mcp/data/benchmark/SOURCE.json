@@ -3,13 +3,13 @@
   "source_path": null,
   "website_commit": null,
   "website_dirty": null,
-  "snapshot_date": "2026-10-30",
-  "snapshot_sha256": "8633f9b24eb58d5361358a12dc20a26d450b22681e51932ab22dd9e366e91c9f",
+  "snapshot_date": "2026-11-27",
+  "snapshot_sha256": "9e622899c7094f44fa0790cec15f7e90b6f0877bcc35d4e4eac65bd90b9b5f2a",
   "inputs": {
-    "task-data.json": "714475939cfe32fc514771c52ab526a222f33d13db99318ab95acaa9d6edcb7d",
-    "task-router-core.js": "ba815adbd3d86ccc40aa4870cd3719fe0c079d6835877a32ce4c258091b9fe68",
-    "task-app-defaults.js": "b48ab17d41a1ffec623c8dc59098cfe2b5e4dc916107374fdab871eaa7755c06",
-    "task-model-policy.js": "32d5ce2785b7da143101eda2a0cef81749007eaf68adb4b8986c643e0fe18f71",
+    "task-data.json": "e817cba453ca3c626ecf269e4da77c2e732ec36d957fa8c2623df9e1a4dae67e",
+    "task-router-core.js": "3c3eceae6384851a00597831df94613afea459c1bd97a8b2156f819e24110329",
+    "task-app-defaults.js": "b4a80e2a442b7d2b3cba0f86ef616f2d8147032bedf9839c7d3abcd7b630dd14",
+    "task-model-policy.js": "91334e94da6473639fec514696060518c72917a58fb960747fb6b1e58812feca",
     "terminal-bench-LICENSE.txt": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
     "terminal-bench-2-1-LICENSE.txt": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
   }
