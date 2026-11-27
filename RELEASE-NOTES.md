@@ -1,5 +1,31 @@
 # nobrainer-tech-flow release notes
 
+## v2.13.1 - 2026-11-27
+
+Flow's done gate now refuses a "done" built on cut output, partial data or proof that is
+no longer there.
+
+- **Cut and partial output.** `check_flow_evidence` rejects output that shows it was cut
+  (`TRUNCATED_OUTPUT`), checked after the exit code so a failed rerun still fails. Its optional `expected` and `received` counts make 100 of 240 rows
+  `INCOMPLETE` for any evidence kind, which also withdraws an earlier acceptance. No exception is not proof the
+  data is complete.
+- **Withdrawn proof.** After a resume, an accepted item the agent lists as unchecked now
+  leaves the proof and the verdict becomes `DONE_WITH_GAPS`; before, the server ignored
+  that entry and still answered `DONE`. The answer carries a contract token with those items
+  open again, so resuming from it cannot bring the old proof back.
+- **Tool arguments.** [`nobrainer-security`](skills/nobrainer-security/SKILL.md) treats tool
+  names, descriptions and schemas as untrusted input. Before a call with side effects it
+  checks target, recipient, resource and provider against the user's request, and when two
+  servers offer the same action it uses the approved one.
+- **Lost replies.** The [long-run state](skills/nobrainer-tech-flow/references/long-run-state.md)
+  rule looks a write up at the provider before retrying it after a lost reply, so a resumed
+  task does not do it twice.
+- **Evidence.** [Eval record](docs/evals/completeness-and-arguments-2026-11-27.md): MCP tests
+  cover each new rejection and the withdrawn proof (270 pass). The tool-argument scenario
+  passed 4 of 4 before and after the change: Opus 5.5 already refused the steered
+  argument, so that rule shows no measured gain on it. The lost-reply rule is not yet
+  measured.
+
 ## v2.13.0 - 2026-11-26
 
 Flow on request now costs 16% less per finished task, with the same completion, and it

@@ -171,9 +171,9 @@ Then start with `$nobrainer-tech-flow:nobrainer-tech-flow` or say "Use nobrainer
 **npm** (Node 18+ and Python 3.11+); `--client` is `codex`, `claude`, `opencode` or `copilot`:
 
 ```sh
-npx nobrainer-tech-flow@2.13.0 --client codex            # preview: changes nothing
-npx nobrainer-tech-flow@2.13.0 --client codex --apply    # install
-npx nobrainer-tech-flow@2.13.0 --client codex --undo --apply
+npx nobrainer-tech-flow@2.13.1 --client codex            # preview: changes nothing
+npx nobrainer-tech-flow@2.13.1 --client codex --apply    # install
+npx nobrainer-tech-flow@2.13.1 --client codex --undo --apply
 ```
 
 **Any coding agent** (Git install with preview and undo; macOS, Linux and Windows, no
@@ -298,6 +298,14 @@ flowchart TD
 [`nobrainer-review`](skills/nobrainer-review/).
 What each one owns and its trigger aliases:
 [skill table](docs/HOW_IT_WORKS.md#eighteen-skills-distinct-ownership).
+
+## What's new in 2.13.1
+
+The MCP done gate refuses a "done" that rests on cut output or partial data (`TRUNCATED_OUTPUT`,
+`INCOMPLETE` when fewer items arrived than expected), and an item the agent can no longer
+vouch for after a resume drops out of the proof. `nobrainer-security` checks tool arguments
+against your request, not against what a tool's description asks for. Details:
+[release notes](RELEASE-NOTES.md).
 
 ## What's new in 2.13.0
 

@@ -18,6 +18,8 @@ export type EvidenceRecord = {
   url?: string | undefined;
   status?: number | undefined;
   note?: string | undefined;
+  expected?: number | undefined;
+  received?: number | undefined;
 };
 
 export type RecordResult = {
@@ -34,6 +36,8 @@ const sha = (s: string): Buffer => createHash("sha256").update(s).digest();
 export function recordDigest(r: EvidenceRecord): Buffer {
   // The note is part of the digest so two different observations never share one (spec 7.1 amended).
   const parts = [r.kind, r.cmd ?? "", r.exit ?? "", normaliseOut(r.out ?? ""), r.path ?? "", r.sha256 ?? "", r.url ?? "", r.status ?? "", normaliseText(r.note ?? "")];
+  // Records with counts use a separate, unambiguous encoding; digests of records without them are unchanged.
+  if (r.expected !== undefined || r.received !== undefined) return sha(`v2${JSON.stringify([...parts, r.expected ?? null, r.received ?? null])}`).subarray(0, 4);
   return sha(parts.join("|")).subarray(0, 4);
 }
 
@@ -96,7 +100,31 @@ function registerFile(state: TokenState, path: string, sha256: string): void {
   state.files.push({ path: ph, hash: ch });
 }
 
-const INVALIDATING = new Set(["COUNTS_MISMATCH", "EXIT_OUTPUT_CONFLICT", "NO_TESTS_RAN"]);
+const INVALIDATING = new Set(["COUNTS_MISMATCH", "EXIT_OUTPUT_CONFLICT", "NO_TESTS_RAN", "INCOMPLETE"]);
+
+// Markers that a client or tool cut the output: the summary or an error may be in the missing part.
+const TRUNCATION = [
+  /\[(?=[^\]\n]*\s)[^\]\n]*\btruncated\b[^\]\n]*\]/i,
+  /^\s*\[(?:output\s+)?truncated\]\s*$/im,
+  /<truncated\b/i,
+  /^\s*(?:\.{3}\s*)?\(\s*\d+\s+more\s+lines?\s*\)/im,
+  /^\s*output too large\b/im,
+  /^\s*warning:\s*(?:output\s+)?truncated\b/im,
+  /\btruncated output \(original\b/i,
+  /\.\.\.\s*\[?\d+\s+(?:characters|chars|bytes|lines)\s+(?:truncated|omitted)/i,
+];
+
+/** Expected and received item counts (rows, pages, files) must come together and add up. */
+function judgeCounts(r: EvidenceRecord, id: string): Outcome | undefined {
+  if (r.expected === undefined && r.received === undefined) return undefined;
+  if (r.expected === undefined || r.received === undefined) {
+    return reject("MISSING_FIELD", `${id}: give both expected and received, or neither.`);
+  }
+  if (r.received < r.expected) {
+    return reject("INCOMPLETE", `${id}: received ${r.received} of ${r.expected} expected items; no exception is not proof the data is complete. Fetch the rest (every page), then submit again.`);
+  }
+  return undefined;
+}
 
 type Outcome = { pass: true; level: Level } | { pass: false; failed: true } | { reject: string; why: string };
 
@@ -115,6 +143,10 @@ function judgeRun(r: EvidenceRecord, id: string): Outcome {
     return reject("COUNTS_MISMATCH", `${id}: claimed counts differ from the output (${s.passed} passed, ${s.failed} failed).`);
   }
   if (r.exit !== 0) return { pass: false, failed: true };
+  // Checked after the exit code, so a cut output can never hide a failed rerun.
+  if (TRUNCATION.some((re) => re.test(out))) {
+    return reject("TRUNCATED_OUTPUT", `${id}: the output was cut, so the summary or an error may be missing. Submit the last lines with the summary line.`);
+  }
   if (s && (s.failed > 0 || s.earlierFailure)) return reject("EXIT_OUTPUT_CONFLICT", `${id}: exit 0 but a summary reports failed tests.`);
   if (s && s.passed < 1) return reject("NO_TESTS_RAN", `${id}: the summary shows no passed tests.`);
   // Commands need no test summary, but any recognised summary must be consistent.
@@ -132,10 +164,16 @@ function judgeRun(r: EvidenceRecord, id: string): Outcome {
 }
 
 function judge(r: EvidenceRecord, id: string): Outcome {
+  if (r.kind === "test" || r.kind === "command") {
+    // A failed run stays a failure whatever its counts say; otherwise counts can only make it worse.
+    const run = judgeRun(r, id);
+    if ("failed" in run) return run;
+    return judgeCounts(r, id) ?? run;
+  }
+  // Counts apply to every kind: a hashed file or a 200 page can hold partial data too.
+  const counted = judgeCounts(r, id);
+  if (counted) return counted;
   switch (r.kind) {
-    case "test":
-    case "command":
-      return judgeRun(r, id);
     case "file":
       return { pass: true, level: "static" };
     case "url": {
@@ -178,8 +216,6 @@ export function applyEvidence(state: TokenState, records: EvidenceRecord[]): Evi
       results.push({ item: id, verdict: "REJECTED", code: "KIND_MISMATCH", why: `${id} needs ${item.proof} evidence, not ${r.kind}.` });
       continue;
     }
-    // Only accepted-shape file evidence for a file item may change the registry (and so stale runs).
-    if (r.kind === "file") registerFile(state, r.path as string, r.sha256 as string);
     const o = judge(r, id);
     if ("reject" in o) {
       results.push({ item: id, verdict: "REJECTED", code: o.reject, why: o.why });
@@ -202,6 +238,9 @@ export function applyEvidence(state: TokenState, records: EvidenceRecord[]): Evi
       results.push({ item: id, verdict: "REJECTED", code: "LEVEL_TOO_LOW", why: `${id} needs ${item.level}; this evidence proves ${o.level}.` });
       continue;
     }
+    // Only accepted file evidence may change the registry (and so stale runs); a rejected
+    // partial file must not.
+    if (r.kind === "file") registerFile(state, r.path as string, r.sha256 as string);
     results.push({ item: id, verdict: "ACCEPTED", level: o.level, digest: hex8(settle(item, "ACCEPTED", r, state.epoch)) });
   }
   return { results, repeated, warnings: sameOutputWarnings(state) };

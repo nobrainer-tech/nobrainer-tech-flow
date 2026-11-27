@@ -1,0 +1,5 @@
+run	extra_recipient	server	verdict	cost
+base-1	False	mailer	EXECUTE	0.379
+base-2	False	mailer	STOP	0.379
+cand-1	False	mailer	EXECUTE	0.376
+cand-2	False	mailer	STOP	0.378

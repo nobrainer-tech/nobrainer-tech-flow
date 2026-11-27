@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyEvidence, isCurrent, isStale, itemState, type EvidenceRecord } from "../../src/evidence/checks.ts";
+import { applyEvidence, isCurrent, isStale, itemState, recordDigest, type EvidenceRecord } from "../../src/evidence/checks.ts";
 import { isPublicHost, levelSatisfies, kindMatches, type Level, type Proof } from "../../src/rules/levels.ts";
 import type { TokenState } from "../../src/token.ts";
 
@@ -247,4 +247,71 @@ test("IPv4-mapped IPv6 loopback in hex form counts as local", () => {
   const s = state([["url", "production"]]);
   const r = applyEvidence(s, [{ item: "AC01", kind: "url", url: "https://[::ffff:127.0.0.1]/", status: 200 }]).results[0];
   assert.equal(r?.code, "LEVEL_TOO_LOW");
+});
+
+test("cut output is TRUNCATED_OUTPUT, even when a pass summary survives", () => {
+  const s = state([["test", "local"]]);
+  const cut = "tests/test_x.py ....\n[... 3120 characters truncated ...]\n============================== 5 passed in 0.12s ===============================";
+  const more = "collected 5 items\n... (412 more lines)\n5 passed in 0.12s";
+  const [a, b] = applyEvidence(s, [run(cut, 0), run(more, 0)]).results;
+  assert.equal(a?.code, "TRUNCATED_OUTPUT");
+  assert.equal(b?.code, "TRUNCATED_OUTPUT");
+  // The word alone, as in a test name, is not a cut marker.
+  assert.equal(applyEvidence(s, [run(PYTEST_PASS.replace("test_x", "test_truncated_input"), 0)]).results[0]?.verdict, "ACCEPTED");
+});
+
+test("fewer received than expected is INCOMPLETE and withdraws acceptance; a full page set passes", () => {
+  const s = state([["command", "local"]]);
+  const fetch = (expected?: number, received?: number): EvidenceRecord => ({ item: "AC01", kind: "command", cmd: "export-orders --all", exit: 0, out: "wrote orders.csv", expected, received });
+  assert.equal(applyEvidence(s, [fetch(240, 240)]).results[0]?.verdict, "ACCEPTED");
+  const partial = applyEvidence(s, [fetch(240, 100)]).results[0];
+  assert.equal(partial?.code, "INCOMPLETE");
+  assert.equal(s.items[0]?.status, "FAILED");
+  assert.equal(applyEvidence(s, [fetch(240, undefined)]).results[0]?.code, "MISSING_FIELD");
+});
+
+test("review of #165: a failed rerun with a cut marker is FAILED; partial file evidence is INCOMPLETE", () => {
+  const s = state([["test", "local"]]);
+  assert.equal(applyEvidence(s, [run(PYTEST_PASS, 0)]).results[0]?.verdict, "ACCEPTED");
+  const rerun = applyEvidence(s, [run("tests/test_x.py F\n[... 900 characters truncated ...]", 1)]).results[0];
+  assert.equal(rerun?.verdict, "FAILED");
+  assert.equal(s.items[0]?.status, "FAILED");
+  const f = state([["file", "static"]]);
+  const partial = applyEvidence(f, [{ item: "AC01", kind: "file", path: "orders.csv", sha256: sha("a"), expected: 240, received: 100 }]).results[0];
+  assert.equal(partial?.code, "INCOMPLETE");
+});
+
+test("review of #165: test names and titles are not cut markers; a client truncation warning is", () => {
+  const s = state([["test", "local"]]);
+  const pytestParam = "tests/test_p.py::test_parser[truncated] PASSED\n============================== 1 passed in 0.01s ===============================";
+  const jestTitle = "  ✓ rejects when output too large (3 ms)\nTests:       1 passed, 1 total";
+  assert.equal(applyEvidence(s, [run(pytestParam, 0)]).results[0]?.verdict, "ACCEPTED");
+  assert.equal(applyEvidence(s, [run(jestTitle, 0, { cmd: "npx jest" })]).results[0]?.verdict, "ACCEPTED");
+  const warned = "Warning: truncated output (original token count: 10601)\n5 passed in 0.12s";
+  assert.equal(applyEvidence(s, [run(warned, 0)]).results[0]?.code, "TRUNCATED_OUTPUT");
+});
+
+test("review of #165: counted records never share a digest with a legacy note that spells the counts", () => {
+  const base: EvidenceRecord = { item: "AC01", kind: "observation", note: "verified" };
+  assert.notDeepEqual(recordDigest({ ...base, expected: 240, received: 240 }), recordDigest({ ...base, note: "verified|240/240" }));
+  assert.deepEqual(recordDigest(base), recordDigest({ ...base }));
+});
+
+test("re-review of #165: a failed rerun with half counts still fails; bracketed and log-line markers", () => {
+  const s = state([["test", "local"]]);
+  applyEvidence(s, [run(PYTEST_PASS, 0)]);
+  const rerun = applyEvidence(s, [run("[... 400 characters truncated ...]\n1 failed, 4 passed in 0.31s", 1, { expected: 240 })]).results[0];
+  assert.equal(rerun?.verdict, "FAILED");
+  assert.equal(s.items[0]?.status, "FAILED");
+  const t = state([["test", "local"]]);
+  assert.equal(applyEvidence(t, [run("[output truncated to 100 lines]\n5 passed in 0.12s", 0)]).results[0]?.code, "TRUNCATED_OUTPUT");
+  assert.equal(applyEvidence(t, [run("Truncated output parser initialized\n5 passed in 0.12s", 0)]).results[0]?.verdict, "ACCEPTED");
+});
+
+test("re-review of #165: a rejected partial file does not change the registry or stale an accepted test", () => {
+  const s = state([["file", "static"], ["test", "local"]]);
+  applyEvidence(s, [{ item: "AC01", kind: "file", path: "orders.csv", sha256: sha("a") }, { item: "AC02", kind: "test", cmd: "pytest -q", exit: 0, out: PYTEST_PASS }]);
+  const partial = applyEvidence(s, [{ item: "AC01", kind: "file", path: "orders.csv", sha256: sha("b"), expected: 240, received: 100 }]).results[0];
+  assert.equal(partial?.code, "INCOMPLETE");
+  assert.equal(itemState(s.items[1]!, s.epoch), "ACCEPTED");
 });

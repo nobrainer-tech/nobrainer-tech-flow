@@ -18,6 +18,8 @@ const record = z.strictObject({
   url: z.string().max(500).optional(),
   status: z.int().optional(),
   note: z.string().max(300).optional(),
+  expected: z.int().min(0).optional().describe("Items expected (rows, pages)"),
+  received: z.int().min(0).optional().describe("Items returned"),
 });
 
 const input = z.strictObject({
