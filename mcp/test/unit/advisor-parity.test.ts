@@ -42,7 +42,12 @@ const FIXED: [Record<string, unknown>, string[]][] = [
   ...['coding', 'Coding', 'CODING', 'cOdInG', ' Coding ', '\tcOdInG\n'].map(task =>
     [{ task, have: ['openai', 'anthropic'], priority: 'quality' },
       ['anthropic/claude-sonnet-5-5@max', 'openai/gpt-6.2-sol@max', 'openai/gpt-6.1-terra@max']] as [Record<string, unknown>, string[]]),
-  [{ task: 'instructions' }, ['opencode-zen/gemini-4-neon@high']]
+  [{ task: 'instructions' }, ['opencode-zen/gemini-4-neon@high']],
+  // An app beside an explicit plan does not narrow it (the site has no app filter).
+  [{ task: 'Coding', have: ['muse', 'deepseek'], priority: 'quality' }, ['deepseek/deepseek-flash@max']],
+  // The free Zen plan ranks only -free route IDs.
+  [{ task: 'terminal-coding', have: ['zenfree'], priority: 'quality' },
+    ['opencode-zen/deepseek-v4.1-flash-free@max', 'opencode-zen/hy4-flash-free@none', 'opencode-zen/beam-free@none']]
 ];
 
 describe('ranking parity with the site router', () => {
@@ -66,7 +71,8 @@ describe('ranking parity with the site router', () => {
     Date.now = () => Date.parse(data.fetchedAt) + 3600000;
     try {
       const R = createRequire(join(dir, 'x.js'))('./task-router-core.js');
-      const plans = [['openai', 'anthropic'], ['openai'], ['anthropic'], ['zai', 'kimi', 'minimax', 'copilot'], ['xai', 'google', 'meta', 'zen'], ['copilot'], Object.keys(R.ROUTES)];
+      const plans = [['openai', 'anthropic'], ['openai'], ['anthropic'], ['zai', 'kimi', 'minimax', 'copilot'], ['xai', 'google', 'meta', 'zen'], ['copilot'],
+        ['deepseek'], ['zenfree'], ['zenfree', 'openai'], ['zen', 'zenfree'], Object.keys(R.ROUTES)];
       const subsets = [undefined, ['gpt-6.1-sol', 'claude-sonnet-5-5', 'glm-5.3-flash'], ['gpt-6-sol', 'gpt-6-luna', 'kimi-k3']];
       let checked = 0;
       for (const task of TASKS) for (const [priority, pick] of [['quality', 'g'], ['balanced', 'b'], ['efficient', 'e']])

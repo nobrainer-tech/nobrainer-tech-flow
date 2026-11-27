@@ -48,7 +48,14 @@ export function build(source) {
 
   // Every static access route, from the site's routesFor with all plans selected.
   const allRoutes = R.stateOf({ have: A.ROUTE_ORDER, app: 'opencode', via: 'ocx' });
-  const routesOf = m => Object.fromEntries(R.routesFor(m, allRoutes).map(p => [p.route, p.routeId]));
+  // The site's free Zen plan (have: zenfree, without zen) is the zen route limited to -free route
+  // IDs; it is stored under its own key so the advisor can offer exactly those IDs.
+  const freeZen = R.stateOf({ have: ['zenfree'] });
+  const routesOf = m => {
+    const out = Object.fromEntries(R.routesFor(m, allRoutes).map(p => [p.route, p.routeId]));
+    const free = R.routesFor(m, freeZen).find(p => p.route === 'zen');
+    return free ? { ...out, zenfree: free.routeId } : out;
+  };
   const modelKey = m => String(m.canonical || m.id || '').split('/').pop();
   const lineageKey = m => String(m.canonical || m.id || '').toLowerCase().replace(/\d+(?:\.\d+)*(?:-\d+)?/g, '#');
   const dated = m => /^\d{4}-\d{2}-\d{2}$/.test(m.releaseDate || '');

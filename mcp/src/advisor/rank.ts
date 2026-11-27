@@ -22,13 +22,17 @@ export function routing(S: LoadedSnapshot, state: RankState) {
   const routePriority = (r: string) => { const i = order.indexOf(r); return i < 0 ? 999 : i; };
   // Selected plans in owner route order; named apps restrict them to the plans whose clients
   // include the app (the site's ROUTE_META). Without an app: no restriction.
-  const wanted = [...new Set(state.have)].filter(r => order.includes(r) && (!state.native || state.native.includes(r)))
+  // The free Zen plan (zenfree) is the zen route limited to -free IDs, unless full zen is selected too.
+  const freeZen = state.have.includes('zenfree') && !state.have.includes('zen');
+  const keyOf = (r: string) => r === 'zen' && freeZen ? 'zenfree' : r;
+  const wanted = [...new Set(state.have.map(r => r === 'zenfree' ? 'zen' : r))]
+    .filter(r => order.includes(r) && (!state.native || state.native.includes(r)))
     .sort((a, b) => routePriority(a) - routePriority(b));
   const routeFor = (m: SnapshotModel) => {
     if (state.excluded.has(m.id)) return null;
     const allowed = state.modelRoutes?.get(m.id);
-    const route = wanted.find(r => m.routes[r] && (!allowed || allowed.has(r)));
-    return route ? { route, routeId: m.routes[route] as string } : null;
+    const route = wanted.find(r => m.routes[keyOf(r)] && (!allowed || allowed.has(r) || allowed.has(keyOf(r))));
+    return route ? { route, routeId: m.routes[keyOf(route)] as string } : null;
   };
   const roleAllowed = (m: SnapshotModel) => state.role === 'main' ? m.main : m.worker;
   const fallbackOnly = (m: SnapshotModel) => m.fallback || m.successors.some(id => {

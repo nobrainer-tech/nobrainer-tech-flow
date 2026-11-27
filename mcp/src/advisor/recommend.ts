@@ -5,6 +5,8 @@ import { SNAPSHOT as S, expiresAt, type SnapshotModel } from './snapshot.ts';
 export const MAX_RESPONSE_BYTES = 1500;
 const SHORTLIST = 3;
 const API_ROUTES = ['xai', 'google', 'meta', 'deepseek'];
+// The site's free OpenCode Zen plan: the zen route limited to -free model IDs.
+const FREE_ZEN = 'zenfree';
 const EXPIRED_NOTE = 'Snapshot expired. Refresh the released sources before generating a routing policy.';
 const QUALITY_FIRST = 'Quality first: highest quality lower bound; cost and time do not decide.';
 // Common names for the site's provider ids (task-app-defaults.js ROUTES) and client apps (ROUTE_META clients).
@@ -71,7 +73,7 @@ export function recommendFlowModel(input: unknown, now: Date = new Date()): Reco
   (req.have ?? []).forEach((name, at) => {
     const s = name.trim().toLowerCase();
     // An exact provider id wins ("copilot" is the plan); "github-copilot" names the app.
-    const provider = S.policy.route_order.includes(s) ? s : PROVIDER_ALIASES[s];
+    const provider = S.policy.route_order.includes(s) || s === FREE_ZEN ? s : PROVIDER_ALIASES[s];
     const app = provider ? undefined : S.policy.apps.includes(s) ? s : APP_ALIASES[s];
     if (app) apps.push(app);
     if (provider) providers.push(provider);
@@ -84,7 +86,7 @@ export function recommendFlowModel(input: unknown, now: Date = new Date()): Reco
   // may be reached through any route.
   const routed = matched.every(m => m.route) ? [...new Set(matched.map(m => m.route as string))] : S.policy.route_order;
   const have = providers.length ? providers : matched.length ? routed : restrict ?? S.policy.default_providers;
-  if (providers.length && restrict && !providers.some(p => restrict.includes(p))) notes.push('These apps reach none of the given providers natively.');
+  if (providers.length && restrict && !providers.some(p => restrict.includes(p))) notes.push('These apps serve none of the given plans natively; the plans were ranked as given.');
   if (!providers.length && !matched.length && !restrict) notes.push('No providers or models given; assumed site defaults: ' + have.join(', ') + '.');
   const allowed = new Set(matched.flatMap(x => x.models.map(m => m.id)));
   const modelRoutes = new Map<string, Set<string>>();
@@ -93,8 +95,9 @@ export function recommendFlowModel(input: unknown, now: Date = new Date()): Reco
     for (const route of entry.route ? [entry.route] : S.policy.route_order) routes.add(route);
     modelRoutes.set(model.id, routes);
   }
+  // Explicit plans are honored as given (the site has no app filter); apps alone select native plans.
   const state: RankState = {
-    task, have, native: restrict, role: role === 'main' ? 'main' : 'subs',
+    task, have, native: providers.length ? null : restrict, role: role === 'main' ? 'main' : 'subs',
     modelRoutes,
     excluded: new Set(matched.length ? S.models.filter(m => !allowed.has(m.id)).map(m => m.id) : [])
   };
