@@ -10,6 +10,13 @@ compound across tasks. This skill is explicitly inspired by Andrej Karpathy's
 [LLM wiki concept](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
 and is an independent portable adaptation, not an official Karpathy project.
 
+New wikis and new pages use the
+[Open Knowledge Format (OKF) v0.3](https://github.com/open-knowledge-format/open-knowledge-format/blob/main/SPEC.md):
+YAML frontmatter with `type`, sources, trust and lifecycle fields, standard
+Markdown links, and `index.md`/`log.md` in the OKF form. An existing wiki keeps
+its own conventions; do not mass-migrate it. Exporting an existing wiki to an
+OKF bundle is a separate, approved step.
+
 Read [references/setup.md](references/setup.md) before creating or reconnecting a
 wiki. One skill owns all wiki behavior so setup, query, capture and maintenance
 cannot drift into competing wrappers.
@@ -56,8 +63,11 @@ over copying an external work.
 
 Separate observed fact, attributed claim, inference, recommendation and
 forecast. Every durable entry needs source, date, scope, classification and
-certainty; dates are absolute. Preserve contradictions and stale-risk markers
-rather than silently choosing a convenient version.
+certainty; dates are absolute. On OKF pages, provenance, authorship, checks
+and classification live in frontmatter (`sources`, `generated`, `verified`,
+`x-nb-classification`); claim dates, scope and certainty stay with the claim.
+Preserve contradictions and stale-risk markers rather than silently choosing a
+convenient version.
 
 ## `SETUP`
 
@@ -103,10 +113,13 @@ the answer, commits or pushes.
 4. Search existing pages by terms/aliases/languages before creating anything.
 5. Prepare one scoped write set: allowed source capture, pages, index, log and
    exact inbox items to promote.
-6. Apply minimal edits with citations and relative links.
+6. Apply minimal edits in the target wiki's page format (see the setup
+   reference): per-claim citations and Markdown links on OKF pages, the
+   existing citation and link style elsewhere.
 7. Verify target content, index reachability, source links, classification and
    secret boundaries before marking inbox items processed.
-8. Append one meaningful change-log entry only after successful promotion.
+8. Add one meaningful log entry in the wiki's log format (OKF: under today's
+   date heading) only after successful promotion.
 
 A mixed sensitive source requires an explicit sanitization list and destination
 approval. Do not mass-rewrite, resolve owner decisions, commit, push or publish
@@ -123,9 +136,11 @@ missing speech from surrounding context.
 
 Audit exact dangling links, index drift, stale/time-sensitive claims, uncited
 material claims, contradictions, duplicate candidates, orphans, inbox backlog,
-classification leaks and secret/PII risk. Every finding needs file/line, evidence,
-confidence and one recommended action. An orphan may be intentional; a fuzzy
-title match is not permission to merge.
+classification leaks, secret/PII risk, frontmatter that does not parse, new
+OKF pages without `type`, and `stale_after` values that are reached
+(`now >= stale_after`) or malformed. Every finding needs
+file/line, evidence, confidence and one recommended action. An orphan may be
+intentional; a fuzzy title match is not permission to merge.
 
 `TIDY_APPLY` may automatically perform only deterministic reversible work in the
 approved scope: an exact link correction with a proven target, missing index

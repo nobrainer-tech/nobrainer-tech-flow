@@ -216,7 +216,7 @@ recurring boundary:
 | [`nobrainer-security`](../skills/nobrainer-security/) | `nb-security` | Threat models, security review, supply-chain audit and high-risk release evidence |
 | [`nobrainer-sessions`](../skills/nobrainer-sessions/) | `nb-sessions` | Named visible sessions, exact identity, isolated writers, audited handoff, lease and recovery |
 | [`nobrainer-spec-driven-development`](../skills/nobrainer-spec-driven-development/) | `nb-sdd` | Durable specification and acceptance ledger when contracts, risk or resumability justify it |
-| [`nobrainer-wiki`](../skills/nobrainer-wiki/) | `nb-wiki` | Targeted retrieval and sourced durable knowledge without hidden memory or live task state |
+| [`nobrainer-wiki`](../skills/nobrainer-wiki/) | `nb-wiki` | Targeted retrieval and sourced durable knowledge without hidden memory or live task state; new pages in Open Knowledge Format v0.3 |
 | [`nobrainer-browser`](../skills/nobrainer-browser/) | `nb-browser` | Playwright-first rendered inspection, bounded CDP profile restart, approved session attach, browser tests and trace evidence |
 | [`nobrainer-autoimprove`](../skills/nobrainer-autoimprove/) | `nb-autoimprove` | Measured baseline/variant/eval/holdout improvement with keep-or-revert |
 | [`nobrainer-decide`](../skills/nobrainer-decide/) | `just decide` / `just-decide` / `decide` / `nb-decide` / `nobrainer-decide` / `deep decide` / `deep-decide` | Quick, standard or deep decisions; feasibility, reliability, total cost, delivery time and practical growth before commitment |
@@ -343,6 +343,8 @@ native transport and all-client savings are not implied. See [session restart](S
   [autoresearch](https://github.com/karpathy/autoresearch) measure-change-keep
   loop.
 - `nobrainer-wiki` is an independent adaptation of Andrej Karpathy's
-  [LLM wiki concept](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
+  [LLM wiki concept](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f);
+  its new pages follow the
+  [Open Knowledge Format v0.3](https://github.com/open-knowledge-format/open-knowledge-format/blob/main/SPEC.md).
 - Other external design sources remain cited inside the exact skill where they
   influenced a behavior contract.
