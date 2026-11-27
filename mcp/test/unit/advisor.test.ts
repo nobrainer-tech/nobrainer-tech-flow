@@ -62,8 +62,9 @@ describe('recommend_flow_model ranking', () => {
 
 describe('recommend_flow_model notes', () => {
   it('notes requested models that are unknown, retired, escalation-only or without task data', () => {
-    const out = run({ task: 'writing', have: ['gpt-6.1-sol', 'not-a-model-xyz', 'claude-opus-4-8', 'claude-opus-5-5'] });
-    assert.ok(out.shortlist.length > 0 && out.shortlist.every(e => e.model.endsWith('gpt-6.1-sol')));
+    const out = run({ task: 'writing', have: ['gpt-6.2-sol', 'not-a-model-xyz', 'claude-opus-4-8', 'claude-opus-5-5', 'gpt-6.1-sol'] });
+    assert.ok(out.shortlist.length > 0 && out.shortlist.every(e => e.model.endsWith('gpt-6.2-sol')));
+    assert.match(out.note ?? '', /Superseded by a newer version, not ranked: gpt-6\.1-sol\./);
     assert.match(out.note ?? '', /Not in snapshot: have\[1\]\./);
     assert.doesNotMatch(JSON.stringify(out), /not-a-model-xyz/, 'user free text is never echoed');
     assert.match(out.note ?? '', /Retired by site model policy: claude-opus-4-8\./);

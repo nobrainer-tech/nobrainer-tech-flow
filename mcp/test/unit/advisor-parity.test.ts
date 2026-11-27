@@ -1,5 +1,5 @@
 // Parity with the site's own router (task-router-core.js rank()) and snapshot regeneration.
-// Live checks need the website checkout: NB_BENCHMARK_SOURCE=<website>/public_html/ai/benchmark.
+// Live checks need the website checkout: NB_BENCHMARK_SOURCE=<website>/www/ai/benchmark.
 // Without it (CI) they skip, and the fixed cases below still pin the expected order.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -21,27 +21,28 @@ const NOW = new Date(Date.parse(SNAPSHOT.fetched_at) + 3600000);
 const pickOf = (input: Record<string, unknown>) =>
   ((recommendFlowModel(input, NOW) as { shortlist: Entry[] }).shortlist).filter(e => e.eligible !== false).map(e => e.model + '@' + (e.effort ?? 'default'));
 
-// Captured from the website's rank() on 2026-10-30, fetchedAt 2026-10-30T08:13:13.369920+00:00
-// (daily-refresh candidate; the expected order is unchanged from the 2026-10-23 capture).
+// Captured from the website's rank() on 2026-11-27, fetchedAt 2026-11-27T05:30:04.450355+00:00,
+// snapshotId sha256:5c879f59e4acbc77e97f56b09f386cd04337024c3e000cb4002adea4a3d47135
+// (daily-refresh candidate; router modules identical to the published site on 2026-11-27).
 // Date.now() at fetchedAt + 1 h, app opencode via ocx:
 // the first three distinct models of its eligible pool.
 const CAPTURE_INPUTS = {
-  'task-data.json': '714475939cfe32fc514771c52ab526a222f33d13db99318ab95acaa9d6edcb7d',
-  'task-router-core.js': 'ba815adbd3d86ccc40aa4870cd3719fe0c079d6835877a32ce4c258091b9fe68',
-  'task-app-defaults.js': 'b48ab17d41a1ffec623c8dc59098cfe2b5e4dc916107374fdab871eaa7755c06',
-  'task-model-policy.js': '32d5ce2785b7da143101eda2a0cef81749007eaf68adb4b8986c643e0fe18f71'
+  'task-data.json': 'e817cba453ca3c626ecf269e4da77c2e732ec36d957fa8c2623df9e1a4dae67e',
+  'task-router-core.js': '3c3eceae6384851a00597831df94613afea459c1bd97a8b2156f819e24110329',
+  'task-app-defaults.js': 'b4a80e2a442b7d2b3cba0f86ef616f2d8147032bedf9839c7d3abcd7b630dd14',
+  'task-model-policy.js': '91334e94da6473639fec514696060518c72917a58fb960747fb6b1e58812feca'
 };
 const FIXED: [Record<string, unknown>, string[]][] = [
-  [{ task: 'orchestration', have: ['openai', 'anthropic'] }, ['openai/gpt-6.1-sol@max', 'anthropic/claude-sonnet-5-5@max']],
+  [{ task: 'orchestration', have: ['openai', 'anthropic'] }, ['anthropic/claude-sonnet-5-5@max']],
   [{ task: 'frontend', have: ['anthropic'], priority: 'quality' }, ['anthropic/claude-sonnet-5-5@xhigh', 'anthropic/claude-haiku-5-5@high']],
   [{ task: 'research', have: ['openai', 'anthropic', 'zai'], role: 'main' }, ['anthropic/claude-opus-5-5@high']],
-  [{ task: 'writing', have: ['openai'], priority: 'efficient' }, ['openai/gpt-6.1-sol@max']],
+  [{ task: 'writing', have: ['openai'], priority: 'efficient' }, ['openai/gpt-6-luna@max']],
   [{ task: 'terminal-coding', have: ['openai', 'anthropic'], priority: 'quality' },
-    ['anthropic/claude-sonnet-5-5@max', 'openai/gpt-6.1-sol@max', 'openai/gpt-6-luna@max']],
+    ['anthropic/claude-sonnet-5-5@max', 'openai/gpt-6.2-sol@max', 'openai/gpt-6.1-terra@max']],
   ...['coding', 'Coding', 'CODING', 'cOdInG', ' Coding ', '\tcOdInG\n'].map(task =>
     [{ task, have: ['openai', 'anthropic'], priority: 'quality' },
-      ['anthropic/claude-sonnet-5-5@max', 'openai/gpt-6.1-sol@max', 'openai/gpt-6-luna@max']] as [Record<string, unknown>, string[]]),
-  [{ task: 'instructions' }, ['openai/gpt-6.1-sol@max']]
+      ['anthropic/claude-sonnet-5-5@max', 'openai/gpt-6.2-sol@max', 'openai/gpt-6.1-terra@max']] as [Record<string, unknown>, string[]]),
+  [{ task: 'instructions' }, ['opencode-zen/gemini-4-neon@high']]
 ];
 
 describe('ranking parity with the site router', () => {

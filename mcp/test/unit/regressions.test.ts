@@ -293,12 +293,12 @@ test("review 2: recognized zero-pass command reruns withdraw acceptance before o
 
 test("delta 3: mixed model inputs preserve each qualified route", () => {
   for (const extra of ["openai/gpt-6-luna", "unknown-model", "gpt-6-luna"]) {
-    const out = recommendFlowModel({ task: "writing", have: ["github-copilot/gpt-6.1-sol", extra] }, FRESH) as { shortlist: Array<{ model: string }> };
-    assert.ok(out.shortlist.some(e => e.model === "github-copilot/gpt-6.1-sol"));
-    assert.ok(!out.shortlist.some(e => e.model === "openai/gpt-6.1-sol"), JSON.stringify(out));
+    const out = recommendFlowModel({ task: "writing", have: ["github-copilot/gpt-6.2-sol", extra] }, FRESH) as { shortlist: Array<{ model: string }> };
+    assert.ok(out.shortlist.some(e => e.model === "github-copilot/gpt-6.2-sol"));
+    assert.ok(!out.shortlist.some(e => e.model === "openai/gpt-6.2-sol"), JSON.stringify(out));
   }
-  const both = recommendFlowModel({ task: "writing", have: ["github-copilot/gpt-6.1-sol", "openai/gpt-6.1-sol"] }, FRESH) as { shortlist: Array<{ model: string }> };
-  assert.ok(both.shortlist.some(e => e.model === "openai/gpt-6.1-sol"), "an explicitly allowed direct route remains usable");
+  const both = recommendFlowModel({ task: "writing", have: ["github-copilot/gpt-6.2-sol", "openai/gpt-6.2-sol"] }, FRESH) as { shortlist: Array<{ model: string }> };
+  assert.ok(both.shortlist.some(e => e.model === "openai/gpt-6.2-sol"), "an explicitly allowed direct route remains usable");
 });
 
 test("delta 5: Go output tails retain successful packages alongside skipped packages", async () => {

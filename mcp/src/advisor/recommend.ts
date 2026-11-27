@@ -4,10 +4,10 @@ import { SNAPSHOT as S, expiresAt, type SnapshotModel } from './snapshot.ts';
 
 export const MAX_RESPONSE_BYTES = 1500;
 const SHORTLIST = 3;
-const API_ROUTES = ['xai', 'google', 'meta'];
+const API_ROUTES = ['xai', 'google', 'meta', 'deepseek'];
 const EXPIRED_NOTE = 'Snapshot expired. Refresh the released sources before generating a routing policy.';
 const QUALITY_FIRST = 'Quality first: highest quality lower bound; cost and time do not decide.';
-// Common names for the site's provider ids (task-app-defaults.js ROUTES) and client apps (APPS).
+// Common names for the site's provider ids (task-app-defaults.js ROUTES) and client apps (ROUTE_META clients).
 const PROVIDER_ALIASES: Record<string, string> = { chatgpt: 'openai', 'z.ai': 'zai', glm: 'zai', grok: 'xai', gemini: 'google', 'opencode-zen': 'zen' };
 const APP_ALIASES: Record<string, string> = { 'claude-code': 'claude', 'github-copilot': 'copilot', cursor: 'other', windsurf: 'other', gemini_cli: 'other', 'gemini-cli': 'other' };
 
@@ -77,8 +77,8 @@ export function recommendFlowModel(input: unknown, now: Date = new Date()): Reco
     if (provider) providers.push(provider);
     else if (!app) matched.push({ name, at, models: matchModels(name), route: routeProvider(s) });
   });
-  // An app alone selects its native plans (codex: openai, claude: anthropic, copilot: copilot);
-  // opencode and other (e.g. Cursor) allow every route, like the site's NATIVE map.
+  // An app alone selects its native plans (codex: openai, claude: anthropic, copilot: copilot,
+  // muse: meta); opencode and other (e.g. Cursor) allow every route.
   const restrict = apps.length && apps.every(a => S.policy.native_routes[a]) ? [...new Set(apps.flatMap(a => S.policy.native_routes[a] ?? []))] : null;
   // A qualified route ID ("github-copilot/gpt-6.1-sol") keeps its provider; a bare model name
   // may be reached through any route.
@@ -113,7 +113,7 @@ export function recommendFlowModel(input: unknown, now: Date = new Date()): Reco
     const { routeFor, roleAllowed } = routing(S, state);
     const listed = new Set(shortlist.map(r => r.model));
     const ranked = new Set(result.ranked.filter(r => !r.fallbackOnly).map(r => r.model));
-    const groups: Record<string, string[]> = { unknown: [], retired: [], nodata: [], role: [], unreachable: [], fallback: [] };
+    const groups: Record<string, string[]> = { unknown: [], retired: [], superseded: [], nodata: [], role: [], unreachable: [], fallback: [] };
     // Never echo user text: unmatched names are reported by position, matches by snapshot id.
     matched.forEach(({ name, at, models }) => {
       const model = models[0];
@@ -121,6 +121,8 @@ export function recommendFlowModel(input: unknown, now: Date = new Date()): Reco
       const key = model ? keyOf(model.id) : retired ?? 'have[' + at + ']';
       const group = !model ? (retired ? 'retired' : 'unknown')
         : models.some(m => listed.has(m.id) || ranked.has(m.id)) ? null
+        // The site's recency policy ranks only current versions; an older one keeps no rows.
+        : !S.table.some(r => r.model === model.id) && model.successors.length ? 'superseded'
         : !taskRows.some(r => r.model === model.id) ? 'nodata'
         : !roleAllowed(model) ? 'role'
         : !routeFor(model) ? 'unreachable'
@@ -130,6 +132,7 @@ export function recommendFlowModel(input: unknown, now: Date = new Date()): Reco
     notes.push(...[
       list('Not in snapshot', groups.unknown ?? []),
       list('Retired by site model policy', groups.retired ?? []),
+      list('Superseded by a newer version, not ranked', groups.superseded ?? []),
       list('No ' + task + ' data', groups.nodata ?? []),
       list(role === 'main' ? 'Not ranked as main (worker-only)' : 'Escalation-only, not ranked for workers', groups.role ?? []),
       list('Not reachable with these providers', groups.unreachable ?? []),
@@ -137,7 +140,7 @@ export function recommendFlowModel(input: unknown, now: Date = new Date()): Reco
     ].filter((x): x is string => x != null));
   }
   if (shortlist.length) notes.push('Cost and time are per-task reference figures, not invoices.');
-  if (shortlist.some(r => API_ROUTES.includes(r.route))) notes.push('xai/google/meta routes need separate API access.');
+  if (shortlist.some(r => API_ROUTES.includes(r.route))) notes.push('xai/google/meta/deepseek routes need separate API access.');
 
   const out: Record<string, unknown> = {
     task, priority, role, ...fresh,

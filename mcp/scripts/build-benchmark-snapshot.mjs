@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Builds the pinned benchmark snapshot that recommend_flow_model reads.
-// Usage: node scripts/build-benchmark-snapshot.mjs --source <public_html/ai/benchmark> [--out <dir>]
+// Usage: node scripts/build-benchmark-snapshot.mjs --source <www/ai/benchmark> [--out <dir>]
 // Static parts of the site's routing (model recency policy, access routes, role exclusions,
 // successor candidates, quality-band spans) are computed here with the site's own modules,
 // so the runtime port only repeats the per-request ranking. Output is byte-deterministic.
@@ -22,7 +22,7 @@ function args(argv) {
     if (!['--source', '--out'].includes(argv[i]) || !argv[i + 1]) throw new Error('Usage: build-benchmark-snapshot.mjs --source <dir> [--out <dir>]');
     out[argv[i].slice(2)] = argv[i + 1];
   }
-  if (!out.source) throw new Error('Missing --source <path to public_html/ai/benchmark>');
+  if (!out.source) throw new Error('Missing --source <path to www/ai/benchmark>');
   return out;
 }
 
@@ -53,11 +53,13 @@ export function build(source) {
   const lineageKey = m => String(m.canonical || m.id || '').toLowerCase().replace(/\d+(?:\.\d+)*(?:-\d+)?/g, '#');
   const dated = m => /^\d{4}-\d{2}-\d{2}$/.test(m.releaseDate || '');
   const roleOk = (m, list) => !list.some(x => modelKey(m).toLowerCase().includes(x));
-  // Mirrors successorFor in task-router-core.js: an explicit successor wins; otherwise newer
-  // dated releases of the same lineage, newest first. Availability is checked per request.
+  // Mirrors successorFor in task-router-core.js: an explicit successor wins, following its lineage
+  // to the version the recency policy allows (currentKey); otherwise newer dated releases of the
+  // same lineage, newest first. Availability is checked per request.
   function successors(m) {
-    const explicit = AP.successors[modelKey(m)];
-    if (explicit) return D.models.filter(x => x.id !== m.id && modelKey(x) === explicit).map(x => x.id);
+    const named = AP.successors[modelKey(m)];
+    const explicit = named && P.currentKey(named, D.models);
+    if (explicit) return D.models.filter(x => x.id !== m.id && modelKey(x).toLowerCase() === explicit).map(x => x.id);
     if (!dated(m)) return [];
     return D.models.filter(x => x.id !== m.id && lineageKey(x) === lineageKey(m) && dated(x) && x.releaseDate > m.releaseDate)
       .sort((a, b) => b.releaseDate.localeCompare(a.releaseDate)).map(x => x.id);
@@ -95,6 +97,12 @@ export function build(source) {
     }
     return [t.id, { label: ascii(t.label), scale: ascii(t.qualityLabel), span }];
   }));
+  // The site no longer models client apps; its ROUTE_META names the clients that serve each plan.
+  // An app other than opencode reaches only the plans that list it; opencode and other reach all.
+  const clients = [...new Set(Object.values(A.ROUTE_META).flatMap(meta => meta.clients))];
+  const native = Object.fromEntries(clients.filter(c => c !== 'opencode')
+    .map(c => [c, A.ROUTE_ORDER.filter(route => A.ROUTE_META[route].clients.includes(c))]));
+  const apps = [...clients, 'other'];
   const used = new Set(rows.map(r => r[7]));
   const sources = Object.fromEntries(D.sources.filter(s => used.has(s.id)).map(s => [s.id,
     { label: ascii(s.label), url: s.url, license: ascii(s.license), published: s.publishedAt || null }]));
@@ -102,8 +110,7 @@ export function build(source) {
     schema: 'nobrainer-flow-benchmark-snapshot/1', source: SITE_URL, as_of: D.fetchedAt.slice(0, 10),
     fetched_at: D.fetchedAt, compiled_at: D.compiledAt || null, data_snapshot_id: D.snapshotId || null,
     policy: { quality_band_fraction: D.policy.qualityBandFraction, max_source_age_days: D.policy.maxSourceAgeDays,
-      source_priority: D.policy.qualitySourcePriority, route_order: AP.routeOrder, apps: A.APPS,
-      native_routes: { codex: ['openai'], claude: ['anthropic'], copilot: ['copilot'] },
+      source_priority: D.policy.qualitySourcePriority, route_order: AP.routeOrder, apps, native_routes: native,
       default_providers: R.DEFAULT.have, providers: A.ROUTES, api_access_note: ascii(A.API_ACCESS_NOTE) },
     jobs: R.JOBS, tasks, sources, retired, models,
     row_fields: ['id', 'model', 'task', 'effort', 'score', 'lower', 'upper', 'source', 'cost', 'cost_kind', 'time', 'time_kind', 'harness', 'success_cost'],

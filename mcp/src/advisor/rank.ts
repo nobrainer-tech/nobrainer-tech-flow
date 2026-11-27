@@ -20,8 +20,8 @@ const completeEvidence = (r: Ranked) => positive(r.cost) && positive(r.time) &&
 export function routing(S: LoadedSnapshot, state: RankState) {
   const order = S.policy.route_order;
   const routePriority = (r: string) => { const i = order.indexOf(r); return i < 0 ? 999 : i; };
-  // Selected plans in owner route order; named apps restrict them to their native routes
-  // (the site's allowedRoutes with via: native). Without an app: via ocx, no restriction.
+  // Selected plans in owner route order; named apps restrict them to the plans whose clients
+  // include the app (the site's ROUTE_META). Without an app: no restriction.
   const wanted = [...new Set(state.have)].filter(r => order.includes(r) && (!state.native || state.native.includes(r)))
     .sort((a, b) => routePriority(a) - routePriority(b));
   const routeFor = (m: SnapshotModel) => {
@@ -61,9 +61,13 @@ export function rankTask(S: LoadedSnapshot, state: RankState, code: Code): RankR
   const admits = (r: Ranked, boundary: number | null, leader: number) => boundary != null &&
     (r.upper > r.lower ? r.score >= boundary && r.upper >= leader : r.lower >= boundary);
   const floor = bestLower == null ? null : bestLower - span * band;
-  const wideFloor = bestLower == null ? null : bestLower - span * band * 2;
+  // The wide band (efficient) admits on the point score alone. On a positive scale its floor never
+  // drops below half of the leader's lower bound and never rises above the normal floor.
+  const spanFloor = bestLower == null ? null : bestLower - span * band * 2;
+  const wideFloor = spanFloor == null || floor == null ? null : (bestLower as number) > 0 ? Math.min(floor, Math.max(spanFloor, (bestLower as number) * 0.5)) : spanFloor;
+  const wideAdmits = (r: Ranked) => wideFloor != null && (r.upper > r.lower ? r.score >= wideFloor : r.lower >= wideFloor);
   const qualified = primary.filter(r => admits(r, floor, bestLower ?? 0));
-  const wide = primary.filter(r => admits(r, wideFloor, bestLower ?? 0));
+  const wide = primary.filter(wideAdmits);
 
   const moneyKey = (r: Ranked) => r.costKind === 'observed' && positive(r.successCost) ? r.successCost : r.cost ?? Infinity;
   const costSort = (a: Ranked, b: Ranked) => {

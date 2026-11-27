@@ -181,7 +181,7 @@ release: update `content/SOURCE.json` (tag, commit, hashes), fix `cards.yaml`, r
 
 ### Updating the benchmark snapshot
 
-`npm run refresh:benchmark -- --source <website>/public_html/ai/benchmark` regenerates
+`npm run refresh:benchmark -- --source <website>/www/ai/benchmark` regenerates
 `data/benchmark/snapshot.json` and `SOURCE.json` deterministically. The website rule applies: a snapshot expires 14 days after its fetch time, so refresh and redeploy at least every 14 days or the advisor answers `expired: true` with an empty shortlist. See `data/benchmark/NOTICE.md`
 for provenance and third-party licences.
 

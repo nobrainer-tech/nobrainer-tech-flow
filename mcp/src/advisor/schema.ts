@@ -14,7 +14,7 @@ export const recommendInput = z.object({
     const task = value.trim().toLowerCase();
     return task === 'coding' ? 'terminal-coding' : SNAPSHOT.jobs[task] ?? task;
   }, z.enum(TASKS)).meta({ type: 'string', enum: TASKS }),
-  have: z.array(z.string().min(1).max(64)).max(30).optional().describe('Providers, models or client apps you can use'),
+  have: z.array(z.string().min(1).max(64)).max(30).optional().describe('Providers, models or apps you can use'),
   priority: z.enum(['quality', 'balanced', 'efficient']).optional(),
   role: z.enum(['main', 'worker']).optional()
 }).strict();
