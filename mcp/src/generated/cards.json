@@ -1,7 +1,7 @@
 {
-  "flow_version": "2.13.0",
-  "tag": "v2.13.0",
-  "commit": "ad6f35d5622745c26c98eec39f8787cc15723559",
+  "flow_version": "2.13.1",
+  "tag": "v2.13.1",
+  "commit": "157ed85c3b43d1f1007db592123833c0cbbe664a",
   "repo": "https://github.com/nobrainer-tech/nobrainer-tech-flow",
   "modules": [
     "nobrainer-auto-fine-tune",
